@@ -182,7 +182,7 @@ VTM tests often combine two stats (Attribute + Skill) to form a dice pool. The `
 - `id`, `name`
 - `discordGuildId` — ties to a Discord server
 - `gameSystemId` — "vtm-v5", "mork-borg"
-- Has many: Channels, Characters, NPCs, CampaignAdmins, Events
+- Has many: Channels, Characters, NPCs, CampaignAdmins, Events, Quests, SessionSummaries
 
 **Channel**
 - `id`, `name`
@@ -231,6 +231,32 @@ Events are reusable: status goes draft → ready → fired → archived. A fired
 - `campaignId`
 - `role` — "owner" | "gm"
 - Links to Better Auth session
+
+**Quest**
+- `id`, `name`, `description`
+- `campaignId` — campaign-scoped
+- `status` — "active" | "completed" | "failed"
+- `sortOrder` — display order in the journal
+- `visible` — whether players can see this quest via the bot
+- Has many: QuestEntry
+
+**QuestEntry**
+- `id`, `content` — freeform narrative text (e.g., "You found the Tzimisce Lair")
+- `questId` — belongs to Quest
+- `status` — "pending" | "done"
+- `sortOrder` — display order within the quest
+- `createdAt`
+
+Each entry is a narrative beat or progress mark. The bot renders done entries de-emphasized (dimmed/struck) and pending entries highlighted, so the player sees a living story of the quest with clear indicators of what's resolved and what remains.
+
+**SessionSummary**
+- `id`, `title`, `content` — GM-written recap of a session
+- `campaignId`
+- `sessionDate`
+- `visible` — whether players can see this via the bot
+- `channelId` — optional, ties summary to a specific channel/scene
+
+Session summaries are the narrative record. The GM writes them after (or during) a session. Players can request them from the bot to refresh their memory.
 
 ### Key Decisions
 
@@ -306,6 +332,20 @@ PATCH  /campaigns/:id/events/:eventId     # edit event (even seconds before firi
 POST   /campaigns/:id/events/:eventId/fire # TRIGGER — runs pipeline via bot
 ```
 
+### Journal
+```
+GET    /campaigns/:id/quests              # all quests (filterable by status)
+POST   /campaigns/:id/quests              # create quest
+PATCH  /campaigns/:id/quests/:questId     # update quest (name, status, visibility)
+POST   /campaigns/:id/quests/:questId/entries    # add quest entry
+PATCH  /campaigns/:id/quests/:questId/entries/:entryId  # update entry (content, status)
+DELETE /campaigns/:id/quests/:questId/entries/:entryId  # remove entry
+GET    /campaigns/:id/summaries           # all session summaries
+POST   /campaigns/:id/summaries           # create summary
+PATCH  /campaigns/:id/summaries/:sumId    # update summary
+GET    /campaigns/:id/journal/for/:discordId     # player's journal view (visible quests + summaries)
+```
+
 ### Bot-Facing
 ```
 POST   /bot/test-result                   # player reported a score
@@ -330,9 +370,11 @@ Dense, utilitarian, information-first. The interface prioritizes density and imm
 - **Color coding**: Tests (blue #58a6ff), Narrations (purple #d2a8ff), Insights (green #3fb950), Messages (orange #f0883e)
 - **Fired events**: 35% opacity + dashed border + "FIRED" badge
 
-### Two Views
+### Three Views
 
 **Setup View** (Backstage): Spacious, form-driven. Build events, compose block pipelines, manage NPCs, edit characters. This is prep mode — the GM has time to think.
+
+**Journal View**: Manage the campaign journal. Two sections: quests (create, add entries, mark progress, toggle visibility) and session summaries (write recaps, toggle visibility). The GM can quickly add a quest entry during play or write a full summary after a session.
 
 **Play View** (Soundboard): Dense control panel. Three-column layout:
 - **Left**: Event queue — ordered list of prepared events with ready/draft status
@@ -359,6 +401,8 @@ Dense, utilitarian, information-first. The interface prioritizes density and imm
 **Stat Insights**: Bot checks each player's character stats against a threshold. Players who meet the requirement automatically receive a DM with the insight message. No roll — passive knowledge check.
 
 **NPCs**: Players DM the bot with `!vtm-npcs-all` (or system-equivalent) to see NPCs available to them. Each NPC shows name, image, description, and the facts known to that specific player.
+
+**Journal**: Players DM the bot with `!journal` to see their quest log and session summaries. Quests show their entries with visual distinction between done (de-emphasized) and pending (highlighted) entries — like a video game quest log. `!journal quests` shows only quests, `!journal recaps` shows session summaries. Only entries the GM has marked as visible are shown.
 
 ### Bot Architecture
 
@@ -391,11 +435,35 @@ The bot never contains game logic — it delegates everything to the backend, wh
 | Monorepo | Turborepo + npm/pnpm workspaces |
 | Backend | Fastify, Prisma, Better Auth, TypeScript |
 | Bot | Discord.js, TypeScript |
-| Frontend | React Router 7 (framework mode), ShadCN, Tailwind, TypeScript |
+| Frontend | React Router 7 (framework mode), React 19 + React Compiler, ShadCN, Tailwind, TypeScript |
 | Database | PostgreSQL |
 | DI | tsyringe (proven, decorator-based, lightweight) |
 | Deployment | Docker Compose on Oracle Cloud ARM |
 | Frontend hosting | Vercel or Oracle VM |
+
+### Tooling & DX
+
+**Code Quality**
+- **ESLint** — linting across all packages
+- **Prettier** — formatting across all packages
+- **Husky** — git hooks (pre-commit: lint + format, pre-push: type-check + tests)
+
+**Validation & Schemas**
+- **Zod** — runtime validation for forms, API payloads, and shared schemas
+- **Fastify OpenAPI 3** — backend auto-generates OpenAPI 3 spec from route schemas (via @fastify/swagger)
+- **Orval** — both frontend and bot consume the OpenAPI spec to generate typed API clients. Single source of truth for API types — change a route, regenerate, get compile errors where things broke.
+
+**Frontend Data & Forms**
+- **React Query (TanStack Query)** — server state management, caching, optimistic updates. Pairs with Orval-generated hooks.
+- **React Hook Form** — form state management, validation via Zod resolvers
+- **React 19 + React Compiler** — latest React with automatic memoization
+
+**Build**
+- **Vite** — powers the frontend dev server and build. Also used for the bot and backend where applicable (via vite-node or vitest for testing).
+
+**Testing**
+- **Vitest** — unit and integration tests across all packages (Vite-native, fast, compatible API)
+- **Testing strategy**: Unit tests for game system modules and block logic. Integration tests for API routes (Fastify's inject). Component tests for frontend (React Testing Library). Bot interaction tests against mocked Discord.js client.
 
 ## Roll Behavior
 
@@ -408,8 +476,8 @@ Players always roll physical dice and report results to the bot. The bot is an i
 - GameSystem contract and Block system
 - VTM V5 game system module
 - Mörk Borg game system module
-- Discord bot with tests, narrations, stat insights, NPCs
-- GM frontend with Setup and Play (soundboard) views
+- Discord bot with tests, narrations, stat insights, NPCs, journal
+- GM frontend with Setup, Play (soundboard), and Journal views
 - Better Auth magic link flow via Discord
 - Docker Compose deployment config
 
