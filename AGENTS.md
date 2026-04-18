@@ -18,39 +18,35 @@ Use official documentation to choose the implementation shape. Do not rely on me
 
 ## Execution Order
 
-The repo is mid-setup against `docs/superpowers/plans/2026-04-17-plan-1-foundation.md`.
+Plan 1 (Foundation) is complete. The repo has moved beyond the plan into app scaffolding.
 
-Current task state:
+Current state:
 
-- Done: Task 1 `Initialize monorepo root`
-- Done: Task 2 `ESLint, Prettier, Husky, lint-staged`
-- Done: Task 3 `packages/contracts`
-- In progress: Task 4 `packages/core — BlockRegistry and PipelineRunner`
-- Open: Task 5 `packages/core — common block implementations`
-- Open: Task 6 `packages/db — Prisma schema`
-- Open: Task 7 `App shells — backend, bot, frontend`
-- Open: Task 8 `Pipeline integration tests`
-
-Advance work in that order unless the user explicitly reprioritizes. Do not jump ahead to app scaffolding, Prisma, or integration tests while the current task's slice is still incomplete.
+- Done: `packages/contracts` — all shared TypeScript interfaces
+- Done: `packages/core` — BlockRegistry, PipelineRunner, 7 common blocks, integration tests
+- Done: `packages/db` — Prisma schema
+- Done: `apps/backend` — Fastify server, Better Auth magic-link, all stub routes, full OpenAPI spec
+- Done: `apps/bot` — shell with Orval-generated fetch client
+- Done: `apps/frontend` — shell with Orval-generated react-query + zod client
+- In progress: wiring routes to database (Prisma), real business logic
 
 ## Roadmap vs Current Repo
-
-The design and plan under `docs/superpowers/` describe the target architecture, but the repo has only been implemented through the shared-package phase so far.
 
 Present today:
 
 - `packages/contracts`
 - `packages/core`
+- `packages/db` (Prisma schema, not yet migrated)
+- `apps/backend` (stub routes, Better Auth wired, OpenAPI spec generated)
+- `apps/bot` (Orval-generated API client, no Discord.js implementation yet)
+- `apps/frontend` (Orval-generated API client, React Router 7 scaffolded)
 
-Not yet created in the live repo:
+Not yet implemented:
 
-- `apps/backend`
-- `apps/bot`
-- `apps/frontend`
-- `packages/db`
-- `packages/systems`
-
-Treat that gap as intentional roadmap state, not as something to "repair" automatically. Only create the missing areas when the active task reaches that step.
+- Real DB-backed route handlers (currently all return stub data)
+- Discord.js bot commands and event handlers
+- Frontend UI components
+- `packages/systems` (game system implementations, e.g. VTM)
 
 ## Dependency Boundaries
 

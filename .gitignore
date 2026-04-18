@@ -8,7 +8,10 @@ dist/
 .superpowers/
 coverage/
 .prisma/
+.react-router/
 *.tsbuildinfo
 npm-debug.log*
 *.log
 .DS_Store
+docker-compose.override.yml
+.idea/
