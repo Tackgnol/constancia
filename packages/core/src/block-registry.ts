@@ -1,19 +1,16 @@
 import type { BlockDefinition } from '@constancia/contracts';
 
 export class BlockRegistry {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private blocks = new Map<string, BlockDefinition<any>>();
+  private blocks = new Map<string, BlockDefinition<unknown>>();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  register<TConfig = any>(block: BlockDefinition<TConfig>): void {
+  register<TConfig>(block: BlockDefinition<TConfig>): void {
     if (this.blocks.has(block.type)) {
       throw new Error(`Block type "${block.type}" is already registered`);
     }
-    this.blocks.set(block.type, block);
+    this.blocks.set(block.type, block as BlockDefinition<unknown>);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  get(type: string): BlockDefinition<any> | undefined {
+  get(type: string): BlockDefinition<unknown> | undefined {
     return this.blocks.get(type);
   }
 
