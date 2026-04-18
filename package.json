@@ -8,6 +8,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "generate:api": "orval --config orval.config.ts && node scripts/orval-fix-node-imports.mjs",
     "lint": "turbo run lint",
     "lint:root": "eslint .",
     "format": "prettier --write .",
@@ -25,6 +26,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3",
+    "orval": "^7.13.0",
     "turbo": "^2",
     "typescript": "^5.7",
     "typescript-eslint": "^8.58.2"

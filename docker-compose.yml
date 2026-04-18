@@ -1,0 +1,174 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: constancia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: constancia
+      POSTGRES_USER: constancia
+      POSTGRES_PASSWORD: constancia
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U constancia -d constancia']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/node-workspace.Dockerfile
+      args:
+        WORKSPACE: apps/backend
+    container_name: constancia-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://constancia:constancia@postgres:5432/constancia?schema=public
+    command:
+      [
+        'sh',
+        '-lc',
+        "npm run dev --workspace=apps/backend; echo 'Backend shell is not implemented yet, keeping container alive.'; tail -f /dev/null",
+      ]
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/backend/src
+          target: /app/apps/backend/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: sync
+          path: ./packages/contracts/src
+          target: /app/packages/contracts/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: sync
+          path: ./packages/core/src
+          target: /app/packages/core/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: sync
+          path: ./packages/db/src
+          target: /app/packages/db/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: sync+restart
+          path: ./packages/db/prisma/schema.prisma
+          target: /app/packages/db/prisma/schema.prisma
+        - action: rebuild
+          path: ./apps/backend/package.json
+        - action: rebuild
+          path: ./packages/contracts/package.json
+        - action: rebuild
+          path: ./packages/core/package.json
+        - action: rebuild
+          path: ./packages/db/package.json
+        - action: rebuild
+          path: ./package.json
+        - action: rebuild
+          path: ./package-lock.json
+
+  bot:
+    build:
+      context: .
+      dockerfile: docker/node-workspace.Dockerfile
+      args:
+        WORKSPACE: apps/bot
+    container_name: constancia-bot
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://constancia:constancia@postgres:5432/constancia?schema=public
+      BACKEND_URL: http://backend:3000
+    command:
+      [
+        'sh',
+        '-lc',
+        "npm run dev --workspace=apps/bot; echo 'Bot shell is not implemented yet, keeping container alive.'; tail -f /dev/null",
+      ]
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/bot/src
+          target: /app/apps/bot/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: sync
+          path: ./packages/contracts/src
+          target: /app/packages/contracts/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: rebuild
+          path: ./apps/bot/package.json
+        - action: rebuild
+          path: ./packages/contracts/package.json
+        - action: rebuild
+          path: ./package.json
+        - action: rebuild
+          path: ./package-lock.json
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/node-workspace.Dockerfile
+      args:
+        WORKSPACE: apps/frontend
+    container_name: constancia-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      NODE_ENV: development
+      VITE_API_URL: http://backend:3000
+    ports:
+      - '3000:3000'
+    command:
+      [
+        'sh',
+        '-lc',
+        "npm run dev --workspace=apps/frontend; echo 'Frontend shell is not implemented yet, keeping container alive.'; tail -f /dev/null",
+      ]
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/frontend/src
+          target: /app/apps/frontend/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: sync
+          path: ./packages/contracts/src
+          target: /app/packages/contracts/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: rebuild
+          path: ./apps/frontend/package.json
+        - action: rebuild
+          path: ./packages/contracts/package.json
+        - action: rebuild
+          path: ./package.json
+        - action: rebuild
+          path: ./package-lock.json
+
+volumes:
+  postgres_data:

@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Campaign {
+  id             String   @id @default(cuid())
+  name           String
+  discordGuildId String   @unique
+  gameSystemId   String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  channels   Channel[]
+  characters Character[]
+  npcs       Npc[]
+  admins     CampaignAdmin[]
+  events     Event[]
+  quests     Quest[]
+  summaries  SessionSummary[]
+
+  @@map("campaigns")
+}
+
+model Channel {
+  id               String      @id @default(cuid())
+  name             String
+  discordChannelId String      @unique
+  campaignId       String
+  type             ChannelType @default(main)
+  createdAt        DateTime    @default(now())
+
+  campaign  Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  events    Event[]
+  summaries SessionSummary[]
+
+  @@map("channels")
+}
+
+enum ChannelType {
+  main
+  scene
+  temp
+}
+
+model Character {
+  id            String   @id @default(cuid())
+  name          String
+  backstory     String   @default("")
+  notes         String   @default("")
+  discordUserId String
+  campaignId    String
+  systemData    Json     @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  campaign     Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  npcKnowledge NpcKnowledge[]
+
+  @@unique([discordUserId, campaignId])
+  @@map("characters")
+}
+
+model Npc {
+  id          String   @id @default(cuid())
+  name        String
+  imageUrl    String?
+  description String   @default("")
+  campaignId  String
+  createdAt   DateTime @default(now())
+
+  campaign Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  facts    NpcFact[]
+
+  @@map("npcs")
+}
+
+model NpcFact {
+  id        String @id @default(cuid())
+  content   String
+  sortOrder Int    @default(0)
+  npcId     String
+
+  npc       Npc            @relation(fields: [npcId], references: [id], onDelete: Cascade)
+  knowledge NpcKnowledge[]
+
+  @@map("npc_facts")
+}
+
+model NpcKnowledge {
+  characterId String
+  npcFactId   String
+  revealedAt  DateTime @default(now())
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  npcFact   NpcFact   @relation(fields: [npcFactId], references: [id], onDelete: Cascade)
+
+  @@id([characterId, npcFactId])
+  @@map("npc_knowledge")
+}
+
+model Event {
+  id           String      @id @default(cuid())
+  name         String
+  type         String
+  channelId    String
+  campaignId   String
+  pipeline     Json        @default("[]")
+  status       EventStatus @default(draft)
+  shortCircuit Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  channel  Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@map("events")
+}
+
+enum EventStatus {
+  draft
+  ready
+  fired
+  archived
+}
+
+model Quest {
+  id          String      @id @default(cuid())
+  name        String
+  description String      @default("")
+  campaignId  String
+  status      QuestStatus @default(active)
+  sortOrder   Int         @default(0)
+  visible     Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  campaign Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  entries  QuestEntry[]
+
+  @@map("quests")
+}
+
+enum QuestStatus {
+  active
+  completed
+  failed
+}
+
+model QuestEntry {
+  id        String           @id @default(cuid())
+  content   String
+  questId   String
+  status    QuestEntryStatus @default(pending)
+  sortOrder Int              @default(0)
+  createdAt DateTime         @default(now())
+
+  quest Quest @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  @@map("quest_entries")
+}
+
+enum QuestEntryStatus {
+  pending
+  done
+}
+
+model SessionSummary {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  campaignId  String
+  sessionDate DateTime
+  visible     Boolean  @default(false)
+  channelId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  channel  Channel? @relation(fields: [channelId], references: [id])
+
+  @@map("session_summaries")
+}
+
+model CampaignAdmin {
+  id            String    @id @default(cuid())
+  discordUserId String
+  campaignId    String
+  role          AdminRole @default(gm)
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([discordUserId, campaignId])
+  @@map("campaign_admins")
+}
+
+enum AdminRole {
+  owner
+  gm
+}

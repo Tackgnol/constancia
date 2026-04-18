@@ -1,0 +1,18 @@
+{
+  "name": "@constancia/frontend",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'Frontend not yet implemented'",
+    "build": "echo 'Frontend not yet implemented'",
+    "generate:api": "cd ../.. && npm run generate:api",
+    "typecheck": "echo 'Frontend not yet implemented'",
+    "lint": "echo 'Frontend not yet implemented'"
+  },
+  "dependencies": {
+    "@constancia/contracts": "*",
+    "@tanstack/react-query": "^5.90.3",
+    "zod": "^4.1.12"
+  }
+}
