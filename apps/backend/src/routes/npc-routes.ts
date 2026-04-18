@@ -4,10 +4,14 @@ import {
   discordTargetParamsSchema,
   npcBodySchema,
   npcFactBodySchema,
+  npcFactSchema,
   npcPatchBodySchema,
   npcParamsSchema,
   npcRevealBodySchema,
-  standardResponseSchema,
+  npcSchema,
+  npcWithFactsSchema,
+  listResponseSchema,
+  singleResponseSchema,
 } from '../schemas.js';
 
 interface CampaignParams {
@@ -51,10 +55,11 @@ const sampleNpc = {
   name: 'Regent Hale',
   imageUrl: 'https://example.com/regent-hale.png',
   description: 'A composed Tremere regent.',
+  campaignId: 'campaign-1',
 };
 
 const npcRoutes: FastifyPluginAsync = async (app) => {
-  app.get(
+  app.get<{ Params: CampaignParams }>(
     '/',
     {
       schema: {
@@ -63,12 +68,12 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
         operationId: 'listNpcs',
         params: campaignParamsSchema,
         response: {
-          200: standardResponseSchema,
+          200: listResponseSchema(npcSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as CampaignParams;
+      const params = request.params;
       return {
         status: 'stub',
         data: [{ ...sampleNpc, campaignId: params.id }],
@@ -76,7 +81,7 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.post(
+  app.post<{ Params: CampaignParams; Body: NpcBody }>(
     '/',
     {
       schema: {
@@ -86,18 +91,19 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
         params: campaignParamsSchema,
         body: npcBodySchema,
         response: {
-          201: standardResponseSchema,
+          201: singleResponseSchema(npcSchema),
         },
       },
     },
     async (request, reply) => {
-      const params = request.params as CampaignParams;
-      const body = request.body as NpcBody;
+      const params = request.params;
+      const body = request.body;
       reply.code(201);
       return {
         status: 'stub',
         data: {
           id: 'npc-new',
+          description: '',
           campaignId: params.id,
           ...body,
         },
@@ -105,7 +111,7 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.patch(
+  app.patch<{ Params: NpcParams; Body: NpcPatchBody }>(
     '/:npcId',
     {
       schema: {
@@ -115,13 +121,13 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
         params: npcParamsSchema,
         body: npcPatchBodySchema,
         response: {
-          200: standardResponseSchema,
+          200: singleResponseSchema(npcSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as NpcParams;
-      const body = request.body as NpcPatchBody;
+      const params = request.params;
+      const body = request.body;
       return {
         status: 'stub',
         data: {
@@ -134,7 +140,7 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.post(
+  app.post<{ Params: NpcParams; Body: NpcFactBody }>(
     '/:npcId/facts',
     {
       schema: {
@@ -144,26 +150,27 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
         params: npcParamsSchema,
         body: npcFactBodySchema,
         response: {
-          201: standardResponseSchema,
+          201: singleResponseSchema(npcFactSchema),
         },
       },
     },
     async (request, reply) => {
-      const params = request.params as NpcParams;
-      const body = request.body as NpcFactBody;
+      const params = request.params;
+      const body = request.body;
       reply.code(201);
       return {
         status: 'stub',
         data: {
           id: 'fact-new',
           npcId: params.npcId,
+          sortOrder: body.sortOrder ?? 0,
           ...body,
         },
       };
     },
   );
 
-  app.post(
+  app.post<{ Params: NpcParams; Body: NpcRevealBody }>(
     '/:npcId/reveal',
     {
       schema: {
@@ -173,24 +180,25 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
         params: npcParamsSchema,
         body: npcRevealBodySchema,
         response: {
-          200: standardResponseSchema,
+          200: singleResponseSchema(npcWithFactsSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as NpcParams;
-      const body = request.body as NpcRevealBody;
+      const params = request.params;
       return {
         status: 'stub',
         data: {
-          npcId: params.npcId,
-          ...body,
+          ...sampleNpc,
+          id: params.npcId,
+          campaignId: params.id,
+          facts: [],
         },
       };
     },
   );
 
-  app.get(
+  app.get<{ Params: DiscordTargetParams }>(
     '/for/:discordId',
     {
       schema: {
@@ -199,20 +207,19 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
         operationId: 'listVisibleNpcsForPlayer',
         params: discordTargetParamsSchema,
         response: {
-          200: standardResponseSchema,
+          200: listResponseSchema(npcWithFactsSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as DiscordTargetParams;
+      const params = request.params;
       return {
         status: 'stub',
         data: [
           {
             ...sampleNpc,
             campaignId: params.id,
-            visibleTo: params.discordId,
-            facts: ['Knows the chantry sigil.'],
+            facts: [{ content: 'Knows the chantry sigil.', visibleTo: params.discordId }],
           },
         ],
       };

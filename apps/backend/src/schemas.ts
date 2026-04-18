@@ -341,3 +341,209 @@ export const deleteResponseSchema = {
   },
   required: ['status', 'deleted'],
 } as const;
+
+// ─── Entity schemas ────────────────────────────────────────
+
+export const campaignSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    discordGuildId: { type: 'string' },
+    gameSystemId: { type: 'string' },
+  },
+  required: ['id', 'name', 'discordGuildId', 'gameSystemId'],
+} as const;
+
+export const characterSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    discordUserId: { type: 'string' },
+    campaignId: { type: 'string' },
+    backstory: { type: 'string' },
+    notes: { type: 'string' },
+    systemData: { type: 'object', additionalProperties: true },
+  },
+  required: ['id', 'name', 'discordUserId', 'campaignId', 'backstory', 'notes'],
+} as const;
+
+export const npcSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    imageUrl: { type: 'string' },
+    description: { type: 'string' },
+    campaignId: { type: 'string' },
+  },
+  required: ['id', 'name', 'description', 'campaignId'],
+} as const;
+
+export const npcFactSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    content: { type: 'string' },
+    sortOrder: { type: 'integer' },
+    npcId: { type: 'string' },
+  },
+  required: ['id', 'content', 'sortOrder', 'npcId'],
+} as const;
+
+export const npcWithFactsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    imageUrl: { type: 'string' },
+    description: { type: 'string' },
+    campaignId: { type: 'string' },
+    facts: { type: 'array', items: { type: 'object', additionalProperties: true } },
+  },
+  required: ['id', 'name', 'description', 'campaignId', 'facts'],
+} as const;
+
+export const blockInstanceSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    blockType: { type: 'string' },
+    config: { type: 'object', additionalProperties: true },
+  },
+  required: ['blockType', 'config'],
+} as const;
+
+export const gameEventSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    type: { type: 'string' },
+    channelId: { type: 'string' },
+    campaignId: { type: 'string' },
+    status: { type: 'string' },
+    shortCircuit: { type: 'boolean' },
+    pipeline: { type: 'array', items: blockInstanceSchema },
+  },
+  required: ['id', 'name', 'type', 'channelId', 'campaignId', 'status', 'shortCircuit', 'pipeline'],
+} as const;
+
+export const questEntrySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    content: { type: 'string' },
+    questId: { type: 'string' },
+    status: { type: 'string' },
+    sortOrder: { type: 'integer' },
+  },
+  required: ['id', 'content', 'questId', 'status', 'sortOrder'],
+} as const;
+
+export const questSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    description: { type: 'string' },
+    campaignId: { type: 'string' },
+    status: { type: 'string' },
+    sortOrder: { type: 'integer' },
+    visible: { type: 'boolean' },
+    entries: { type: 'array', items: questEntrySchema },
+  },
+  required: ['id', 'name', 'description', 'campaignId', 'status', 'sortOrder', 'visible'],
+} as const;
+
+export const sessionSummarySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    title: { type: 'string' },
+    content: { type: 'string' },
+    campaignId: { type: 'string' },
+    sessionDate: { type: 'string', format: 'date-time' },
+    visible: { type: 'boolean' },
+    channelId: { type: 'string' },
+  },
+  required: ['id', 'title', 'content', 'campaignId', 'sessionDate', 'visible'],
+} as const;
+
+export const gameSystemSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    version: { type: 'string' },
+  },
+  required: ['id', 'name', 'version'],
+} as const;
+
+export const journalForPlayerSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    quests: { type: 'array', items: questSchema },
+    summaries: { type: 'array', items: sessionSummarySchema },
+  },
+  required: ['quests', 'summaries'],
+} as const;
+
+export const fireEventResultSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    eventId: { type: 'string' },
+    messages: { type: 'array', items: { type: 'object', additionalProperties: true } },
+    halted: { type: 'boolean' },
+  },
+  required: ['eventId', 'messages', 'halted'],
+} as const;
+
+export const botTestResultResponseSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    eventId: { type: 'string' },
+    campaignId: { type: 'string' },
+    messages: { type: 'array', items: { type: 'object', additionalProperties: true } },
+    halted: { type: 'boolean' },
+  },
+  required: ['eventId', 'campaignId', 'messages', 'halted'],
+} as const;
+
+// ─── Response wrappers ────────────────────────────────────────
+
+export function listResponseSchema<T extends object>(itemSchema: T) {
+  return {
+    type: 'object' as const,
+    properties: {
+      status: { type: 'string' as const },
+      data: { type: 'array' as const, items: itemSchema },
+    },
+    required: ['status', 'data'] as ['status', 'data'],
+  };
+}
+
+export function singleResponseSchema<T extends object>(dataSchema: T) {
+  return {
+    type: 'object' as const,
+    properties: {
+      status: { type: 'string' as const },
+      data: dataSchema,
+    },
+    required: ['status', 'data'] as ['status', 'data'],
+  };
+}

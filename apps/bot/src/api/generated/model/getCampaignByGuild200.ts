@@ -5,9 +5,9 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
+import type { GetCampaignByGuild200Data } from './getCampaignByGuild200Data.js';
 
 export type GetCampaignByGuild200 = {
   status: string;
-  data: unknown;
-  [key: string]: unknown;
+  data: GetCampaignByGuild200Data;
 };

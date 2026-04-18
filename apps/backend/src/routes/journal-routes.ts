@@ -3,12 +3,17 @@ import {
   campaignParamsSchema,
   deleteResponseSchema,
   discordTargetParamsSchema,
+  journalForPlayerSchema,
   questBodySchema,
   questEntryBodySchema,
   questEntryParamsSchema,
+  questEntrySchema,
   questParamsSchema,
   questPatchBodySchema,
-  standardResponseSchema,
+  questSchema,
+  sessionSummarySchema,
+  singleResponseSchema,
+  listResponseSchema,
   summaryBodySchema,
   summaryParamsSchema,
 } from '../schemas.js';
@@ -69,7 +74,9 @@ const sampleQuest = {
   id: 'quest-1',
   name: 'Find The Chantry',
   description: 'Locate the hidden chantry.',
+  campaignId: 'campaign-1',
   status: 'active',
+  sortOrder: 0,
   visible: true,
 };
 
@@ -77,12 +84,13 @@ const sampleSummary = {
   id: 'summary-1',
   title: 'Session One',
   content: 'The coterie entered Chicago.',
+  campaignId: 'campaign-1',
   sessionDate: '2026-04-17T19:00:00.000Z',
   visible: true,
 };
 
 const journalRoutes: FastifyPluginAsync = async (app) => {
-  app.get(
+  app.get<{ Params: CampaignParams }>(
     '/quests',
     {
       schema: {
@@ -91,12 +99,12 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         operationId: 'listQuests',
         params: campaignParamsSchema,
         response: {
-          200: standardResponseSchema,
+          200: listResponseSchema(questSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as CampaignParams;
+      const params = request.params;
       return {
         status: 'stub',
         data: [{ ...sampleQuest, campaignId: params.id }],
@@ -104,7 +112,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.post(
+  app.post<{ Params: CampaignParams; Body: QuestBody }>(
     '/quests',
     {
       schema: {
@@ -114,13 +122,13 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         params: campaignParamsSchema,
         body: questBodySchema,
         response: {
-          201: standardResponseSchema,
+          201: singleResponseSchema(questSchema),
         },
       },
     },
     async (request, reply) => {
-      const params = request.params as CampaignParams;
-      const body = request.body as QuestBody;
+      const params = request.params;
+      const body = request.body;
       reply.code(201);
       return {
         status: 'stub',
@@ -128,13 +136,16 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
           id: 'quest-new',
           campaignId: params.id,
           status: 'active',
+          sortOrder: 0,
+          description: '',
+          visible: body.visible ?? false,
           ...body,
         },
       };
     },
   );
 
-  app.patch(
+  app.patch<{ Params: QuestParams; Body: QuestPatchBody }>(
     '/quests/:questId',
     {
       schema: {
@@ -144,13 +155,13 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         params: questParamsSchema,
         body: questPatchBodySchema,
         response: {
-          200: standardResponseSchema,
+          200: singleResponseSchema(questSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as QuestParams;
-      const body = request.body as QuestPatchBody;
+      const params = request.params;
+      const body = request.body;
       return {
         status: 'stub',
         data: {
@@ -163,7 +174,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.post(
+  app.post<{ Params: QuestParams; Body: QuestEntryBody }>(
     '/quests/:questId/entries',
     {
       schema: {
@@ -173,26 +184,28 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         params: questParamsSchema,
         body: questEntryBodySchema,
         response: {
-          201: standardResponseSchema,
+          201: singleResponseSchema(questEntrySchema),
         },
       },
     },
     async (request, reply) => {
-      const params = request.params as QuestParams;
-      const body = request.body as QuestEntryBody;
+      const params = request.params;
+      const body = request.body;
       reply.code(201);
       return {
         status: 'stub',
         data: {
           id: 'entry-new',
           questId: params.questId,
+          status: body.status ?? 'active',
+          sortOrder: body.sortOrder ?? 0,
           ...body,
         },
       };
     },
   );
 
-  app.patch(
+  app.patch<{ Params: QuestEntryParams; Body: QuestEntryBody }>(
     '/quests/:questId/entries/:entryId',
     {
       schema: {
@@ -202,18 +215,20 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         params: questEntryParamsSchema,
         body: questEntryBodySchema,
         response: {
-          200: standardResponseSchema,
+          200: singleResponseSchema(questEntrySchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as QuestEntryParams;
-      const body = request.body as QuestEntryBody;
+      const params = request.params;
+      const body = request.body;
       return {
         status: 'stub',
         data: {
           id: params.entryId,
           questId: params.questId,
+          status: body.status ?? 'active',
+          sortOrder: body.sortOrder ?? 0,
           ...body,
         },
       };
@@ -239,7 +254,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
     }),
   );
 
-  app.get(
+  app.get<{ Params: CampaignParams }>(
     '/summaries',
     {
       schema: {
@@ -248,12 +263,12 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         operationId: 'listSessionSummaries',
         params: campaignParamsSchema,
         response: {
-          200: standardResponseSchema,
+          200: listResponseSchema(sessionSummarySchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as CampaignParams;
+      const params = request.params;
       return {
         status: 'stub',
         data: [{ ...sampleSummary, campaignId: params.id }],
@@ -261,7 +276,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.post(
+  app.post<{ Params: CampaignParams; Body: SummaryBody }>(
     '/summaries',
     {
       schema: {
@@ -271,26 +286,27 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         params: campaignParamsSchema,
         body: summaryBodySchema,
         response: {
-          201: standardResponseSchema,
+          201: singleResponseSchema(sessionSummarySchema),
         },
       },
     },
     async (request, reply) => {
-      const params = request.params as CampaignParams;
-      const body = request.body as SummaryBody;
+      const params = request.params;
+      const body = request.body;
       reply.code(201);
       return {
         status: 'stub',
         data: {
           id: 'summary-new',
           campaignId: params.id,
+          visible: body.visible ?? false,
           ...body,
         },
       };
     },
   );
 
-  app.patch(
+  app.patch<{ Params: SummaryParams; Body: SummaryBody }>(
     '/summaries/:sumId',
     {
       schema: {
@@ -300,13 +316,13 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         params: summaryParamsSchema,
         body: summaryBodySchema,
         response: {
-          200: standardResponseSchema,
+          200: singleResponseSchema(sessionSummarySchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as SummaryParams;
-      const body = request.body as SummaryBody;
+      const params = request.params;
+      const body = request.body;
       return {
         status: 'stub',
         data: {
@@ -319,7 +335,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.get(
+  app.get<{ Params: DiscordTargetParams }>(
     '/journal/for/:discordId',
     {
       schema: {
@@ -328,19 +344,17 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         operationId: 'getJournalForPlayer',
         params: discordTargetParamsSchema,
         response: {
-          200: standardResponseSchema,
+          200: singleResponseSchema(journalForPlayerSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as DiscordTargetParams;
+      const params = request.params;
       return {
         status: 'stub',
         data: {
-          campaignId: params.id,
-          discordId: params.discordId,
-          quests: [sampleQuest],
-          summaries: [sampleSummary],
+          quests: [{ ...sampleQuest, campaignId: params.id }],
+          summaries: [{ ...sampleSummary, campaignId: params.id }],
         },
       };
     },

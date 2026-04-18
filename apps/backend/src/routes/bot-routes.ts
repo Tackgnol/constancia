@@ -1,9 +1,13 @@
 import type { FastifyPluginAsync } from 'fastify';
 import {
   botTestResultBodySchema,
+  botTestResultResponseSchema,
+  campaignSchema,
   channelParamsSchema,
+  gameEventSchema,
   guildParamsSchema,
-  standardResponseSchema,
+  listResponseSchema,
+  singleResponseSchema,
 } from '../schemas.js';
 
 interface BotTestResultBody {
@@ -23,7 +27,7 @@ interface ChannelParams {
 }
 
 const botRoutes: FastifyPluginAsync = async (app) => {
-  app.post(
+  app.post<{ Body: BotTestResultBody }>(
     '/test-result',
     {
       schema: {
@@ -32,23 +36,25 @@ const botRoutes: FastifyPluginAsync = async (app) => {
         operationId: 'submitBotTestResult',
         body: botTestResultBodySchema,
         response: {
-          200: standardResponseSchema,
+          200: singleResponseSchema(botTestResultResponseSchema),
         },
       },
     },
     async (request) => {
-      const body = request.body as BotTestResultBody;
+      const body = request.body;
       return {
         status: 'stub',
         data: {
-          accepted: true,
-          ...body,
+          eventId: body.eventId,
+          campaignId: body.campaignId,
+          messages: [],
+          halted: false,
         },
       };
     },
   );
 
-  app.get(
+  app.get<{ Params: GuildParams }>(
     '/campaign-by-guild/:guildId',
     {
       schema: {
@@ -57,24 +63,25 @@ const botRoutes: FastifyPluginAsync = async (app) => {
         operationId: 'getCampaignByGuild',
         params: guildParamsSchema,
         response: {
-          200: standardResponseSchema,
+          200: singleResponseSchema(campaignSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as GuildParams;
+      const params = request.params;
       return {
         status: 'stub',
         data: {
-          guildId: params.guildId,
-          campaignId: 'campaign-1',
+          id: 'campaign-1',
+          name: 'Chicago by Night',
+          discordGuildId: params.guildId,
           gameSystemId: 'vtm-v5',
         },
       };
     },
   );
 
-  app.get(
+  app.get<{ Params: ChannelParams }>(
     '/channel-events/:channelId',
     {
       schema: {
@@ -83,19 +90,24 @@ const botRoutes: FastifyPluginAsync = async (app) => {
         operationId: 'getChannelEvents',
         params: channelParamsSchema,
         response: {
-          200: standardResponseSchema,
+          200: listResponseSchema(gameEventSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as ChannelParams;
+      const params = request.params;
       return {
         status: 'stub',
         data: [
           {
             id: 'event-1',
+            name: 'Spot The Sigil',
+            type: 'test',
             channelId: params.channelId,
+            campaignId: 'campaign-1',
             status: 'ready',
+            shortCircuit: false,
+            pipeline: [],
           },
         ],
       };

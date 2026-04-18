@@ -4,7 +4,9 @@ import {
   characterBodySchema,
   characterParamsSchema,
   characterPatchBodySchema,
-  standardResponseSchema,
+  characterSchema,
+  listResponseSchema,
+  singleResponseSchema,
 } from '../schemas.js';
 
 interface CampaignParams {
@@ -35,6 +37,7 @@ const sampleCharacter = {
   id: 'char-1',
   name: 'Annabelle',
   discordUserId: 'discord-user-1',
+  campaignId: 'campaign-1',
   backstory: 'A wary occultist.',
   notes: 'Keeps secrets.',
   systemData: {
@@ -48,7 +51,7 @@ const sampleCharacter = {
 };
 
 const characterRoutes: FastifyPluginAsync = async (app) => {
-  app.get(
+  app.get<{ Params: CampaignParams }>(
     '/',
     {
       schema: {
@@ -57,12 +60,12 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
         operationId: 'listCharacters',
         params: campaignParamsSchema,
         response: {
-          200: standardResponseSchema,
+          200: listResponseSchema(characterSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as CampaignParams;
+      const params = request.params;
       return {
         status: 'stub',
         data: [{ ...sampleCharacter, campaignId: params.id }],
@@ -70,7 +73,7 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.post(
+  app.post<{ Params: CampaignParams; Body: CharacterBody }>(
     '/',
     {
       schema: {
@@ -80,26 +83,28 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
         params: campaignParamsSchema,
         body: characterBodySchema,
         response: {
-          201: standardResponseSchema,
+          201: singleResponseSchema(characterSchema),
         },
       },
     },
     async (request, reply) => {
-      const params = request.params as CampaignParams;
-      const body = request.body as CharacterBody;
+      const params = request.params;
+      const body = request.body;
       reply.code(201);
       return {
         status: 'stub',
         data: {
           id: 'char-new',
           campaignId: params.id,
+          backstory: '',
+          notes: '',
           ...body,
         },
       };
     },
   );
 
-  app.get(
+  app.get<{ Params: CharacterParams }>(
     '/:charId',
     {
       schema: {
@@ -108,12 +113,12 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
         operationId: 'getCharacter',
         params: characterParamsSchema,
         response: {
-          200: standardResponseSchema,
+          200: singleResponseSchema(characterSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as CharacterParams;
+      const params = request.params;
       return {
         status: 'stub',
         data: {
@@ -125,7 +130,7 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.patch(
+  app.patch<{ Params: CharacterParams; Body: CharacterPatchBody }>(
     '/:charId',
     {
       schema: {
@@ -135,13 +140,13 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
         params: characterParamsSchema,
         body: characterPatchBodySchema,
         response: {
-          200: standardResponseSchema,
+          200: singleResponseSchema(characterSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as CharacterParams;
-      const body = request.body as CharacterPatchBody;
+      const params = request.params;
+      const body = request.body;
       return {
         status: 'stub',
         data: {

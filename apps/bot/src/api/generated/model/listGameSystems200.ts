@@ -5,9 +5,9 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
+import type { ListGameSystems200DataItem } from './listGameSystems200DataItem.js';
 
 export type ListGameSystems200 = {
   status: string;
-  data: unknown;
-  [key: string]: unknown;
+  data: ListGameSystems200DataItem[];
 };

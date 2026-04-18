@@ -34,7 +34,7 @@ export const getOpenApiDocument = async (options?: RequestInit): Promise<GetOpen
  * @summary Get service metadata
  */
 export const getGetServiceMetadataUrl = () => {
-  return `/`;
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/`;
 };
 
 export const getServiceMetadata = async (options?: RequestInit): Promise<GetServiceMetadata200> => {

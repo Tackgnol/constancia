@@ -1,5 +1,10 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { identifierParamsSchema, standardResponseSchema } from '../schemas.js';
+import {
+  gameSystemSchema,
+  identifierParamsSchema,
+  listResponseSchema,
+  singleResponseSchema,
+} from '../schemas.js';
 
 interface SystemParams {
   id: string;
@@ -10,20 +15,11 @@ const sampleSystems = [
     id: 'vtm-v5',
     name: 'Vampire: The Masquerade 5th Edition',
     version: '0.1.0',
-    statSchema: {
-      attributes: ['strength', 'dexterity', 'wits'],
-      skills: ['awareness', 'occult', 'technology'],
-    },
-    blocks: ['vtm-stats', 'vtm-pool-resolver', 'vtm-hunger-check', 'vtm-rouse'],
   },
   {
     id: 'mork-borg',
     name: 'Mork Borg',
     version: '0.1.0',
-    statSchema: {
-      attributes: ['agility', 'presence', 'strength', 'toughness'],
-    },
-    blocks: ['mb-stats', 'mb-d20-resolver', 'mb-omens'],
   },
 ];
 
@@ -36,7 +32,7 @@ const systemRoutes: FastifyPluginAsync = async (app) => {
         summary: 'List registered game systems',
         operationId: 'listGameSystems',
         response: {
-          200: standardResponseSchema,
+          200: listResponseSchema(gameSystemSchema),
         },
       },
     },
@@ -46,7 +42,7 @@ const systemRoutes: FastifyPluginAsync = async (app) => {
     }),
   );
 
-  app.get(
+  app.get<{ Params: SystemParams }>(
     '/:id',
     {
       schema: {
@@ -55,12 +51,12 @@ const systemRoutes: FastifyPluginAsync = async (app) => {
         operationId: 'getGameSystem',
         params: identifierParamsSchema,
         response: {
-          200: standardResponseSchema,
+          200: singleResponseSchema(gameSystemSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as SystemParams;
+      const params = request.params;
       return {
         status: 'stub',
         data: sampleSystems.find((system) => system.id === params.id) ?? sampleSystems[0],

@@ -3,7 +3,9 @@ import {
   campaignBodySchema,
   campaignParamsSchema,
   campaignPatchBodySchema,
-  standardResponseSchema,
+  campaignSchema,
+  listResponseSchema,
+  singleResponseSchema,
 } from '../schemas.js';
 
 interface CampaignParams {
@@ -37,7 +39,7 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
         summary: 'List campaigns',
         operationId: 'listCampaigns',
         response: {
-          200: standardResponseSchema,
+          200: listResponseSchema(campaignSchema),
         },
       },
     },
@@ -47,7 +49,7 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
     }),
   );
 
-  app.post(
+  app.post<{ Body: CampaignBody }>(
     '/',
     {
       schema: {
@@ -56,12 +58,12 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
         operationId: 'createCampaign',
         body: campaignBodySchema,
         response: {
-          201: standardResponseSchema,
+          201: singleResponseSchema(campaignSchema),
         },
       },
     },
     async (request, reply) => {
-      const body = request.body as CampaignBody;
+      const body = request.body;
       reply.code(201);
       return {
         status: 'stub',
@@ -73,7 +75,7 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.get(
+  app.get<{ Params: CampaignParams }>(
     '/:id',
     {
       schema: {
@@ -82,12 +84,12 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
         operationId: 'getCampaign',
         params: campaignParamsSchema,
         response: {
-          200: standardResponseSchema,
+          200: singleResponseSchema(campaignSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as CampaignParams;
+      const params = request.params;
       return {
         status: 'stub',
         data: {
@@ -98,7 +100,7 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.patch(
+  app.patch<{ Params: CampaignParams; Body: CampaignPatchBody }>(
     '/:id',
     {
       schema: {
@@ -108,13 +110,13 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
         params: campaignParamsSchema,
         body: campaignPatchBodySchema,
         response: {
-          200: standardResponseSchema,
+          200: singleResponseSchema(campaignSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as CampaignParams;
-      const body = request.body as CampaignPatchBody;
+      const params = request.params;
+      const body = request.body;
       return {
         status: 'stub',
         data: {

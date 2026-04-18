@@ -11,6 +11,8 @@ import type {
   CreateEventPathParameters,
   FireEvent200,
   FireEventPathParameters,
+  GetEvent200,
+  GetEventPathParameters,
   ListEvents200,
   ListEventsPathParameters,
   UpdateEvent200,
@@ -62,6 +64,28 @@ export const createEvent = async (
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
   const data: CreateEvent201 = body ? JSON.parse(body) : {};
+  return data;
+};
+
+/**
+ * @summary Get an event
+ */
+export const getGetEventUrl = ({ id, eventId }: GetEventPathParameters) => {
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/${eventId}`;
+};
+
+export const getEvent = async (
+  { id, eventId }: GetEventPathParameters,
+  options?: RequestInit,
+): Promise<GetEvent200> => {
+  const res = await fetch(getGetEventUrl({ id, eventId }), {
+    ...options,
+    method: 'GET',
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: GetEvent200 = body ? JSON.parse(body) : {};
   return data;
 };
 

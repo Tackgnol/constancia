@@ -4,7 +4,10 @@ import {
   eventBodySchema,
   eventParamsSchema,
   eventPatchBodySchema,
-  standardResponseSchema,
+  fireEventResultSchema,
+  gameEventSchema,
+  listResponseSchema,
+  singleResponseSchema,
 } from '../schemas.js';
 
 interface CampaignParams {
@@ -41,6 +44,7 @@ const sampleEvent = {
   name: 'Spot The Sigil',
   type: 'test',
   channelId: 'channel-1',
+  campaignId: 'campaign-1',
   status: 'ready',
   shortCircuit: true,
   pipeline: [
@@ -52,7 +56,7 @@ const sampleEvent = {
 };
 
 const eventRoutes: FastifyPluginAsync = async (app) => {
-  app.get(
+  app.get<{ Params: CampaignParams }>(
     '/',
     {
       schema: {
@@ -61,12 +65,12 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
         operationId: 'listEvents',
         params: campaignParamsSchema,
         response: {
-          200: standardResponseSchema,
+          200: listResponseSchema(gameEventSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as CampaignParams;
+      const params = request.params;
       return {
         status: 'stub',
         data: [{ ...sampleEvent, campaignId: params.id }],
@@ -74,7 +78,7 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.post(
+  app.post<{ Params: CampaignParams; Body: EventBody }>(
     '/',
     {
       schema: {
@@ -84,13 +88,13 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
         params: campaignParamsSchema,
         body: eventBodySchema,
         response: {
-          201: standardResponseSchema,
+          201: singleResponseSchema(gameEventSchema),
         },
       },
     },
     async (request, reply) => {
-      const params = request.params as CampaignParams;
-      const body = request.body as EventBody;
+      const params = request.params;
+      const body = request.body;
       reply.code(201);
       return {
         status: 'stub',
@@ -98,13 +102,40 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
           id: 'event-new',
           campaignId: params.id,
           status: 'draft',
+          shortCircuit: body.shortCircuit ?? false,
           ...body,
         },
       };
     },
   );
 
-  app.patch(
+  app.get<{ Params: EventParams }>(
+    '/:eventId',
+    {
+      schema: {
+        tags: ['events'],
+        summary: 'Get an event',
+        operationId: 'getEvent',
+        params: eventParamsSchema,
+        response: {
+          200: singleResponseSchema(gameEventSchema),
+        },
+      },
+    },
+    async (request) => {
+      const params = request.params;
+      return {
+        status: 'stub',
+        data: {
+          ...sampleEvent,
+          id: params.eventId,
+          campaignId: params.id,
+        },
+      };
+    },
+  );
+
+  app.patch<{ Params: EventParams; Body: EventPatchBody }>(
     '/:eventId',
     {
       schema: {
@@ -114,13 +145,13 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
         params: eventParamsSchema,
         body: eventPatchBodySchema,
         response: {
-          200: standardResponseSchema,
+          200: singleResponseSchema(gameEventSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as EventParams;
-      const body = request.body as EventPatchBody;
+      const params = request.params;
+      const body = request.body;
       return {
         status: 'stub',
         data: {
@@ -133,7 +164,7 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.post(
+  app.post<{ Params: EventParams }>(
     '/:eventId/fire',
     {
       schema: {
@@ -142,18 +173,18 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
         operationId: 'fireEvent',
         params: eventParamsSchema,
         response: {
-          200: standardResponseSchema,
+          200: singleResponseSchema(fireEventResultSchema),
         },
       },
     },
     async (request) => {
-      const params = request.params as EventParams;
+      const params = request.params;
       return {
         status: 'stub',
         data: {
-          fired: true,
           eventId: params.eventId,
-          campaignId: params.id,
+          messages: [],
+          halted: false,
         },
       };
     },
