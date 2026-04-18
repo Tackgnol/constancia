@@ -27,4 +27,4 @@ export type {
   SessionSummary,
 } from './journal.js';
 
-export type { CampaignAdmin, AdminRole, AuthContext } from './auth.js';
+export type { CampaignAdmin, AdminRole, AuthContext, CampaignMembership } from './auth.js';

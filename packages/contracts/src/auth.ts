@@ -7,8 +7,13 @@ export interface CampaignAdmin {
   role: AdminRole;
 }
 
+export interface CampaignMembership {
+  campaignId: string;
+  role: AdminRole;
+}
+
 export interface AuthContext {
   userId: string;
   discordUserId: string;
-  campaigns: { campaignId: string; role: AdminRole }[];
+  campaigns: CampaignMembership[];
 }

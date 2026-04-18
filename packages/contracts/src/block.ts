@@ -21,12 +21,10 @@ export interface BlockResult {
   halt?: boolean;
 }
 
-export interface BlockMessage {
-  target: 'player' | 'channel' | 'group';
-  targetId?: string;
-  content: string;
-  imageUrl?: string;
-}
+export type BlockMessage =
+  | { target: 'player'; content: string; imageUrl?: string }
+  | { target: 'channel'; content: string; imageUrl?: string }
+  | { target: 'group'; targetId: string; content: string; imageUrl?: string };
 
 export interface BlockInstance {
   blockType: string;
