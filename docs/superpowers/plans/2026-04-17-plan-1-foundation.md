@@ -159,8 +159,8 @@ constancia/
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ES2022",
-    "moduleResolution": "bundler",
+    "module": "Node16",
+    "moduleResolution": "node16",
     "lib": ["ES2022"],
     "strict": true,
     "esModuleInterop": true,

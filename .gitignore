@@ -8,3 +8,7 @@ dist/
 .superpowers/
 coverage/
 .prisma/
+*.tsbuildinfo
+npm-debug.log*
+*.log
+.DS_Store

@@ -21,7 +21,7 @@
     "prettier": "^3",
     "@types/node": "^22"
   },
-  "packageManager": "npm@10.9.2",
+  "packageManager": "npm@11.10.1",
   "engines": {
     "node": ">=20"
   }
