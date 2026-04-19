@@ -105,6 +105,36 @@ export const channelParamsSchema = {
   required: ['channelId'],
 } as const;
 
+export const campaignChannelParamsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    chanId: { type: 'string' },
+  },
+  required: ['id', 'chanId'],
+} as const;
+
+export const channelBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    name: { type: 'string' },
+    discordChannelId: { type: 'string' },
+    type: { type: 'string', enum: ['main', 'scene', 'temp'] },
+  },
+  required: ['name', 'discordChannelId'],
+} as const;
+
+export const channelPatchBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    name: { type: 'string' },
+    type: { type: 'string', enum: ['main', 'scene', 'temp'] },
+  },
+} as const;
+
 export const tokenQuerySchema = {
   type: 'object',
   additionalProperties: false,
@@ -480,6 +510,19 @@ export const sessionSummarySchema = {
   required: ['id', 'title', 'content', 'campaignId', 'sessionDate', 'visible'],
 } as const;
 
+export const channelSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    discordChannelId: { type: 'string' },
+    campaignId: { type: 'string' },
+    type: { type: 'string' },
+  },
+  required: ['id', 'name', 'discordChannelId', 'campaignId', 'type'],
+} as const;
+
 export const gameSystemSchema = {
   type: 'object',
   additionalProperties: false,
@@ -522,6 +565,46 @@ export const botTestResultResponseSchema = {
     halted: { type: 'boolean' },
   },
   required: ['eventId', 'campaignId', 'messages', 'halted'],
+} as const;
+
+export const setupChannelBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    guildId: { type: 'string' },
+    guildName: { type: 'string' },
+    discordChannelId: { type: 'string' },
+    channelName: { type: 'string' },
+    campaignName: { type: 'string' },
+    gameSystemId: { type: 'string' },
+  },
+  required: [
+    'guildId',
+    'guildName',
+    'discordChannelId',
+    'channelName',
+    'campaignName',
+    'gameSystemId',
+  ],
+} as const;
+
+export const setupChannelDataSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    campaign: campaignSchema,
+    channel: channelSchema,
+    created: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        campaign: { type: 'boolean' },
+        channel: { type: 'boolean' },
+      },
+      required: ['campaign', 'channel'],
+    },
+  },
+  required: ['campaign', 'channel', 'created'],
 } as const;
 
 // ─── Response wrappers ────────────────────────────────────────
