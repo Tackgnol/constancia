@@ -7,5 +7,5 @@
  */
 
 export type CreateNpcPathParameters = {
-  id: string;
-};
+ id: string,
+ }

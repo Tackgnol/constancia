@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "echo 'Bot not yet implemented'",
+    "dev": "tsx watch src/main.ts",
     "build": "tsc",
     "generate:api": "cd ../.. && npm run generate:api",
     "typecheck": "tsc --noEmit",
@@ -13,6 +13,11 @@
     "test:watch": "vitest watch"
   },
   "dependencies": {
-    "@constancia/contracts": "*"
+    "@constancia/contracts": "*",
+    "discord.js": "^14.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "vitest": "^3.2.4"
   }
 }

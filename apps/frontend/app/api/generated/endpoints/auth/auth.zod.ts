@@ -7,30 +7,32 @@
  */
 import * as zod from 'zod';
 
+
 /**
  * @summary Request a Discord magic link
  */
 export const createMagicLinkBody = zod.object({
-  discordUserId: zod.string(),
-  guildId: zod.string(),
-});
+  "discordUserId": zod.string(),
+  "guildId": zod.string()
+})
 
 /**
  * @summary Verify a magic link token
  */
 export const verifyMagicLinkQueryParams = zod.object({
-  token: zod.string(),
-});
+  "token": zod.string()
+})
 
 export const verifyMagicLinkResponse = zod.object({
-  status: zod.string(),
-  data: zod.unknown(),
-});
+  "status": zod.string(),
+  "data": zod.unknown()
+})
 
 /**
  * @summary Logout the current session
  */
 export const logoutSessionResponse = zod.object({
-  status: zod.string(),
-  data: zod.unknown(),
-});
+  "status": zod.string(),
+  "data": zod.unknown()
+})
+

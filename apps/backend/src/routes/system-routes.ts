@@ -37,7 +37,7 @@ const systemRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async () => ({
-      status: 'stub',
+      status: 'ok',
       data: sampleSystems,
     }),
   );
@@ -55,12 +55,15 @@ const systemRoutes: FastifyPluginAsync = async (app) => {
         },
       },
     },
-    async (request) => {
+    async (request, reply) => {
       const params = request.params;
-      return {
-        status: 'stub',
-        data: sampleSystems.find((system) => system.id === params.id) ?? sampleSystems[0],
-      };
+      const system = sampleSystems.find((s) => s.id === params.id);
+      if (!system) {
+        return reply
+          .code(404)
+          .send({ status: 'error', data: { message: 'Game system not found' } });
+      }
+      return { status: 'ok', data: system };
     },
   );
 };

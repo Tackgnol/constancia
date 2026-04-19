@@ -7,6 +7,6 @@
  */
 
 export type RevealNpcFactsPathParameters = {
-  id: string;
-  npcId: string;
-};
+ id: string,
+    npcId: string,
+ }

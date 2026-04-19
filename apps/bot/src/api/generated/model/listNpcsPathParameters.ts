@@ -7,5 +7,5 @@
  */
 
 export type ListNpcsPathParameters = {
-  id: string;
-};
+ id: string,
+ }

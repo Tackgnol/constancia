@@ -7,7 +7,7 @@
  */
 
 export type DeleteQuestEntryPathParameters = {
-  id: string;
-  questId: string;
-  entryId: string;
-};
+ id: string,
+    questId: string,
+    entryId: string,
+ }

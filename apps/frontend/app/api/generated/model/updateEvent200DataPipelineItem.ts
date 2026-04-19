@@ -5,7 +5,7 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import type { UpdateEvent200DataPipelineItemConfig } from './updateEvent200DataPipelineItemConfig';
+import type { UpdateEvent200DataPipelineItemConfig } from './updateEvent200DataPipelineItemConfig.js';
 
 export type UpdateEvent200DataPipelineItem = {
   blockType: string;

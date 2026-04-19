@@ -7,6 +7,6 @@
  */
 
 export type FireEventPathParameters = {
-  id: string;
-  eventId: string;
-};
+ id: string,
+    eventId: string,
+ }

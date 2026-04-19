@@ -7,6 +7,6 @@
  */
 
 export type UpdateEventPathParameters = {
-  id: string;
-  eventId: string;
-};
+ id: string,
+    eventId: string,
+ }

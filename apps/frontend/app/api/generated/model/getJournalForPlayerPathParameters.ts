@@ -7,6 +7,6 @@
  */
 
 export type GetJournalForPlayerPathParameters = {
-  id: string;
-  discordId: string;
-};
+ id: string,
+    discordId: string,
+ }

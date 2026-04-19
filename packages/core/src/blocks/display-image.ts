@@ -16,7 +16,7 @@ export const displayImageBlock: BlockDefinition<DisplayImageConfig> = {
     },
     required: ['imageUrl'],
   },
-  execute: async (config) => ({
+  execute: async (config: DisplayImageConfig) => ({
     output: null,
     messages: [
       {

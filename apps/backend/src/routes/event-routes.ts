@@ -1,4 +1,9 @@
 import type { FastifyPluginAsync } from 'fastify';
+import type { Prisma, EventStatus } from '@constancia/db';
+import type { BlockInstance } from '@constancia/contracts';
+import { PipelineRunner } from '@constancia/core';
+import { getPrismaClient } from '../auth/prisma.js';
+import { buildBlockRegistry } from '../blocks.js';
 import {
   campaignParamsSchema,
   eventBodySchema,
@@ -39,21 +44,16 @@ interface EventPatchBody {
   pipeline?: EventBlockInput[];
 }
 
-const sampleEvent = {
-  id: 'event-1',
-  name: 'Spot The Sigil',
-  type: 'test',
-  channelId: 'channel-1',
-  campaignId: 'campaign-1',
-  status: 'ready',
+const eventSelect = {
+  id: true,
+  name: true,
+  type: true,
+  channelId: true,
+  campaignId: true,
+  status: true,
   shortCircuit: true,
-  pipeline: [
-    {
-      blockType: 'vtm-pool-resolver',
-      config: { attribute: 'wits', skill: 'awareness', difficulty: 3 },
-    },
-  ],
-};
+  pipeline: true,
+} as const;
 
 const eventRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: CampaignParams }>(
@@ -70,11 +70,13 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request) => {
-      const params = request.params;
-      return {
-        status: 'stub',
-        data: [{ ...sampleEvent, campaignId: params.id }],
-      };
+      const prisma = getPrismaClient();
+      const { id } = request.params;
+      const events = await prisma.event.findMany({
+        where: { campaignId: id },
+        select: eventSelect,
+      });
+      return { status: 'ok', data: events };
     },
   );
 
@@ -93,19 +95,23 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request, reply) => {
-      const params = request.params;
-      const body = request.body;
-      reply.code(201);
-      return {
-        status: 'stub',
+      const prisma = getPrismaClient();
+      const { id } = request.params;
+      const { name, type, channelId, shortCircuit, pipeline } = request.body;
+      const event = await prisma.event.create({
         data: {
-          id: 'event-new',
-          campaignId: params.id,
+          name,
+          type,
+          channelId,
+          campaignId: id,
+          shortCircuit: shortCircuit ?? false,
+          pipeline: pipeline as unknown as Prisma.InputJsonValue,
           status: 'draft',
-          shortCircuit: body.shortCircuit ?? false,
-          ...body,
         },
-      };
+        select: eventSelect,
+      });
+      reply.code(201);
+      return { status: 'ok', data: event };
     },
   );
 
@@ -122,16 +128,14 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
         },
       },
     },
-    async (request) => {
-      const params = request.params;
-      return {
-        status: 'stub',
-        data: {
-          ...sampleEvent,
-          id: params.eventId,
-          campaignId: params.id,
-        },
-      };
+    async (request, reply) => {
+      const prisma = getPrismaClient();
+      const { eventId } = request.params;
+      const event = await prisma.event.findUnique({ where: { id: eventId }, select: eventSelect });
+      if (event === null) {
+        return reply.code(404).send({ status: 'error', data: { message: 'Event not found' } });
+      }
+      return { status: 'ok', data: event };
     },
   );
 
@@ -149,18 +153,33 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
         },
       },
     },
-    async (request) => {
-      const params = request.params;
-      const body = request.body;
-      return {
-        status: 'stub',
-        data: {
-          ...sampleEvent,
-          id: params.eventId,
-          campaignId: params.id,
-          ...body,
-        },
-      };
+    async (request, reply) => {
+      const prisma = getPrismaClient();
+      const { eventId } = request.params;
+      const { name, status, shortCircuit, pipeline } = request.body;
+      const data: Prisma.EventUpdateInput = {};
+      if (name !== undefined) data.name = name;
+      if (status !== undefined) data.status = status as EventStatus;
+      if (shortCircuit !== undefined) data.shortCircuit = shortCircuit;
+      if (pipeline !== undefined) data.pipeline = pipeline as unknown as Prisma.InputJsonValue;
+      try {
+        const event = await prisma.event.update({
+          where: { id: eventId },
+          data,
+          select: eventSelect,
+        });
+        return { status: 'ok', data: event };
+      } catch (err) {
+        if (
+          typeof err === 'object' &&
+          err !== null &&
+          'code' in err &&
+          (err as { code: unknown }).code === 'P2025'
+        ) {
+          return reply.code(404).send({ status: 'error', data: { message: 'Event not found' } });
+        }
+        throw err;
+      }
     },
   );
 
@@ -177,14 +196,29 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
         },
       },
     },
-    async (request) => {
-      const params = request.params;
+    async (request, reply) => {
+      const prisma = getPrismaClient();
+      const { eventId } = request.params;
+      const event = await prisma.event.findUnique({ where: { id: eventId }, select: eventSelect });
+      if (event === null) {
+        return reply.code(404).send({ status: 'error', data: { message: 'Event not found' } });
+      }
+
+      const registry = buildBlockRegistry();
+      const runner = new PipelineRunner(registry);
+      const result = await runner.run(event.pipeline as unknown as BlockInstance[], {
+        campaignId: event.campaignId,
+        channelId: event.channelId,
+        playerId: 'system',
+        characterData: {},
+      });
+
       return {
-        status: 'stub',
+        status: 'ok',
         data: {
-          eventId: params.eventId,
-          messages: [],
-          halted: false,
+          eventId,
+          messages: result.messages,
+          halted: result.halted,
         },
       };
     },

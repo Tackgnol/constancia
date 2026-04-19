@@ -7,5 +7,5 @@
  */
 
 export type CreateCharacterPathParameters = {
-  id: string;
-};
+ id: string,
+ }

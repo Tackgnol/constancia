@@ -10,82 +10,102 @@ import type {
   CreateMagicLinkBody,
   LogoutSession200,
   VerifyMagicLink200,
-  VerifyMagicLinkParams,
+  VerifyMagicLinkParams
 } from '../../model.js';
+
 
 /**
  * @summary Request a Discord magic link
  */
 export const getCreateMagicLinkUrl = () => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/auth/magic-link`;
-};
 
-export const createMagicLink = async (
-  createMagicLinkBody: CreateMagicLinkBody,
-  options?: RequestInit,
-): Promise<CreateMagicLink201> => {
-  const res = await fetch(getCreateMagicLinkUrl(), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/auth/magic-link`
+}
+
+export const createMagicLink = async (createMagicLinkBody: CreateMagicLinkBody, options?: RequestInit): Promise<CreateMagicLink201> => {
+  
+  const res = await fetch(getCreateMagicLinkUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createMagicLinkBody),
-  });
+    body: JSON.stringify(
+      createMagicLinkBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: CreateMagicLink201 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: CreateMagicLink201 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Verify a magic link token
  */
-export const getVerifyMagicLinkUrl = (params: VerifyMagicLinkParams) => {
+export const getVerifyMagicLinkUrl = (params: VerifyMagicLinkParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString());
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0
-    ? `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/auth/verify?${stringifiedParams}`
-    : `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/auth/verify`;
-};
+  return stringifiedParams.length > 0 ? `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/auth/verify?${stringifiedParams}` : `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/auth/verify`
+}
 
-export const verifyMagicLink = async (
-  params: VerifyMagicLinkParams,
-  options?: RequestInit,
-): Promise<VerifyMagicLink200> => {
-  const res = await fetch(getVerifyMagicLinkUrl(params), {
+export const verifyMagicLink = async (params: VerifyMagicLinkParams, options?: RequestInit): Promise<VerifyMagicLink200> => {
+  
+  const res = await fetch(getVerifyMagicLinkUrl(params),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: VerifyMagicLink200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: VerifyMagicLink200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Logout the current session
  */
 export const getLogoutSessionUrl = () => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/auth/logout`;
-};
 
-export const logoutSession = async (options?: RequestInit): Promise<LogoutSession200> => {
-  const res = await fetch(getLogoutSessionUrl(), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/auth/logout`
+}
+
+export const logoutSession = async ( options?: RequestInit): Promise<LogoutSession200> => {
+  
+  const res = await fetch(getLogoutSessionUrl(),
+  {      
     ...options,
-    method: 'POST',
-  });
+    method: 'POST'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: LogoutSession200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: LogoutSession200 = body ? JSON.parse(body) : {};
-  return data;
-};
+

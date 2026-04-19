@@ -24,11 +24,11 @@ Current state:
 
 - Done: `packages/contracts` — all shared TypeScript interfaces
 - Done: `packages/core` — BlockRegistry, PipelineRunner, 7 common blocks, integration tests
-- Done: `packages/db` — Prisma schema
-- Done: `apps/backend` — Fastify server, Better Auth magic-link, all stub routes, full OpenAPI spec
+- Done: `packages/db` — Prisma schema with migrations
+- Done: `packages/systems` — VTM V5 pool resolver block with tests
+- Done: `apps/backend` — Fastify server, Better Auth magic-link, all routes fully DB-backed (Prisma), OpenAPI spec
 - Done: `apps/bot` — shell with Orval-generated fetch client
 - Done: `apps/frontend` — shell with Orval-generated react-query + zod client
-- In progress: wiring routes to database (Prisma), real business logic
 
 ## Roadmap vs Current Repo
 
@@ -36,17 +36,18 @@ Present today:
 
 - `packages/contracts`
 - `packages/core`
-- `packages/db` (Prisma schema, not yet migrated)
-- `apps/backend` (stub routes, Better Auth wired, OpenAPI spec generated)
-- `apps/bot` (Orval-generated API client, no Discord.js implementation yet)
-- `apps/frontend` (Orval-generated API client, React Router 7 scaffolded)
+- `packages/db` (schema + initial migration, not yet migrated against production DB)
+- `packages/systems` (VTM V5 pool resolver; no Mörk Borg yet)
+- `apps/backend` (all routes live: campaigns, channels, characters, NPCs, events, journal, bot, auth, systems)
+- `apps/bot` (Orval-generated API client, no Discord.js commands yet)
+- `apps/frontend` (Orval-generated API client, React Router 7 scaffolded, no UI components yet)
 
 Not yet implemented:
 
-- Real DB-backed route handlers (currently all return stub data)
 - Discord.js bot commands and event handlers
 - Frontend UI components
-- `packages/systems` (game system implementations, e.g. VTM)
+- Mörk Borg game system (`packages/systems/src/mork-borg/`)
+- Orval client regeneration after channel routes were added
 
 ## Dependency Boundaries
 
@@ -65,3 +66,9 @@ Before handing off substantial changes, mirror the repo's enforced checks locall
 - `npm run test`
 
 When plan/spec documents and the live code disagree, use the live code for what exists today and the docs for intended direction.
+
+## Known Issues (External)
+
+- `npm install` warning: `prebuild-install@7.1.3: No longer maintained.`
+  - **Source**: Upstream dependency of `better-sqlite3`.
+  - **Status**: Tracked in `better-sqlite3` issue #1463. No stable version of `better-sqlite3` has removed this dependency yet. Ignore until `better-sqlite3` releases a fix.

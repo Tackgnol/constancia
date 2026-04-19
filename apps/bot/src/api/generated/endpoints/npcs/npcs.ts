@@ -21,152 +21,189 @@ import type {
   RevealNpcFactsPathParameters,
   UpdateNpc200,
   UpdateNpcBody,
-  UpdateNpcPathParameters,
+  UpdateNpcPathParameters
 } from '../../model.js';
+
 
 /**
  * @summary List campaign NPCs
  */
-export const getListNpcsUrl = ({ id }: ListNpcsPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/npcs/`;
-};
+export const getListNpcsUrl = ({ id }: ListNpcsPathParameters,) => {
 
-export const listNpcs = async (
-  { id }: ListNpcsPathParameters,
-  options?: RequestInit,
-): Promise<ListNpcs200> => {
-  const res = await fetch(getListNpcsUrl({ id }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/npcs/`
+}
+
+export const listNpcs = async ({ id }: ListNpcsPathParameters, options?: RequestInit): Promise<ListNpcs200> => {
+  
+  const res = await fetch(getListNpcsUrl({ id }),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: ListNpcs200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: ListNpcs200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Create an NPC
  */
-export const getCreateNpcUrl = ({ id }: CreateNpcPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/npcs/`;
-};
+export const getCreateNpcUrl = ({ id }: CreateNpcPathParameters,) => {
 
-export const createNpc = async (
-  { id }: CreateNpcPathParameters,
-  createNpcBody: CreateNpcBody,
-  options?: RequestInit,
-): Promise<CreateNpc201> => {
-  const res = await fetch(getCreateNpcUrl({ id }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/npcs/`
+}
+
+export const createNpc = async ({ id }: CreateNpcPathParameters,
+    createNpcBody: CreateNpcBody, options?: RequestInit): Promise<CreateNpc201> => {
+  
+  const res = await fetch(getCreateNpcUrl({ id }),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createNpcBody),
-  });
+    body: JSON.stringify(
+      createNpcBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: CreateNpc201 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: CreateNpc201 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Update an NPC
  */
-export const getUpdateNpcUrl = ({ id, npcId }: UpdateNpcPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/npcs/${npcId}`;
-};
+export const getUpdateNpcUrl = ({ id, npcId }: UpdateNpcPathParameters,) => {
 
-export const updateNpc = async (
-  { id, npcId }: UpdateNpcPathParameters,
-  updateNpcBody: UpdateNpcBody,
-  options?: RequestInit,
-): Promise<UpdateNpc200> => {
-  const res = await fetch(getUpdateNpcUrl({ id, npcId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/npcs/${npcId}`
+}
+
+export const updateNpc = async ({ id, npcId }: UpdateNpcPathParameters,
+    updateNpcBody: UpdateNpcBody, options?: RequestInit): Promise<UpdateNpc200> => {
+  
+  const res = await fetch(getUpdateNpcUrl({ id, npcId }),
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updateNpcBody),
-  });
+    body: JSON.stringify(
+      updateNpcBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: UpdateNpc200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: UpdateNpc200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Add an NPC fact
  */
-export const getCreateNpcFactUrl = ({ id, npcId }: CreateNpcFactPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/npcs/${npcId}/facts`;
-};
+export const getCreateNpcFactUrl = ({ id, npcId }: CreateNpcFactPathParameters,) => {
 
-export const createNpcFact = async (
-  { id, npcId }: CreateNpcFactPathParameters,
-  createNpcFactBody: CreateNpcFactBody,
-  options?: RequestInit,
-): Promise<CreateNpcFact201> => {
-  const res = await fetch(getCreateNpcFactUrl({ id, npcId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/npcs/${npcId}/facts`
+}
+
+export const createNpcFact = async ({ id, npcId }: CreateNpcFactPathParameters,
+    createNpcFactBody: CreateNpcFactBody, options?: RequestInit): Promise<CreateNpcFact201> => {
+  
+  const res = await fetch(getCreateNpcFactUrl({ id, npcId }),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createNpcFactBody),
-  });
+    body: JSON.stringify(
+      createNpcFactBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: CreateNpcFact201 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: CreateNpcFact201 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Reveal NPC facts to players
  */
-export const getRevealNpcFactsUrl = ({ id, npcId }: RevealNpcFactsPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/npcs/${npcId}/reveal`;
-};
+export const getRevealNpcFactsUrl = ({ id, npcId }: RevealNpcFactsPathParameters,) => {
 
-export const revealNpcFacts = async (
-  { id, npcId }: RevealNpcFactsPathParameters,
-  revealNpcFactsBody: RevealNpcFactsBody,
-  options?: RequestInit,
-): Promise<RevealNpcFacts200> => {
-  const res = await fetch(getRevealNpcFactsUrl({ id, npcId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/npcs/${npcId}/reveal`
+}
+
+export const revealNpcFacts = async ({ id, npcId }: RevealNpcFactsPathParameters,
+    revealNpcFactsBody: RevealNpcFactsBody, options?: RequestInit): Promise<RevealNpcFacts200> => {
+  
+  const res = await fetch(getRevealNpcFactsUrl({ id, npcId }),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(revealNpcFactsBody),
-  });
+    body: JSON.stringify(
+      revealNpcFactsBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: RevealNpcFacts200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: RevealNpcFacts200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary List NPCs visible to a player
  */
-export const getListVisibleNpcsForPlayerUrl = ({
-  id,
-  discordId,
-}: ListVisibleNpcsForPlayerPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/npcs/for/${discordId}`;
-};
+export const getListVisibleNpcsForPlayerUrl = ({ id, discordId }: ListVisibleNpcsForPlayerPathParameters,) => {
 
-export const listVisibleNpcsForPlayer = async (
-  { id, discordId }: ListVisibleNpcsForPlayerPathParameters,
-  options?: RequestInit,
-): Promise<ListVisibleNpcsForPlayer200> => {
-  const res = await fetch(getListVisibleNpcsForPlayerUrl({ id, discordId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/npcs/for/${discordId}`
+}
+
+export const listVisibleNpcsForPlayer = async ({ id, discordId }: ListVisibleNpcsForPlayerPathParameters, options?: RequestInit): Promise<ListVisibleNpcsForPlayer200> => {
+  
+  const res = await fetch(getListVisibleNpcsForPlayerUrl({ id, discordId }),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: ListVisibleNpcsForPlayer200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: ListVisibleNpcsForPlayer200 = body ? JSON.parse(body) : {};
-  return data;
-};
+

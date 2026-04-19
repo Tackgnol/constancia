@@ -16,7 +16,7 @@ export const messageChannelBlock: BlockDefinition<MessageChannelConfig> = {
     },
     required: ['content'],
   },
-  execute: async (config) => ({
+  execute: async (config: MessageChannelConfig) => ({
     output: null,
     messages: [
       {

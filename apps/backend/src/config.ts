@@ -10,6 +10,7 @@ export interface BackendConfig {
   betterAuthUrl: string;
   betterAuthPath: string;
   magicLinkFrontendPath: string;
+  botApiKey?: string;
 }
 
 const DEFAULT_PORT = 3000;
@@ -22,6 +23,7 @@ const DEFAULT_BETTER_AUTH_URL = 'http://localhost:3001';
 const DEFAULT_BETTER_AUTH_PATH = '/api/auth';
 const DEFAULT_MAGIC_LINK_FRONTEND_PATH = '/auth';
 const DEFAULT_BETTER_AUTH_SECRET = 'constancia-development-secret-change-me-12345';
+export const DEFAULT_BOT_API_KEY = 'constancia-bot-dev-key';
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig {
   const nodeEnv = env.NODE_ENV ?? 'development';
@@ -43,6 +45,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     betterAuthUrl: env.BETTER_AUTH_URL ?? DEFAULT_BETTER_AUTH_URL,
     betterAuthPath: env.BETTER_AUTH_PATH ?? DEFAULT_BETTER_AUTH_PATH,
     magicLinkFrontendPath: env.MAGIC_LINK_FRONTEND_PATH ?? DEFAULT_MAGIC_LINK_FRONTEND_PATH,
+    ...(env.BOT_API_KEY !== undefined ? { botApiKey: env.BOT_API_KEY } : {}),
   };
 }
 

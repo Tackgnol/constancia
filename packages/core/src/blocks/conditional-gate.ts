@@ -1,4 +1,4 @@
-import type { BlockDefinition } from '@constancia/contracts';
+import type { BlockContext, BlockDefinition } from '@constancia/contracts';
 
 type Operator = 'gte' | 'gt' | 'lte' | 'lt' | 'eq';
 
@@ -38,10 +38,11 @@ export const conditionalGateBlock: BlockDefinition<ConditionalGateConfig> = {
     },
     required: ['statPath', 'operator', 'threshold'],
   },
-  execute: async (config, ctx) => {
+  execute: async (config: ConditionalGateConfig, ctx: BlockContext) => {
     const value = getNestedValue(ctx.characterData, config.statPath);
     const numericValue = typeof value === 'number' ? value : Number.NaN;
-    const passed = operators[config.operator](numericValue, config.threshold);
+    const operatorFunc = operators[config.operator];
+    const passed = operatorFunc(numericValue, config.threshold);
 
     return {
       output: { statPath: config.statPath, value, passed },

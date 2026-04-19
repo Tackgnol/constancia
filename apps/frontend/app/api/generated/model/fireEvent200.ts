@@ -5,7 +5,7 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import type { FireEvent200Data } from './fireEvent200Data';
+import type { FireEvent200Data } from './fireEvent200Data.js';
 
 export type FireEvent200 = {
   status: string;

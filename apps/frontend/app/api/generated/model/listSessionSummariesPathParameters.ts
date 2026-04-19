@@ -7,5 +7,5 @@
  */
 
 export type ListSessionSummariesPathParameters = {
-  id: string;
-};
+ id: string,
+ }

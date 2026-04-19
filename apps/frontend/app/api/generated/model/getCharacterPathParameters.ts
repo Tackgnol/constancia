@@ -7,6 +7,6 @@
  */
 
 export type GetCharacterPathParameters = {
-  id: string;
-  charId: string;
-};
+ id: string,
+    charId: string,
+ }

@@ -7,5 +7,5 @@
  */
 
 export type CreateEventPathParameters = {
-  id: string;
-};
+ id: string,
+ }

@@ -11,6 +11,8 @@ export type CreateCharacter201Data = {
   id: string;
   name: string;
   discordUserId: string;
+  discordName: string;
+  gameName: string;
   campaignId: string;
   backstory: string;
   notes: string;

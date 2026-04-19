@@ -7,65 +7,65 @@
  */
 import * as zod from 'zod';
 
+
 /**
  * @summary List campaigns
  */
 export const listCampaignsResponse = zod.object({
-  status: zod.string(),
-  data: zod.array(
-    zod.object({
-      id: zod.string(),
-      name: zod.string(),
-      discordGuildId: zod.string(),
-      gameSystemId: zod.string(),
-    }),
-  ),
-});
+  "status": zod.string(),
+  "data": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "discordGuildId": zod.string(),
+  "gameSystemId": zod.string()
+}))
+})
 
 /**
  * @summary Create a campaign
  */
 export const createCampaignBody = zod.object({
-  name: zod.string(),
-  discordGuildId: zod.string(),
-  gameSystemId: zod.string(),
-});
+  "name": zod.string(),
+  "discordGuildId": zod.string(),
+  "gameSystemId": zod.string()
+})
 
 /**
  * @summary Get campaign details
  */
 export const getCampaignParams = zod.object({
-  id: zod.string(),
-});
+  "id": zod.string()
+})
 
 export const getCampaignResponse = zod.object({
-  status: zod.string(),
-  data: zod.object({
-    id: zod.string(),
-    name: zod.string(),
-    discordGuildId: zod.string(),
-    gameSystemId: zod.string(),
-  }),
-});
+  "status": zod.string(),
+  "data": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "discordGuildId": zod.string(),
+  "gameSystemId": zod.string()
+})
+})
 
 /**
  * @summary Update a campaign
  */
 export const updateCampaignParams = zod.object({
-  id: zod.string(),
-});
+  "id": zod.string()
+})
 
 export const updateCampaignBody = zod.object({
-  name: zod.string().optional(),
-  gameSystemId: zod.string().optional(),
-});
+  "name": zod.string().optional(),
+  "gameSystemId": zod.string().optional()
+})
 
 export const updateCampaignResponse = zod.object({
-  status: zod.string(),
-  data: zod.object({
-    id: zod.string(),
-    name: zod.string(),
-    discordGuildId: zod.string(),
-    gameSystemId: zod.string(),
-  }),
-});
+  "status": zod.string(),
+  "data": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "discordGuildId": zod.string(),
+  "gameSystemId": zod.string()
+})
+})
+

@@ -7,5 +7,5 @@
  */
 
 export type GetChannelEventsPathParameters = {
-  channelId: string;
-};
+ channelId: string,
+ }

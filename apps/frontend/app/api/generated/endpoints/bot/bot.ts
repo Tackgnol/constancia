@@ -5,267 +5,196 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import { useMutation, useQuery } from '@tanstack/react-query';
-import type {
-  MutationFunction,
-  QueryFunction,
-  QueryKey,
-  UseMutationOptions,
-  UseMutationResult,
-  UseQueryOptions,
-  UseQueryResult,
-} from '@tanstack/react-query';
-
 import type {
   GetCampaignByGuild200,
   GetCampaignByGuildPathParameters,
   GetChannelEvents200,
   GetChannelEventsPathParameters,
+  RemoveParticipant200,
+  RemoveParticipantPathParameters,
+  SetupChannel200,
+  SetupChannelBody,
   SubmitBotTestResult200,
   SubmitBotTestResultBody,
-} from '../../model';
+  SyncParticipants200,
+  SyncParticipantsBody
+} from '../../model.js';
+
 
 /**
  * @summary Submit a player test result
  */
 export const getSubmitBotTestResultUrl = () => {
-  return `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/bot/test-result`;
-};
 
-export const submitBotTestResult = async (
-  submitBotTestResultBody: SubmitBotTestResultBody,
-  options?: RequestInit,
-): Promise<SubmitBotTestResult200> => {
-  const res = await fetch(getSubmitBotTestResultUrl(), {
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/bot/test-result`
+}
+
+export const submitBotTestResult = async (submitBotTestResultBody: SubmitBotTestResultBody, options?: RequestInit): Promise<SubmitBotTestResult200> => {
+  
+  const res = await fetch(getSubmitBotTestResultUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(submitBotTestResultBody),
-  });
+    body: JSON.stringify(
+      submitBotTestResultBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: SubmitBotTestResult200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: SubmitBotTestResult200 = body ? JSON.parse(body) : {};
-  return data;
-};
-
-export const getSubmitBotTestResultMutationOptions = <
-  TError = unknown,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof submitBotTestResult>>,
-    TError,
-    { data: SubmitBotTestResultBody },
-    TContext
-  >;
-  fetch?: RequestInit;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof submitBotTestResult>>,
-  TError,
-  { data: SubmitBotTestResultBody },
-  TContext
-> => {
-  const mutationKey = ['submitBotTestResult'];
-  const { mutation: mutationOptions, fetch: fetchOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, fetch: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof submitBotTestResult>>,
-    { data: SubmitBotTestResultBody }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return submitBotTestResult(data, fetchOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type SubmitBotTestResultMutationResult = NonNullable<
-  Awaited<ReturnType<typeof submitBotTestResult>>
->;
-export type SubmitBotTestResultMutationBody = SubmitBotTestResultBody;
-export type SubmitBotTestResultMutationError = unknown;
-
-/**
- * @summary Submit a player test result
- */
-export const useSubmitBotTestResult = <TError = unknown, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof submitBotTestResult>>,
-    TError,
-    { data: SubmitBotTestResultBody },
-    TContext
-  >;
-  fetch?: RequestInit;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof submitBotTestResult>>,
-  TError,
-  { data: SubmitBotTestResultBody },
-  TContext
-> => {
-  const mutationOptions = getSubmitBotTestResultMutationOptions(options);
-
-  return useMutation(mutationOptions);
-};
-/**
- * @summary Resolve guild to campaign
- */
-export const getGetCampaignByGuildUrl = ({ guildId }: GetCampaignByGuildPathParameters) => {
-  return `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/bot/campaign-by-guild/${guildId}`;
-};
-
-export const getCampaignByGuild = async (
-  { guildId }: GetCampaignByGuildPathParameters,
-  options?: RequestInit,
-): Promise<GetCampaignByGuild200> => {
-  const res = await fetch(getGetCampaignByGuildUrl({ guildId }), {
-    ...options,
-    method: 'GET',
-  });
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: GetCampaignByGuild200 = body ? JSON.parse(body) : {};
-  return data;
-};
-
-export const getGetCampaignByGuildQueryKey = ({ guildId }: GetCampaignByGuildPathParameters) => {
-  return [
-    `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/bot/campaign-by-guild/${guildId}`,
-  ] as const;
-};
-
-export const getGetCampaignByGuildQueryOptions = <
-  TData = Awaited<ReturnType<typeof getCampaignByGuild>>,
-  TError = unknown,
->(
-  { guildId }: GetCampaignByGuildPathParameters,
-  options?: {
-    query?: UseQueryOptions<Awaited<ReturnType<typeof getCampaignByGuild>>, TError, TData>;
-    fetch?: RequestInit;
-  },
-) => {
-  const { query: queryOptions, fetch: fetchOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetCampaignByGuildQueryKey({ guildId });
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCampaignByGuild>>> = ({ signal }) =>
-    getCampaignByGuild({ guildId }, { signal, ...fetchOptions });
-
-  return { queryKey, queryFn, enabled: !!guildId, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getCampaignByGuild>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetCampaignByGuildQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getCampaignByGuild>>
->;
-export type GetCampaignByGuildQueryError = unknown;
 
 /**
  * @summary Resolve guild to campaign
  */
+export const getGetCampaignByGuildUrl = ({ guildId }: GetCampaignByGuildPathParameters,) => {
 
-export function useGetCampaignByGuild<
-  TData = Awaited<ReturnType<typeof getCampaignByGuild>>,
-  TError = unknown,
->(
-  { guildId }: GetCampaignByGuildPathParameters,
-  options?: {
-    query?: UseQueryOptions<Awaited<ReturnType<typeof getCampaignByGuild>>, TError, TData>;
-    fetch?: RequestInit;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetCampaignByGuildQueryOptions({ guildId }, options);
 
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  
 
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/bot/campaign-by-guild/${guildId}`
 }
 
-/**
- * @summary Get active channel events
- */
-export const getGetChannelEventsUrl = ({ channelId }: GetChannelEventsPathParameters) => {
-  return `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/bot/channel-events/${channelId}`;
-};
-
-export const getChannelEvents = async (
-  { channelId }: GetChannelEventsPathParameters,
-  options?: RequestInit,
-): Promise<GetChannelEvents200> => {
-  const res = await fetch(getGetChannelEventsUrl({ channelId }), {
+export const getCampaignByGuild = async ({ guildId }: GetCampaignByGuildPathParameters, options?: RequestInit): Promise<GetCampaignByGuild200> => {
+  
+  const res = await fetch(getGetCampaignByGuildUrl({ guildId }),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: GetCampaignByGuild200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: GetChannelEvents200 = body ? JSON.parse(body) : {};
-  return data;
-};
-
-export const getGetChannelEventsQueryKey = ({ channelId }: GetChannelEventsPathParameters) => {
-  return [
-    `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/bot/channel-events/${channelId}`,
-  ] as const;
-};
-
-export const getGetChannelEventsQueryOptions = <
-  TData = Awaited<ReturnType<typeof getChannelEvents>>,
-  TError = unknown,
->(
-  { channelId }: GetChannelEventsPathParameters,
-  options?: {
-    query?: UseQueryOptions<Awaited<ReturnType<typeof getChannelEvents>>, TError, TData>;
-    fetch?: RequestInit;
-  },
-) => {
-  const { query: queryOptions, fetch: fetchOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetChannelEventsQueryKey({ channelId });
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getChannelEvents>>> = ({ signal }) =>
-    getChannelEvents({ channelId }, { signal, ...fetchOptions });
-
-  return { queryKey, queryFn, enabled: !!channelId, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getChannelEvents>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetChannelEventsQueryResult = NonNullable<Awaited<ReturnType<typeof getChannelEvents>>>;
-export type GetChannelEventsQueryError = unknown;
 
 /**
  * @summary Get active channel events
  */
+export const getGetChannelEventsUrl = ({ channelId }: GetChannelEventsPathParameters,) => {
 
-export function useGetChannelEvents<
-  TData = Awaited<ReturnType<typeof getChannelEvents>>,
-  TError = unknown,
->(
-  { channelId }: GetChannelEventsPathParameters,
-  options?: {
-    query?: UseQueryOptions<Awaited<ReturnType<typeof getChannelEvents>>, TError, TData>;
-    fetch?: RequestInit;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetChannelEventsQueryOptions({ channelId }, options);
 
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  
 
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/bot/channel-events/${channelId}`
 }
+
+export const getChannelEvents = async ({ channelId }: GetChannelEventsPathParameters, options?: RequestInit): Promise<GetChannelEvents200> => {
+  
+  const res = await fetch(getGetChannelEventsUrl({ channelId }),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: GetChannelEvents200 = body ? JSON.parse(body) : {}
+  return data
+}
+
+
+/**
+ * @summary Upsert campaign and channel from Discord context
+ */
+export const getSetupChannelUrl = () => {
+
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/bot/setup-channel`
+}
+
+export const setupChannel = async (setupChannelBody: SetupChannelBody, options?: RequestInit): Promise<SetupChannel200> => {
+  
+  const res = await fetch(getSetupChannelUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setupChannelBody,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: SetupChannel200 = body ? JSON.parse(body) : {}
+  return data
+}
+
+
+/**
+ * @summary Upsert campaign participants from Discord users
+ */
+export const getSyncParticipantsUrl = () => {
+
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/bot/sync-participants`
+}
+
+export const syncParticipants = async (syncParticipantsBody: SyncParticipantsBody, options?: RequestInit): Promise<SyncParticipants200> => {
+  
+  const res = await fetch(getSyncParticipantsUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      syncParticipantsBody,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: SyncParticipants200 = body ? JSON.parse(body) : {}
+  return data
+}
+
+
+/**
+ * @summary Remove a participant from a campaign
+ */
+export const getRemoveParticipantUrl = ({ guildId, discordUserId }: RemoveParticipantPathParameters,) => {
+
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/bot/participant/${guildId}/${discordUserId}`
+}
+
+export const removeParticipant = async ({ guildId, discordUserId }: RemoveParticipantPathParameters, options?: RequestInit): Promise<RemoveParticipant200> => {
+  
+  const res = await fetch(getRemoveParticipantUrl({ guildId, discordUserId }),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: RemoveParticipant200 = body ? JSON.parse(body) : {}
+  return data
+}
+
+

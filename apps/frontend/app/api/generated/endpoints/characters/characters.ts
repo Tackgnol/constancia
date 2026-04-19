@@ -5,17 +5,6 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import { useMutation, useQuery } from '@tanstack/react-query';
-import type {
-  MutationFunction,
-  QueryFunction,
-  QueryKey,
-  UseMutationOptions,
-  UseMutationResult,
-  UseQueryOptions,
-  UseQueryResult,
-} from '@tanstack/react-query';
-
 import type {
   CreateCharacter201,
   CreateCharacterBody,
@@ -26,329 +15,127 @@ import type {
   ListCharactersPathParameters,
   UpdateCharacter200,
   UpdateCharacterBody,
-  UpdateCharacterPathParameters,
-} from '../../model';
+  UpdateCharacterPathParameters
+} from '../../model.js';
+
 
 /**
  * @summary List campaign characters
  */
-export const getListCharactersUrl = ({ id }: ListCharactersPathParameters) => {
-  return `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/characters/`;
-};
+export const getListCharactersUrl = ({ id }: ListCharactersPathParameters,) => {
 
-export const listCharacters = async (
-  { id }: ListCharactersPathParameters,
-  options?: RequestInit,
-): Promise<ListCharacters200> => {
-  const res = await fetch(getListCharactersUrl({ id }), {
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/characters/`
+}
+
+export const listCharacters = async ({ id }: ListCharactersPathParameters, options?: RequestInit): Promise<ListCharacters200> => {
+  
+  const res = await fetch(getListCharactersUrl({ id }),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: ListCharacters200 = body ? JSON.parse(body) : {};
-  return data;
-};
-
-export const getListCharactersQueryKey = ({ id }: ListCharactersPathParameters) => {
-  return [
-    `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/characters/`,
-  ] as const;
-};
-
-export const getListCharactersQueryOptions = <
-  TData = Awaited<ReturnType<typeof listCharacters>>,
-  TError = unknown,
->(
-  { id }: ListCharactersPathParameters,
-  options?: {
-    query?: UseQueryOptions<Awaited<ReturnType<typeof listCharacters>>, TError, TData>;
-    fetch?: RequestInit;
-  },
-) => {
-  const { query: queryOptions, fetch: fetchOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getListCharactersQueryKey({ id });
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof listCharacters>>> = ({ signal }) =>
-    listCharacters({ id }, { signal, ...fetchOptions });
-
-  return { queryKey, queryFn, enabled: !!id, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof listCharacters>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type ListCharactersQueryResult = NonNullable<Awaited<ReturnType<typeof listCharacters>>>;
-export type ListCharactersQueryError = unknown;
-
-/**
- * @summary List campaign characters
- */
-
-export function useListCharacters<
-  TData = Awaited<ReturnType<typeof listCharacters>>,
-  TError = unknown,
->(
-  { id }: ListCharactersPathParameters,
-  options?: {
-    query?: UseQueryOptions<Awaited<ReturnType<typeof listCharacters>>, TError, TData>;
-    fetch?: RequestInit;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListCharactersQueryOptions({ id }, options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
+  
+  const data: ListCharacters200 = body ? JSON.parse(body) : {}
+  return data
 }
+
 
 /**
  * @summary Create a character
  */
-export const getCreateCharacterUrl = ({ id }: CreateCharacterPathParameters) => {
-  return `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/characters/`;
-};
+export const getCreateCharacterUrl = ({ id }: CreateCharacterPathParameters,) => {
 
-export const createCharacter = async (
-  { id }: CreateCharacterPathParameters,
-  createCharacterBody: CreateCharacterBody,
-  options?: RequestInit,
-): Promise<CreateCharacter201> => {
-  const res = await fetch(getCreateCharacterUrl({ id }), {
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/characters/`
+}
+
+export const createCharacter = async ({ id }: CreateCharacterPathParameters,
+    createCharacterBody: CreateCharacterBody, options?: RequestInit): Promise<CreateCharacter201> => {
+  
+  const res = await fetch(getCreateCharacterUrl({ id }),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createCharacterBody),
-  });
+    body: JSON.stringify(
+      createCharacterBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: CreateCharacter201 = body ? JSON.parse(body) : {};
-  return data;
-};
-
-export const getCreateCharacterMutationOptions = <TError = unknown, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof createCharacter>>,
-    TError,
-    { pathParams: CreateCharacterPathParameters; data: CreateCharacterBody },
-    TContext
-  >;
-  fetch?: RequestInit;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof createCharacter>>,
-  TError,
-  { pathParams: CreateCharacterPathParameters; data: CreateCharacterBody },
-  TContext
-> => {
-  const mutationKey = ['createCharacter'];
-  const { mutation: mutationOptions, fetch: fetchOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, fetch: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof createCharacter>>,
-    { pathParams: CreateCharacterPathParameters; data: CreateCharacterBody }
-  > = (props) => {
-    const { pathParams, data } = props ?? {};
-
-    return createCharacter(pathParams, data, fetchOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type CreateCharacterMutationResult = NonNullable<
-  Awaited<ReturnType<typeof createCharacter>>
->;
-export type CreateCharacterMutationBody = CreateCharacterBody;
-export type CreateCharacterMutationError = unknown;
-
-/**
- * @summary Create a character
- */
-export const useCreateCharacter = <TError = unknown, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof createCharacter>>,
-    TError,
-    { pathParams: CreateCharacterPathParameters; data: CreateCharacterBody },
-    TContext
-  >;
-  fetch?: RequestInit;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof createCharacter>>,
-  TError,
-  { pathParams: CreateCharacterPathParameters; data: CreateCharacterBody },
-  TContext
-> => {
-  const mutationOptions = getCreateCharacterMutationOptions(options);
-
-  return useMutation(mutationOptions);
-};
-/**
- * @summary Get a character
- */
-export const getGetCharacterUrl = ({ id, charId }: GetCharacterPathParameters) => {
-  return `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/characters/${charId}`;
-};
-
-export const getCharacter = async (
-  { id, charId }: GetCharacterPathParameters,
-  options?: RequestInit,
-): Promise<GetCharacter200> => {
-  const res = await fetch(getGetCharacterUrl({ id, charId }), {
-    ...options,
-    method: 'GET',
-  });
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: GetCharacter200 = body ? JSON.parse(body) : {};
-  return data;
-};
-
-export const getGetCharacterQueryKey = ({ id, charId }: GetCharacterPathParameters) => {
-  return [
-    `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/characters/${charId}`,
-  ] as const;
-};
-
-export const getGetCharacterQueryOptions = <
-  TData = Awaited<ReturnType<typeof getCharacter>>,
-  TError = unknown,
->(
-  { id, charId }: GetCharacterPathParameters,
-  options?: {
-    query?: UseQueryOptions<Awaited<ReturnType<typeof getCharacter>>, TError, TData>;
-    fetch?: RequestInit;
-  },
-) => {
-  const { query: queryOptions, fetch: fetchOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetCharacterQueryKey({ id, charId });
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCharacter>>> = ({ signal }) =>
-    getCharacter({ id, charId }, { signal, ...fetchOptions });
-
-  return { queryKey, queryFn, enabled: !!(id && charId), ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getCharacter>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetCharacterQueryResult = NonNullable<Awaited<ReturnType<typeof getCharacter>>>;
-export type GetCharacterQueryError = unknown;
-
-/**
- * @summary Get a character
- */
-
-export function useGetCharacter<TData = Awaited<ReturnType<typeof getCharacter>>, TError = unknown>(
-  { id, charId }: GetCharacterPathParameters,
-  options?: {
-    query?: UseQueryOptions<Awaited<ReturnType<typeof getCharacter>>, TError, TData>;
-    fetch?: RequestInit;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetCharacterQueryOptions({ id, charId }, options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
+  
+  const data: CreateCharacter201 = body ? JSON.parse(body) : {}
+  return data
 }
+
+
+/**
+ * @summary Get a character
+ */
+export const getGetCharacterUrl = ({ id, charId }: GetCharacterPathParameters,) => {
+
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/characters/${charId}`
+}
+
+export const getCharacter = async ({ id, charId }: GetCharacterPathParameters, options?: RequestInit): Promise<GetCharacter200> => {
+  
+  const res = await fetch(getGetCharacterUrl({ id, charId }),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: GetCharacter200 = body ? JSON.parse(body) : {}
+  return data
+}
+
 
 /**
  * @summary Update a character
  */
-export const getUpdateCharacterUrl = ({ id, charId }: UpdateCharacterPathParameters) => {
-  return `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/characters/${charId}`;
-};
+export const getUpdateCharacterUrl = ({ id, charId }: UpdateCharacterPathParameters,) => {
 
-export const updateCharacter = async (
-  { id, charId }: UpdateCharacterPathParameters,
-  updateCharacterBody: UpdateCharacterBody,
-  options?: RequestInit,
-): Promise<UpdateCharacter200> => {
-  const res = await fetch(getUpdateCharacterUrl({ id, charId }), {
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/characters/${charId}`
+}
+
+export const updateCharacter = async ({ id, charId }: UpdateCharacterPathParameters,
+    updateCharacterBody: UpdateCharacterBody, options?: RequestInit): Promise<UpdateCharacter200> => {
+  
+  const res = await fetch(getUpdateCharacterUrl({ id, charId }),
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updateCharacterBody),
-  });
+    body: JSON.stringify(
+      updateCharacterBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: UpdateCharacter200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: UpdateCharacter200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
-export const getUpdateCharacterMutationOptions = <TError = unknown, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof updateCharacter>>,
-    TError,
-    { pathParams: UpdateCharacterPathParameters; data: UpdateCharacterBody },
-    TContext
-  >;
-  fetch?: RequestInit;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof updateCharacter>>,
-  TError,
-  { pathParams: UpdateCharacterPathParameters; data: UpdateCharacterBody },
-  TContext
-> => {
-  const mutationKey = ['updateCharacter'];
-  const { mutation: mutationOptions, fetch: fetchOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, fetch: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof updateCharacter>>,
-    { pathParams: UpdateCharacterPathParameters; data: UpdateCharacterBody }
-  > = (props) => {
-    const { pathParams, data } = props ?? {};
-
-    return updateCharacter(pathParams, data, fetchOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type UpdateCharacterMutationResult = NonNullable<
-  Awaited<ReturnType<typeof updateCharacter>>
->;
-export type UpdateCharacterMutationBody = UpdateCharacterBody;
-export type UpdateCharacterMutationError = unknown;
-
-/**
- * @summary Update a character
- */
-export const useUpdateCharacter = <TError = unknown, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof updateCharacter>>,
-    TError,
-    { pathParams: UpdateCharacterPathParameters; data: UpdateCharacterBody },
-    TContext
-  >;
-  fetch?: RequestInit;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof updateCharacter>>,
-  TError,
-  { pathParams: UpdateCharacterPathParameters; data: UpdateCharacterBody },
-  TContext
-> => {
-  const mutationOptions = getUpdateCharacterMutationOptions(options);
-
-  return useMutation(mutationOptions);
-};

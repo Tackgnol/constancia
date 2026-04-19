@@ -5,7 +5,7 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import type { CreateEventBodyPipelineItem } from './createEventBodyPipelineItem';
+import type { CreateEventBodyPipelineItem } from './createEventBodyPipelineItem.js';
 
 export type CreateEventBody = {
   name: string;

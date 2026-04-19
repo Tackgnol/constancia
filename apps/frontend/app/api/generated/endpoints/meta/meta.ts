@@ -5,221 +5,96 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from '@tanstack/react-query';
-import type {
-  QueryFunction,
-  QueryKey,
-  UseQueryOptions,
-  UseQueryResult,
-} from '@tanstack/react-query';
-
 import type {
   GetOpenApiDocument200,
   GetServiceHealth200,
-  GetServiceMetadata200,
-} from '../../model';
+  GetServiceMetadata200
+} from '../../model.js';
+
 
 /**
  * @summary Get OpenAPI document
  */
 export const getGetOpenApiDocumentUrl = () => {
-  return `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/openapi.json`;
-};
 
-export const getOpenApiDocument = async (options?: RequestInit): Promise<GetOpenApiDocument200> => {
-  const res = await fetch(getGetOpenApiDocumentUrl(), {
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/openapi.json`
+}
+
+export const getOpenApiDocument = async ( options?: RequestInit): Promise<GetOpenApiDocument200> => {
+  
+  const res = await fetch(getGetOpenApiDocumentUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: GetOpenApiDocument200 = body ? JSON.parse(body) : {};
-  return data;
-};
-
-export const getGetOpenApiDocumentQueryKey = () => {
-  return [`${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/openapi.json`] as const;
-};
-
-export const getGetOpenApiDocumentQueryOptions = <
-  TData = Awaited<ReturnType<typeof getOpenApiDocument>>,
-  TError = unknown,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof getOpenApiDocument>>, TError, TData>;
-  fetch?: RequestInit;
-}) => {
-  const { query: queryOptions, fetch: fetchOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetOpenApiDocumentQueryKey();
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getOpenApiDocument>>> = ({ signal }) =>
-    getOpenApiDocument({ signal, ...fetchOptions });
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getOpenApiDocument>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetOpenApiDocumentQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getOpenApiDocument>>
->;
-export type GetOpenApiDocumentQueryError = unknown;
-
-/**
- * @summary Get OpenAPI document
- */
-
-export function useGetOpenApiDocument<
-  TData = Awaited<ReturnType<typeof getOpenApiDocument>>,
-  TError = unknown,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof getOpenApiDocument>>, TError, TData>;
-  fetch?: RequestInit;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetOpenApiDocumentQueryOptions(options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
+  
+  const data: GetOpenApiDocument200 = body ? JSON.parse(body) : {}
+  return data
 }
+
 
 /**
  * @summary Get service metadata
  */
 export const getGetServiceMetadataUrl = () => {
-  return `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/`;
-};
 
-export const getServiceMetadata = async (options?: RequestInit): Promise<GetServiceMetadata200> => {
-  const res = await fetch(getGetServiceMetadataUrl(), {
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/`;}
+
+export const getServiceMetadata = async ( options?: RequestInit): Promise<GetServiceMetadata200> => {
+  
+  const res = await fetch(getGetServiceMetadataUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: GetServiceMetadata200 = body ? JSON.parse(body) : {};
-  return data;
-};
-
-export const getGetServiceMetadataQueryKey = () => {
-  return [`/`] as const;
-};
-
-export const getGetServiceMetadataQueryOptions = <
-  TData = Awaited<ReturnType<typeof getServiceMetadata>>,
-  TError = unknown,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof getServiceMetadata>>, TError, TData>;
-  fetch?: RequestInit;
-}) => {
-  const { query: queryOptions, fetch: fetchOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetServiceMetadataQueryKey();
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getServiceMetadata>>> = ({ signal }) =>
-    getServiceMetadata({ signal, ...fetchOptions });
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getServiceMetadata>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetServiceMetadataQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getServiceMetadata>>
->;
-export type GetServiceMetadataQueryError = unknown;
-
-/**
- * @summary Get service metadata
- */
-
-export function useGetServiceMetadata<
-  TData = Awaited<ReturnType<typeof getServiceMetadata>>,
-  TError = unknown,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof getServiceMetadata>>, TError, TData>;
-  fetch?: RequestInit;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetServiceMetadataQueryOptions(options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
+  
+  const data: GetServiceMetadata200 = body ? JSON.parse(body) : {}
+  return data
 }
+
 
 /**
  * @summary Get service health
  */
 export const getGetServiceHealthUrl = () => {
-  return `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/health`;
-};
 
-export const getServiceHealth = async (options?: RequestInit): Promise<GetServiceHealth200> => {
-  const res = await fetch(getGetServiceHealthUrl(), {
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/health`
+}
+
+export const getServiceHealth = async ( options?: RequestInit): Promise<GetServiceHealth200> => {
+  
+  const res = await fetch(getGetServiceHealthUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: GetServiceHealth200 = body ? JSON.parse(body) : {};
-  return data;
-};
-
-export const getGetServiceHealthQueryKey = () => {
-  return [`${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/health`] as const;
-};
-
-export const getGetServiceHealthQueryOptions = <
-  TData = Awaited<ReturnType<typeof getServiceHealth>>,
-  TError = unknown,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof getServiceHealth>>, TError, TData>;
-  fetch?: RequestInit;
-}) => {
-  const { query: queryOptions, fetch: fetchOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetServiceHealthQueryKey();
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getServiceHealth>>> = ({ signal }) =>
-    getServiceHealth({ signal, ...fetchOptions });
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getServiceHealth>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetServiceHealthQueryResult = NonNullable<Awaited<ReturnType<typeof getServiceHealth>>>;
-export type GetServiceHealthQueryError = unknown;
-
-/**
- * @summary Get service health
- */
-
-export function useGetServiceHealth<
-  TData = Awaited<ReturnType<typeof getServiceHealth>>,
-  TError = unknown,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof getServiceHealth>>, TError, TData>;
-  fetch?: RequestInit;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetServiceHealthQueryOptions(options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
+  
+  const data: GetServiceHealth200 = body ? JSON.parse(body) : {}
+  return data
 }
+
+

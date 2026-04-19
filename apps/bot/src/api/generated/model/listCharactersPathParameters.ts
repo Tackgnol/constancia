@@ -7,5 +7,5 @@
  */
 
 export type ListCharactersPathParameters = {
-  id: string;
-};
+ id: string,
+ }

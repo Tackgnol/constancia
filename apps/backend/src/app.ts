@@ -1,5 +1,7 @@
+import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { loadConfig, type BackendConfig } from './config.js';
+import betterAuthPlugin from './plugins/better-auth-plugin.js';
 import configPlugin from './plugins/config-plugin.js';
 import openApiPlugin from './plugins/openapi-plugin.js';
 import rootRoutes from './routes/root-routes.js';
@@ -19,6 +21,11 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   });
 
   await app.register(configPlugin, { config });
+  await app.register(cors, {
+    origin: config.nodeEnv === 'development' ? true : [config.frontendUrl],
+    credentials: true,
+  });
+  await app.register(betterAuthPlugin);
   await app.register(openApiPlugin);
   await app.register(rootRoutes);
   await app.register(healthRoutes);

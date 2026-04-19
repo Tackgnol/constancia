@@ -9,6 +9,7 @@ import type { UpdateCharacterBodySystemData } from './updateCharacterBodySystemD
 
 export type UpdateCharacterBody = {
   name?: string;
+  gameName?: string;
   backstory?: string;
   notes?: string;
   systemData?: UpdateCharacterBodySystemData;

@@ -7,5 +7,5 @@
  */
 
 export type VerifyMagicLinkParams = {
-  token: string;
+token: string;
 };

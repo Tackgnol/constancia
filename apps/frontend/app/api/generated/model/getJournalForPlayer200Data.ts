@@ -5,8 +5,8 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import type { GetJournalForPlayer200DataQuestsItem } from './getJournalForPlayer200DataQuestsItem';
-import type { GetJournalForPlayer200DataSummariesItem } from './getJournalForPlayer200DataSummariesItem';
+import type { GetJournalForPlayer200DataQuestsItem } from './getJournalForPlayer200DataQuestsItem.js';
+import type { GetJournalForPlayer200DataSummariesItem } from './getJournalForPlayer200DataSummariesItem.js';
 
 export type GetJournalForPlayer200Data = {
   quests: GetJournalForPlayer200DataQuestsItem[];

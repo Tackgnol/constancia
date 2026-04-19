@@ -10,4 +10,4 @@ export type CreateMagicLink201 = {
   status: string;
   data: unknown;
   [key: string]: unknown;
-};
+ };

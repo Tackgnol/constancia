@@ -7,6 +7,6 @@
  */
 
 export type ListVisibleNpcsForPlayerPathParameters = {
-  id: string;
-  discordId: string;
-};
+ id: string,
+    discordId: string,
+ }

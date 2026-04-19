@@ -8,25 +8,22 @@ export default defineConfig({
       target: openApiTarget,
     },
     output: {
-      target: './apps/frontend/src/api/generated/endpoints',
-      schemas: './apps/frontend/src/api/generated/model',
-      client: 'react-query',
-      httpClient: 'fetch',
+      target: './apps/frontend/app/api/generated/endpoints',
+      schemas: './apps/frontend/app/api/generated/model',
+      client: 'fetch',
       mode: 'tags-split',
       clean: true,
       override: {
         fetch: {
           includeHttpResponseReturnType: false,
         },
-        query: {
-          useSuspenseQuery: false,
-        },
         useNamedParameters: true,
       },
       urlEncodeParameters: true,
       baseUrl: {
         getBaseUrlFromSpecification: false,
-        runtime: "import.meta.env.VITE_API_URL ?? 'http://localhost:3000'",
+        runtime:
+          "import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')",
       },
     },
   },
@@ -35,7 +32,7 @@ export default defineConfig({
       target: openApiTarget,
     },
     output: {
-      target: './apps/frontend/src/api/generated/endpoints',
+      target: './apps/frontend/app/api/generated/endpoints',
       client: 'zod',
       mode: 'tags-split',
       clean: false,

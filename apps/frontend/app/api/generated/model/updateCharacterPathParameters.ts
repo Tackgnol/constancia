@@ -7,6 +7,6 @@
  */
 
 export type UpdateCharacterPathParameters = {
-  id: string;
-  charId: string;
-};
+ id: string,
+    charId: string,
+ }

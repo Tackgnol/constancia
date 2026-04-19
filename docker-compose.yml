@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: constancia
       POSTGRES_PASSWORD: constancia
     ports:
-      - '5432:5432'
+      - '${POSTGRES_PORT:-5433}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -31,11 +31,17 @@ services:
     environment:
       NODE_ENV: development
       DATABASE_URL: postgresql://constancia:constancia@postgres:5432/constancia?schema=public
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3001}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-constancia-development-secret-change-me-12345}
+      BOT_API_KEY: ${BOT_API_KEY:-constancia-bot-dev-key}
+    ports:
+      - '${BACKEND_PORT:-3001}:3000'
     command:
       [
         'sh',
         '-lc',
-        "npm run dev --workspace=apps/backend; echo 'Backend shell is not implemented yet, keeping container alive.'; tail -f /dev/null",
+        "npx turbo run build --filter=@constancia/contracts --filter=@constancia/core --filter=@constancia/db --filter=@constancia/systems && npm run --workspace=@constancia/db db:deploy && npm run dev --workspace=@constancia/backend; echo 'Backend dev server exited, keeping container alive for inspection.'; tail -f /dev/null",
       ]
     develop:
       watch:
@@ -96,11 +102,15 @@ services:
       NODE_ENV: development
       DATABASE_URL: postgresql://constancia:constancia@postgres:5432/constancia?schema=public
       BACKEND_URL: http://backend:3000
+      DISCORD_TOKEN: ${DISCORD_TOKEN:-}
+      CLIENT_ID: ${CLIENT_ID:-}
+      GUILD_ID: ${GUILD_ID:-}
+      BOT_API_KEY: ${BOT_API_KEY:-constancia-bot-dev-key}
     command:
       [
         'sh',
         '-lc',
-        "npm run dev --workspace=apps/bot; echo 'Bot shell is not implemented yet, keeping container alive.'; tail -f /dev/null",
+        "npx turbo run build --filter=@constancia/contracts --filter=@constancia/core --filter=@constancia/db --filter=@constancia/systems && npm run dev --workspace=@constancia/bot; echo 'Bot dev process exited, keeping container alive for inspection.'; tail -f /dev/null",
       ]
     develop:
       watch:
@@ -138,23 +148,32 @@ services:
         condition: service_started
     environment:
       NODE_ENV: development
-      VITE_API_URL: http://backend:3000
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3001}
     ports:
-      - '3000:3000'
+      - '${FRONTEND_PORT:-3000}:3000'
     command:
       [
         'sh',
         '-lc',
-        "npm run dev --workspace=apps/frontend; echo 'Frontend shell is not implemented yet, keeping container alive.'; tail -f /dev/null",
+        "npx turbo run build --filter=@constancia/contracts && npm run dev --workspace=@constancia/frontend -- --host 0.0.0.0 --port 3000; echo 'Frontend dev server exited, keeping container alive for inspection.'; tail -f /dev/null",
       ]
     develop:
       watch:
         - action: sync
-          path: ./apps/frontend/src
-          target: /app/apps/frontend/src
+          path: ./apps/frontend/app
+          target: /app/apps/frontend/app
           ignore:
             - dist/
             - node_modules/
+        - action: sync+restart
+          path: ./apps/frontend/react-router.config.ts
+          target: /app/apps/frontend/react-router.config.ts
+        - action: sync+restart
+          path: ./apps/frontend/vite.config.ts
+          target: /app/apps/frontend/vite.config.ts
+        - action: sync+restart
+          path: ./apps/frontend/tsconfig.json
+          target: /app/apps/frontend/tsconfig.json
         - action: sync
           path: ./packages/contracts/src
           target: /app/packages/contracts/src

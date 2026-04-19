@@ -7,6 +7,6 @@
  */
 
 export type UpdateQuestPathParameters = {
-  id: string;
-  questId: string;
-};
+ id: string,
+    questId: string,
+ }

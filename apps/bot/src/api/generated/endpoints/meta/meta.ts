@@ -8,62 +8,93 @@
 import type {
   GetOpenApiDocument200,
   GetServiceHealth200,
-  GetServiceMetadata200,
+  GetServiceMetadata200
 } from '../../model.js';
+
 
 /**
  * @summary Get OpenAPI document
  */
 export const getGetOpenApiDocumentUrl = () => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/openapi.json`;
-};
 
-export const getOpenApiDocument = async (options?: RequestInit): Promise<GetOpenApiDocument200> => {
-  const res = await fetch(getGetOpenApiDocumentUrl(), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/openapi.json`
+}
+
+export const getOpenApiDocument = async ( options?: RequestInit): Promise<GetOpenApiDocument200> => {
+  
+  const res = await fetch(getGetOpenApiDocumentUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: GetOpenApiDocument200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: GetOpenApiDocument200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Get service metadata
  */
 export const getGetServiceMetadataUrl = () => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/`;
-};
 
-export const getServiceMetadata = async (options?: RequestInit): Promise<GetServiceMetadata200> => {
-  const res = await fetch(getGetServiceMetadataUrl(), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/`;}
+
+export const getServiceMetadata = async ( options?: RequestInit): Promise<GetServiceMetadata200> => {
+  
+  const res = await fetch(getGetServiceMetadataUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: GetServiceMetadata200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: GetServiceMetadata200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Get service health
  */
 export const getGetServiceHealthUrl = () => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/health`;
-};
 
-export const getServiceHealth = async (options?: RequestInit): Promise<GetServiceHealth200> => {
-  const res = await fetch(getGetServiceHealthUrl(), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/health`
+}
+
+export const getServiceHealth = async ( options?: RequestInit): Promise<GetServiceHealth200> => {
+  
+  const res = await fetch(getGetServiceHealthUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: GetServiceHealth200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: GetServiceHealth200 = body ? JSON.parse(body) : {};
-  return data;
-};
+

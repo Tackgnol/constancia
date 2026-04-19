@@ -6,7 +6,7 @@ const mockBlock: BlockDefinition<{ message: string }> = {
   type: 'test-block',
   label: 'Test Block',
   configSchema: { type: 'object' },
-  execute: async (config) => ({
+  execute: async (config: { message: string }) => ({
     output: config.message,
     messages: [],
   }),

@@ -7,6 +7,6 @@
  */
 
 export type UpdateSessionSummaryPathParameters = {
-  id: string;
-  sumId: string;
-};
+ id: string,
+    sumId: string,
+ }

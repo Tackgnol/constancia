@@ -31,251 +31,309 @@ import type {
   UpdateQuestPathParameters,
   UpdateSessionSummary200,
   UpdateSessionSummaryBody,
-  UpdateSessionSummaryPathParameters,
+  UpdateSessionSummaryPathParameters
 } from '../../model.js';
+
 
 /**
  * @summary List quests
  */
-export const getListQuestsUrl = ({ id }: ListQuestsPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/quests`;
-};
+export const getListQuestsUrl = ({ id }: ListQuestsPathParameters,) => {
 
-export const listQuests = async (
-  { id }: ListQuestsPathParameters,
-  options?: RequestInit,
-): Promise<ListQuests200> => {
-  const res = await fetch(getListQuestsUrl({ id }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/quests`
+}
+
+export const listQuests = async ({ id }: ListQuestsPathParameters, options?: RequestInit): Promise<ListQuests200> => {
+  
+  const res = await fetch(getListQuestsUrl({ id }),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: ListQuests200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: ListQuests200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Create a quest
  */
-export const getCreateQuestUrl = ({ id }: CreateQuestPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/quests`;
-};
+export const getCreateQuestUrl = ({ id }: CreateQuestPathParameters,) => {
 
-export const createQuest = async (
-  { id }: CreateQuestPathParameters,
-  createQuestBody: CreateQuestBody,
-  options?: RequestInit,
-): Promise<CreateQuest201> => {
-  const res = await fetch(getCreateQuestUrl({ id }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/quests`
+}
+
+export const createQuest = async ({ id }: CreateQuestPathParameters,
+    createQuestBody: CreateQuestBody, options?: RequestInit): Promise<CreateQuest201> => {
+  
+  const res = await fetch(getCreateQuestUrl({ id }),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createQuestBody),
-  });
+    body: JSON.stringify(
+      createQuestBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: CreateQuest201 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: CreateQuest201 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Update a quest
  */
-export const getUpdateQuestUrl = ({ id, questId }: UpdateQuestPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/quests/${questId}`;
-};
+export const getUpdateQuestUrl = ({ id, questId }: UpdateQuestPathParameters,) => {
 
-export const updateQuest = async (
-  { id, questId }: UpdateQuestPathParameters,
-  updateQuestBody: UpdateQuestBody,
-  options?: RequestInit,
-): Promise<UpdateQuest200> => {
-  const res = await fetch(getUpdateQuestUrl({ id, questId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/quests/${questId}`
+}
+
+export const updateQuest = async ({ id, questId }: UpdateQuestPathParameters,
+    updateQuestBody: UpdateQuestBody, options?: RequestInit): Promise<UpdateQuest200> => {
+  
+  const res = await fetch(getUpdateQuestUrl({ id, questId }),
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updateQuestBody),
-  });
+    body: JSON.stringify(
+      updateQuestBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: UpdateQuest200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: UpdateQuest200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Create a quest entry
  */
-export const getCreateQuestEntryUrl = ({ id, questId }: CreateQuestEntryPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/quests/${questId}/entries`;
-};
+export const getCreateQuestEntryUrl = ({ id, questId }: CreateQuestEntryPathParameters,) => {
 
-export const createQuestEntry = async (
-  { id, questId }: CreateQuestEntryPathParameters,
-  createQuestEntryBody: CreateQuestEntryBody,
-  options?: RequestInit,
-): Promise<CreateQuestEntry201> => {
-  const res = await fetch(getCreateQuestEntryUrl({ id, questId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/quests/${questId}/entries`
+}
+
+export const createQuestEntry = async ({ id, questId }: CreateQuestEntryPathParameters,
+    createQuestEntryBody: CreateQuestEntryBody, options?: RequestInit): Promise<CreateQuestEntry201> => {
+  
+  const res = await fetch(getCreateQuestEntryUrl({ id, questId }),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createQuestEntryBody),
-  });
+    body: JSON.stringify(
+      createQuestEntryBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: CreateQuestEntry201 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: CreateQuestEntry201 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Update a quest entry
  */
-export const getUpdateQuestEntryUrl = ({
-  id,
-  questId,
-  entryId,
-}: UpdateQuestEntryPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/quests/${questId}/entries/${entryId}`;
-};
+export const getUpdateQuestEntryUrl = ({ id, questId, entryId }: UpdateQuestEntryPathParameters,) => {
 
-export const updateQuestEntry = async (
-  { id, questId, entryId }: UpdateQuestEntryPathParameters,
-  updateQuestEntryBody: UpdateQuestEntryBody,
-  options?: RequestInit,
-): Promise<UpdateQuestEntry200> => {
-  const res = await fetch(getUpdateQuestEntryUrl({ id, questId, entryId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/quests/${questId}/entries/${entryId}`
+}
+
+export const updateQuestEntry = async ({ id, questId, entryId }: UpdateQuestEntryPathParameters,
+    updateQuestEntryBody: UpdateQuestEntryBody, options?: RequestInit): Promise<UpdateQuestEntry200> => {
+  
+  const res = await fetch(getUpdateQuestEntryUrl({ id, questId, entryId }),
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updateQuestEntryBody),
-  });
+    body: JSON.stringify(
+      updateQuestEntryBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: UpdateQuestEntry200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: UpdateQuestEntry200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Delete a quest entry
  */
-export const getDeleteQuestEntryUrl = ({
-  id,
-  questId,
-  entryId,
-}: DeleteQuestEntryPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/quests/${questId}/entries/${entryId}`;
-};
+export const getDeleteQuestEntryUrl = ({ id, questId, entryId }: DeleteQuestEntryPathParameters,) => {
 
-export const deleteQuestEntry = async (
-  { id, questId, entryId }: DeleteQuestEntryPathParameters,
-  options?: RequestInit,
-): Promise<DeleteQuestEntry200> => {
-  const res = await fetch(getDeleteQuestEntryUrl({ id, questId, entryId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/quests/${questId}/entries/${entryId}`
+}
+
+export const deleteQuestEntry = async ({ id, questId, entryId }: DeleteQuestEntryPathParameters, options?: RequestInit): Promise<DeleteQuestEntry200> => {
+  
+  const res = await fetch(getDeleteQuestEntryUrl({ id, questId, entryId }),
+  {      
     ...options,
-    method: 'DELETE',
-  });
+    method: 'DELETE'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: DeleteQuestEntry200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: DeleteQuestEntry200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary List session summaries
  */
-export const getListSessionSummariesUrl = ({ id }: ListSessionSummariesPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/summaries`;
-};
+export const getListSessionSummariesUrl = ({ id }: ListSessionSummariesPathParameters,) => {
 
-export const listSessionSummaries = async (
-  { id }: ListSessionSummariesPathParameters,
-  options?: RequestInit,
-): Promise<ListSessionSummaries200> => {
-  const res = await fetch(getListSessionSummariesUrl({ id }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/summaries`
+}
+
+export const listSessionSummaries = async ({ id }: ListSessionSummariesPathParameters, options?: RequestInit): Promise<ListSessionSummaries200> => {
+  
+  const res = await fetch(getListSessionSummariesUrl({ id }),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: ListSessionSummaries200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: ListSessionSummaries200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Create a session summary
  */
-export const getCreateSessionSummaryUrl = ({ id }: CreateSessionSummaryPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/summaries`;
-};
+export const getCreateSessionSummaryUrl = ({ id }: CreateSessionSummaryPathParameters,) => {
 
-export const createSessionSummary = async (
-  { id }: CreateSessionSummaryPathParameters,
-  createSessionSummaryBody: CreateSessionSummaryBody,
-  options?: RequestInit,
-): Promise<CreateSessionSummary201> => {
-  const res = await fetch(getCreateSessionSummaryUrl({ id }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/summaries`
+}
+
+export const createSessionSummary = async ({ id }: CreateSessionSummaryPathParameters,
+    createSessionSummaryBody: CreateSessionSummaryBody, options?: RequestInit): Promise<CreateSessionSummary201> => {
+  
+  const res = await fetch(getCreateSessionSummaryUrl({ id }),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createSessionSummaryBody),
-  });
+    body: JSON.stringify(
+      createSessionSummaryBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: CreateSessionSummary201 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: CreateSessionSummary201 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Update a session summary
  */
-export const getUpdateSessionSummaryUrl = ({ id, sumId }: UpdateSessionSummaryPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/summaries/${sumId}`;
-};
+export const getUpdateSessionSummaryUrl = ({ id, sumId }: UpdateSessionSummaryPathParameters,) => {
 
-export const updateSessionSummary = async (
-  { id, sumId }: UpdateSessionSummaryPathParameters,
-  updateSessionSummaryBody: UpdateSessionSummaryBody,
-  options?: RequestInit,
-): Promise<UpdateSessionSummary200> => {
-  const res = await fetch(getUpdateSessionSummaryUrl({ id, sumId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/summaries/${sumId}`
+}
+
+export const updateSessionSummary = async ({ id, sumId }: UpdateSessionSummaryPathParameters,
+    updateSessionSummaryBody: UpdateSessionSummaryBody, options?: RequestInit): Promise<UpdateSessionSummary200> => {
+  
+  const res = await fetch(getUpdateSessionSummaryUrl({ id, sumId }),
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updateSessionSummaryBody),
-  });
+    body: JSON.stringify(
+      updateSessionSummaryBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: UpdateSessionSummary200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: UpdateSessionSummary200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Get player journal view
  */
-export const getGetJournalForPlayerUrl = ({ id, discordId }: GetJournalForPlayerPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/journal/for/${discordId}`;
-};
+export const getGetJournalForPlayerUrl = ({ id, discordId }: GetJournalForPlayerPathParameters,) => {
 
-export const getJournalForPlayer = async (
-  { id, discordId }: GetJournalForPlayerPathParameters,
-  options?: RequestInit,
-): Promise<GetJournalForPlayer200> => {
-  const res = await fetch(getGetJournalForPlayerUrl({ id, discordId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/journal/for/${discordId}`
+}
+
+export const getJournalForPlayer = async ({ id, discordId }: GetJournalForPlayerPathParameters, options?: RequestInit): Promise<GetJournalForPlayer200> => {
+  
+  const res = await fetch(getGetJournalForPlayerUrl({ id, discordId }),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: GetJournalForPlayer200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: GetJournalForPlayer200 = body ? JSON.parse(body) : {};
-  return data;
-};
+

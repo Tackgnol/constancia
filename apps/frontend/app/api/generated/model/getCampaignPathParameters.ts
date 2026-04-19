@@ -7,5 +7,5 @@
  */
 
 export type GetCampaignPathParameters = {
-  id: string;
-};
+ id: string,
+ }

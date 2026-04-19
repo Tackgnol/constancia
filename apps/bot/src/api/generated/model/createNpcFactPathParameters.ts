@@ -7,6 +7,6 @@
  */
 
 export type CreateNpcFactPathParameters = {
-  id: string;
-  npcId: string;
-};
+ id: string,
+    npcId: string,
+ }

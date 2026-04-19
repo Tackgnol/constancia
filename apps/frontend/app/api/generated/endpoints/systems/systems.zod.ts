@@ -7,32 +7,32 @@
  */
 import * as zod from 'zod';
 
+
 /**
  * @summary List registered game systems
  */
 export const listGameSystemsResponse = zod.object({
-  status: zod.string(),
-  data: zod.array(
-    zod.object({
-      id: zod.string(),
-      name: zod.string(),
-      version: zod.string(),
-    }),
-  ),
-});
+  "status": zod.string(),
+  "data": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "version": zod.string()
+}))
+})
 
 /**
  * @summary Get a game system
  */
 export const getGameSystemParams = zod.object({
-  id: zod.string(),
-});
+  "id": zod.string()
+})
 
 export const getGameSystemResponse = zod.object({
-  status: zod.string(),
-  data: zod.object({
-    id: zod.string(),
-    name: zod.string(),
-    version: zod.string(),
-  }),
-});
+  "status": zod.string(),
+  "data": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "version": zod.string()
+})
+})
+

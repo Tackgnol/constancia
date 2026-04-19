@@ -5,161 +5,68 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from '@tanstack/react-query';
-import type {
-  QueryFunction,
-  QueryKey,
-  UseQueryOptions,
-  UseQueryResult,
-} from '@tanstack/react-query';
-
 import type {
   GetGameSystem200,
   GetGameSystemPathParameters,
-  ListGameSystems200,
-} from '../../model';
+  ListGameSystems200
+} from '../../model.js';
+
 
 /**
  * @summary List registered game systems
  */
 export const getListGameSystemsUrl = () => {
-  return `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/systems/`;
-};
 
-export const listGameSystems = async (options?: RequestInit): Promise<ListGameSystems200> => {
-  const res = await fetch(getListGameSystemsUrl(), {
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/systems/`
+}
+
+export const listGameSystems = async ( options?: RequestInit): Promise<ListGameSystems200> => {
+  
+  const res = await fetch(getListGameSystemsUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: ListGameSystems200 = body ? JSON.parse(body) : {};
-  return data;
-};
-
-export const getListGameSystemsQueryKey = () => {
-  return [`${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/systems/`] as const;
-};
-
-export const getListGameSystemsQueryOptions = <
-  TData = Awaited<ReturnType<typeof listGameSystems>>,
-  TError = unknown,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof listGameSystems>>, TError, TData>;
-  fetch?: RequestInit;
-}) => {
-  const { query: queryOptions, fetch: fetchOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getListGameSystemsQueryKey();
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof listGameSystems>>> = ({ signal }) =>
-    listGameSystems({ signal, ...fetchOptions });
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof listGameSystems>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type ListGameSystemsQueryResult = NonNullable<Awaited<ReturnType<typeof listGameSystems>>>;
-export type ListGameSystemsQueryError = unknown;
-
-/**
- * @summary List registered game systems
- */
-
-export function useListGameSystems<
-  TData = Awaited<ReturnType<typeof listGameSystems>>,
-  TError = unknown,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof listGameSystems>>, TError, TData>;
-  fetch?: RequestInit;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListGameSystemsQueryOptions(options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
+  
+  const data: ListGameSystems200 = body ? JSON.parse(body) : {}
+  return data
 }
+
 
 /**
  * @summary Get a game system
  */
-export const getGetGameSystemUrl = ({ id }: GetGameSystemPathParameters) => {
-  return `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/systems/${id}`;
-};
+export const getGetGameSystemUrl = ({ id }: GetGameSystemPathParameters,) => {
 
-export const getGameSystem = async (
-  { id }: GetGameSystemPathParameters,
-  options?: RequestInit,
-): Promise<GetGameSystem200> => {
-  const res = await fetch(getGetGameSystemUrl({ id }), {
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/systems/${id}`
+}
+
+export const getGameSystem = async ({ id }: GetGameSystemPathParameters, options?: RequestInit): Promise<GetGameSystem200> => {
+  
+  const res = await fetch(getGetGameSystemUrl({ id }),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: GetGameSystem200 = body ? JSON.parse(body) : {};
-  return data;
-};
-
-export const getGetGameSystemQueryKey = ({ id }: GetGameSystemPathParameters) => {
-  return [
-    `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/systems/${id}`,
-  ] as const;
-};
-
-export const getGetGameSystemQueryOptions = <
-  TData = Awaited<ReturnType<typeof getGameSystem>>,
-  TError = unknown,
->(
-  { id }: GetGameSystemPathParameters,
-  options?: {
-    query?: UseQueryOptions<Awaited<ReturnType<typeof getGameSystem>>, TError, TData>;
-    fetch?: RequestInit;
-  },
-) => {
-  const { query: queryOptions, fetch: fetchOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetGameSystemQueryKey({ id });
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGameSystem>>> = ({ signal }) =>
-    getGameSystem({ id }, { signal, ...fetchOptions });
-
-  return { queryKey, queryFn, enabled: !!id, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getGameSystem>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetGameSystemQueryResult = NonNullable<Awaited<ReturnType<typeof getGameSystem>>>;
-export type GetGameSystemQueryError = unknown;
-
-/**
- * @summary Get a game system
- */
-
-export function useGetGameSystem<
-  TData = Awaited<ReturnType<typeof getGameSystem>>,
-  TError = unknown,
->(
-  { id }: GetGameSystemPathParameters,
-  options?: {
-    query?: UseQueryOptions<Awaited<ReturnType<typeof getGameSystem>>, TError, TData>;
-    fetch?: RequestInit;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetGameSystemQueryOptions({ id }, options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
+  
+  const data: GetGameSystem200 = body ? JSON.parse(body) : {}
+  return data
 }
+
+

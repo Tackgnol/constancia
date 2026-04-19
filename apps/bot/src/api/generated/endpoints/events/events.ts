@@ -17,121 +17,156 @@ import type {
   ListEventsPathParameters,
   UpdateEvent200,
   UpdateEventBody,
-  UpdateEventPathParameters,
+  UpdateEventPathParameters
 } from '../../model.js';
+
 
 /**
  * @summary List events
  */
-export const getListEventsUrl = ({ id }: ListEventsPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/`;
-};
+export const getListEventsUrl = ({ id }: ListEventsPathParameters,) => {
 
-export const listEvents = async (
-  { id }: ListEventsPathParameters,
-  options?: RequestInit,
-): Promise<ListEvents200> => {
-  const res = await fetch(getListEventsUrl({ id }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/`
+}
+
+export const listEvents = async ({ id }: ListEventsPathParameters, options?: RequestInit): Promise<ListEvents200> => {
+  
+  const res = await fetch(getListEventsUrl({ id }),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: ListEvents200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: ListEvents200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Create an event
  */
-export const getCreateEventUrl = ({ id }: CreateEventPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/`;
-};
+export const getCreateEventUrl = ({ id }: CreateEventPathParameters,) => {
 
-export const createEvent = async (
-  { id }: CreateEventPathParameters,
-  createEventBody: CreateEventBody,
-  options?: RequestInit,
-): Promise<CreateEvent201> => {
-  const res = await fetch(getCreateEventUrl({ id }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/`
+}
+
+export const createEvent = async ({ id }: CreateEventPathParameters,
+    createEventBody: CreateEventBody, options?: RequestInit): Promise<CreateEvent201> => {
+  
+  const res = await fetch(getCreateEventUrl({ id }),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createEventBody),
-  });
+    body: JSON.stringify(
+      createEventBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: CreateEvent201 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: CreateEvent201 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Get an event
  */
-export const getGetEventUrl = ({ id, eventId }: GetEventPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/${eventId}`;
-};
+export const getGetEventUrl = ({ id, eventId }: GetEventPathParameters,) => {
 
-export const getEvent = async (
-  { id, eventId }: GetEventPathParameters,
-  options?: RequestInit,
-): Promise<GetEvent200> => {
-  const res = await fetch(getGetEventUrl({ id, eventId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/${eventId}`
+}
+
+export const getEvent = async ({ id, eventId }: GetEventPathParameters, options?: RequestInit): Promise<GetEvent200> => {
+  
+  const res = await fetch(getGetEventUrl({ id, eventId }),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: GetEvent200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: GetEvent200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Update an event
  */
-export const getUpdateEventUrl = ({ id, eventId }: UpdateEventPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/${eventId}`;
-};
+export const getUpdateEventUrl = ({ id, eventId }: UpdateEventPathParameters,) => {
 
-export const updateEvent = async (
-  { id, eventId }: UpdateEventPathParameters,
-  updateEventBody: UpdateEventBody,
-  options?: RequestInit,
-): Promise<UpdateEvent200> => {
-  const res = await fetch(getUpdateEventUrl({ id, eventId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/${eventId}`
+}
+
+export const updateEvent = async ({ id, eventId }: UpdateEventPathParameters,
+    updateEventBody: UpdateEventBody, options?: RequestInit): Promise<UpdateEvent200> => {
+  
+  const res = await fetch(getUpdateEventUrl({ id, eventId }),
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updateEventBody),
-  });
+    body: JSON.stringify(
+      updateEventBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: UpdateEvent200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: UpdateEvent200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Fire an event pipeline
  */
-export const getFireEventUrl = ({ id, eventId }: FireEventPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/${eventId}/fire`;
-};
+export const getFireEventUrl = ({ id, eventId }: FireEventPathParameters,) => {
 
-export const fireEvent = async (
-  { id, eventId }: FireEventPathParameters,
-  options?: RequestInit,
-): Promise<FireEvent200> => {
-  const res = await fetch(getFireEventUrl({ id, eventId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/${eventId}/fire`
+}
+
+export const fireEvent = async ({ id, eventId }: FireEventPathParameters, options?: RequestInit): Promise<FireEvent200> => {
+  
+  const res = await fetch(getFireEventUrl({ id, eventId }),
+  {      
     ...options,
-    method: 'POST',
-  });
+    method: 'POST'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: FireEvent200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: FireEvent200 = body ? JSON.parse(body) : {};
-  return data;
-};
+

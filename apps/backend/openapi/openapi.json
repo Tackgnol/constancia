@@ -450,6 +450,275 @@
         }
       }
     },
+    "/api/v1/campaigns/{id}/channels/": {
+      "get": {
+        "operationId": "listChannels",
+        "summary": "List channels for a campaign",
+        "tags": ["channels"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "discordChannelId": {
+                            "type": "string"
+                          },
+                          "campaignId": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "name", "discordChannelId", "campaignId", "type"]
+                      }
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createChannel",
+        "summary": "Register a Discord channel with a campaign",
+        "tags": ["channels"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "discordChannelId": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["main", "scene", "temp"]
+                  }
+                },
+                "required": ["name", "discordChannelId"]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "discordChannelId": {
+                          "type": "string"
+                        },
+                        "campaignId": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "name", "discordChannelId", "campaignId", "type"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/{id}/channels/{chanId}": {
+      "patch": {
+        "operationId": "updateChannel",
+        "summary": "Update a channel",
+        "tags": ["channels"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["main", "scene", "temp"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "chanId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "discordChannelId": {
+                          "type": "string"
+                        },
+                        "campaignId": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "name", "discordChannelId", "campaignId", "type"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteChannel",
+        "summary": "Delete a channel",
+        "tags": ["channels"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "chanId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "deleted": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["status", "deleted"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/campaigns/{id}/characters/": {
       "get": {
         "operationId": "listCharacters",
@@ -491,6 +760,12 @@
                           "discordUserId": {
                             "type": "string"
                           },
+                          "discordName": {
+                            "type": "string"
+                          },
+                          "gameName": {
+                            "type": "string"
+                          },
                           "campaignId": {
                             "type": "string"
                           },
@@ -509,6 +784,8 @@
                           "id",
                           "name",
                           "discordUserId",
+                          "discordName",
+                          "gameName",
                           "campaignId",
                           "backstory",
                           "notes"
@@ -591,6 +868,12 @@
                         "discordUserId": {
                           "type": "string"
                         },
+                        "discordName": {
+                          "type": "string"
+                        },
+                        "gameName": {
+                          "type": "string"
+                        },
                         "campaignId": {
                           "type": "string"
                         },
@@ -609,6 +892,8 @@
                         "id",
                         "name",
                         "discordUserId",
+                        "discordName",
+                        "gameName",
                         "campaignId",
                         "backstory",
                         "notes"
@@ -670,6 +955,12 @@
                         "discordUserId": {
                           "type": "string"
                         },
+                        "discordName": {
+                          "type": "string"
+                        },
+                        "gameName": {
+                          "type": "string"
+                        },
                         "campaignId": {
                           "type": "string"
                         },
@@ -688,6 +979,8 @@
                         "id",
                         "name",
                         "discordUserId",
+                        "discordName",
+                        "gameName",
                         "campaignId",
                         "backstory",
                         "notes"
@@ -714,6 +1007,9 @@
                 "additionalProperties": false,
                 "properties": {
                   "name": {
+                    "type": "string"
+                  },
+                  "gameName": {
                     "type": "string"
                   },
                   "backstory": {
@@ -773,6 +1069,12 @@
                         "discordUserId": {
                           "type": "string"
                         },
+                        "discordName": {
+                          "type": "string"
+                        },
+                        "gameName": {
+                          "type": "string"
+                        },
                         "campaignId": {
                           "type": "string"
                         },
@@ -791,6 +1093,8 @@
                         "id",
                         "name",
                         "discordUserId",
+                        "discordName",
+                        "gameName",
                         "campaignId",
                         "backstory",
                         "notes"
@@ -2806,6 +3110,101 @@
         }
       }
     },
+    "/api/v1/systems/": {
+      "get": {
+        "operationId": "listGameSystems",
+        "summary": "List registered game systems",
+        "tags": ["systems"],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "name", "version"]
+                      }
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/systems/{id}": {
+      "get": {
+        "operationId": "getGameSystem",
+        "summary": "Get a game system",
+        "tags": ["systems"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "name", "version"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/bot/test-result": {
       "post": {
         "operationId": "submitBotTestResult",
@@ -3029,65 +3428,50 @@
         }
       }
     },
-    "/api/v1/systems/": {
-      "get": {
-        "operationId": "listGameSystems",
-        "summary": "List registered game systems",
-        "tags": ["systems"],
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "version": {
-                            "type": "string"
-                          }
-                        },
-                        "required": ["id", "name", "version"]
-                      }
-                    }
+    "/api/v1/bot/setup-channel": {
+      "post": {
+        "operationId": "setupChannel",
+        "summary": "Upsert campaign and channel from Discord context",
+        "tags": ["bot"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "guildId": {
+                    "type": "string"
                   },
-                  "required": ["status", "data"]
-                }
+                  "guildName": {
+                    "type": "string"
+                  },
+                  "discordChannelId": {
+                    "type": "string"
+                  },
+                  "channelName": {
+                    "type": "string"
+                  },
+                  "campaignName": {
+                    "type": "string"
+                  },
+                  "gameSystemId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "guildId",
+                  "guildName",
+                  "discordChannelId",
+                  "channelName",
+                  "campaignName",
+                  "gameSystemId"
+                ]
               }
             }
           }
-        }
-      }
-    },
-    "/api/v1/systems/{id}": {
-      "get": {
-        "operationId": "getGameSystem",
-        "summary": "Get a game system",
-        "tags": ["systems"],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ],
+        },
         "responses": {
           "200": {
             "description": "Default Response",
@@ -3103,20 +3487,184 @@
                       "type": "object",
                       "additionalProperties": false,
                       "properties": {
-                        "id": {
-                          "type": "string"
+                        "campaign": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "discordGuildId": {
+                              "type": "string"
+                            },
+                            "gameSystemId": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["id", "name", "discordGuildId", "gameSystemId"]
                         },
-                        "name": {
-                          "type": "string"
+                        "channel": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "discordChannelId": {
+                              "type": "string"
+                            },
+                            "campaignId": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["id", "name", "discordChannelId", "campaignId", "type"]
                         },
-                        "version": {
-                          "type": "string"
+                        "created": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "campaign": {
+                              "type": "boolean"
+                            },
+                            "channel": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": ["campaign", "channel"]
                         }
                       },
-                      "required": ["id", "name", "version"]
+                      "required": ["campaign", "channel", "created"]
                     }
                   },
                   "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bot/sync-participants": {
+      "post": {
+        "operationId": "syncParticipants",
+        "summary": "Upsert campaign participants from Discord users",
+        "tags": ["bot"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "guildId": {
+                    "type": "string"
+                  },
+                  "participants": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "discordUserId": {
+                          "type": "string"
+                        },
+                        "discordName": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["discordUserId", "discordName"]
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": ["guildId", "participants"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "campaignId": {
+                          "type": "string"
+                        },
+                        "upserted": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": ["campaignId", "upserted"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bot/participant/{guildId}/{discordUserId}": {
+      "delete": {
+        "operationId": "removeParticipant",
+        "summary": "Remove a participant from a campaign",
+        "tags": ["bot"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "discordUserId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "deleted": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["status", "deleted"]
                 }
               }
             }

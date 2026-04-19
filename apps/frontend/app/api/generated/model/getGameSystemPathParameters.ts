@@ -7,5 +7,5 @@
  */
 
 export type GetGameSystemPathParameters = {
-  id: string;
-};
+ id: string,
+ }

@@ -192,6 +192,7 @@ export const characterPatchBodySchema = {
   additionalProperties: false,
   properties: {
     name: { type: 'string' },
+    gameName: { type: 'string' },
     backstory: { type: 'string' },
     notes: { type: 'string' },
     systemData: { type: 'object', additionalProperties: true },
@@ -393,12 +394,23 @@ export const characterSchema = {
     id: { type: 'string' },
     name: { type: 'string' },
     discordUserId: { type: 'string' },
+    discordName: { type: 'string' },
+    gameName: { type: 'string' },
     campaignId: { type: 'string' },
     backstory: { type: 'string' },
     notes: { type: 'string' },
     systemData: { type: 'object', additionalProperties: true },
   },
-  required: ['id', 'name', 'discordUserId', 'campaignId', 'backstory', 'notes'],
+  required: [
+    'id',
+    'name',
+    'discordUserId',
+    'discordName',
+    'gameName',
+    'campaignId',
+    'backstory',
+    'notes',
+  ],
 } as const;
 
 export const npcSchema = {
@@ -605,6 +617,46 @@ export const setupChannelDataSchema = {
     },
   },
   required: ['campaign', 'channel', 'created'],
+} as const;
+
+export const participantEntrySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    discordUserId: { type: 'string' },
+    discordName: { type: 'string' },
+  },
+  required: ['discordUserId', 'discordName'],
+} as const;
+
+export const syncParticipantsBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    guildId: { type: 'string' },
+    participants: { type: 'array', items: participantEntrySchema, minItems: 1 },
+  },
+  required: ['guildId', 'participants'],
+} as const;
+
+export const syncParticipantsDataSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    campaignId: { type: 'string' },
+    upserted: { type: 'integer' },
+  },
+  required: ['campaignId', 'upserted'],
+} as const;
+
+export const participantParamsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    guildId: { type: 'string' },
+    discordUserId: { type: 'string' },
+  },
+  required: ['guildId', 'discordUserId'],
 } as const;
 
 // ─── Response wrappers ────────────────────────────────────────

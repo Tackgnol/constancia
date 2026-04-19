@@ -5,7 +5,7 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import type { UpdateQuest200Data } from './updateQuest200Data';
+import type { UpdateQuest200Data } from './updateQuest200Data.js';
 
 export type UpdateQuest200 = {
   status: string;

@@ -7,68 +7,136 @@
  */
 import * as zod from 'zod';
 
+
 /**
  * @summary Submit a player test result
  */
 export const submitBotTestResultBody = zod.object({
-  eventId: zod.string(),
-  campaignId: zod.string(),
-  channelId: zod.string(),
-  discordUserId: zod.string(),
-  playerScore: zod.number(),
-});
+  "eventId": zod.string(),
+  "campaignId": zod.string(),
+  "channelId": zod.string(),
+  "discordUserId": zod.string(),
+  "playerScore": zod.number()
+})
 
 export const submitBotTestResultResponse = zod.object({
-  status: zod.string(),
-  data: zod.object({
-    eventId: zod.string(),
-    campaignId: zod.string(),
-    messages: zod.array(zod.record(zod.string(), zod.unknown())),
-    halted: zod.boolean(),
-  }),
-});
+  "status": zod.string(),
+  "data": zod.object({
+  "eventId": zod.string(),
+  "campaignId": zod.string(),
+  "messages": zod.array(zod.record(zod.string(), zod.unknown())),
+  "halted": zod.boolean()
+})
+})
 
 /**
  * @summary Resolve guild to campaign
  */
 export const getCampaignByGuildParams = zod.object({
-  guildId: zod.string(),
-});
+  "guildId": zod.string()
+})
 
 export const getCampaignByGuildResponse = zod.object({
-  status: zod.string(),
-  data: zod.object({
-    id: zod.string(),
-    name: zod.string(),
-    discordGuildId: zod.string(),
-    gameSystemId: zod.string(),
-  }),
-});
+  "status": zod.string(),
+  "data": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "discordGuildId": zod.string(),
+  "gameSystemId": zod.string()
+})
+})
 
 /**
  * @summary Get active channel events
  */
 export const getChannelEventsParams = zod.object({
-  channelId: zod.string(),
-});
+  "channelId": zod.string()
+})
 
 export const getChannelEventsResponse = zod.object({
-  status: zod.string(),
-  data: zod.array(
-    zod.object({
-      id: zod.string(),
-      name: zod.string(),
-      type: zod.string(),
-      channelId: zod.string(),
-      campaignId: zod.string(),
-      status: zod.string(),
-      shortCircuit: zod.boolean(),
-      pipeline: zod.array(
-        zod.object({
-          blockType: zod.string(),
-          config: zod.record(zod.string(), zod.unknown()),
-        }),
-      ),
-    }),
-  ),
-});
+  "status": zod.string(),
+  "data": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "type": zod.string(),
+  "channelId": zod.string(),
+  "campaignId": zod.string(),
+  "status": zod.string(),
+  "shortCircuit": zod.boolean(),
+  "pipeline": zod.array(zod.object({
+  "blockType": zod.string(),
+  "config": zod.record(zod.string(), zod.unknown())
+}))
+}))
+})
+
+/**
+ * @summary Upsert campaign and channel from Discord context
+ */
+export const setupChannelBody = zod.object({
+  "guildId": zod.string(),
+  "guildName": zod.string(),
+  "discordChannelId": zod.string(),
+  "channelName": zod.string(),
+  "campaignName": zod.string(),
+  "gameSystemId": zod.string()
+})
+
+export const setupChannelResponse = zod.object({
+  "status": zod.string(),
+  "data": zod.object({
+  "campaign": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "discordGuildId": zod.string(),
+  "gameSystemId": zod.string()
+}),
+  "channel": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "discordChannelId": zod.string(),
+  "campaignId": zod.string(),
+  "type": zod.string()
+}),
+  "created": zod.object({
+  "campaign": zod.boolean(),
+  "channel": zod.boolean()
+})
+})
+})
+
+/**
+ * @summary Upsert campaign participants from Discord users
+ */
+
+
+
+export const syncParticipantsBody = zod.object({
+  "guildId": zod.string(),
+  "participants": zod.array(zod.object({
+  "discordUserId": zod.string(),
+  "discordName": zod.string()
+})).min(1)
+})
+
+export const syncParticipantsResponse = zod.object({
+  "status": zod.string(),
+  "data": zod.object({
+  "campaignId": zod.string(),
+  "upserted": zod.number()
+})
+})
+
+/**
+ * @summary Remove a participant from a campaign
+ */
+export const removeParticipantParams = zod.object({
+  "guildId": zod.string(),
+  "discordUserId": zod.string()
+})
+
+export const removeParticipantResponse = zod.object({
+  "status": zod.string(),
+  "deleted": zod.boolean()
+})
+

@@ -5,7 +5,7 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import type { CreateNpcFact201Data } from './createNpcFact201Data';
+import type { CreateNpcFact201Data } from './createNpcFact201Data.js';
 
 export type CreateNpcFact201 = {
   status: string;

@@ -1,4 +1,4 @@
-import type { BlockDefinition } from '@constancia/contracts';
+import type { BlockContext, BlockDefinition } from '@constancia/contracts';
 
 interface RetrieveDataConfig {
   dataType: string;
@@ -16,7 +16,7 @@ export const retrieveDataBlock: BlockDefinition<RetrieveDataConfig> = {
     },
     required: ['dataType'],
   },
-  execute: async (config, ctx) => ({
+  execute: async (config: RetrieveDataConfig, ctx: BlockContext) => ({
     output: {
       dataType: config.dataType,
       query: config.query,

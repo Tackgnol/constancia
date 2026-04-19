@@ -18,7 +18,7 @@ export const messageGroupBlock: BlockDefinition<MessageGroupConfig> = {
     },
     required: ['content'],
   },
-  execute: async (config) => ({
+  execute: async (config: MessageGroupConfig) => ({
     output: null,
     messages: [
       {

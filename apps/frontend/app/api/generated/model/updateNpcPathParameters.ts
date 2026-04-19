@@ -7,6 +7,6 @@
  */
 
 export type UpdateNpcPathParameters = {
-  id: string;
-  npcId: string;
-};
+ id: string,
+    npcId: string,
+ }

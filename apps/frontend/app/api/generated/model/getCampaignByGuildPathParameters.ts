@@ -7,5 +7,5 @@
  */
 
 export type GetCampaignByGuildPathParameters = {
-  guildId: string;
-};
+ guildId: string,
+ }

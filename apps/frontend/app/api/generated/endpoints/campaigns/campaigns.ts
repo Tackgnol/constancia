@@ -5,17 +5,6 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import { useMutation, useQuery } from '@tanstack/react-query';
-import type {
-  MutationFunction,
-  QueryFunction,
-  QueryKey,
-  UseMutationOptions,
-  UseMutationResult,
-  UseQueryOptions,
-  UseQueryResult,
-} from '@tanstack/react-query';
-
 import type {
   CreateCampaign201,
   CreateCampaignBody,
@@ -24,313 +13,126 @@ import type {
   ListCampaigns200,
   UpdateCampaign200,
   UpdateCampaignBody,
-  UpdateCampaignPathParameters,
-} from '../../model';
+  UpdateCampaignPathParameters
+} from '../../model.js';
+
 
 /**
  * @summary List campaigns
  */
 export const getListCampaignsUrl = () => {
-  return `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/campaigns/`;
-};
 
-export const listCampaigns = async (options?: RequestInit): Promise<ListCampaigns200> => {
-  const res = await fetch(getListCampaignsUrl(), {
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/`
+}
+
+export const listCampaigns = async ( options?: RequestInit): Promise<ListCampaigns200> => {
+  
+  const res = await fetch(getListCampaignsUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: ListCampaigns200 = body ? JSON.parse(body) : {};
-  return data;
-};
-
-export const getListCampaignsQueryKey = () => {
-  return [`${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/campaigns/`] as const;
-};
-
-export const getListCampaignsQueryOptions = <
-  TData = Awaited<ReturnType<typeof listCampaigns>>,
-  TError = unknown,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof listCampaigns>>, TError, TData>;
-  fetch?: RequestInit;
-}) => {
-  const { query: queryOptions, fetch: fetchOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getListCampaignsQueryKey();
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof listCampaigns>>> = ({ signal }) =>
-    listCampaigns({ signal, ...fetchOptions });
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof listCampaigns>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type ListCampaignsQueryResult = NonNullable<Awaited<ReturnType<typeof listCampaigns>>>;
-export type ListCampaignsQueryError = unknown;
-
-/**
- * @summary List campaigns
- */
-
-export function useListCampaigns<
-  TData = Awaited<ReturnType<typeof listCampaigns>>,
-  TError = unknown,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof listCampaigns>>, TError, TData>;
-  fetch?: RequestInit;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListCampaignsQueryOptions(options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
+  
+  const data: ListCampaigns200 = body ? JSON.parse(body) : {}
+  return data
 }
+
 
 /**
  * @summary Create a campaign
  */
 export const getCreateCampaignUrl = () => {
-  return `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/campaigns/`;
-};
 
-export const createCampaign = async (
-  createCampaignBody: CreateCampaignBody,
-  options?: RequestInit,
-): Promise<CreateCampaign201> => {
-  const res = await fetch(getCreateCampaignUrl(), {
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/`
+}
+
+export const createCampaign = async (createCampaignBody: CreateCampaignBody, options?: RequestInit): Promise<CreateCampaign201> => {
+  
+  const res = await fetch(getCreateCampaignUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createCampaignBody),
-  });
+    body: JSON.stringify(
+      createCampaignBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: CreateCampaign201 = body ? JSON.parse(body) : {};
-  return data;
-};
-
-export const getCreateCampaignMutationOptions = <TError = unknown, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof createCampaign>>,
-    TError,
-    { data: CreateCampaignBody },
-    TContext
-  >;
-  fetch?: RequestInit;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof createCampaign>>,
-  TError,
-  { data: CreateCampaignBody },
-  TContext
-> => {
-  const mutationKey = ['createCampaign'];
-  const { mutation: mutationOptions, fetch: fetchOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, fetch: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof createCampaign>>,
-    { data: CreateCampaignBody }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return createCampaign(data, fetchOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type CreateCampaignMutationResult = NonNullable<Awaited<ReturnType<typeof createCampaign>>>;
-export type CreateCampaignMutationBody = CreateCampaignBody;
-export type CreateCampaignMutationError = unknown;
-
-/**
- * @summary Create a campaign
- */
-export const useCreateCampaign = <TError = unknown, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof createCampaign>>,
-    TError,
-    { data: CreateCampaignBody },
-    TContext
-  >;
-  fetch?: RequestInit;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof createCampaign>>,
-  TError,
-  { data: CreateCampaignBody },
-  TContext
-> => {
-  const mutationOptions = getCreateCampaignMutationOptions(options);
-
-  return useMutation(mutationOptions);
-};
-/**
- * @summary Get campaign details
- */
-export const getGetCampaignUrl = ({ id }: GetCampaignPathParameters) => {
-  return `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}`;
-};
-
-export const getCampaign = async (
-  { id }: GetCampaignPathParameters,
-  options?: RequestInit,
-): Promise<GetCampaign200> => {
-  const res = await fetch(getGetCampaignUrl({ id }), {
-    ...options,
-    method: 'GET',
-  });
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: GetCampaign200 = body ? JSON.parse(body) : {};
-  return data;
-};
-
-export const getGetCampaignQueryKey = ({ id }: GetCampaignPathParameters) => {
-  return [
-    `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}`,
-  ] as const;
-};
-
-export const getGetCampaignQueryOptions = <
-  TData = Awaited<ReturnType<typeof getCampaign>>,
-  TError = unknown,
->(
-  { id }: GetCampaignPathParameters,
-  options?: {
-    query?: UseQueryOptions<Awaited<ReturnType<typeof getCampaign>>, TError, TData>;
-    fetch?: RequestInit;
-  },
-) => {
-  const { query: queryOptions, fetch: fetchOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetCampaignQueryKey({ id });
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCampaign>>> = ({ signal }) =>
-    getCampaign({ id }, { signal, ...fetchOptions });
-
-  return { queryKey, queryFn, enabled: !!id, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getCampaign>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetCampaignQueryResult = NonNullable<Awaited<ReturnType<typeof getCampaign>>>;
-export type GetCampaignQueryError = unknown;
-
-/**
- * @summary Get campaign details
- */
-
-export function useGetCampaign<TData = Awaited<ReturnType<typeof getCampaign>>, TError = unknown>(
-  { id }: GetCampaignPathParameters,
-  options?: {
-    query?: UseQueryOptions<Awaited<ReturnType<typeof getCampaign>>, TError, TData>;
-    fetch?: RequestInit;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetCampaignQueryOptions({ id }, options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
+  
+  const data: CreateCampaign201 = body ? JSON.parse(body) : {}
+  return data
 }
+
+
+/**
+ * @summary Get campaign details
+ */
+export const getGetCampaignUrl = ({ id }: GetCampaignPathParameters,) => {
+
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}`
+}
+
+export const getCampaign = async ({ id }: GetCampaignPathParameters, options?: RequestInit): Promise<GetCampaign200> => {
+  
+  const res = await fetch(getGetCampaignUrl({ id }),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: GetCampaign200 = body ? JSON.parse(body) : {}
+  return data
+}
+
 
 /**
  * @summary Update a campaign
  */
-export const getUpdateCampaignUrl = ({ id }: UpdateCampaignPathParameters) => {
-  return `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}`;
-};
+export const getUpdateCampaignUrl = ({ id }: UpdateCampaignPathParameters,) => {
 
-export const updateCampaign = async (
-  { id }: UpdateCampaignPathParameters,
-  updateCampaignBody: UpdateCampaignBody,
-  options?: RequestInit,
-): Promise<UpdateCampaign200> => {
-  const res = await fetch(getUpdateCampaignUrl({ id }), {
+
+  
+
+  return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}`
+}
+
+export const updateCampaign = async ({ id }: UpdateCampaignPathParameters,
+    updateCampaignBody: UpdateCampaignBody, options?: RequestInit): Promise<UpdateCampaign200> => {
+  
+  const res = await fetch(getUpdateCampaignUrl({ id }),
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updateCampaignBody),
-  });
+    body: JSON.stringify(
+      updateCampaignBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: UpdateCampaign200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: UpdateCampaign200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
-export const getUpdateCampaignMutationOptions = <TError = unknown, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof updateCampaign>>,
-    TError,
-    { pathParams: UpdateCampaignPathParameters; data: UpdateCampaignBody },
-    TContext
-  >;
-  fetch?: RequestInit;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof updateCampaign>>,
-  TError,
-  { pathParams: UpdateCampaignPathParameters; data: UpdateCampaignBody },
-  TContext
-> => {
-  const mutationKey = ['updateCampaign'];
-  const { mutation: mutationOptions, fetch: fetchOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, fetch: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof updateCampaign>>,
-    { pathParams: UpdateCampaignPathParameters; data: UpdateCampaignBody }
-  > = (props) => {
-    const { pathParams, data } = props ?? {};
-
-    return updateCampaign(pathParams, data, fetchOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type UpdateCampaignMutationResult = NonNullable<Awaited<ReturnType<typeof updateCampaign>>>;
-export type UpdateCampaignMutationBody = UpdateCampaignBody;
-export type UpdateCampaignMutationError = unknown;
-
-/**
- * @summary Update a campaign
- */
-export const useUpdateCampaign = <TError = unknown, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof updateCampaign>>,
-    TError,
-    { pathParams: UpdateCampaignPathParameters; data: UpdateCampaignBody },
-    TContext
-  >;
-  fetch?: RequestInit;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof updateCampaign>>,
-  TError,
-  { pathParams: UpdateCampaignPathParameters; data: UpdateCampaignBody },
-  TContext
-> => {
-  const mutationOptions = getUpdateCampaignMutationOptions(options);
-
-  return useMutation(mutationOptions);
-};

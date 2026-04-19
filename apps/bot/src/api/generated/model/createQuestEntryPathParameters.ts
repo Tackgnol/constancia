@@ -7,6 +7,6 @@
  */
 
 export type CreateQuestEntryPathParameters = {
-  id: string;
-  questId: string;
-};
+ id: string,
+    questId: string,
+ }

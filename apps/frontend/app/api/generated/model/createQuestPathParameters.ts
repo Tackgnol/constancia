@@ -7,5 +7,5 @@
  */
 
 export type CreateQuestPathParameters = {
-  id: string;
-};
+ id: string,
+ }

@@ -10,4 +10,4 @@ export type VerifyMagicLink200 = {
   status: string;
   data: unknown;
   [key: string]: unknown;
-};
+ };

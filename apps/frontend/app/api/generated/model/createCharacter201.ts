@@ -5,7 +5,7 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import type { CreateCharacter201Data } from './createCharacter201Data';
+import type { CreateCharacter201Data } from './createCharacter201Data.js';
 
 export type CreateCharacter201 = {
   status: string;

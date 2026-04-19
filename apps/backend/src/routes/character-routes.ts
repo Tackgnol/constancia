@@ -8,6 +8,8 @@ import {
   listResponseSchema,
   singleResponseSchema,
 } from '../schemas.js';
+import { getPrismaClient } from '../auth/prisma.js';
+import type { Prisma } from '@constancia/db';
 
 interface CampaignParams {
   id: string;
@@ -28,27 +30,23 @@ interface CharacterBody {
 
 interface CharacterPatchBody {
   name?: string;
+  gameName?: string;
   backstory?: string;
   notes?: string;
   systemData?: Record<string, unknown>;
 }
 
-const sampleCharacter = {
-  id: 'char-1',
-  name: 'Annabelle',
-  discordUserId: 'discord-user-1',
-  campaignId: 'campaign-1',
-  backstory: 'A wary occultist.',
-  notes: 'Keeps secrets.',
-  systemData: {
-    attributes: {
-      wits: 3,
-    },
-    skills: {
-      awareness: 2,
-    },
-  },
-};
+const select = {
+  id: true,
+  name: true,
+  discordName: true,
+  gameName: true,
+  discordUserId: true,
+  campaignId: true,
+  backstory: true,
+  notes: true,
+  systemData: true,
+} as const;
 
 const characterRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: CampaignParams }>(
@@ -65,11 +63,10 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request) => {
-      const params = request.params;
-      return {
-        status: 'stub',
-        data: [{ ...sampleCharacter, campaignId: params.id }],
-      };
+      const prisma = getPrismaClient();
+      const { id } = request.params;
+      const characters = await prisma.character.findMany({ where: { campaignId: id }, select });
+      return { status: 'ok', data: characters };
     },
   );
 
@@ -88,19 +85,22 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request, reply) => {
-      const params = request.params;
-      const body = request.body;
-      reply.code(201);
-      return {
-        status: 'stub',
+      const prisma = getPrismaClient();
+      const { id } = request.params;
+      const { name, discordUserId, backstory, notes, systemData } = request.body;
+      const character = await prisma.character.create({
         data: {
-          id: 'char-new',
-          campaignId: params.id,
-          backstory: '',
-          notes: '',
-          ...body,
+          campaignId: id,
+          name,
+          discordUserId,
+          backstory: backstory ?? '',
+          notes: notes ?? '',
+          systemData: (systemData ?? {}) as Prisma.InputJsonValue,
         },
-      };
+        select,
+      });
+      reply.code(201);
+      return { status: 'ok', data: character };
     },
   );
 
@@ -117,16 +117,14 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
         },
       },
     },
-    async (request) => {
-      const params = request.params;
-      return {
-        status: 'stub',
-        data: {
-          ...sampleCharacter,
-          id: params.charId,
-          campaignId: params.id,
-        },
-      };
+    async (request, reply) => {
+      const prisma = getPrismaClient();
+      const { charId } = request.params;
+      const character = await prisma.character.findUnique({ where: { id: charId }, select });
+      if (character === null) {
+        return reply.code(404).send({ status: 'error', data: { message: 'Character not found' } });
+      }
+      return { status: 'ok', data: character };
     },
   );
 
@@ -144,18 +142,38 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
         },
       },
     },
-    async (request) => {
-      const params = request.params;
-      const body = request.body;
-      return {
-        status: 'stub',
-        data: {
-          ...sampleCharacter,
-          id: params.charId,
-          campaignId: params.id,
-          ...body,
-        },
-      };
+    async (request, reply) => {
+      const prisma = getPrismaClient();
+      const { charId } = request.params;
+      const { name, gameName, backstory, notes, systemData } = request.body;
+      const data: Partial<{
+        name: string;
+        gameName: string;
+        backstory: string;
+        notes: string;
+        systemData: Prisma.InputJsonValue;
+      }> = {};
+      if (name !== undefined) data.name = name;
+      if (gameName !== undefined) data.gameName = gameName;
+      if (backstory !== undefined) data.backstory = backstory;
+      if (notes !== undefined) data.notes = notes;
+      if (systemData !== undefined) data.systemData = systemData as Prisma.InputJsonValue;
+      try {
+        const character = await prisma.character.update({ where: { id: charId }, data, select });
+        return { status: 'ok', data: character };
+      } catch (err) {
+        if (
+          typeof err === 'object' &&
+          err !== null &&
+          'code' in err &&
+          (err as { code: unknown }).code === 'P2025'
+        ) {
+          return reply
+            .code(404)
+            .send({ status: 'error', data: { message: 'Character not found' } });
+        }
+        throw err;
+      }
     },
   );
 };

@@ -21,7 +21,7 @@ describe('PipelineRunner', () => {
       type: 'say',
       label: 'Say',
       configSchema: { type: 'object' },
-      execute: async (config) => ({
+      execute: async (config: { text: string }) => ({
         output: config.text,
         messages: [{ target: 'player' as const, content: config.text }],
       }),
@@ -48,7 +48,7 @@ describe('PipelineRunner', () => {
       type: 'gate',
       label: 'Gate',
       configSchema: { type: 'object' },
-      execute: async (config) => ({
+      execute: async (config: { pass: boolean }) => ({
         output: null,
         halt: !config.pass,
       }),
@@ -58,7 +58,7 @@ describe('PipelineRunner', () => {
       type: 'say',
       label: 'Say',
       configSchema: { type: 'object' },
-      execute: async (config) => ({
+      execute: async (config: { text: string }) => ({
         output: config.text,
         messages: [{ target: 'player' as const, content: config.text }],
       }),

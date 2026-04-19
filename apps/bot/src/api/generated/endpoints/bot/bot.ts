@@ -10,74 +10,191 @@ import type {
   GetCampaignByGuildPathParameters,
   GetChannelEvents200,
   GetChannelEventsPathParameters,
+  RemoveParticipant200,
+  RemoveParticipantPathParameters,
+  SetupChannel200,
+  SetupChannelBody,
   SubmitBotTestResult200,
   SubmitBotTestResultBody,
+  SyncParticipants200,
+  SyncParticipantsBody
 } from '../../model.js';
+
 
 /**
  * @summary Submit a player test result
  */
 export const getSubmitBotTestResultUrl = () => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/test-result`;
-};
 
-export const submitBotTestResult = async (
-  submitBotTestResultBody: SubmitBotTestResultBody,
-  options?: RequestInit,
-): Promise<SubmitBotTestResult200> => {
-  const res = await fetch(getSubmitBotTestResultUrl(), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/test-result`
+}
+
+export const submitBotTestResult = async (submitBotTestResultBody: SubmitBotTestResultBody, options?: RequestInit): Promise<SubmitBotTestResult200> => {
+  
+  const res = await fetch(getSubmitBotTestResultUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(submitBotTestResultBody),
-  });
+    body: JSON.stringify(
+      submitBotTestResultBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: SubmitBotTestResult200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: SubmitBotTestResult200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Resolve guild to campaign
  */
-export const getGetCampaignByGuildUrl = ({ guildId }: GetCampaignByGuildPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/campaign-by-guild/${guildId}`;
-};
+export const getGetCampaignByGuildUrl = ({ guildId }: GetCampaignByGuildPathParameters,) => {
 
-export const getCampaignByGuild = async (
-  { guildId }: GetCampaignByGuildPathParameters,
-  options?: RequestInit,
-): Promise<GetCampaignByGuild200> => {
-  const res = await fetch(getGetCampaignByGuildUrl({ guildId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/campaign-by-guild/${guildId}`
+}
+
+export const getCampaignByGuild = async ({ guildId }: GetCampaignByGuildPathParameters, options?: RequestInit): Promise<GetCampaignByGuild200> => {
+  
+  const res = await fetch(getGetCampaignByGuildUrl({ guildId }),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: GetCampaignByGuild200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: GetCampaignByGuild200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Get active channel events
  */
-export const getGetChannelEventsUrl = ({ channelId }: GetChannelEventsPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/channel-events/${channelId}`;
-};
+export const getGetChannelEventsUrl = ({ channelId }: GetChannelEventsPathParameters,) => {
 
-export const getChannelEvents = async (
-  { channelId }: GetChannelEventsPathParameters,
-  options?: RequestInit,
-): Promise<GetChannelEvents200> => {
-  const res = await fetch(getGetChannelEventsUrl({ channelId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/channel-events/${channelId}`
+}
+
+export const getChannelEvents = async ({ channelId }: GetChannelEventsPathParameters, options?: RequestInit): Promise<GetChannelEvents200> => {
+  
+  const res = await fetch(getGetChannelEventsUrl({ channelId }),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: GetChannelEvents200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: GetChannelEvents200 = body ? JSON.parse(body) : {};
-  return data;
-};
+
+/**
+ * @summary Upsert campaign and channel from Discord context
+ */
+export const getSetupChannelUrl = () => {
+
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/setup-channel`
+}
+
+export const setupChannel = async (setupChannelBody: SetupChannelBody, options?: RequestInit): Promise<SetupChannel200> => {
+  
+  const res = await fetch(getSetupChannelUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setupChannelBody,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: SetupChannel200 = body ? JSON.parse(body) : {}
+  return data
+}
+
+
+/**
+ * @summary Upsert campaign participants from Discord users
+ */
+export const getSyncParticipantsUrl = () => {
+
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/sync-participants`
+}
+
+export const syncParticipants = async (syncParticipantsBody: SyncParticipantsBody, options?: RequestInit): Promise<SyncParticipants200> => {
+  
+  const res = await fetch(getSyncParticipantsUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      syncParticipantsBody,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: SyncParticipants200 = body ? JSON.parse(body) : {}
+  return data
+}
+
+
+/**
+ * @summary Remove a participant from a campaign
+ */
+export const getRemoveParticipantUrl = ({ guildId, discordUserId }: RemoveParticipantPathParameters,) => {
+
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/participant/${guildId}/${discordUserId}`
+}
+
+export const removeParticipant = async ({ guildId, discordUserId }: RemoveParticipantPathParameters, options?: RequestInit): Promise<RemoveParticipant200> => {
+  
+  const res = await fetch(getRemoveParticipantUrl({ guildId, discordUserId }),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: RemoveParticipant200 = body ? JSON.parse(body) : {}
+  return data
+}
+
+

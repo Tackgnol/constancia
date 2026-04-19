@@ -22,7 +22,7 @@ export interface BlockResult {
 }
 
 export type BlockMessage =
-  | { target: 'player'; content: string; imageUrl?: string }
+  | { target: 'player'; targetId?: string; content: string; imageUrl?: string }
   | { target: 'channel'; content: string; imageUrl?: string }
   | { target: 'group'; targetId: string; content: string; imageUrl?: string };
 

@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { getPrismaClient } from '../auth/prisma.js';
 import {
   campaignBodySchema,
   campaignParamsSchema,
@@ -23,12 +24,7 @@ interface CampaignPatchBody {
   gameSystemId?: string;
 }
 
-const sampleCampaign = {
-  id: 'campaign-1',
-  name: 'Chicago by Night',
-  discordGuildId: 'guild-1',
-  gameSystemId: 'vtm-v5',
-};
+const select = { id: true, name: true, discordGuildId: true, gameSystemId: true } as const;
 
 const campaignRoutes: FastifyPluginAsync = async (app) => {
   app.get(
@@ -43,10 +39,14 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
         },
       },
     },
-    async () => ({
-      status: 'stub',
-      data: [sampleCampaign],
-    }),
+    async () => {
+      const prisma = getPrismaClient();
+      const campaigns = await prisma.campaign.findMany({
+        select,
+        orderBy: { updatedAt: 'desc' },
+      });
+      return { status: 'ok', data: campaigns };
+    },
   );
 
   app.post<{ Body: CampaignBody }>(
@@ -63,15 +63,14 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request, reply) => {
-      const body = request.body;
+      const prisma = getPrismaClient();
+      const { name, discordGuildId, gameSystemId } = request.body;
+      const campaign = await prisma.campaign.create({
+        data: { name, discordGuildId, gameSystemId },
+        select,
+      });
       reply.code(201);
-      return {
-        status: 'stub',
-        data: {
-          id: 'campaign-new',
-          ...body,
-        },
-      };
+      return { status: 'ok', data: campaign };
     },
   );
 
@@ -88,15 +87,14 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
         },
       },
     },
-    async (request) => {
-      const params = request.params;
-      return {
-        status: 'stub',
-        data: {
-          ...sampleCampaign,
-          id: params.id,
-        },
-      };
+    async (request, reply) => {
+      const prisma = getPrismaClient();
+      const { id } = request.params;
+      const campaign = await prisma.campaign.findUnique({ where: { id }, select });
+      if (campaign === null) {
+        return reply.code(404).send({ status: 'error', data: { message: 'Campaign not found' } });
+      }
+      return { status: 'ok', data: campaign };
     },
   );
 
@@ -114,17 +112,27 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
         },
       },
     },
-    async (request) => {
-      const params = request.params;
-      const body = request.body;
-      return {
-        status: 'stub',
-        data: {
-          ...sampleCampaign,
-          id: params.id,
-          ...body,
-        },
-      };
+    async (request, reply) => {
+      const prisma = getPrismaClient();
+      const { id } = request.params;
+      const { name, gameSystemId } = request.body;
+      const data: { name?: string; gameSystemId?: string } = {};
+      if (name !== undefined) data.name = name;
+      if (gameSystemId !== undefined) data.gameSystemId = gameSystemId;
+      try {
+        const campaign = await prisma.campaign.update({ where: { id }, data, select });
+        return { status: 'ok', data: campaign };
+      } catch (err) {
+        if (
+          typeof err === 'object' &&
+          err !== null &&
+          'code' in err &&
+          (err as { code: unknown }).code === 'P2025'
+        ) {
+          return reply.code(404).send({ status: 'error', data: { message: 'Campaign not found' } });
+        }
+        throw err;
+      }
     },
   );
 };

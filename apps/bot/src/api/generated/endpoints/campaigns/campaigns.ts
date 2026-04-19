@@ -13,95 +13,126 @@ import type {
   ListCampaigns200,
   UpdateCampaign200,
   UpdateCampaignBody,
-  UpdateCampaignPathParameters,
+  UpdateCampaignPathParameters
 } from '../../model.js';
+
 
 /**
  * @summary List campaigns
  */
 export const getListCampaignsUrl = () => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/`;
-};
 
-export const listCampaigns = async (options?: RequestInit): Promise<ListCampaigns200> => {
-  const res = await fetch(getListCampaignsUrl(), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/`
+}
+
+export const listCampaigns = async ( options?: RequestInit): Promise<ListCampaigns200> => {
+  
+  const res = await fetch(getListCampaignsUrl(),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: ListCampaigns200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: ListCampaigns200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Create a campaign
  */
 export const getCreateCampaignUrl = () => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/`;
-};
 
-export const createCampaign = async (
-  createCampaignBody: CreateCampaignBody,
-  options?: RequestInit,
-): Promise<CreateCampaign201> => {
-  const res = await fetch(getCreateCampaignUrl(), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/`
+}
+
+export const createCampaign = async (createCampaignBody: CreateCampaignBody, options?: RequestInit): Promise<CreateCampaign201> => {
+  
+  const res = await fetch(getCreateCampaignUrl(),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createCampaignBody),
-  });
+    body: JSON.stringify(
+      createCampaignBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: CreateCampaign201 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: CreateCampaign201 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Get campaign details
  */
-export const getGetCampaignUrl = ({ id }: GetCampaignPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}`;
-};
+export const getGetCampaignUrl = ({ id }: GetCampaignPathParameters,) => {
 
-export const getCampaign = async (
-  { id }: GetCampaignPathParameters,
-  options?: RequestInit,
-): Promise<GetCampaign200> => {
-  const res = await fetch(getGetCampaignUrl({ id }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}`
+}
+
+export const getCampaign = async ({ id }: GetCampaignPathParameters, options?: RequestInit): Promise<GetCampaign200> => {
+  
+  const res = await fetch(getGetCampaignUrl({ id }),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: GetCampaign200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: GetCampaign200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Update a campaign
  */
-export const getUpdateCampaignUrl = ({ id }: UpdateCampaignPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}`;
-};
+export const getUpdateCampaignUrl = ({ id }: UpdateCampaignPathParameters,) => {
 
-export const updateCampaign = async (
-  { id }: UpdateCampaignPathParameters,
-  updateCampaignBody: UpdateCampaignBody,
-  options?: RequestInit,
-): Promise<UpdateCampaign200> => {
-  const res = await fetch(getUpdateCampaignUrl({ id }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}`
+}
+
+export const updateCampaign = async ({ id }: UpdateCampaignPathParameters,
+    updateCampaignBody: UpdateCampaignBody, options?: RequestInit): Promise<UpdateCampaign200> => {
+  
+  const res = await fetch(getUpdateCampaignUrl({ id }),
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updateCampaignBody),
-  });
+    body: JSON.stringify(
+      updateCampaignBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: UpdateCampaign200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: UpdateCampaign200 = body ? JSON.parse(body) : {};
-  return data;
-};
+

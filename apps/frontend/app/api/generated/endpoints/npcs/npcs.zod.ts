@@ -7,120 +7,122 @@
  */
 import * as zod from 'zod';
 
+
 /**
  * @summary List campaign NPCs
  */
 export const listNpcsParams = zod.object({
-  id: zod.string(),
-});
+  "id": zod.string()
+})
 
 export const listNpcsResponse = zod.object({
-  status: zod.string(),
-  data: zod.array(
-    zod.object({
-      id: zod.string(),
-      name: zod.string(),
-      imageUrl: zod.string().optional(),
-      description: zod.string(),
-      campaignId: zod.string(),
-    }),
-  ),
-});
+  "status": zod.string(),
+  "data": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "imageUrl": zod.string().optional(),
+  "description": zod.string(),
+  "campaignId": zod.string()
+}))
+})
 
 /**
  * @summary Create an NPC
  */
 export const createNpcParams = zod.object({
-  id: zod.string(),
-});
+  "id": zod.string()
+})
 
 export const createNpcBody = zod.object({
-  name: zod.string(),
-  imageUrl: zod.string().optional(),
-  description: zod.string().optional(),
-});
+  "name": zod.string(),
+  "imageUrl": zod.string().optional(),
+  "description": zod.string().optional()
+})
 
 /**
  * @summary Update an NPC
  */
 export const updateNpcParams = zod.object({
-  id: zod.string(),
-  npcId: zod.string(),
-});
+  "id": zod.string(),
+  "npcId": zod.string()
+})
 
 export const updateNpcBody = zod.object({
-  name: zod.string().optional(),
-  imageUrl: zod.string().optional(),
-  description: zod.string().optional(),
-});
+  "name": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "description": zod.string().optional()
+})
 
 export const updateNpcResponse = zod.object({
-  status: zod.string(),
-  data: zod.object({
-    id: zod.string(),
-    name: zod.string(),
-    imageUrl: zod.string().optional(),
-    description: zod.string(),
-    campaignId: zod.string(),
-  }),
-});
+  "status": zod.string(),
+  "data": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "imageUrl": zod.string().optional(),
+  "description": zod.string(),
+  "campaignId": zod.string()
+})
+})
 
 /**
  * @summary Add an NPC fact
  */
 export const createNpcFactParams = zod.object({
-  id: zod.string(),
-  npcId: zod.string(),
-});
+  "id": zod.string(),
+  "npcId": zod.string()
+})
 
 export const createNpcFactBody = zod.object({
-  content: zod.string(),
-  sortOrder: zod.number().optional(),
-});
+  "content": zod.string(),
+  "sortOrder": zod.number().optional()
+})
 
 /**
  * @summary Reveal NPC facts to players
  */
 export const revealNpcFactsParams = zod.object({
-  id: zod.string(),
-  npcId: zod.string(),
-});
+  "id": zod.string(),
+  "npcId": zod.string()
+})
+
+
+
+
 
 export const revealNpcFactsBody = zod.object({
-  npcFactIds: zod.array(zod.string()).min(1),
-  discordUserIds: zod.array(zod.string()).min(1),
-});
+  "npcFactIds": zod.array(zod.string()).min(1),
+  "discordUserIds": zod.array(zod.string()).min(1)
+})
 
 export const revealNpcFactsResponse = zod.object({
-  status: zod.string(),
-  data: zod.object({
-    id: zod.string(),
-    name: zod.string(),
-    imageUrl: zod.string().optional(),
-    description: zod.string(),
-    campaignId: zod.string(),
-    facts: zod.array(zod.record(zod.string(), zod.unknown())),
-  }),
-});
+  "status": zod.string(),
+  "data": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "imageUrl": zod.string().optional(),
+  "description": zod.string(),
+  "campaignId": zod.string(),
+  "facts": zod.array(zod.record(zod.string(), zod.unknown()))
+})
+})
 
 /**
  * @summary List NPCs visible to a player
  */
 export const listVisibleNpcsForPlayerParams = zod.object({
-  id: zod.string(),
-  discordId: zod.string(),
-});
+  "id": zod.string(),
+  "discordId": zod.string()
+})
 
 export const listVisibleNpcsForPlayerResponse = zod.object({
-  status: zod.string(),
-  data: zod.array(
-    zod.object({
-      id: zod.string(),
-      name: zod.string(),
-      imageUrl: zod.string().optional(),
-      description: zod.string(),
-      campaignId: zod.string(),
-      facts: zod.array(zod.record(zod.string(), zod.unknown())),
-    }),
-  ),
-});
+  "status": zod.string(),
+  "data": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "imageUrl": zod.string().optional(),
+  "description": zod.string(),
+  "campaignId": zod.string(),
+  "facts": zod.array(zod.record(zod.string(), zod.unknown()))
+}))
+})
+

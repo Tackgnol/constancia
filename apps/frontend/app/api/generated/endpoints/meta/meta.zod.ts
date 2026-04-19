@@ -7,33 +7,29 @@
  */
 import * as zod from 'zod';
 
+
 /**
  * @summary Get OpenAPI document
  */
-export const getOpenApiDocumentResponse = zod
-  .record(zod.string(), zod.unknown())
-  .describe('OpenAPI document');
+export const getOpenApiDocumentResponse = zod.record(zod.string(), zod.unknown()).describe('OpenAPI document')
 
 /**
  * @summary Get service metadata
  */
-export const getServiceMetadataResponse = zod
-  .object({
-    name: zod.string(),
-    status: zod.string(),
-    apiPrefix: zod.string(),
-    docsPrefix: zod.string(),
-    openApiPath: zod.string(),
-  })
-  .describe('Service metadata');
+export const getServiceMetadataResponse = zod.object({
+  "name": zod.string(),
+  "status": zod.string(),
+  "apiPrefix": zod.string(),
+  "docsPrefix": zod.string(),
+  "openApiPath": zod.string()
+}).describe('Service metadata')
 
 /**
  * @summary Get service health
  */
-export const getServiceHealthResponse = zod
-  .object({
-    status: zod.string(),
-    service: zod.string(),
-    environment: zod.string(),
-  })
-  .describe('Health status');
+export const getServiceHealthResponse = zod.object({
+  "status": zod.string(),
+  "service": zod.string(),
+  "environment": zod.string()
+}).describe('Health status')
+

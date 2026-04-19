@@ -5,10 +5,11 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import type { UpdateCharacterBodySystemData } from './updateCharacterBodySystemData';
+import type { UpdateCharacterBodySystemData } from './updateCharacterBodySystemData.js';
 
 export type UpdateCharacterBody = {
   name?: string;
+  gameName?: string;
   backstory?: string;
   notes?: string;
   systemData?: UpdateCharacterBodySystemData;

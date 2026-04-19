@@ -15,99 +15,127 @@ import type {
   ListCharactersPathParameters,
   UpdateCharacter200,
   UpdateCharacterBody,
-  UpdateCharacterPathParameters,
+  UpdateCharacterPathParameters
 } from '../../model.js';
+
 
 /**
  * @summary List campaign characters
  */
-export const getListCharactersUrl = ({ id }: ListCharactersPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/characters/`;
-};
+export const getListCharactersUrl = ({ id }: ListCharactersPathParameters,) => {
 
-export const listCharacters = async (
-  { id }: ListCharactersPathParameters,
-  options?: RequestInit,
-): Promise<ListCharacters200> => {
-  const res = await fetch(getListCharactersUrl({ id }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/characters/`
+}
+
+export const listCharacters = async ({ id }: ListCharactersPathParameters, options?: RequestInit): Promise<ListCharacters200> => {
+  
+  const res = await fetch(getListCharactersUrl({ id }),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: ListCharacters200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: ListCharacters200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Create a character
  */
-export const getCreateCharacterUrl = ({ id }: CreateCharacterPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/characters/`;
-};
+export const getCreateCharacterUrl = ({ id }: CreateCharacterPathParameters,) => {
 
-export const createCharacter = async (
-  { id }: CreateCharacterPathParameters,
-  createCharacterBody: CreateCharacterBody,
-  options?: RequestInit,
-): Promise<CreateCharacter201> => {
-  const res = await fetch(getCreateCharacterUrl({ id }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/characters/`
+}
+
+export const createCharacter = async ({ id }: CreateCharacterPathParameters,
+    createCharacterBody: CreateCharacterBody, options?: RequestInit): Promise<CreateCharacter201> => {
+  
+  const res = await fetch(getCreateCharacterUrl({ id }),
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createCharacterBody),
-  });
+    body: JSON.stringify(
+      createCharacterBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: CreateCharacter201 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: CreateCharacter201 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Get a character
  */
-export const getGetCharacterUrl = ({ id, charId }: GetCharacterPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/characters/${charId}`;
-};
+export const getGetCharacterUrl = ({ id, charId }: GetCharacterPathParameters,) => {
 
-export const getCharacter = async (
-  { id, charId }: GetCharacterPathParameters,
-  options?: RequestInit,
-): Promise<GetCharacter200> => {
-  const res = await fetch(getGetCharacterUrl({ id, charId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/characters/${charId}`
+}
+
+export const getCharacter = async ({ id, charId }: GetCharacterPathParameters, options?: RequestInit): Promise<GetCharacter200> => {
+  
+  const res = await fetch(getGetCharacterUrl({ id, charId }),
+  {      
     ...options,
-    method: 'GET',
-  });
+    method: 'GET'
+    
+    
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: GetCharacter200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: GetCharacter200 = body ? JSON.parse(body) : {};
-  return data;
-};
 
 /**
  * @summary Update a character
  */
-export const getUpdateCharacterUrl = ({ id, charId }: UpdateCharacterPathParameters) => {
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/characters/${charId}`;
-};
+export const getUpdateCharacterUrl = ({ id, charId }: UpdateCharacterPathParameters,) => {
 
-export const updateCharacter = async (
-  { id, charId }: UpdateCharacterPathParameters,
-  updateCharacterBody: UpdateCharacterBody,
-  options?: RequestInit,
-): Promise<UpdateCharacter200> => {
-  const res = await fetch(getUpdateCharacterUrl({ id, charId }), {
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/characters/${charId}`
+}
+
+export const updateCharacter = async ({ id, charId }: UpdateCharacterPathParameters,
+    updateCharacterBody: UpdateCharacterBody, options?: RequestInit): Promise<UpdateCharacter200> => {
+  
+  const res = await fetch(getUpdateCharacterUrl({ id, charId }),
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updateCharacterBody),
-  });
+    body: JSON.stringify(
+      updateCharacterBody,)
+  }
+)
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: UpdateCharacter200 = body ? JSON.parse(body) : {}
+  return data
+}
 
-  const data: UpdateCharacter200 = body ? JSON.parse(body) : {};
-  return data;
-};
+

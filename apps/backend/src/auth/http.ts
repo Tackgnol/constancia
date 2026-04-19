@@ -1,0 +1,59 @@
+import { fromNodeHeaders } from 'better-auth/node';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { auth } from '../auth.js';
+
+function resolveOrigin(request: FastifyRequest) {
+  if (request.headers.host) {
+    return `http://${request.headers.host}`;
+  }
+
+  return process.env.BETTER_AUTH_URL ?? 'http://localhost:3001';
+}
+
+function buildRequestBody(body: unknown) {
+  if (body === undefined || body === null) {
+    return undefined;
+  }
+
+  if (typeof body === 'string') {
+    return body;
+  }
+
+  return JSON.stringify(body);
+}
+
+export async function forwardToBetterAuth(
+  request: FastifyRequest,
+  path: string,
+  init: {
+    method: 'GET' | 'POST';
+    body?: unknown;
+  },
+) {
+  const headers = fromNodeHeaders(request.headers);
+  const url = new URL(path, resolveOrigin(request));
+  const body = buildRequestBody(init.body);
+
+  if (body !== undefined && !headers.has('content-type')) {
+    headers.set('content-type', 'application/json');
+  }
+
+  return auth.handler(
+    new Request(url, {
+      method: init.method,
+      headers,
+      body,
+    }),
+  );
+}
+
+export async function applyBetterAuthResponse(response: Response, reply: FastifyReply) {
+  reply.status(response.status);
+
+  response.headers.forEach((value, key) => {
+    reply.header(key, value);
+  });
+
+  const body = await response.text();
+  reply.send(body.length > 0 ? body : null);
+}

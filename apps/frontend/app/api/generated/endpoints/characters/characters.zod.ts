@@ -7,88 +7,95 @@
  */
 import * as zod from 'zod';
 
+
 /**
  * @summary List campaign characters
  */
 export const listCharactersParams = zod.object({
-  id: zod.string(),
-});
+  "id": zod.string()
+})
 
 export const listCharactersResponse = zod.object({
-  status: zod.string(),
-  data: zod.array(
-    zod.object({
-      id: zod.string(),
-      name: zod.string(),
-      discordUserId: zod.string(),
-      campaignId: zod.string(),
-      backstory: zod.string(),
-      notes: zod.string(),
-      systemData: zod.record(zod.string(), zod.unknown()).optional(),
-    }),
-  ),
-});
+  "status": zod.string(),
+  "data": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "discordUserId": zod.string(),
+  "discordName": zod.string(),
+  "gameName": zod.string(),
+  "campaignId": zod.string(),
+  "backstory": zod.string(),
+  "notes": zod.string(),
+  "systemData": zod.record(zod.string(), zod.unknown()).optional()
+}))
+})
 
 /**
  * @summary Create a character
  */
 export const createCharacterParams = zod.object({
-  id: zod.string(),
-});
+  "id": zod.string()
+})
 
 export const createCharacterBody = zod.object({
-  name: zod.string(),
-  discordUserId: zod.string(),
-  backstory: zod.string().optional(),
-  notes: zod.string().optional(),
-  systemData: zod.record(zod.string(), zod.unknown()).optional(),
-});
+  "name": zod.string(),
+  "discordUserId": zod.string(),
+  "backstory": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "systemData": zod.record(zod.string(), zod.unknown()).optional()
+})
 
 /**
  * @summary Get a character
  */
 export const getCharacterParams = zod.object({
-  id: zod.string(),
-  charId: zod.string(),
-});
+  "id": zod.string(),
+  "charId": zod.string()
+})
 
 export const getCharacterResponse = zod.object({
-  status: zod.string(),
-  data: zod.object({
-    id: zod.string(),
-    name: zod.string(),
-    discordUserId: zod.string(),
-    campaignId: zod.string(),
-    backstory: zod.string(),
-    notes: zod.string(),
-    systemData: zod.record(zod.string(), zod.unknown()).optional(),
-  }),
-});
+  "status": zod.string(),
+  "data": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "discordUserId": zod.string(),
+  "discordName": zod.string(),
+  "gameName": zod.string(),
+  "campaignId": zod.string(),
+  "backstory": zod.string(),
+  "notes": zod.string(),
+  "systemData": zod.record(zod.string(), zod.unknown()).optional()
+})
+})
 
 /**
  * @summary Update a character
  */
 export const updateCharacterParams = zod.object({
-  id: zod.string(),
-  charId: zod.string(),
-});
+  "id": zod.string(),
+  "charId": zod.string()
+})
 
 export const updateCharacterBody = zod.object({
-  name: zod.string().optional(),
-  backstory: zod.string().optional(),
-  notes: zod.string().optional(),
-  systemData: zod.record(zod.string(), zod.unknown()).optional(),
-});
+  "name": zod.string().optional(),
+  "gameName": zod.string().optional(),
+  "backstory": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "systemData": zod.record(zod.string(), zod.unknown()).optional()
+})
 
 export const updateCharacterResponse = zod.object({
-  status: zod.string(),
-  data: zod.object({
-    id: zod.string(),
-    name: zod.string(),
-    discordUserId: zod.string(),
-    campaignId: zod.string(),
-    backstory: zod.string(),
-    notes: zod.string(),
-    systemData: zod.record(zod.string(), zod.unknown()).optional(),
-  }),
-});
+  "status": zod.string(),
+  "data": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "discordUserId": zod.string(),
+  "discordName": zod.string(),
+  "gameName": zod.string(),
+  "campaignId": zod.string(),
+  "backstory": zod.string(),
+  "notes": zod.string(),
+  "systemData": zod.record(zod.string(), zod.unknown()).optional()
+})
+})
+

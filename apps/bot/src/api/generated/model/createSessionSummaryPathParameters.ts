@@ -7,5 +7,5 @@
  */
 
 export type CreateSessionSummaryPathParameters = {
-  id: string;
-};
+ id: string,
+ }
