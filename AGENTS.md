@@ -67,6 +67,37 @@ Before handing off substantial changes, mirror the repo's enforced checks locall
 
 When plan/spec documents and the live code disagree, use the live code for what exists today and the docs for intended direction.
 
+## System Architecture & File Placement
+
+When adding new files or functionalities, strictly adhere to the following boundaries:
+
+- `apps/backend/`: Fastify API server. Source of truth. Contains all game logic, handles event pipeline execution.
+- `apps/bot/`: Discord.js bot. **Pure API client.** The bot must never contain game logic. It only translates Discord events to backend API calls and renders responses.
+- `apps/frontend/`: React Router 7 + ShadCN for GM management.
+- `packages/contracts/`: Dependency root. Defines all interfaces (`GameSystem`, `Block`, etc). Nothing else depends on implementations.
+- `packages/core/`: Common blocks and platform-level primitives (`MessagePlayer`, `ConditionalGate`).
+- `packages/systems/`: Game system specific logic. Each module (e.g., `vtm`, `mork-borg`) implements the `GameSystem` contract and provides system-specific blocks.
+- `packages/db/`: Prisma schema. Isolated, ONLY the backend imports it.
+
+## Design Guidelines
+
+### Data Modeling
+
+- **systemData as JSON**: Character stats are stored as JSON shaped by the game system module. Do not add system-specific columns to the core schema.
+- **Discord IDs everywhere**: Tie entities directly to Discord IDs (e.g., `discordGuildId`, `discordChannelId`, `discordUserId`). No separate user accounts.
+
+### Frontend Aesthetics ("War Room")
+
+- **Vibe**: Dense, utilitarian, information-first.
+- **Typography**: IBM Plex Mono for data/labels, IBM Plex Sans for content.
+- **Palette**: GitHub-dark (`#0a0c0f` background, `#161b22` surfaces, `#1b2028` borders, `#58a6ff` primary accent).
+- **Color Coding**:
+  - Tests: Blue (`#58a6ff`)
+  - Narrations: Purple (`#d2a8ff`)
+  - Insights: Green (`#3fb950`)
+  - Messages/DMs: Orange (`#f0883e`)
+- **UX Requirements**: Fired events dim (35% opacity + dashed border) but remain visible. The "Play View" must be a dense control panel with single-click actions (no confirmation modals during live play).
+
 ## Known Issues (External)
 
 - `npm install` warning: `prebuild-install@7.1.3: No longer maintained.`

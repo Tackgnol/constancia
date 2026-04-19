@@ -3,6 +3,14 @@ import { updateCharacter } from '@/api/generated/endpoints/characters/characters
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { VTM_CLANS, MB_CLASSES } from '@constancia/systems';
 import type { WarRoomContext } from '@/lib/war-room-data';
 import type { ActionFunctionArgs } from 'react-router';
 import type { ListCharacters200DataItem } from '@/api/generated/model';
@@ -13,18 +21,25 @@ export async function action({ request }: ActionFunctionArgs) {
   const campaignId = formData.get('campaignId') as string;
   const charId = formData.get('charId') as string;
   const gameName = formData.get('gameName') as string;
+  const archetype = formData.get('archetype') as string;
+  const systemDataRaw = formData.get('systemData') as string;
 
   if (!campaignId || !charId) return null;
 
   try {
+    const systemData = systemDataRaw ? JSON.parse(systemDataRaw) : {};
+    if (archetype) {
+      systemData.clan = archetype;
+    }
+
     await updateCharacter(
       { id: campaignId, charId },
-      { gameName },
+      { gameName, systemData },
       { credentials: 'include', headers: { cookie } },
     );
     return { status: 'success' };
   } catch (err) {
-    console.error('Failed to update game name', err);
+    console.error('Failed to update character', err);
     return { status: 'error' };
   }
 }
@@ -66,6 +81,7 @@ export default function ParticipantsRoute() {
                 discordName={discordName}
                 currentGameName={currentGameName}
                 campaignId={warRoom.campaign.id}
+                gameSystemId={warRoom.system.id}
               />
             );
           })
@@ -80,45 +96,108 @@ function ParticipantRow({
   discordName,
   currentGameName,
   campaignId,
+  gameSystemId,
 }: {
   char: ListCharacters200DataItem;
   discordName: string;
   currentGameName: string;
   campaignId: string;
+  gameSystemId: string;
 }) {
   const fetcher = useFetcher();
   const isSaving = fetcher.state !== 'idle';
 
+  const archetypes = gameSystemId === 'mork-borg' ? MB_CLASSES : VTM_CLANS;
+  const systemData = (char.systemData as Record<string, unknown>) || {};
+  const currentArchetype = (systemData.clan as string) || '';
+  const selectedArchetype = archetypes.find((a) => a.name === currentArchetype);
+
   return (
-    <article className="detail-card flex flex-col gap-4">
-      <div>
-        <p className="detail-label">Discord User</p>
-        <h2 className="text-lg font-bold">{discordName}</h2>
-        <p className="text-[0.65rem] text-muted-foreground font-mono">{char.discordUserId}</p>
+    <article className="detail-card flex flex-col gap-6">
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="detail-label">Discord User</p>
+          <h2 className="text-xl font-bold">{discordName}</h2>
+          <p className="text-[0.65rem] text-muted-foreground font-mono">{char.discordUserId}</p>
+        </div>
+
+        {selectedArchetype && (
+          <div className="flex items-center gap-3 bg-surface-high/50 p-2 rounded-lg border border-border/50">
+            <div className="w-10 h-10 flex items-center justify-center bg-black/20 rounded overflow-hidden">
+              <img
+                src={`/icons/${selectedArchetype.icon}`}
+                alt=""
+                className="w-8 h-8 object-contain opacity-80"
+                onError={(e) => (e.currentTarget.style.display = 'none')}
+              />
+            </div>
+            <div>
+              <p className="text-[0.6rem] uppercase tracking-widest text-muted-foreground font-bold">
+                {gameSystemId === 'mork-borg' ? 'Class' : 'Clan'}
+              </p>
+              <p className="text-sm font-bold text-primary-glow">{selectedArchetype.name}</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      <fetcher.Form method="post" className="flex gap-2 items-end mt-2">
+      <fetcher.Form method="post" className="grid gap-6">
         <input type="hidden" name="charId" value={char.id} />
         <input type="hidden" name="campaignId" value={campaignId} />
+        <input type="hidden" name="systemData" value={JSON.stringify(systemData)} />
 
-        <div className="flex-1 grid gap-1.5">
-          <Label
-            htmlFor={`game-name-${char.id}`}
-            className="text-muted-foreground text-[0.65rem] tracking-[0.18em] uppercase font-mono font-semibold"
-          >
-            In-Game Name
-          </Label>
-          <Input
-            id={`game-name-${char.id}`}
-            name="gameName"
-            defaultValue={currentGameName}
-            autoComplete="off"
-            placeholder="Leave blank to use Discord name"
-          />
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid gap-1.5">
+            <Label
+              htmlFor={`game-name-${char.id}`}
+              className="text-muted-foreground text-[0.65rem] tracking-[0.18em] uppercase font-mono font-semibold"
+            >
+              In-Game Name
+            </Label>
+            <Input
+              id={`game-name-${char.id}`}
+              name="gameName"
+              defaultValue={currentGameName}
+              autoComplete="off"
+              placeholder="Discord name fallback"
+            />
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label
+              htmlFor={`archetype-${char.id}`}
+              className="text-muted-foreground text-[0.65rem] tracking-[0.18em] uppercase font-mono font-semibold"
+            >
+              {gameSystemId === 'mork-borg' ? 'Character Class' : 'Vampire Clan'}
+            </Label>
+            <Select name="archetype" defaultValue={currentArchetype}>
+              <SelectTrigger id={`archetype-${char.id}`} className="w-full">
+                <SelectValue placeholder="Select Archetype" />
+              </SelectTrigger>
+              <SelectContent>
+                {archetypes.map((a) => (
+                  <SelectItem key={a.name} value={a.name}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <Button variant="outline" type="submit" disabled={isSaving}>
-          {isSaving ? 'Saving...' : 'Save'}
-        </Button>
+
+        {selectedArchetype && (
+          <div className="bg-muted/30 p-4 rounded-md border border-border/20">
+            <p className="text-xs leading-relaxed text-muted-foreground italic">
+              &ldquo;{selectedArchetype.description}&rdquo;
+            </p>
+          </div>
+        )}
+
+        <div className="flex justify-end">
+          <Button variant="outline" type="submit" disabled={isSaving} className="min-w-[100px]">
+            {isSaving ? 'Saving...' : 'Update Participant'}
+          </Button>
+        </div>
       </fetcher.Form>
     </article>
   );

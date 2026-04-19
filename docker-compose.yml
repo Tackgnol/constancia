@@ -155,7 +155,7 @@ services:
       [
         'sh',
         '-lc',
-        "npx turbo run build --filter=@constancia/contracts && npm run dev --workspace=@constancia/frontend -- --host 0.0.0.0 --port 3000; echo 'Frontend dev server exited, keeping container alive for inspection.'; tail -f /dev/null",
+        "npx turbo run build --filter=@constancia/contracts --filter=@constancia/systems && npm run dev --workspace=@constancia/frontend -- --host 0.0.0.0 --port 3000; echo 'Frontend dev server exited, keeping container alive for inspection.'; tail -f /dev/null",
       ]
     develop:
       watch:
@@ -177,6 +177,12 @@ services:
         - action: sync
           path: ./packages/contracts/src
           target: /app/packages/contracts/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: sync
+          path: ./packages/systems/src
+          target: /app/packages/systems/src
           ignore:
             - dist/
             - node_modules/
