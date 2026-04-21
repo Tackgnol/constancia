@@ -4,6 +4,7 @@ import {
   type InteractionDeferReplyOptions,
 } from 'discord.js';
 import { requestAdminMagicLink } from '../auth/request-admin-magic-link.js';
+import type { BotChatCommand } from '../discord/command-types.js';
 
 export async function handleLogin(interaction: ChatInputCommandInteraction): Promise<void> {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral } as InteractionDeferReplyOptions);
@@ -28,3 +29,12 @@ export async function handleLogin(interaction: ChatInputCommandInteraction): Pro
     await interaction.editReply('Failed to generate a login link. Please try again later.');
   }
 }
+
+export const loginCommand: BotChatCommand = {
+  data: {
+    name: 'login',
+    description: 'Get a magic link to log in to the web dashboard',
+  },
+  execute: handleLogin,
+};
+

@@ -78,7 +78,7 @@ async function rewriteRuntimeBase(directory, runtimeExpression) {
         /import\.meta\.env\.VITE_API_URL\s\?\?\s'http:\/\/localhost:\d+'/g,
         runtimeExpression,
       )
-      .replaceAll(/`\/([^`]+)`/g, (_match, urlPath) => `\${${runtimeExpression}}/${urlPath}`)
+      .replaceAll(/`\/([^`]+)`/g, (_match, urlPath) => `\`\${${runtimeExpression}}/${urlPath}\``)
       .replace(/return\s+`\/`\s*;?/g, `return \`\${${runtimeExpression}}/\`;`);
 
     if (updated !== original) {

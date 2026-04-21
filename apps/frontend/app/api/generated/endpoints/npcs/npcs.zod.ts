@@ -9,6 +9,55 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary List player-safe NPC dossiers
+ */
+export const listPublicVisibleNpcsForPlayerParams = zod.object({
+  "id": zod.string(),
+  "discordId": zod.string()
+})
+
+export const listPublicVisibleNpcsForPlayerResponse = zod.object({
+  "status": zod.string(),
+  "data": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "imageUrl": zod.string().optional(),
+  "campaignId": zod.string(),
+  "facts": zod.array(zod.object({
+  "id": zod.string(),
+  "content": zod.string(),
+  "sortOrder": zod.number(),
+  "npcId": zod.string()
+}))
+}))
+})
+
+/**
+ * @summary Get a player-safe NPC dossier
+ */
+export const getPublicVisibleNpcForPlayerParams = zod.object({
+  "id": zod.string(),
+  "npcId": zod.string(),
+  "discordId": zod.string()
+})
+
+export const getPublicVisibleNpcForPlayerResponse = zod.object({
+  "status": zod.string(),
+  "data": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "imageUrl": zod.string().optional(),
+  "campaignId": zod.string(),
+  "facts": zod.array(zod.object({
+  "id": zod.string(),
+  "content": zod.string(),
+  "sortOrder": zod.number(),
+  "npcId": zod.string()
+}))
+})
+})
+
+/**
  * @summary List campaign NPCs
  */
 export const listNpcsParams = zod.object({
@@ -22,7 +71,25 @@ export const listNpcsResponse = zod.object({
   "name": zod.string(),
   "imageUrl": zod.string().optional(),
   "description": zod.string(),
-  "campaignId": zod.string()
+  "systemBlocks": zod.array(zod.object({
+  "systemId": zod.string().optional(),
+  "blockType": zod.string(),
+  "label": zod.string(),
+  "value": zod.unknown()
+})),
+  "campaignId": zod.string(),
+  "facts": zod.array(zod.object({
+  "id": zod.string(),
+  "content": zod.string(),
+  "sortOrder": zod.number(),
+  "npcId": zod.string(),
+  "knownTo": zod.array(zod.object({
+  "characterId": zod.string(),
+  "discordUserId": zod.string(),
+  "displayName": zod.string(),
+  "secondaryLabel": zod.string()
+}))
+}))
 }))
 })
 
@@ -35,8 +102,18 @@ export const createNpcParams = zod.object({
 
 export const createNpcBody = zod.object({
   "name": zod.string(),
+  "systemBlocks": zod.array(zod.object({
+  "systemId": zod.string().optional(),
+  "blockType": zod.string(),
+  "label": zod.string(),
+  "value": zod.unknown()
+})).optional(),
   "imageUrl": zod.string().optional(),
-  "description": zod.string().optional()
+  "description": zod.string().optional(),
+  "facts": zod.array(zod.object({
+  "content": zod.string(),
+  "sortOrder": zod.number().optional()
+})).optional()
 })
 
 /**
@@ -49,6 +126,12 @@ export const updateNpcParams = zod.object({
 
 export const updateNpcBody = zod.object({
   "name": zod.string().optional(),
+  "systemBlocks": zod.array(zod.object({
+  "systemId": zod.string().optional(),
+  "blockType": zod.string(),
+  "label": zod.string(),
+  "value": zod.unknown()
+})).optional(),
   "imageUrl": zod.string().optional(),
   "description": zod.string().optional()
 })
@@ -60,6 +143,12 @@ export const updateNpcResponse = zod.object({
   "name": zod.string(),
   "imageUrl": zod.string().optional(),
   "description": zod.string(),
+  "systemBlocks": zod.array(zod.object({
+  "systemId": zod.string().optional(),
+  "blockType": zod.string(),
+  "label": zod.string(),
+  "value": zod.unknown()
+})),
   "campaignId": zod.string()
 })
 })
@@ -101,8 +190,25 @@ export const revealNpcFactsResponse = zod.object({
   "name": zod.string(),
   "imageUrl": zod.string().optional(),
   "description": zod.string(),
+  "systemBlocks": zod.array(zod.object({
+  "systemId": zod.string().optional(),
+  "blockType": zod.string(),
+  "label": zod.string(),
+  "value": zod.unknown()
+})),
   "campaignId": zod.string(),
-  "facts": zod.array(zod.record(zod.string(), zod.unknown()))
+  "facts": zod.array(zod.object({
+  "id": zod.string(),
+  "content": zod.string(),
+  "sortOrder": zod.number(),
+  "npcId": zod.string(),
+  "knownTo": zod.array(zod.object({
+  "characterId": zod.string(),
+  "discordUserId": zod.string(),
+  "displayName": zod.string(),
+  "secondaryLabel": zod.string()
+}))
+}))
 })
 })
 
@@ -121,8 +227,19 @@ export const listVisibleNpcsForPlayerResponse = zod.object({
   "name": zod.string(),
   "imageUrl": zod.string().optional(),
   "description": zod.string(),
+  "systemBlocks": zod.array(zod.object({
+  "systemId": zod.string().optional(),
+  "blockType": zod.string(),
+  "label": zod.string(),
+  "value": zod.unknown()
+})),
   "campaignId": zod.string(),
-  "facts": zod.array(zod.record(zod.string(), zod.unknown()))
+  "facts": zod.array(zod.object({
+  "id": zod.string(),
+  "content": zod.string(),
+  "sortOrder": zod.number(),
+  "npcId": zod.string()
+}))
 }))
 })
 

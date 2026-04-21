@@ -5,9 +5,13 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import type { CreateEvent201DataPipelineItemConfig } from './createEvent201DataPipelineItemConfig.js';
+import type { CreateEvent201DataPipelineItemAnyOf } from './createEvent201DataPipelineItemAnyOf.js';
+import type { CreateEvent201DataPipelineItemAnyOfFive } from './createEvent201DataPipelineItemAnyOfFive.js';
+import type { CreateEvent201DataPipelineItemAnyOfNine } from './createEvent201DataPipelineItemAnyOfNine.js';
+import type { CreateEvent201DataPipelineItemAnyOfOnetwo } from './createEvent201DataPipelineItemAnyOfOnetwo.js';
+import type { CreateEvent201DataPipelineItemAnyOfOnefive } from './createEvent201DataPipelineItemAnyOfOnefive.js';
+import type { CreateEvent201DataPipelineItemAnyOfOneeight } from './createEvent201DataPipelineItemAnyOfOneeight.js';
+import type { CreateEvent201DataPipelineItemAnyOfTwoone } from './createEvent201DataPipelineItemAnyOfTwoone.js';
+import type { CreateEvent201DataPipelineItemAnyOfTwofive } from './createEvent201DataPipelineItemAnyOfTwofive.js';
 
-export type CreateEvent201DataPipelineItem = {
-  blockType: string;
-  config: CreateEvent201DataPipelineItemConfig;
-};
+export type CreateEvent201DataPipelineItem = CreateEvent201DataPipelineItemAnyOf | CreateEvent201DataPipelineItemAnyOfFive | CreateEvent201DataPipelineItemAnyOfNine | CreateEvent201DataPipelineItemAnyOfOnetwo | CreateEvent201DataPipelineItemAnyOfOnefive | CreateEvent201DataPipelineItemAnyOfOneeight | CreateEvent201DataPipelineItemAnyOfTwoone | CreateEvent201DataPipelineItemAnyOfTwofive;

@@ -684,6 +684,550 @@ h1, h2, h3 {
   font-size: 1.15rem;
   margin-top: 0.35rem;
   margin-bottom: 0.45rem;
+} .setup-hero,
+.npc-hero {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.9fr);
+  align-items: start;
+}
+
+.setup-hero-note,
+.npc-hero-meta {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1rem 1.1rem;
+  background: color-mix(in oklch, var(--surface-low) 88%, var(--primary) 12%);
+}
+
+.setup-hero-note p,
+.npc-hero-meta strong,
+.npc-hero-meta span {
+  margin: 0;
+}
+
+.npc-hero-meta strong {
+  color: var(--text);
+  font: 600 1rem/1.2 'IBM Plex Sans', sans-serif;
+}
+
+.setup-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.setup-panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--surface-low);
+  box-shadow: var(--shadow);
+}
+
+.setup-panel-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.setup-panel-header h2,
+.npc-focus-copy h2,
+.npc-rail-card h2,
+.npc-empty-state h2 {
+  margin: 0.25rem 0 0;
+  font-family: 'Newsreader', serif;
+  font-size: clamp(1.4rem, 2vw, 2rem);
+  line-height: 1;
+  font-weight: 500;
+}
+
+.setup-panel-header p,
+.npc-focus-copy p,
+.npc-empty-state p {
+  margin: 0;
+}
+
+.setup-notice {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.95rem 1rem;
+  background: color-mix(in oklch, var(--surface-high) 92%, var(--primary) 8%);
+}
+
+.setup-notice strong,
+.setup-notice span,
+.setup-inline-link {
+  margin: 0;
+}
+
+.setup-inline-link {
+  color: var(--primary-glow);
+  font: 600 0.72rem/1.4 'IBM Plex Mono', monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.setup-notice.is-error {
+  background: color-mix(in oklch, var(--surface-high) 86%, rgba(190, 100, 70, 0.9));
+}
+
+.setup-subsection-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ghost-action-inline {
+  width: auto;
+  margin-top: 0;
+  padding-inline: 1rem;
+}
+
+.npc-fact-stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.npc-fact-row {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.npc-fact-index,
+.npc-fact-number {
+  color: var(--muted);
+  font: 700 0.72rem/1 'IBM Plex Mono', monospace;
+  letter-spacing: 0.16em;
+}
+
+.npc-fact-index {
+  padding-top: 0.9rem;
+}
+
+.npc-fact-remove {
+  padding: 0.8rem 0.9rem;
+  background: transparent;
+  color: var(--muted);
+  font: 600 0.7rem/1 'IBM Plex Mono', monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+}
+
+.npc-fact-remove:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.npc-workbench {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  align-items: start;
+}
+
+.npc-rail {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.npc-rail-card {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem 1.05rem;
+  background: var(--surface-low);
+  box-shadow: var(--shadow);
+  text-align: left;
+  cursor: pointer;
+}
+
+.npc-rail-card.is-active {
+  background: color-mix(in oklch, var(--surface-high) 84%, var(--primary) 16%);
+}
+
+.npc-rail-meta {
+  margin: 0;
+  color: var(--muted);
+  font: 0.72rem/1.45 'IBM Plex Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.npc-focus {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.npc-focus-header {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  align-items: start;
+}
+
+.npc-portrait-shell {
+  background: color-mix(in oklch, var(--surface-high) 88%, var(--primary) 12%);
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+}
+
+.npc-portrait {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.npc-portrait-fallback {
+  display: grid;
+  place-items: center;
+  color: var(--primary-glow);
+  font: 700 clamp(1.8rem, 3vw, 2.8rem) / 1 'IBM Plex Mono', monospace;
+  letter-spacing: 0.12em;
+}
+
+.npc-focus-copy {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.npc-focus-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.npc-block-render-grid {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.npc-block-panel {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.9rem 1rem;
+  background: color-mix(in oklch, var(--surface-high) 86%, var(--primary) 14%);
+}
+
+.npc-block-panel-stats {
+  background: color-mix(in oklch, var(--surface-high) 80%, var(--secondary) 20%);
+}
+
+.npc-block-panel-copy {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.npc-block-json {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: 0.72rem/1.65 'IBM Plex Mono', monospace;
+  color: var(--text);
+}
+
+.npc-block-editor,
+.npc-edit-form,
+.npc-append-form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.npc-block-add-trigger {
+  min-width: 12rem;
+}
+
+.npc-block-empty {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem 1.05rem;
+  background: color-mix(in oklch, var(--surface-low) 90%, var(--primary) 10%);
+}
+
+.npc-block-stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.npc-block-row {
+  gap: 0.8rem;
+}
+
+.npc-block-row-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.npc-facts-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.npc-facts-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.npc-fact-card {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem 1.05rem;
+  background: color-mix(in oklch, var(--surface) 92%, var(--primary) 8%);
+}
+
+.npc-fact-card-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.npc-fact-copy {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.65;
+}
+
+.npc-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.npc-chip,
+.npc-chip-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0.4rem 0.65rem;
+  background: var(--surface-high);
+  color: var(--muted-strong);
+  font: 0.68rem/1.2 'IBM Plex Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.npc-chip.is-known,
+.npc-chip-button.is-known {
+  background: color-mix(in oklch, var(--surface-high) 82%, var(--secondary) 18%);
+  color: var(--text);
+}
+
+.npc-chip-button {
+  border: none;
+  cursor: pointer;
+}
+
+.npc-chip-button.is-pending {
+  background: color-mix(in oklch, var(--surface-high) 80%, var(--primary) 20%);
+  color: var(--primary-glow);
+}
+
+.npc-chip-button:disabled {
+  cursor: default;
+}
+
+.npc-fact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.npc-empty-state {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.npc-dossier-sheet,
+.player-dossier-sheet {
+  display: grid;
+  gap: 1rem;
+}
+
+.npc-dossier-strip,
+.player-dossier-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  background: color-mix(in oklch, var(--surface-high) 90%, var(--primary) 10%);
+  color: var(--muted-strong);
+  font: 700 0.68rem/1 'IBM Plex Mono', monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.npc-focus-header-dossier,
+.player-dossier-hero {
+  gap: 1.2rem;
+}
+
+.npc-portrait-shell-dossier {
+  position: relative;
+  outline: 1px solid color-mix(in oklch, var(--outline) 65%, transparent);
+  background: color-mix(in oklch, var(--surface-high) 84%, var(--primary) 16%);
+}
+
+.npc-portrait-shell-dossier::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.3)),
+    linear-gradient(to right, rgba(255, 255, 255, 0.04), transparent 22%);
+  pointer-events: none;
+}
+
+.npc-portrait-stamp {
+  position: absolute;
+  right: 0.85rem;
+  bottom: 0.9rem;
+  z-index: 1;
+  padding: 0.42rem 0.7rem;
+  border: 1px solid color-mix(in oklch, var(--primary-glow) 65%, transparent);
+  color: var(--primary-glow);
+  font: 700 0.68rem/1 'IBM Plex Mono', monospace;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  transform: rotate(-10deg);
+  background: color-mix(in oklch, var(--surface) 76%, transparent);
+}
+
+.npc-focus-copy-dossier,
+.player-dossier-copy {
+  gap: 0.9rem;
+}
+
+.npc-identity-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.npc-identity-cell {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.85rem 0.9rem;
+  background: color-mix(in oklch, var(--surface) 90%, var(--primary) 10%);
+}
+
+.npc-identity-cell strong {
+  font: 600 1rem/1 'IBM Plex Sans', sans-serif;
+  color: var(--text);
+}
+
+.npc-tab-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.npc-tab {
+  min-width: 7rem;
+  padding: 0.75rem 0.95rem;
+  border: none;
+  background: var(--surface-high);
+  color: var(--muted-strong);
+  font: 700 0.68rem/1 'IBM Plex Mono', monospace;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.npc-tab.is-active {
+  background: color-mix(in oklch, var(--surface-high) 76%, var(--primary) 24%);
+  color: var(--text);
+}
+
+.npc-dossier-panel,
+.npc-panel-section,
+.npc-dossier-summary,
+.player-dossier-facts {
+  display: grid;
+  gap: 1rem;
+}
+
+.npc-dossier-summary {
+  padding: 1rem 1.1rem;
+  background: color-mix(in oklch, var(--surface) 92%, var(--primary) 8%);
+}
+
+.npc-dossier-summary p,
+.player-dossier-copy p {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.npc-share-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.npc-share-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.95rem 1rem;
+  background: color-mix(in oklch, var(--surface) 92%, var(--secondary) 8%);
+}
+
+.npc-share-card strong {
+  display: block;
+  margin-top: 0.2rem;
+  font: 600 0.96rem/1.2 'IBM Plex Sans', sans-serif;
+}
+
+.npc-share-card span {
+  color: var(--muted);
+  font: 0.72rem/1.45 'IBM Plex Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.player-dossier-shell {
+  min-height: 100vh;
+  padding: clamp(1rem, 2vw, 2rem);
+  background:
+    linear-gradient(180deg, rgba(88, 166, 255, 0.07), transparent 16%),
+    linear-gradient(135deg, rgba(240, 136, 62, 0.06), transparent 28%),
+    var(--background);
+}
+
+.player-dossier-sheet {
+  width: min(980px, 100%);
+  margin: 0 auto;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  background: color-mix(in oklch, var(--surface-low) 94%, black 6%);
+  box-shadow: var(--shadow);
+}
+
+.player-dossier-copy h1 {
+  margin: 0;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.player-npc-fact-card {
+  background: color-mix(in oklch, var(--surface) 88%, var(--secondary) 12%);
 }
 
 .detail-list {
@@ -828,6 +1372,16 @@ h1, h2, h3 {
     grid-template-columns: 220px minmax(0, 1fr);
   }
 
+  .setup-grid,
+  .npc-workbench,
+  .setup-hero,
+  .npc-hero,
+  .npc-focus-header,
+  .player-dossier-hero,
+  .npc-identity-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .players-panel {
     grid-column: 1 / -1;
     border-left: 0;
@@ -860,6 +1414,23 @@ h1, h2, h3 {
     position: static;
     inset: auto;
     padding: 1rem;
+  }
+
+  .setup-panel-header,
+  .setup-subsection-header,
+  .npc-fact-row,
+  .npc-fact-card-header,
+  .npc-fact-actions,
+  .npc-dossier-strip,
+  .player-dossier-strip {
+    grid-template-columns: minmax(0, 1fr);
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .npc-fact-remove {
+    padding-inline: 0;
+    text-align: left;
   }
 }
 
@@ -1186,6 +1757,10 @@ h1, h2, h3 {
 
   .detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .player-dossier-shell {
+    padding: 0.9rem;
   }
 
   .board-grid {

@@ -16,11 +16,13 @@ export const outcomeMapBlock: BlockDefinition<OutcomeMapConfig> = {
   label: 'Outcome Map',
   configSchema: {
     type: 'object',
+    additionalProperties: false,
     properties: {
       outcomes: {
         type: 'array',
         items: {
           type: 'object',
+          additionalProperties: false,
           properties: {
             minScore: { type: 'number' },
             maxScore: { type: 'number' },

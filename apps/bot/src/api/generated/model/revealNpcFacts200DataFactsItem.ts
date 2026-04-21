@@ -5,5 +5,12 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
+import type { RevealNpcFacts200DataFactsItemKnownToItem } from './revealNpcFacts200DataFactsItemKnownToItem.js';
 
-export type RevealNpcFacts200DataFactsItem = { [key: string]: unknown };
+export type RevealNpcFacts200DataFactsItem = {
+  id: string;
+  content: string;
+  sortOrder: number;
+  npcId: string;
+  knownTo: RevealNpcFacts200DataFactsItemKnownToItem[];
+};

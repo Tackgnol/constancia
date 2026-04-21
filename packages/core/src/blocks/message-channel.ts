@@ -10,6 +10,7 @@ export const messageChannelBlock: BlockDefinition<MessageChannelConfig> = {
   label: 'Message Channel',
   configSchema: {
     type: 'object',
+    additionalProperties: false,
     properties: {
       content: { type: 'string' },
       imageUrl: { type: 'string' },

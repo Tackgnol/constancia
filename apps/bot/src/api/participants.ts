@@ -28,7 +28,11 @@ export const syncParticipants = async (
     },
   );
   const text = [204, 205, 304].includes(res.status) ? null : await res.text();
-  return text ? JSON.parse(text) : {};
+  if (!text) {
+    throw new Error(`Expected sync participants response body, received ${res.status}`);
+  }
+
+  return JSON.parse(text) as SyncParticipants200;
 };
 
 export type RemoveParticipantParams = {
@@ -53,5 +57,9 @@ export const removeParticipant = async (
     },
   );
   const text = [204, 205, 304].includes(res.status) ? null : await res.text();
-  return text ? JSON.parse(text) : {};
+  if (!text) {
+    throw new Error(`Expected remove participant response body, received ${res.status}`);
+  }
+
+  return JSON.parse(text) as RemoveParticipant200;
 };

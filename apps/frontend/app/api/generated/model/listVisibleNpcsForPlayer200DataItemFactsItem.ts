@@ -6,4 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListVisibleNpcsForPlayer200DataItemFactsItem = { [key: string]: unknown };
+export type ListVisibleNpcsForPlayer200DataItemFactsItem = {
+  id: string;
+  content: string;
+  sortOrder: number;
+  npcId: string;
+};

@@ -24,7 +24,21 @@ export const submitBotTestResultResponse = zod.object({
   "data": zod.object({
   "eventId": zod.string(),
   "campaignId": zod.string(),
-  "messages": zod.array(zod.record(zod.string(), zod.unknown())),
+  "messages": zod.array(zod.union([zod.object({
+  "target": zod.enum(['player']),
+  "targetId": zod.string().optional(),
+  "content": zod.string(),
+  "imageUrl": zod.string().optional()
+}),zod.object({
+  "target": zod.enum(['channel']),
+  "content": zod.string(),
+  "imageUrl": zod.string().optional()
+}),zod.object({
+  "target": zod.enum(['group']),
+  "targetIds": zod.array(zod.string()),
+  "content": zod.string(),
+  "imageUrl": zod.string().optional()
+})])),
   "halted": zod.boolean()
 })
 })
@@ -63,10 +77,63 @@ export const getChannelEventsResponse = zod.object({
   "campaignId": zod.string(),
   "status": zod.string(),
   "shortCircuit": zod.boolean(),
-  "pipeline": zod.array(zod.object({
-  "blockType": zod.string(),
-  "config": zod.record(zod.string(), zod.unknown())
-}))
+  "pipeline": zod.array(zod.union([zod.object({
+  "blockType": zod.enum(['outcome-map']),
+  "config": zod.object({
+  "outcomes": zod.array(zod.object({
+  "minScore": zod.number(),
+  "maxScore": zod.number(),
+  "text": zod.string()
+})),
+  "shortCircuit": zod.boolean().optional()
+})
+}),zod.object({
+  "blockType": zod.enum(['conditional-gate']),
+  "config": zod.object({
+  "statPath": zod.string(),
+  "operator": zod.enum(['gte', 'gt', 'lte', 'lt', 'eq']),
+  "threshold": zod.number()
+})
+}),zod.object({
+  "blockType": zod.enum(['message-player']),
+  "config": zod.object({
+  "content": zod.string(),
+  "imageUrl": zod.string().optional(),
+  "playerIds": zod.array(zod.string()).optional()
+})
+}),zod.object({
+  "blockType": zod.enum(['message-channel']),
+  "config": zod.object({
+  "content": zod.string(),
+  "imageUrl": zod.string().optional()
+})
+}),zod.object({
+  "blockType": zod.enum(['message-group']),
+  "config": zod.object({
+  "content": zod.string(),
+  "imageUrl": zod.string().optional(),
+  "groupPlayerIds": zod.array(zod.string()).optional()
+})
+}),zod.object({
+  "blockType": zod.enum(['display-image']),
+  "config": zod.object({
+  "imageUrl": zod.string(),
+  "caption": zod.string().optional()
+})
+}),zod.object({
+  "blockType": zod.enum(['retrieve-data']),
+  "config": zod.object({
+  "dataType": zod.string(),
+  "query": zod.record(zod.string(), zod.unknown()).optional()
+})
+}),zod.object({
+  "blockType": zod.enum(['vtm-pool-resolver']),
+  "config": zod.object({
+  "attribute": zod.string().describe('Key into characterData.attributes'),
+  "skill": zod.string().describe('Key into characterData.skills'),
+  "difficulty": zod.number().describe('Number of successes needed to succeed')
+})
+})]))
 }))
 })
 

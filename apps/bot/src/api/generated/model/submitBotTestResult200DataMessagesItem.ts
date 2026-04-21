@@ -5,5 +5,8 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
+import type { SubmitBotTestResult200DataMessagesItemAnyOf } from './submitBotTestResult200DataMessagesItemAnyOf.js';
+import type { SubmitBotTestResult200DataMessagesItemAnyOfThree } from './submitBotTestResult200DataMessagesItemAnyOfThree.js';
+import type { SubmitBotTestResult200DataMessagesItemAnyOfFive } from './submitBotTestResult200DataMessagesItemAnyOfFive.js';
 
-export type SubmitBotTestResult200DataMessagesItem = { [key: string]: unknown };
+export type SubmitBotTestResult200DataMessagesItem = SubmitBotTestResult200DataMessagesItemAnyOf | SubmitBotTestResult200DataMessagesItemAnyOfThree | SubmitBotTestResult200DataMessagesItemAnyOfFive;

@@ -5,6 +5,7 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
+import type { ListVisibleNpcsForPlayer200DataItemSystemBlocksItem } from './listVisibleNpcsForPlayer200DataItemSystemBlocksItem.js';
 import type { ListVisibleNpcsForPlayer200DataItemFactsItem } from './listVisibleNpcsForPlayer200DataItemFactsItem.js';
 
 export type ListVisibleNpcsForPlayer200DataItem = {
@@ -12,6 +13,7 @@ export type ListVisibleNpcsForPlayer200DataItem = {
   name: string;
   imageUrl?: string;
   description: string;
+  systemBlocks: ListVisibleNpcsForPlayer200DataItemSystemBlocksItem[];
   campaignId: string;
   facts: ListVisibleNpcsForPlayer200DataItemFactsItem[];
 };

@@ -2,6 +2,7 @@ import { index, layout, route, type RouteConfig } from '@react-router/dev/routes
 
 export default [
   route('auth', './routes/auth.tsx'),
+  route('player/campaigns/:campaignId/npcs/:npcId/for/:discordId', './routes/player-npc.tsx'),
   layout('./routes/demo-layout.tsx', { id: 'demo-layout' }, [
     route('demo', './routes/play.tsx', { id: 'demo-play' }),
     route('demo/setup', './routes/setup.tsx', { id: 'demo-setup' }),

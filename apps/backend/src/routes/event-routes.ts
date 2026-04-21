@@ -4,6 +4,7 @@ import type { BlockInstance } from '@constancia/contracts';
 import { PipelineRunner } from '@constancia/core';
 import { getPrismaClient } from '../auth/prisma.js';
 import { buildBlockRegistry } from '../blocks.js';
+import { sendMessagesToBotAsync } from '../services/bot-client.js';
 import {
   campaignParamsSchema,
   eventBodySchema,
@@ -212,6 +213,23 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
         playerId: 'system',
         characterData: {},
       });
+
+      if (result.messages.length > 0) {
+        const channel = await prisma.channel.findUnique({
+          where: { id: event.channelId },
+          select: { discordChannelId: true },
+        });
+        if (channel !== null) {
+          const config = app.config;
+          void sendMessagesToBotAsync(config.botInternalUrl, config.botApiKey, {
+            eventId,
+            discordChannelId: channel.discordChannelId,
+            messages: result.messages,
+          });
+        } else {
+          request.log.warn({ eventId, channelId: event.channelId }, 'Skipping bot delivery: channel not found');
+        }
+      }
 
       return {
         status: 'ok',

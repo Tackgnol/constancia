@@ -1,4 +1,8 @@
+import { useEffect } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useOutletContext, useFetcher } from 'react-router';
+import { z } from 'zod';
 import { updateCharacter } from '@/api/generated/endpoints/characters/characters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +18,13 @@ import { VTM_CLANS, MB_CLASSES } from '@constancia/systems';
 import type { WarRoomContext } from '@/lib/war-room-data';
 import type { ActionFunctionArgs } from 'react-router';
 import type { ListCharacters200DataItem } from '@/api/generated/model';
+
+const participantFormSchema = z.object({
+  gameName: z.string().trim().max(80, 'Keep the in-game name concise.'),
+  archetype: z.string().trim(),
+});
+
+type ParticipantFormValues = z.infer<typeof participantFormSchema>;
 
 export async function action({ request }: ActionFunctionArgs) {
   const cookie = request.headers.get('Cookie') || '';
@@ -110,7 +121,44 @@ function ParticipantRow({
   const archetypes = gameSystemId === 'mork-borg' ? MB_CLASSES : VTM_CLANS;
   const systemData = (char.systemData as Record<string, unknown>) || {};
   const currentArchetype = (systemData.clan as string) || '';
-  const selectedArchetype = archetypes.find((a) => a.name === currentArchetype);
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<ParticipantFormValues>({
+    resolver: zodResolver(participantFormSchema),
+    defaultValues: {
+      gameName: currentGameName,
+      archetype: currentArchetype,
+    },
+  });
+
+  useEffect(() => {
+    reset({
+      gameName: currentGameName,
+      archetype: currentArchetype,
+    });
+  }, [currentArchetype, currentGameName, reset]);
+
+  const selectedArchetypeName = watch('archetype');
+  const selectedArchetype = archetypes.find((a) => a.name === selectedArchetypeName);
+
+  const onSubmit = (values: ParticipantFormValues) => {
+    fetcher.submit(
+      {
+        charId: char.id,
+        campaignId,
+        systemData: JSON.stringify(systemData),
+        gameName: values.gameName.trim(),
+        archetype: values.archetype,
+      },
+      { method: 'post' },
+    );
+  };
 
   return (
     <article className="detail-card flex flex-col gap-6">
@@ -141,11 +189,7 @@ function ParticipantRow({
         )}
       </div>
 
-      <fetcher.Form method="post" className="grid gap-6">
-        <input type="hidden" name="charId" value={char.id} />
-        <input type="hidden" name="campaignId" value={campaignId} />
-        <input type="hidden" name="systemData" value={JSON.stringify(systemData)} />
-
+      <form className="grid gap-6" onSubmit={handleSubmit(onSubmit)} noValidate>
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="grid gap-1.5">
             <Label
@@ -156,11 +200,11 @@ function ParticipantRow({
             </Label>
             <Input
               id={`game-name-${char.id}`}
-              name="gameName"
-              defaultValue={currentGameName}
               autoComplete="off"
               placeholder="Discord name fallback"
+              {...register('gameName')}
             />
+            {errors.gameName ? <span className="form-error">{errors.gameName.message}</span> : null}
           </div>
 
           <div className="grid gap-1.5">
@@ -170,18 +214,25 @@ function ParticipantRow({
             >
               {gameSystemId === 'mork-borg' ? 'Character Class' : 'Vampire Clan'}
             </Label>
-            <Select name="archetype" defaultValue={currentArchetype}>
-              <SelectTrigger id={`archetype-${char.id}`} className="w-full">
-                <SelectValue placeholder="Select Archetype" />
-              </SelectTrigger>
-              <SelectContent>
-                {archetypes.map((a) => (
-                  <SelectItem key={a.name} value={a.name}>
-                    {a.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              control={control}
+              name="archetype"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id={`archetype-${char.id}`} className="w-full">
+                    <SelectValue placeholder="Select Archetype" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {archetypes.map((a) => (
+                      <SelectItem key={a.name} value={a.name}>
+                        {a.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.archetype ? <span className="form-error">{errors.archetype.message}</span> : null}
           </div>
         </div>
 
@@ -194,11 +245,11 @@ function ParticipantRow({
         )}
 
         <div className="flex justify-end">
-          <Button variant="outline" type="submit" disabled={isSaving} className="min-w-[100px]">
+          <Button variant="outline" type="submit" disabled={isSaving} className="min-w-25">
             {isSaving ? 'Saving...' : 'Update Participant'}
           </Button>
         </div>
-      </fetcher.Form>
+      </form>
     </article>
   );
 }

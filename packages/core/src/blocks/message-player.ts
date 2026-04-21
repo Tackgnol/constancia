@@ -1,14 +1,29 @@
 import type { BlockContext, BlockDefinition } from '@constancia/contracts';
 
+function normalizeRecipientIds(ids: string | string[] | undefined): string[] {
+  if (Array.isArray(ids)) {
+    return ids.map((id) => id.trim()).filter(Boolean);
+  }
+
+  if (typeof ids === 'string') {
+    return ids
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
 interface MessagePlayerConfig {
   content: string;
   imageUrl?: string;
   /**
-   * Comma-separated player IDs to target.
+   * Player IDs to target.
    * When provided, one message is emitted per ID.
    * When omitted, the block falls back to ctx.playerId (original behaviour).
    */
-  playerIds?: string;
+  playerIds?: string | string[];
 }
 
 export const messagePlayerBlock: BlockDefinition<MessagePlayerConfig> = {
@@ -16,24 +31,21 @@ export const messagePlayerBlock: BlockDefinition<MessagePlayerConfig> = {
   label: 'Message Player',
   configSchema: {
     type: 'object',
+    additionalProperties: false,
     properties: {
       content: { type: 'string' },
       imageUrl: { type: 'string' },
-      playerIds: { type: 'string' },
+      playerIds: { type: 'array', items: { type: 'string' } },
     },
     required: ['content'],
   },
   execute: async (config: MessagePlayerConfig, ctx: BlockContext) => {
-    const ids = config.playerIds
-      ? config.playerIds
-          .split(',')
-          .map((s: string) => s.trim())
-          .filter(Boolean)
-      : [ctx.playerId];
+    const ids = normalizeRecipientIds(config.playerIds);
+    const recipients = ids.length > 0 ? ids : [ctx.playerId];
 
     return {
       output: null,
-      messages: ids.map((targetId: string) => ({
+      messages: recipients.map((targetId: string) => ({
         target: 'player' as const,
         targetId,
         content: config.content,

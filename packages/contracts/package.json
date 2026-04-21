@@ -27,7 +27,8 @@
     "test:watch": "vitest watch"
   },
   "dependencies": {
-    "@types/json-schema": "^7.0.15"
+    "@types/json-schema": "^7.0.15",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "vitest": "^3"

@@ -5,9 +5,11 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateNpcBodySystemBlocksItem } from './updateNpcBodySystemBlocksItem.js';
 
 export type UpdateNpcBody = {
   name?: string;
+  systemBlocks?: UpdateNpcBodySystemBlocksItem[];
   imageUrl?: string;
   description?: string;
 };

@@ -38,6 +38,17 @@ describe('MessagePlayer block', () => {
     });
   });
 
+  it('also accepts playerIds as a structured array', async () => {
+    const result = await messagePlayerBlock.execute(
+      { content: 'Structured ids', playerIds: ['p2', 'p3'] },
+      ctx,
+    );
+
+    expect(result.messages).toHaveLength(2);
+    const ids = result.messages!.map((m) => (m as { targetId?: string }).targetId);
+    expect(ids).toEqual(['p2', 'p3']);
+  });
+
   it('includes imageUrl when provided', async () => {
     const result = await messagePlayerBlock.execute(
       { content: 'Look', imageUrl: 'http://img.png', playerIds: 'p2' },

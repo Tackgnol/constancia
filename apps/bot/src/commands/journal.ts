@@ -2,6 +2,7 @@ import type { ChatInputCommandInteraction } from 'discord.js';
 import { getCampaignByGuild } from '../api/generated/endpoints/bot/bot.js';
 import { getJournalForPlayer } from '../api/generated/endpoints/journal/journal.js';
 import { botRequestOptions } from '../api/bot-headers.js';
+import type { BotChatCommand } from '../discord/command-types.js';
 
 export async function handleJournal(interaction: ChatInputCommandInteraction): Promise<void> {
   await interaction.deferReply({ ephemeral: true });
@@ -48,3 +49,12 @@ export async function handleJournal(interaction: ChatInputCommandInteraction): P
 
   await interaction.editReply(lines.join('\n'));
 }
+
+export const journalCommand: BotChatCommand = {
+  data: {
+    name: 'journal',
+    description: 'View your quest journal and session summaries',
+  },
+  execute: handleJournal,
+};
+

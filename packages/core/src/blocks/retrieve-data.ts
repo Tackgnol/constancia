@@ -10,9 +10,10 @@ export const retrieveDataBlock: BlockDefinition<RetrieveDataConfig> = {
   label: 'Retrieve Data',
   configSchema: {
     type: 'object',
+    additionalProperties: false,
     properties: {
       dataType: { type: 'string' },
-      query: { type: 'object' },
+      query: { type: 'object', additionalProperties: true },
     },
     required: ['dataType'],
   },

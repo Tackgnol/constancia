@@ -84,7 +84,20 @@ When adding new files or functionalities, strictly adhere to the following bound
 ### Data Modeling
 
 - **systemData as JSON**: Character stats are stored as JSON shaped by the game system module. Do not add system-specific columns to the core schema.
+- **System-specific NPC data stays flexible**: NPC archetypes, clan/creature-type style traits, and per-system stat payloads should live in generic JSON-backed structures (for example `systemData` / `systemBlocks`), not rigid per-system columns.
 - **Discord IDs everywhere**: Tie entities directly to Discord IDs (e.g., `discordGuildId`, `discordChannelId`, `discordUserId`). No separate user accounts.
+
+### TypeScript Discipline
+
+- **`any` is strictly forbidden** in this repository.
+- **`unknown` is a last resort** and must be narrowed immediately at the boundary where it appears.
+- Prefer explicit shared interfaces, Prisma types, Zod-inferred types, or small typed helper objects over casts.
+
+### Frontend Form Discipline
+
+- **All frontend forms must use `react-hook-form`.** Do not hand-roll form state with local `useState` for submitted fields.
+- Prefer **Zod schemas with `zodResolver`** for frontend form validation whenever the form has validation rules or structured payloads.
+- For custom UI controls (for example Radix/ShadCN selects, checkboxes, or repeatable block editors), wire them through `react-hook-form` using `Controller`, `useFieldArray`, or form context helpers instead of maintaining parallel state.
 
 ### Frontend Aesthetics ("War Room")
 

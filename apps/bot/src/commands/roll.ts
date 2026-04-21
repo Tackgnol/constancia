@@ -1,6 +1,7 @@
 import type { ChatInputCommandInteraction } from 'discord.js';
 import { getChannelEvents, submitBotTestResult } from '../api/generated/endpoints/bot/bot.js';
 import { botRequestOptions } from '../api/bot-headers.js';
+import type { BotChatCommand } from '../discord/command-types.js';
 
 export async function handleRoll(interaction: ChatInputCommandInteraction): Promise<void> {
   await interaction.deferReply();
@@ -47,3 +48,12 @@ export async function handleRoll(interaction: ChatInputCommandInteraction): Prom
 
   await interaction.editReply(playerMessages.join('\n') || 'Roll complete.');
 }
+
+export const rollCommand: BotChatCommand = {
+  data: {
+    name: 'roll',
+    description: 'Fire the active event in this channel',
+  },
+  execute: handleRoll,
+};
+

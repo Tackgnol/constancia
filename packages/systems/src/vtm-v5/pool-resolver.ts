@@ -49,6 +49,7 @@ export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
   label: 'VTM V5 Dice Pool Resolver',
   configSchema: {
     type: 'object',
+    additionalProperties: false,
     properties: {
       attribute: { type: 'string', description: 'Key into characterData.attributes' },
       skill: { type: 'string', description: 'Key into characterData.skills' },

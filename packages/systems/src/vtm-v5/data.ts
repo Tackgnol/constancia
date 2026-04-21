@@ -1,3 +1,5 @@
+import type { NpcSystemBlockDefinition } from '@constancia/contracts';
+
 export interface Archetype {
   name: string;
   icon: string;
@@ -102,3 +104,48 @@ export const VTM_CLANS: Archetype[] = [
       'With the thickness of vitae dwindling, the Duskborn are too far removed from Caine to share his curse or reap the full benefits of vampirism. Thrust into the world of the night and disliked by True Kindred, they must survive the night by finding a way in or a way out.',
   },
 ];
+
+export const VTM_NPC_BLOCKS: NpcSystemBlockDefinition[] = [
+  {
+    blockType: 'clan',
+    label: 'Clan',
+    description: 'Core Kindred lineage or faction identity.',
+    editor: 'select',
+    options: VTM_CLANS.map((clan) => ({
+      value: clan.name,
+      label: clan.name,
+      description: clan.description,
+      icon: clan.icon,
+    })),
+    renderVariant: 'chip',
+    defaultValue: '',
+  },
+  {
+    blockType: 'title',
+    label: 'Title',
+    description: 'Court title, station, or role in the city.',
+    editor: 'text',
+    placeholder: 'Prince, Sheriff, Regent…',
+    renderVariant: 'chip',
+    defaultValue: '',
+  },
+  {
+    blockType: 'demeanor',
+    label: 'Demeanor',
+    description: 'The surface read the coterie gets at a glance.',
+    editor: 'textarea',
+    placeholder: 'Cold, ceremonial, always speaking like a verdict…',
+    renderVariant: 'panel',
+    defaultValue: '',
+  },
+  {
+    blockType: 'vtm5-stats',
+    label: 'VTM V5 Stats',
+    description: 'Flexible stat payload for disciplines, pools, or combat notes.',
+    editor: 'json',
+    placeholder: '{"physical": {"strength": 3}, "disciplines": {"dominate": 4}}',
+    renderVariant: 'stats',
+    defaultValue: {},
+  },
+];
+

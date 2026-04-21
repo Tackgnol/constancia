@@ -1,4 +1,5 @@
 import type { Archetype } from '../vtm-v5/data.js';
+import type { NpcSystemBlockDefinition } from '@constancia/contracts';
 
 export const MB_CLASSES: Archetype[] = [
   {
@@ -38,3 +39,34 @@ export const MB_CLASSES: Archetype[] = [
       'Born of the mushroom, raised in the glade, watched by the eye of the moon in a silverblack pool.',
   },
 ];
+
+export const MB_NPC_BLOCKS: NpcSystemBlockDefinition[] = [
+  {
+    blockType: 'creature-type',
+    label: 'Creature Type',
+    description: 'What sort of horror or being this NPC represents.',
+    editor: 'text',
+    placeholder: 'Wretched Royalty, undead brute, apostate…',
+    renderVariant: 'chip',
+    defaultValue: '',
+  },
+  {
+    blockType: 'omen',
+    label: 'Omen',
+    description: 'A brief atmospheric signal that follows them into a scene.',
+    editor: 'textarea',
+    placeholder: 'Rot in the air, bells at the edge of hearing…',
+    renderVariant: 'panel',
+    defaultValue: '',
+  },
+  {
+    blockType: 'mork-borg-stats',
+    label: 'Mörk Borg Stats',
+    description: 'Flexible stat payload for DRs, morale, attacks, or special rules.',
+    editor: 'json',
+    placeholder: '{"hp": 12, "morale": 7, "dr": 14}',
+    renderVariant: 'stats',
+    defaultValue: {},
+  },
+];
+

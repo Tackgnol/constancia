@@ -137,6 +137,7 @@ model Npc {
   name        String
   imageUrl    String?
   description String   @default("")
+  systemBlocks Json    @default("[]")
   campaignId  String
   createdAt   DateTime @default(now())
 

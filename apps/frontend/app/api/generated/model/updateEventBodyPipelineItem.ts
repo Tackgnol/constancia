@@ -5,9 +5,13 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import type { UpdateEventBodyPipelineItemConfig } from './updateEventBodyPipelineItemConfig.js';
+import type { UpdateEventBodyPipelineItemAnyOf } from './updateEventBodyPipelineItemAnyOf.js';
+import type { UpdateEventBodyPipelineItemAnyOfFive } from './updateEventBodyPipelineItemAnyOfFive.js';
+import type { UpdateEventBodyPipelineItemAnyOfNine } from './updateEventBodyPipelineItemAnyOfNine.js';
+import type { UpdateEventBodyPipelineItemAnyOfOnetwo } from './updateEventBodyPipelineItemAnyOfOnetwo.js';
+import type { UpdateEventBodyPipelineItemAnyOfOnefive } from './updateEventBodyPipelineItemAnyOfOnefive.js';
+import type { UpdateEventBodyPipelineItemAnyOfOneeight } from './updateEventBodyPipelineItemAnyOfOneeight.js';
+import type { UpdateEventBodyPipelineItemAnyOfTwoone } from './updateEventBodyPipelineItemAnyOfTwoone.js';
+import type { UpdateEventBodyPipelineItemAnyOfTwofive } from './updateEventBodyPipelineItemAnyOfTwofive.js';
 
-export type UpdateEventBodyPipelineItem = {
-  blockType: string;
-  config: UpdateEventBodyPipelineItemConfig;
-};
+export type UpdateEventBodyPipelineItem = UpdateEventBodyPipelineItemAnyOf | UpdateEventBodyPipelineItemAnyOfFive | UpdateEventBodyPipelineItemAnyOfNine | UpdateEventBodyPipelineItemAnyOfOnetwo | UpdateEventBodyPipelineItemAnyOfOnefive | UpdateEventBodyPipelineItemAnyOfOneeight | UpdateEventBodyPipelineItemAnyOfTwoone | UpdateEventBodyPipelineItemAnyOfTwofive;

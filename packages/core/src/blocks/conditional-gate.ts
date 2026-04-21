@@ -31,6 +31,7 @@ export const conditionalGateBlock: BlockDefinition<ConditionalGateConfig> = {
   label: 'Conditional Gate',
   configSchema: {
     type: 'object',
+    additionalProperties: false,
     properties: {
       statPath: { type: 'string' },
       operator: { type: 'string', enum: ['gte', 'gt', 'lte', 'lt', 'eq'] },

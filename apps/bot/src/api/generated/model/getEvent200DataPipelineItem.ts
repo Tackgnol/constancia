@@ -5,9 +5,13 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import type { GetEvent200DataPipelineItemConfig } from './getEvent200DataPipelineItemConfig.js';
+import type { GetEvent200DataPipelineItemAnyOf } from './getEvent200DataPipelineItemAnyOf.js';
+import type { GetEvent200DataPipelineItemAnyOfFive } from './getEvent200DataPipelineItemAnyOfFive.js';
+import type { GetEvent200DataPipelineItemAnyOfNine } from './getEvent200DataPipelineItemAnyOfNine.js';
+import type { GetEvent200DataPipelineItemAnyOfOnetwo } from './getEvent200DataPipelineItemAnyOfOnetwo.js';
+import type { GetEvent200DataPipelineItemAnyOfOnefive } from './getEvent200DataPipelineItemAnyOfOnefive.js';
+import type { GetEvent200DataPipelineItemAnyOfOneeight } from './getEvent200DataPipelineItemAnyOfOneeight.js';
+import type { GetEvent200DataPipelineItemAnyOfTwoone } from './getEvent200DataPipelineItemAnyOfTwoone.js';
+import type { GetEvent200DataPipelineItemAnyOfTwofive } from './getEvent200DataPipelineItemAnyOfTwofive.js';
 
-export type GetEvent200DataPipelineItem = {
-  blockType: string;
-  config: GetEvent200DataPipelineItemConfig;
-};
+export type GetEvent200DataPipelineItem = GetEvent200DataPipelineItemAnyOf | GetEvent200DataPipelineItemAnyOfFive | GetEvent200DataPipelineItemAnyOfNine | GetEvent200DataPipelineItemAnyOfOnetwo | GetEvent200DataPipelineItemAnyOfOnefive | GetEvent200DataPipelineItemAnyOfOneeight | GetEvent200DataPipelineItemAnyOfTwoone | GetEvent200DataPipelineItemAnyOfTwofive;

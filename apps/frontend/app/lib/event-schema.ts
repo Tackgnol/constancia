@@ -2,11 +2,25 @@ import { z } from 'zod';
 
 // ── Per-block config schemas ──────────────────────────────────────────────────
 
+function normalizeRecipientIds(value: unknown): string[] | undefined {
+  if (Array.isArray(value)) {
+    const ids = value
+      .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+      .filter(Boolean);
+
+    return ids.length > 0 ? ids : undefined;
+  }
+
+  return undefined;
+}
+
+const recipientIdsSchema = z.preprocess(normalizeRecipientIds, z.array(z.string()).optional());
+
 // Used by message-player only
 export const messagePlayerConfigSchema = z.object({
   content: z.string().min(1, 'Content is required'),
   imageUrl: z.string().optional(),
-  playerIds: z.string().optional(), // comma-separated player IDs
+  playerIds: recipientIdsSchema,
 });
 
 // Used by message-channel
@@ -18,7 +32,7 @@ export const messageContentConfigSchema = z.object({
 export const messageGroupConfigSchema = z.object({
   content: z.string().min(1, 'Content is required'),
   imageUrl: z.string().optional(),
-  groupPlayerIds: z.string().optional(), // comma-separated player IDs
+  groupPlayerIds: recipientIdsSchema,
 });
 
 export const displayImageConfigSchema = z.object({
@@ -80,9 +94,9 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
 };
 
 export const defaultBlockConfigs: Record<BlockType, Record<string, unknown>> = {
-  'message-player': { content: '', imageUrl: '', playerIds: '' },
+  'message-player': { content: '', imageUrl: '', playerIds: [] },
   'message-channel': { content: '', imageUrl: '' },
-  'message-group': { content: '', imageUrl: '', groupPlayerIds: '' },
+  'message-group': { content: '', imageUrl: '', groupPlayerIds: [] },
   'display-image': { imageUrl: '', caption: '' },
   'conditional-gate': { statPath: '', operator: 'gte', threshold: 1 },
   'outcome-map': { outcomes: [{ minScore: 0, maxScore: 10, text: '' }] },
@@ -107,3 +121,38 @@ export const eventFormSchema = z.object({
 
 export type EventFormValues = z.infer<typeof eventFormSchema>;
 export type PipelineBlock = z.infer<typeof pipelineBlockSchema>;
+
+type PipelineBlockConfigNormalizer = (block: PipelineBlock) => PipelineBlock;
+
+const pipelineBlockConfigNormalizers: Partial<Record<BlockType, PipelineBlockConfigNormalizer>> = {
+  'message-group': (block) => ({
+    ...block,
+    config: {
+      ...block.config,
+      ...(normalizeRecipientIds(block.config.groupPlayerIds)
+        ? { groupPlayerIds: normalizeRecipientIds(block.config.groupPlayerIds) }
+        : { groupPlayerIds: undefined }),
+    },
+  }),
+  'message-player': (block) => ({
+    ...block,
+    config: {
+      ...block.config,
+      ...(normalizeRecipientIds(block.config.playerIds)
+        ? { playerIds: normalizeRecipientIds(block.config.playerIds) }
+        : { playerIds: undefined }),
+    },
+  }),
+};
+
+export function normalizePipelineForSubmission(pipeline: PipelineBlock[]): PipelineBlock[] {
+  return pipeline.map((block) => pipelineBlockConfigNormalizers[block.blockType]?.(block) ?? block);
+}
+
+export function normalizeEventFormValues(values: EventFormValues): EventFormValues {
+  return {
+    ...values,
+    pipeline: normalizePipelineForSubmission(values.pipeline),
+  };
+}
+

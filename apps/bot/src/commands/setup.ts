@@ -1,11 +1,49 @@
 import {
+  ApplicationCommandOptionType,
   MessageFlags,
+  type AutocompleteInteraction,
   type ChatInputCommandInteraction,
   type GuildMember,
   type InteractionDeferReplyOptions,
 } from 'discord.js';
+import { botRequestOptions } from '../config.js';
+import { listGameSystems } from '../api/generated/endpoints/systems/systems.js';
 import { setupChannel } from '../api/generated/endpoints/bot/bot.js';
 import { syncParticipants } from '../api/participants.js';
+import type { BotChatCommand } from '../discord/command-types.js';
+
+const DEFAULT_GAME_SYSTEM_ID = 'vtm-v5';
+const GAME_SYSTEM_OPTION_NAME = 'game-system';
+
+export async function autocompleteSetup(interaction: AutocompleteInteraction): Promise<void> {
+  const focused = interaction.options.getFocused(true);
+  if (focused.name !== GAME_SYSTEM_OPTION_NAME) {
+    await interaction.respond([]);
+    return;
+  }
+
+  const systems = await listGameSystems(botRequestOptions());
+  const query = String(focused.value ?? '').trim().toLowerCase();
+  const choices = systems.data
+    .filter((system) => {
+      if (!query) {
+        return true;
+      }
+
+      return (
+        system.id.toLowerCase().includes(query) ||
+        system.name.toLowerCase().includes(query) ||
+        system.version.toLowerCase().includes(query)
+      );
+    })
+    .slice(0, 25)
+    .map((system) => ({
+      name: `${system.name} (${system.version})`,
+      value: system.id,
+    }));
+
+  await interaction.respond(choices);
+}
 
 export async function handleSetup(interaction: ChatInputCommandInteraction): Promise<void> {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral } as InteractionDeferReplyOptions);
@@ -24,6 +62,9 @@ export async function handleSetup(interaction: ChatInputCommandInteraction): Pro
       return;
     }
 
+    const gameSystemId =
+      interaction.options.getString(GAME_SYSTEM_OPTION_NAME) ?? DEFAULT_GAME_SYSTEM_ID;
+
     const response = await setupChannel(
       {
         guildId,
@@ -31,9 +72,9 @@ export async function handleSetup(interaction: ChatInputCommandInteraction): Pro
         discordChannelId,
         channelName,
         campaignName: guildName,
-        gameSystemId: 'vtm-v5',
+        gameSystemId,
       },
-      { headers: { 'x-bot-key': process.env.BOT_API_KEY || '' } },
+      botRequestOptions(),
     );
 
     if (response.status === 'ok') {
@@ -55,7 +96,7 @@ export async function handleSetup(interaction: ChatInputCommandInteraction): Pro
           member?.displayName ?? interaction.user.displayName ?? interaction.user.username;
         await syncParticipants(
           { guildId, participants: [{ discordUserId: interaction.user.id, discordName }] },
-          { headers: { 'x-bot-key': process.env.BOT_API_KEY || '' } },
+          botRequestOptions(),
         );
       } catch (syncErr) {
         console.error('Setup: failed to auto-register caller as participant:', syncErr);
@@ -70,3 +111,22 @@ export async function handleSetup(interaction: ChatInputCommandInteraction): Pro
     await interaction.editReply('Failed to setup channel. Please try again later.');
   }
 }
+
+export const setupCommand: BotChatCommand = {
+  data: {
+    name: 'setup',
+    description: 'Initialize this channel and server for use with Constancia',
+    options: [
+      {
+        name: GAME_SYSTEM_OPTION_NAME,
+        type: ApplicationCommandOptionType.String,
+        description: 'Choose the game system for the linked campaign',
+        required: false,
+        autocomplete: true,
+      },
+    ],
+  },
+  execute: handleSetup,
+  autocomplete: autocompleteSetup,
+};
+

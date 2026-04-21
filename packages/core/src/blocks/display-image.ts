@@ -10,6 +10,7 @@ export const displayImageBlock: BlockDefinition<DisplayImageConfig> = {
   label: 'Display Image',
   configSchema: {
     type: 'object',
+    additionalProperties: false,
     properties: {
       imageUrl: { type: 'string' },
       caption: { type: 'string' },

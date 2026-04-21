@@ -5,9 +5,13 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import type { ListEvents200DataItemPipelineItemConfig } from './listEvents200DataItemPipelineItemConfig.js';
+import type { ListEvents200DataItemPipelineItemAnyOf } from './listEvents200DataItemPipelineItemAnyOf.js';
+import type { ListEvents200DataItemPipelineItemAnyOfFive } from './listEvents200DataItemPipelineItemAnyOfFive.js';
+import type { ListEvents200DataItemPipelineItemAnyOfNine } from './listEvents200DataItemPipelineItemAnyOfNine.js';
+import type { ListEvents200DataItemPipelineItemAnyOfOnetwo } from './listEvents200DataItemPipelineItemAnyOfOnetwo.js';
+import type { ListEvents200DataItemPipelineItemAnyOfOnefive } from './listEvents200DataItemPipelineItemAnyOfOnefive.js';
+import type { ListEvents200DataItemPipelineItemAnyOfOneeight } from './listEvents200DataItemPipelineItemAnyOfOneeight.js';
+import type { ListEvents200DataItemPipelineItemAnyOfTwoone } from './listEvents200DataItemPipelineItemAnyOfTwoone.js';
+import type { ListEvents200DataItemPipelineItemAnyOfTwofive } from './listEvents200DataItemPipelineItemAnyOfTwofive.js';
 
-export type ListEvents200DataItemPipelineItem = {
-  blockType: string;
-  config: ListEvents200DataItemPipelineItemConfig;
-};
+export type ListEvents200DataItemPipelineItem = ListEvents200DataItemPipelineItemAnyOf | ListEvents200DataItemPipelineItemAnyOfFive | ListEvents200DataItemPipelineItemAnyOfNine | ListEvents200DataItemPipelineItemAnyOfOnetwo | ListEvents200DataItemPipelineItemAnyOfOnefive | ListEvents200DataItemPipelineItemAnyOfOneeight | ListEvents200DataItemPipelineItemAnyOfTwoone | ListEvents200DataItemPipelineItemAnyOfTwofive;

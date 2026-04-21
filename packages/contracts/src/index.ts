@@ -5,17 +5,36 @@ export type {
   BlockDefinition,
   BlockResult,
   BlockMessage,
+  SendMessagesPayload,
+  ResolvedMessageRecipients,
   BlockInstance,
   EventPipeline,
 } from './block.js';
 
-export type { TestConfig, TestConfigField, GameSystem } from './game-system.js';
+export { blockMessageSchema, sendMessagesPayloadSchema, resolveMessageRecipients } from './block.js';
+
+export type {
+  TestConfig,
+  TestConfigField,
+  GameSystem,
+  NpcSystemBlockDefinition,
+  NpcSystemBlockOption,
+} from './game-system.js';
 
 export type { Campaign, Channel, ChannelType } from './campaign.js';
 
 export type { Character } from './character.js';
 
-export type { Npc, NpcFact, NpcKnowledge } from './npc.js';
+export type { PlayerUserRef } from './player-user-ref.js';
+
+export type {
+  Npc,
+  NpcFact,
+  NpcFactWithKnowledge,
+  NpcKnowledge,
+  NpcSystemBlock,
+  NpcSystemBlockValue,
+} from './npc.js';
 
 export type { GameEvent, EventStatus } from './event.js';
 

@@ -1,9 +1,24 @@
 import type { BlockDefinition } from '@constancia/contracts';
 
+function normalizeRecipientIds(ids: string | string[] | undefined): string[] {
+  if (Array.isArray(ids)) {
+    return ids.map((id) => id.trim()).filter(Boolean);
+  }
+
+  if (typeof ids === 'string') {
+    return ids
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
 interface MessageGroupConfig {
   content: string;
   imageUrl?: string;
-  groupPlayerIds?: string[];
+  groupPlayerIds?: string | string[];
 }
 
 export const messageGroupBlock: BlockDefinition<MessageGroupConfig> = {
@@ -11,6 +26,7 @@ export const messageGroupBlock: BlockDefinition<MessageGroupConfig> = {
   label: 'Message Group',
   configSchema: {
     type: 'object',
+    additionalProperties: false,
     properties: {
       content: { type: 'string' },
       imageUrl: { type: 'string' },
@@ -18,15 +34,22 @@ export const messageGroupBlock: BlockDefinition<MessageGroupConfig> = {
     },
     required: ['content'],
   },
-  execute: async (config: MessageGroupConfig) => ({
-    output: null,
-    messages: [
-      {
-        target: 'group',
-        targetId: config.groupPlayerIds?.join(',') ?? 'group',
-        content: config.content,
-        imageUrl: config.imageUrl,
-      },
-    ],
-  }),
+  execute: async (config: MessageGroupConfig) => {
+    const targetIds = normalizeRecipientIds(config.groupPlayerIds);
+
+    return {
+      output: null,
+      messages:
+        targetIds.length > 0
+          ? [
+              {
+                target: 'group' as const,
+                targetIds,
+                content: config.content,
+                imageUrl: config.imageUrl,
+              },
+            ]
+          : [],
+    };
+  },
 };

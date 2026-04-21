@@ -9,6 +9,8 @@ services:
       POSTGRES_PASSWORD: constancia
     ports:
       - '${POSTGRES_PORT:-5433}:5432'
+    networks:
+      - control-plane
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -35,6 +37,10 @@ services:
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3001}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-constancia-development-secret-change-me-12345}
       BOT_API_KEY: ${BOT_API_KEY:-constancia-bot-dev-key}
+      BOT_INTERNAL_URL: ${BOT_INTERNAL_URL:-http://bot:3002}
+    networks:
+      - edge
+      - control-plane
     ports:
       - '${BACKEND_PORT:-3001}:3000'
     command:
@@ -106,6 +112,9 @@ services:
       CLIENT_ID: ${CLIENT_ID:-}
       GUILD_ID: ${GUILD_ID:-}
       BOT_API_KEY: ${BOT_API_KEY:-constancia-bot-dev-key}
+      BOT_HTTP_PORT: ${BOT_HTTP_PORT:-3002}
+    networks:
+      - control-plane
     command:
       [
         'sh',
@@ -149,6 +158,9 @@ services:
     environment:
       NODE_ENV: development
       VITE_API_URL: ${VITE_API_URL:-http://localhost:3001}
+    networks:
+      - edge
+      - control-plane
     ports:
       - '${FRONTEND_PORT:-3000}:3000'
     command:
@@ -197,3 +209,11 @@ services:
 
 volumes:
   postgres_data:
+
+networks:
+  edge:
+    driver: bridge
+  control-plane:
+    driver: bridge
+    internal: true
+

@@ -22,6 +22,8 @@ function createTestConfig() {
     betterAuthUrl: 'http://localhost:3001',
     betterAuthPath: '/api/auth',
     magicLinkFrontendPath: '/auth',
+    botApiKey: 'constancia-bot-dev-key',
+    botInternalUrl: 'http://localhost:3002',
   };
 }
 
@@ -70,6 +72,8 @@ describe('backend app', () => {
         '/api/v1/auth/magic-link',
         '/api/v1/auth/verify',
         '/api/v1/auth/logout',
+        '/api/v1/public/campaigns/{id}/npcs/for/{discordId}',
+        '/api/v1/public/campaigns/{id}/npcs/{npcId}/for/{discordId}',
         '/api/v1/campaigns/',
         '/api/v1/campaigns/{id}',
         '/api/v1/campaigns/{id}/channels/',
@@ -120,6 +124,12 @@ describe('backend app', () => {
       },
       { method: 'GET', url: '/api/v1/auth/verify?token=abc123', statusCode: 200 },
       { method: 'POST', url: '/api/v1/auth/logout', statusCode: 200 },
+      { method: 'GET', url: '/api/v1/public/campaigns/campaign-1/npcs/for/discord-user-1', statusCode: 200 },
+      {
+        method: 'GET',
+        url: '/api/v1/public/campaigns/campaign-1/npcs/npc-1/for/discord-user-1',
+        statusCode: 404,
+      },
       { method: 'GET', url: '/api/v1/campaigns', statusCode: 401 },
       {
         method: 'POST',
@@ -336,6 +346,8 @@ describe('backend app', () => {
       betterAuthUrl: 'http://localhost:3001',
       betterAuthPath: '/api/auth',
       magicLinkFrontendPath: '/auth',
+      botApiKey: 'constancia-bot-dev-key',
+      botInternalUrl: 'http://localhost:3002',
     });
   });
 

@@ -56,6 +56,14 @@ export type SystemSummary = {
   name: string;
 };
 
+export type RecipientOption = {
+  id: string;
+  characterId?: string;
+  discordUserId: string;
+  displayName: string;
+  secondaryLabel: string;
+};
+
 export type WarRoomContext = {
   campaign: CampaignSummary;
   channels: ChannelEntry[];
@@ -315,3 +323,39 @@ export function normalizeSystems(input: unknown): SystemSummary[] {
     };
   });
 }
+
+export function buildRecipientOptions(
+  rawCharacters: ListCharacters200DataItem[],
+  fallbackPlayers: PlayerPresence[],
+): RecipientOption[] {
+  if (rawCharacters.length > 0) {
+    const seen = new Set<string>();
+
+    return rawCharacters
+      .filter((character) => {
+        if (!character.discordUserId || seen.has(character.discordUserId)) {
+          return false;
+        }
+
+        seen.add(character.discordUserId);
+        return true;
+      })
+      .map((character) => ({
+        id: character.discordUserId,
+        characterId: character.id,
+        discordUserId: character.discordUserId,
+        displayName: character.gameName || character.discordName || character.name,
+        secondaryLabel: [character.discordName || character.name, character.discordUserId]
+          .filter(Boolean)
+          .join(' · '),
+      }));
+  }
+
+  return fallbackPlayers.map((player) => ({
+    id: player.id,
+    discordUserId: player.id,
+    displayName: player.name,
+    secondaryLabel: `${player.character} · ${player.player}`,
+  }));
+}
+

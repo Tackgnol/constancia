@@ -1,3 +1,5 @@
+import { registeredBlockSchemas } from './blocks.js';
+
 export const identifierParamsSchema = {
   type: 'object',
   additionalProperties: false,
@@ -34,6 +36,17 @@ export const npcParamsSchema = {
     npcId: { type: 'string' },
   },
   required: ['id', 'npcId'],
+} as const;
+
+export const npcPlayerParamsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    npcId: { type: 'string' },
+    discordId: { type: 'string' },
+  },
+  required: ['id', 'npcId', 'discordId'],
 } as const;
 
 export const eventParamsSchema = {
@@ -199,13 +212,49 @@ export const characterPatchBodySchema = {
   },
 } as const;
 
+const npcSystemBlockSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    systemId: { type: 'string' },
+    blockType: { type: 'string' },
+    label: { type: 'string' },
+    value: {},
+  },
+  required: ['blockType', 'label', 'value'],
+} as const;
+
+const knownPlayerSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    characterId: { type: 'string' },
+    discordUserId: { type: 'string' },
+    displayName: { type: 'string' },
+    secondaryLabel: { type: 'string' },
+  },
+  required: ['characterId', 'discordUserId', 'displayName', 'secondaryLabel'],
+} as const;
+
+const npcFactCreateSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    content: { type: 'string' },
+    sortOrder: { type: 'integer' },
+  },
+  required: ['content'],
+} as const;
+
 export const npcBodySchema = {
   type: 'object',
   additionalProperties: false,
   properties: {
     name: { type: 'string' },
+    systemBlocks: { type: 'array', items: npcSystemBlockSchema },
     imageUrl: { type: 'string' },
     description: { type: 'string' },
+    facts: { type: 'array', items: npcFactCreateSchema },
   },
   required: ['name'],
 } as const;
@@ -215,19 +264,14 @@ export const npcPatchBodySchema = {
   additionalProperties: false,
   properties: {
     name: { type: 'string' },
+    systemBlocks: { type: 'array', items: npcSystemBlockSchema },
     imageUrl: { type: 'string' },
     description: { type: 'string' },
   },
 } as const;
 
 export const npcFactBodySchema = {
-  type: 'object',
-  additionalProperties: false,
-  properties: {
-    content: { type: 'string' },
-    sortOrder: { type: 'integer' },
-  },
-  required: ['content'],
+  ...npcFactCreateSchema,
 } as const;
 
 export const npcRevealBodySchema = {
@@ -248,6 +292,26 @@ export const npcRevealBodySchema = {
   required: ['npcFactIds', 'discordUserIds'],
 } as const;
 
+function withStrictObjectDefaults(schema: Record<string, unknown>): Record<string, unknown> {
+  return schema.type === 'object' && typeof schema.additionalProperties === 'undefined'
+    ? { ...schema, additionalProperties: false }
+    : schema;
+}
+
+const blockInstanceVariants = registeredBlockSchemas.map((block) => ({
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    blockType: { const: block.type, type: 'string' },
+    config: withStrictObjectDefaults(block.configSchema as Record<string, unknown>),
+  },
+  required: ['blockType', 'config'],
+}));
+
+export const blockInstanceSchema = {
+  anyOf: blockInstanceVariants,
+} as const;
+
 export const eventBodySchema = {
   type: 'object',
   additionalProperties: false,
@@ -258,15 +322,7 @@ export const eventBodySchema = {
     shortCircuit: { type: 'boolean' },
     pipeline: {
       type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          blockType: { type: 'string' },
-          config: { type: 'object', additionalProperties: true },
-        },
-        required: ['blockType', 'config'],
-      },
+      items: blockInstanceSchema,
     },
   },
   required: ['name', 'type', 'channelId', 'pipeline'],
@@ -281,15 +337,7 @@ export const eventPatchBodySchema = {
     shortCircuit: { type: 'boolean' },
     pipeline: {
       type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          blockType: { type: 'string' },
-          config: { type: 'object', additionalProperties: true },
-        },
-        required: ['blockType', 'config'],
-      },
+      items: blockInstanceSchema,
     },
   },
 } as const;
@@ -421,9 +469,10 @@ export const npcSchema = {
     name: { type: 'string' },
     imageUrl: { type: 'string' },
     description: { type: 'string' },
+    systemBlocks: { type: 'array', items: npcSystemBlockSchema },
     campaignId: { type: 'string' },
   },
-  required: ['id', 'name', 'description', 'campaignId'],
+  required: ['id', 'name', 'description', 'systemBlocks', 'campaignId'],
 } as const;
 
 export const npcFactSchema = {
@@ -438,6 +487,22 @@ export const npcFactSchema = {
   required: ['id', 'content', 'sortOrder', 'npcId'],
 } as const;
 
+export const npcFactKnowledgeSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    content: { type: 'string' },
+    sortOrder: { type: 'integer' },
+    npcId: { type: 'string' },
+    knownTo: {
+      type: 'array',
+      items: knownPlayerSchema,
+    },
+  },
+  required: ['id', 'content', 'sortOrder', 'npcId', 'knownTo'],
+} as const;
+
 export const npcWithFactsSchema = {
   type: 'object',
   additionalProperties: false,
@@ -446,20 +511,39 @@ export const npcWithFactsSchema = {
     name: { type: 'string' },
     imageUrl: { type: 'string' },
     description: { type: 'string' },
+    systemBlocks: { type: 'array', items: npcSystemBlockSchema },
     campaignId: { type: 'string' },
-    facts: { type: 'array', items: { type: 'object', additionalProperties: true } },
+    facts: { type: 'array', items: npcFactSchema },
   },
-  required: ['id', 'name', 'description', 'campaignId', 'facts'],
+  required: ['id', 'name', 'description', 'systemBlocks', 'campaignId', 'facts'],
 } as const;
 
-export const blockInstanceSchema = {
+export const playerVisibleNpcSchema = {
   type: 'object',
   additionalProperties: false,
   properties: {
-    blockType: { type: 'string' },
-    config: { type: 'object', additionalProperties: true },
+    id: { type: 'string' },
+    name: { type: 'string' },
+    imageUrl: { type: 'string' },
+    campaignId: { type: 'string' },
+    facts: { type: 'array', items: npcFactSchema },
   },
-  required: ['blockType', 'config'],
+  required: ['id', 'name', 'campaignId', 'facts'],
+} as const;
+
+export const npcWithKnowledgeSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    imageUrl: { type: 'string' },
+    description: { type: 'string' },
+    systemBlocks: { type: 'array', items: npcSystemBlockSchema },
+    campaignId: { type: 'string' },
+    facts: { type: 'array', items: npcFactKnowledgeSchema },
+  },
+  required: ['id', 'name', 'description', 'systemBlocks', 'campaignId', 'facts'],
 } as const;
 
 export const gameEventSchema = {
@@ -556,12 +640,51 @@ export const journalForPlayerSchema = {
   required: ['quests', 'summaries'],
 } as const;
 
+export const blockMessagePlayerSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    target: { const: 'player', type: 'string' },
+    targetId: { type: 'string' },
+    content: { type: 'string' },
+    imageUrl: { type: 'string' },
+  },
+  required: ['target', 'content'],
+} as const;
+
+export const blockMessageChannelSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    target: { const: 'channel', type: 'string' },
+    content: { type: 'string' },
+    imageUrl: { type: 'string' },
+  },
+  required: ['target', 'content'],
+} as const;
+
+export const blockMessageGroupSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    target: { const: 'group', type: 'string' },
+    targetIds: { type: 'array', items: { type: 'string' } },
+    content: { type: 'string' },
+    imageUrl: { type: 'string' },
+  },
+  required: ['target', 'targetIds', 'content'],
+} as const;
+
+export const blockMessageSchema = {
+  anyOf: [blockMessagePlayerSchema, blockMessageChannelSchema, blockMessageGroupSchema],
+} as const;
+
 export const fireEventResultSchema = {
   type: 'object',
   additionalProperties: false,
   properties: {
     eventId: { type: 'string' },
-    messages: { type: 'array', items: { type: 'object', additionalProperties: true } },
+    messages: { type: 'array', items: blockMessageSchema },
     halted: { type: 'boolean' },
   },
   required: ['eventId', 'messages', 'halted'],
@@ -573,7 +696,7 @@ export const botTestResultResponseSchema = {
   properties: {
     eventId: { type: 'string' },
     campaignId: { type: 'string' },
-    messages: { type: 'array', items: { type: 'object', additionalProperties: true } },
+    messages: { type: 'array', items: blockMessageSchema },
     halted: { type: 'boolean' },
   },
   required: ['eventId', 'campaignId', 'messages', 'halted'],

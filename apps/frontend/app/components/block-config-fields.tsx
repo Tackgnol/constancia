@@ -1,9 +1,12 @@
 import { useFieldArray, useFormContext } from 'react-hook-form';
+import { useOutletContext } from 'react-router';
 import { Input } from './ui/input.js';
+import { RecipientMultiValueField } from './recipient-multi-value-field.js';
 import { Label } from './ui/label.js';
 import { Textarea } from './ui/textarea.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select.js';
 import type { BlockType, EventFormValues } from '@/lib/event-schema';
+import { buildRecipientOptions, type WarRoomContext } from '@/lib/war-room-data';
 
 interface Props {
   index: number;
@@ -56,6 +59,7 @@ function ConfigField({
 }
 
 export function BlockConfigFields({ index, blockType }: Props) {
+  const warRoom = useOutletContext<WarRoomContext>();
   const {
     register,
     formState: { errors },
@@ -64,6 +68,7 @@ export function BlockConfigFields({ index, blockType }: Props) {
     string,
     { message?: string }
   >;
+  const recipientOptions = buildRecipientOptions(warRoom.rawCharacters, warRoom.players);
 
   if (blockType === 'message-player') {
     return (
@@ -79,12 +84,12 @@ export function BlockConfigFields({ index, blockType }: Props) {
           <ConfigField
             label="Player IDs"
             optional
-            hint="Comma-separated — leave blank to target the triggering player"
+            hint="Leave blank to target the triggering player. Choose one or many recipients below."
           >
-            <Input
-              type="text"
-              placeholder="player-1, player-2…"
-              {...register(`pipeline.${index}.config.playerIds` as const)}
+            <RecipientMultiValueField
+              name={`pipeline.${index}.config.playerIds` as const}
+              options={recipientOptions}
+              emptyLabel="No specific recipients selected — the triggering player will receive the message."
             />
           </ConfigField>
           <ConfigField label="Image URL" optional>
@@ -131,11 +136,15 @@ export function BlockConfigFields({ index, blockType }: Props) {
           />
         </ConfigField>
         <div className="grid grid-cols-2 gap-3">
-          <ConfigField label="Player IDs" optional>
-            <Input
-              type="text"
-              placeholder="player-1, player-2…"
-              {...register(`pipeline.${index}.config.groupPlayerIds` as const)}
+          <ConfigField
+            label="Player IDs"
+            optional
+            hint="Pick the group recipients explicitly. Empty groups will not emit a message."
+          >
+            <RecipientMultiValueField
+              name={`pipeline.${index}.config.groupPlayerIds` as const}
+              options={recipientOptions}
+              emptyLabel="No group recipients selected yet."
             />
           </ConfigField>
           <ConfigField label="Image URL" optional>

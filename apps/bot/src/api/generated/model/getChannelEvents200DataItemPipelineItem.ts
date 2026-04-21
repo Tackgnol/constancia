@@ -5,9 +5,13 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
-import type { GetChannelEvents200DataItemPipelineItemConfig } from './getChannelEvents200DataItemPipelineItemConfig.js';
+import type { GetChannelEvents200DataItemPipelineItemAnyOf } from './getChannelEvents200DataItemPipelineItemAnyOf.js';
+import type { GetChannelEvents200DataItemPipelineItemAnyOfFive } from './getChannelEvents200DataItemPipelineItemAnyOfFive.js';
+import type { GetChannelEvents200DataItemPipelineItemAnyOfNine } from './getChannelEvents200DataItemPipelineItemAnyOfNine.js';
+import type { GetChannelEvents200DataItemPipelineItemAnyOfOnetwo } from './getChannelEvents200DataItemPipelineItemAnyOfOnetwo.js';
+import type { GetChannelEvents200DataItemPipelineItemAnyOfOnefive } from './getChannelEvents200DataItemPipelineItemAnyOfOnefive.js';
+import type { GetChannelEvents200DataItemPipelineItemAnyOfOneeight } from './getChannelEvents200DataItemPipelineItemAnyOfOneeight.js';
+import type { GetChannelEvents200DataItemPipelineItemAnyOfTwoone } from './getChannelEvents200DataItemPipelineItemAnyOfTwoone.js';
+import type { GetChannelEvents200DataItemPipelineItemAnyOfTwofive } from './getChannelEvents200DataItemPipelineItemAnyOfTwofive.js';
 
-export type GetChannelEvents200DataItemPipelineItem = {
-  blockType: string;
-  config: GetChannelEvents200DataItemPipelineItemConfig;
-};
+export type GetChannelEvents200DataItemPipelineItem = GetChannelEvents200DataItemPipelineItemAnyOf | GetChannelEvents200DataItemPipelineItemAnyOfFive | GetChannelEvents200DataItemPipelineItemAnyOfNine | GetChannelEvents200DataItemPipelineItemAnyOfOnetwo | GetChannelEvents200DataItemPipelineItemAnyOfOnefive | GetChannelEvents200DataItemPipelineItemAnyOfOneeight | GetChannelEvents200DataItemPipelineItemAnyOfTwoone | GetChannelEvents200DataItemPipelineItemAnyOfTwofive;

@@ -1,16 +1,15 @@
 import {
+  ApplicationCommandOptionType,
   MessageFlags,
   type ChatInputCommandInteraction,
   type GuildMember,
   type InteractionDeferReplyOptions,
 } from 'discord.js';
+import { botRequestOptions } from '../config.js';
 import { getCampaignByGuild } from '../api/generated/endpoints/bot/bot.js';
 import { syncParticipants, removeParticipant } from '../api/participants.js';
 import { listCharacters } from '../api/generated/endpoints/characters/characters.js';
-
-function buildHeaders(): RequestInit {
-  return { headers: { 'x-bot-key': process.env.BOT_API_KEY ?? '' } };
-}
+import type { BotChatCommand } from '../discord/command-types.js';
 
 export async function handleParticipants(interaction: ChatInputCommandInteraction): Promise<void> {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral } as InteractionDeferReplyOptions);
@@ -31,7 +30,7 @@ export async function handleParticipants(interaction: ChatInputCommandInteractio
 
       const result = await syncParticipants(
         { guildId, participants: [{ discordUserId: user.id, discordName }] },
-        buildHeaders(),
+        botRequestOptions(),
       );
 
       if (result.status === 'ok') {
@@ -44,7 +43,10 @@ export async function handleParticipants(interaction: ChatInputCommandInteractio
     } else if (sub === 'remove') {
       const user = interaction.options.getUser('user', true);
 
-      const result = await removeParticipant({ guildId, discordUserId: user.id }, buildHeaders());
+      const result = await removeParticipant(
+        { guildId, discordUserId: user.id },
+        botRequestOptions(),
+      );
 
       if (result.deleted) {
         await interaction.editReply(`✓ **${user.username}** removed from the campaign.`);
@@ -52,14 +54,14 @@ export async function handleParticipants(interaction: ChatInputCommandInteractio
         await interaction.editReply(`${user.username} is not a registered participant.`);
       }
     } else if (sub === 'list') {
-      const campaignResult = await getCampaignByGuild({ guildId }, buildHeaders());
+      const campaignResult = await getCampaignByGuild({ guildId }, botRequestOptions());
       if (campaignResult.status !== 'ok') {
         await interaction.editReply('This server has no campaign set up. Run `/setup` first.');
         return;
       }
 
       const campaignId = campaignResult.data.id;
-      const charsResult = await listCharacters({ id: campaignId }, buildHeaders());
+      const charsResult = await listCharacters({ id: campaignId }, botRequestOptions());
       const chars = charsResult.status === 'ok' ? charsResult.data : [];
 
       if (chars.length === 0) {
@@ -86,3 +88,45 @@ export async function handleParticipants(interaction: ChatInputCommandInteractio
     await interaction.editReply(message);
   }
 }
+
+export const participantsCommand: BotChatCommand = {
+  data: {
+    name: 'participants',
+    description: 'Manage campaign participants',
+    options: [
+      {
+        name: 'add',
+        type: ApplicationCommandOptionType.Subcommand,
+        description: 'Add a player as a participant',
+        options: [
+          {
+            name: 'user',
+            type: ApplicationCommandOptionType.User,
+            description: 'The Discord user to add',
+            required: true,
+          },
+        ],
+      },
+      {
+        name: 'remove',
+        type: ApplicationCommandOptionType.Subcommand,
+        description: 'Remove a participant from the campaign',
+        options: [
+          {
+            name: 'user',
+            type: ApplicationCommandOptionType.User,
+            description: 'The Discord user to remove',
+            required: true,
+          },
+        ],
+      },
+      {
+        name: 'list',
+        type: ApplicationCommandOptionType.Subcommand,
+        description: 'List current campaign participants',
+      },
+    ],
+  },
+  execute: handleParticipants,
+};
+

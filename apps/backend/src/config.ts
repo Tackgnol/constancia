@@ -10,7 +10,8 @@ export interface BackendConfig {
   betterAuthUrl: string;
   betterAuthPath: string;
   magicLinkFrontendPath: string;
-  botApiKey?: string;
+  botApiKey: string;
+  botInternalUrl: string;
 }
 
 const DEFAULT_PORT = 3000;
@@ -23,7 +24,8 @@ const DEFAULT_BETTER_AUTH_URL = 'http://localhost:3001';
 const DEFAULT_BETTER_AUTH_PATH = '/api/auth';
 const DEFAULT_MAGIC_LINK_FRONTEND_PATH = '/auth';
 const DEFAULT_BETTER_AUTH_SECRET = 'constancia-development-secret-change-me-12345';
-export const DEFAULT_BOT_API_KEY = 'constancia-bot-dev-key';
+const DEFAULT_DEV_BOT_API_KEY = 'constancia-bot-dev-key';
+const DEFAULT_BOT_INTERNAL_URL = 'http://localhost:3002';
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig {
   const nodeEnv = env.NODE_ENV ?? 'development';
@@ -31,6 +33,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
 
   if (isProduction && !env.BETTER_AUTH_SECRET) {
     throw new Error('BETTER_AUTH_SECRET must be set in production');
+  }
+
+  const botApiKey = env.BOT_API_KEY ?? (isProduction ? undefined : DEFAULT_DEV_BOT_API_KEY);
+  if (!botApiKey) {
+    throw new Error('BOT_API_KEY must be set in production');
+  }
+
+  if (isProduction && !env.BOT_INTERNAL_URL) {
+    throw new Error('BOT_INTERNAL_URL must be set in production');
   }
 
   return {
@@ -45,7 +56,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     betterAuthUrl: env.BETTER_AUTH_URL ?? DEFAULT_BETTER_AUTH_URL,
     betterAuthPath: env.BETTER_AUTH_PATH ?? DEFAULT_BETTER_AUTH_PATH,
     magicLinkFrontendPath: env.MAGIC_LINK_FRONTEND_PATH ?? DEFAULT_MAGIC_LINK_FRONTEND_PATH,
-    ...(env.BOT_API_KEY !== undefined ? { botApiKey: env.BOT_API_KEY } : {}),
+    botApiKey,
+    botInternalUrl: env.BOT_INTERNAL_URL ?? DEFAULT_BOT_INTERNAL_URL,
   };
 }
 

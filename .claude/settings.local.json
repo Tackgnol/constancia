@@ -14,7 +14,9 @@
       "Bash(npx shadcn@latest init --yes)",
       "Bash(npx shadcn@latest add button input label select checkbox textarea card --yes)",
       "Bash(xargs ls *)",
-      "Bash(DATABASE_URL=\"postgresql://constancia:constancia@localhost:5433/constancia?schema=public\" npm run test)"
+      "Bash(DATABASE_URL=\"postgresql://constancia:constancia@localhost:5433/constancia?schema=public\" npm run test)",
+      "Bash(grep -iE '\\\\.env\\($|\\\\.\\)')",
+      "Bash(git check-ignore *)"
     ]
   }
 }
