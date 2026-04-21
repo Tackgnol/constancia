@@ -1,0 +1,43 @@
+{
+  "name": "constancia",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "generate:api": "orval --config orval.config.ts && node scripts/orval-fix-node-imports.mjs",
+    "lint": "turbo run lint",
+    "lint:root": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@better-auth/cli": "^1.4.21",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22",
+    "eslint": "^10.2.1",
+    "globals": "^17.5.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "orval": "^7.13.0",
+    "prettier": "^3",
+    "turbo": "^2",
+    "typescript": "^5.7",
+    "typescript-eslint": "^8.58.2"
+  },
+  "packageManager": "npm@11.10.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "kysely": "^0.28.14"
+  }
+}

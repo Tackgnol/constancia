@@ -1,0 +1,15 @@
+node_modules
+**/node_modules
+dist
+**/dist
+.turbo
+**/.turbo
+*.tsbuildinfo
+**/*.tsbuildinfo
+.git
+.idea
+.claude
+.superpowers
+coverage
+**/coverage
+npm-debug.log*

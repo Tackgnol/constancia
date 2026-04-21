@@ -1,0 +1,452 @@
+import type { FastifyPluginAsync } from 'fastify';
+import type { QuestEntryStatus } from '@constancia/db';
+import {
+  campaignParamsSchema,
+  deleteResponseSchema,
+  discordTargetParamsSchema,
+  journalForPlayerSchema,
+  questBodySchema,
+  questEntryBodySchema,
+  questEntryParamsSchema,
+  questEntrySchema,
+  questParamsSchema,
+  questPatchBodySchema,
+  questSchema,
+  sessionSummarySchema,
+  singleResponseSchema,
+  listResponseSchema,
+  summaryBodySchema,
+  summaryParamsSchema,
+} from '../schemas.js';
+import { getPrismaClient } from '../auth/prisma.js';
+
+interface CampaignParams {
+  id: string;
+}
+
+interface QuestParams {
+  id: string;
+  questId: string;
+}
+
+interface QuestEntryParams {
+  id: string;
+  questId: string;
+  entryId: string;
+}
+
+interface SummaryParams {
+  id: string;
+  sumId: string;
+}
+
+interface DiscordTargetParams {
+  id: string;
+  discordId: string;
+}
+
+interface QuestBody {
+  name: string;
+  description?: string;
+  visible?: boolean;
+}
+
+interface QuestPatchBody {
+  name?: string;
+  description?: string;
+  status?: string;
+  visible?: boolean;
+}
+
+interface QuestEntryBody {
+  content: string;
+  status?: string;
+  sortOrder?: number;
+}
+
+interface SummaryBody {
+  title: string;
+  content: string;
+  sessionDate: string;
+  visible?: boolean;
+  channelId?: string;
+}
+
+const questSelect = {
+  id: true,
+  name: true,
+  description: true,
+  campaignId: true,
+  status: true,
+  sortOrder: true,
+  visible: true,
+} as const;
+
+const questEntrySelect = {
+  id: true,
+  content: true,
+  questId: true,
+  status: true,
+  sortOrder: true,
+} as const;
+
+const summarySelect = {
+  id: true,
+  title: true,
+  content: true,
+  campaignId: true,
+  sessionDate: true,
+  visible: true,
+  channelId: true,
+} as const;
+
+const journalRoutes: FastifyPluginAsync = async (app) => {
+  app.get<{ Params: CampaignParams }>(
+    '/quests',
+    {
+      schema: {
+        tags: ['journal'],
+        summary: 'List quests',
+        operationId: 'listQuests',
+        params: campaignParamsSchema,
+        response: {
+          200: listResponseSchema(questSchema),
+        },
+      },
+    },
+    async (request) => {
+      const { id } = request.params;
+      const prisma = getPrismaClient();
+      const quests = await prisma.quest.findMany({
+        where: { campaignId: id },
+        select: { ...questSelect, entries: { select: questEntrySelect } },
+        orderBy: { sortOrder: 'asc' },
+      });
+      return { status: 'ok', data: quests };
+    },
+  );
+
+  app.post<{ Params: CampaignParams; Body: QuestBody }>(
+    '/quests',
+    {
+      schema: {
+        tags: ['journal'],
+        summary: 'Create a quest',
+        operationId: 'createQuest',
+        params: campaignParamsSchema,
+        body: questBodySchema,
+        response: {
+          201: singleResponseSchema(questSchema),
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { name, description, visible } = request.body;
+      const prisma = getPrismaClient();
+      reply.code(201);
+      const quest = await prisma.quest.create({
+        data: { name, description: description ?? '', campaignId: id, visible: visible ?? false },
+        select: questSelect,
+      });
+      return { status: 'ok', data: { ...quest, entries: [] } };
+    },
+  );
+
+  app.patch<{ Params: QuestParams; Body: QuestPatchBody }>(
+    '/quests/:questId',
+    {
+      schema: {
+        tags: ['journal'],
+        summary: 'Update a quest',
+        operationId: 'updateQuest',
+        params: questParamsSchema,
+        body: questPatchBodySchema,
+        response: {
+          200: singleResponseSchema(questSchema),
+        },
+      },
+    },
+    async (request, reply) => {
+      const { questId } = request.params;
+      const { name, description, status, visible } = request.body;
+      const prisma = getPrismaClient();
+      const data: Record<string, unknown> = {};
+      if (name !== undefined) data['name'] = name;
+      if (description !== undefined) data['description'] = description;
+      if (status !== undefined) data['status'] = status;
+      if (visible !== undefined) data['visible'] = visible;
+      try {
+        const quest = await prisma.quest.update({
+          where: { id: questId },
+          data,
+          select: { ...questSelect, entries: { select: questEntrySelect } },
+        });
+        return { status: 'ok', data: quest };
+      } catch (err) {
+        if (
+          typeof err === 'object' &&
+          err !== null &&
+          'code' in err &&
+          (err as { code: unknown }).code === 'P2025'
+        ) {
+          return reply.code(404).send({ status: 'error', data: { message: 'Not found' } });
+        }
+        throw err;
+      }
+    },
+  );
+
+  app.post<{ Params: QuestParams; Body: QuestEntryBody }>(
+    '/quests/:questId/entries',
+    {
+      schema: {
+        tags: ['journal'],
+        summary: 'Create a quest entry',
+        operationId: 'createQuestEntry',
+        params: questParamsSchema,
+        body: questEntryBodySchema,
+        response: {
+          201: singleResponseSchema(questEntrySchema),
+        },
+      },
+    },
+    async (request, reply) => {
+      const { questId } = request.params;
+      const { content, status, sortOrder } = request.body;
+      const prisma = getPrismaClient();
+      reply.code(201);
+      const entry = await prisma.questEntry.create({
+        data: {
+          questId,
+          content,
+          status: (status ?? 'pending') as QuestEntryStatus,
+          sortOrder: sortOrder ?? 0,
+        },
+        select: questEntrySelect,
+      });
+      return { status: 'ok', data: entry };
+    },
+  );
+
+  app.patch<{ Params: QuestEntryParams; Body: QuestEntryBody }>(
+    '/quests/:questId/entries/:entryId',
+    {
+      schema: {
+        tags: ['journal'],
+        summary: 'Update a quest entry',
+        operationId: 'updateQuestEntry',
+        params: questEntryParamsSchema,
+        body: questEntryBodySchema,
+        response: {
+          200: singleResponseSchema(questEntrySchema),
+        },
+      },
+    },
+    async (request, reply) => {
+      const { entryId } = request.params;
+      const { content, status, sortOrder } = request.body;
+      const prisma = getPrismaClient();
+      const data: Record<string, unknown> = {};
+      if (content !== undefined) data['content'] = content;
+      if (status !== undefined) data['status'] = status as QuestEntryStatus;
+      if (sortOrder !== undefined) data['sortOrder'] = sortOrder;
+      try {
+        const entry = await prisma.questEntry.update({
+          where: { id: entryId },
+          data,
+          select: questEntrySelect,
+        });
+        return { status: 'ok', data: entry };
+      } catch (err) {
+        if (
+          typeof err === 'object' &&
+          err !== null &&
+          'code' in err &&
+          (err as { code: unknown }).code === 'P2025'
+        ) {
+          return reply.code(404).send({ status: 'error', data: { message: 'Not found' } });
+        }
+        throw err;
+      }
+    },
+  );
+
+  app.delete(
+    '/quests/:questId/entries/:entryId',
+    {
+      schema: {
+        tags: ['journal'],
+        summary: 'Delete a quest entry',
+        operationId: 'deleteQuestEntry',
+        params: questEntryParamsSchema,
+        response: {
+          200: deleteResponseSchema,
+        },
+      },
+    },
+    async (request) => {
+      const params = request.params as QuestEntryParams;
+      const prisma = getPrismaClient();
+      try {
+        await prisma.questEntry.delete({ where: { id: params.entryId } });
+        return { status: 'ok', deleted: true };
+      } catch (err) {
+        if (
+          typeof err === 'object' &&
+          err !== null &&
+          'code' in err &&
+          (err as { code: unknown }).code === 'P2025'
+        ) {
+          return { status: 'ok', deleted: false };
+        }
+        throw err;
+      }
+    },
+  );
+
+  app.get<{ Params: CampaignParams }>(
+    '/summaries',
+    {
+      schema: {
+        tags: ['journal'],
+        summary: 'List session summaries',
+        operationId: 'listSessionSummaries',
+        params: campaignParamsSchema,
+        response: {
+          200: listResponseSchema(sessionSummarySchema),
+        },
+      },
+    },
+    async (request) => {
+      const { id } = request.params;
+      const prisma = getPrismaClient();
+      const summaries = await prisma.sessionSummary.findMany({
+        where: { campaignId: id },
+        select: summarySelect,
+        orderBy: { sessionDate: 'desc' },
+      });
+      return { status: 'ok', data: summaries };
+    },
+  );
+
+  app.post<{ Params: CampaignParams; Body: SummaryBody }>(
+    '/summaries',
+    {
+      schema: {
+        tags: ['journal'],
+        summary: 'Create a session summary',
+        operationId: 'createSessionSummary',
+        params: campaignParamsSchema,
+        body: summaryBodySchema,
+        response: {
+          201: singleResponseSchema(sessionSummarySchema),
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { title, content, sessionDate, visible, channelId } = request.body;
+      const prisma = getPrismaClient();
+      reply.code(201);
+      const summary = await prisma.sessionSummary.create({
+        data: {
+          title,
+          content,
+          campaignId: id,
+          sessionDate: new Date(sessionDate),
+          visible: visible ?? false,
+          channelId,
+        },
+        select: summarySelect,
+      });
+      return { status: 'ok', data: summary };
+    },
+  );
+
+  app.patch<{ Params: SummaryParams; Body: SummaryBody }>(
+    '/summaries/:sumId',
+    {
+      schema: {
+        tags: ['journal'],
+        summary: 'Update a session summary',
+        operationId: 'updateSessionSummary',
+        params: summaryParamsSchema,
+        body: summaryBodySchema,
+        response: {
+          200: singleResponseSchema(sessionSummarySchema),
+        },
+      },
+    },
+    async (request, reply) => {
+      const { sumId } = request.params;
+      const { title, content, sessionDate, visible, channelId } = request.body;
+      const prisma = getPrismaClient();
+      const data: Record<string, unknown> = {};
+      if (title !== undefined) data['title'] = title;
+      if (content !== undefined) data['content'] = content;
+      if (sessionDate !== undefined) data['sessionDate'] = new Date(sessionDate);
+      if (visible !== undefined) data['visible'] = visible;
+      if (channelId !== undefined) data['channelId'] = channelId;
+      try {
+        const summary = await prisma.sessionSummary.update({
+          where: { id: sumId },
+          data,
+          select: summarySelect,
+        });
+        return { status: 'ok', data: summary };
+      } catch (err) {
+        if (
+          typeof err === 'object' &&
+          err !== null &&
+          'code' in err &&
+          (err as { code: unknown }).code === 'P2025'
+        ) {
+          return reply.code(404).send({ status: 'error', data: { message: 'Not found' } });
+        }
+        throw err;
+      }
+    },
+  );
+
+  app.get<{ Params: DiscordTargetParams }>(
+    '/journal/for/:discordId',
+    {
+      schema: {
+        tags: ['journal'],
+        summary: 'Get player journal view',
+        operationId: 'getJournalForPlayer',
+        params: discordTargetParamsSchema,
+        response: {
+          200: singleResponseSchema(journalForPlayerSchema),
+        },
+      },
+    },
+    async (request) => {
+      const { id, discordId } = request.params;
+      const prisma = getPrismaClient();
+      const character = await prisma.character.findUnique({
+        where: { discordUserId_campaignId: { discordUserId: discordId, campaignId: id } },
+        select: { id: true },
+      });
+      if (!character) {
+        return { status: 'ok', data: { quests: [], summaries: [] } };
+      }
+      const [quests, summaries] = await Promise.all([
+        prisma.quest.findMany({
+          where: { campaignId: id, visible: true },
+          select: { ...questSelect, entries: { select: questEntrySelect } },
+          orderBy: { sortOrder: 'asc' },
+        }),
+        prisma.sessionSummary.findMany({
+          where: { campaignId: id, visible: true },
+          select: summarySelect,
+          orderBy: { sessionDate: 'desc' },
+        }),
+      ]);
+      return { status: 'ok', data: { quests, summaries } };
+    },
+  );
+};
+
+export default journalRoutes;

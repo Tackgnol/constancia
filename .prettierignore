@@ -1,0 +1,10 @@
+.claude/
+docs/
+node_modules
+dist
+.turbo
+coverage
+package-lock.json
+pnpm-lock.yaml
+*.prisma
+**/generated/

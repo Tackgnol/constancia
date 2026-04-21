@@ -1,0 +1,219 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: constancia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: constancia
+      POSTGRES_USER: constancia
+      POSTGRES_PASSWORD: constancia
+    ports:
+      - '${POSTGRES_PORT:-5433}:5432'
+    networks:
+      - control-plane
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U constancia -d constancia']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/node-workspace.Dockerfile
+      args:
+        WORKSPACE: apps/backend
+    container_name: constancia-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://constancia:constancia@postgres:5432/constancia?schema=public
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3001}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-constancia-development-secret-change-me-12345}
+      BOT_API_KEY: ${BOT_API_KEY:-constancia-bot-dev-key}
+      BOT_INTERNAL_URL: ${BOT_INTERNAL_URL:-http://bot:3002}
+    networks:
+      - edge
+      - control-plane
+    ports:
+      - '${BACKEND_PORT:-3001}:3000'
+    command:
+      [
+        'sh',
+        '-lc',
+        "npx turbo run build --filter=@constancia/contracts --filter=@constancia/core --filter=@constancia/db --filter=@constancia/systems && npm run --workspace=@constancia/db db:deploy && npm run dev --workspace=@constancia/backend; echo 'Backend dev server exited, keeping container alive for inspection.'; tail -f /dev/null",
+      ]
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/backend/src
+          target: /app/apps/backend/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: sync
+          path: ./packages/contracts/src
+          target: /app/packages/contracts/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: sync
+          path: ./packages/core/src
+          target: /app/packages/core/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: sync
+          path: ./packages/db/src
+          target: /app/packages/db/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: sync+restart
+          path: ./packages/db/prisma/schema.prisma
+          target: /app/packages/db/prisma/schema.prisma
+        - action: rebuild
+          path: ./apps/backend/package.json
+        - action: rebuild
+          path: ./packages/contracts/package.json
+        - action: rebuild
+          path: ./packages/core/package.json
+        - action: rebuild
+          path: ./packages/db/package.json
+        - action: rebuild
+          path: ./package.json
+        - action: rebuild
+          path: ./package-lock.json
+
+  bot:
+    build:
+      context: .
+      dockerfile: docker/node-workspace.Dockerfile
+      args:
+        WORKSPACE: apps/bot
+    container_name: constancia-bot
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://constancia:constancia@postgres:5432/constancia?schema=public
+      BACKEND_URL: http://backend:3000
+      DISCORD_TOKEN: ${DISCORD_TOKEN:-}
+      CLIENT_ID: ${CLIENT_ID:-}
+      GUILD_ID: ${GUILD_ID:-}
+      BOT_API_KEY: ${BOT_API_KEY:-constancia-bot-dev-key}
+      BOT_HTTP_PORT: ${BOT_HTTP_PORT:-3002}
+    networks:
+      - control-plane
+    command:
+      [
+        'sh',
+        '-lc',
+        "npx turbo run build --filter=@constancia/contracts --filter=@constancia/core --filter=@constancia/db --filter=@constancia/systems && npm run dev --workspace=@constancia/bot; echo 'Bot dev process exited, keeping container alive for inspection.'; tail -f /dev/null",
+      ]
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/bot/src
+          target: /app/apps/bot/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: sync
+          path: ./packages/contracts/src
+          target: /app/packages/contracts/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: rebuild
+          path: ./apps/bot/package.json
+        - action: rebuild
+          path: ./packages/contracts/package.json
+        - action: rebuild
+          path: ./package.json
+        - action: rebuild
+          path: ./package-lock.json
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/node-workspace.Dockerfile
+      args:
+        WORKSPACE: apps/frontend
+    container_name: constancia-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      NODE_ENV: development
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3001}
+    networks:
+      - edge
+      - control-plane
+    ports:
+      - '${FRONTEND_PORT:-3000}:3000'
+    command:
+      [
+        'sh',
+        '-lc',
+        "npx turbo run build --filter=@constancia/contracts --filter=@constancia/systems && npm run dev --workspace=@constancia/frontend -- --host 0.0.0.0 --port 3000; echo 'Frontend dev server exited, keeping container alive for inspection.'; tail -f /dev/null",
+      ]
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/frontend/app
+          target: /app/apps/frontend/app
+          ignore:
+            - dist/
+            - node_modules/
+        - action: sync+restart
+          path: ./apps/frontend/react-router.config.ts
+          target: /app/apps/frontend/react-router.config.ts
+        - action: sync+restart
+          path: ./apps/frontend/vite.config.ts
+          target: /app/apps/frontend/vite.config.ts
+        - action: sync+restart
+          path: ./apps/frontend/tsconfig.json
+          target: /app/apps/frontend/tsconfig.json
+        - action: sync
+          path: ./packages/contracts/src
+          target: /app/packages/contracts/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: sync
+          path: ./packages/systems/src
+          target: /app/packages/systems/src
+          ignore:
+            - dist/
+            - node_modules/
+        - action: rebuild
+          path: ./apps/frontend/package.json
+        - action: rebuild
+          path: ./packages/contracts/package.json
+        - action: rebuild
+          path: ./package.json
+        - action: rebuild
+          path: ./package-lock.json
+
+volumes:
+  postgres_data:
+
+networks:
+  edge:
+    driver: bridge
+  control-plane:
+    driver: bridge
+    internal: true
+

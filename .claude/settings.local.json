@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout *)",
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "WebFetch(domain:discordjs.guide)",
+      "WebFetch(domain:discord.js.org)",
+      "WebFetch(domain:discordjs.dev)",
+      "Bash(npx tsc *)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "Bash(npx shadcn@latest init --yes --base-color neutral)",
+      "Bash(npx shadcn@latest init --yes)",
+      "Bash(npx shadcn@latest add button input label select checkbox textarea card --yes)",
+      "Bash(xargs ls *)",
+      "Bash(DATABASE_URL=\"postgresql://constancia:constancia@localhost:5433/constancia?schema=public\" npm run test)",
+      "Bash(grep -iE '\\\\.env\\($|\\\\.\\)')",
+      "Bash(git check-ignore *)"
+    ]
+  }
+}

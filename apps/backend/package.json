@@ -1,0 +1,33 @@
+{
+  "name": "@constancia/backend",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "openapi:write": "npm run build && node dist/write-openapi.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
+  },
+  "dependencies": {
+    "@better-auth/prisma-adapter": "^1.6.5",
+    "@constancia/contracts": "*",
+    "@constancia/core": "*",
+    "@constancia/db": "*",
+    "@constancia/systems": "*",
+    "@fastify/cors": "^11.2.0",
+    "@fastify/swagger": "^9.6.1",
+    "@fastify/swagger-ui": "^5.2.3",
+    "@opentelemetry/api": "^1.9.1",
+    "@prisma/adapter-pg": "^7.7.0",
+    "better-auth": "^1.6.5",
+    "fastify": "^5.3.3",
+    "fastify-plugin": "^5.0.1",
+    "pg": "^8.20.0",
+    "tsx": "^4.20.6"
+  }
+}

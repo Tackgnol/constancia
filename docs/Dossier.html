@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Classified Dossier</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Work+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "secondary-fixed": "#ffdea8",
+            "primary-container": "#ff562b",
+            "on-secondary-fixed": "#271900",
+            "on-primary-container": "#550e00",
+            "on-primary-fixed": "#3c0700",
+            "surface-bright": "#3a3939",
+            "outline-variant": "#5d3f38",
+            "surface-container-low": "#1c1b1b",
+            "secondary": "#ffdb9d",
+            "surface-container-lowest": "#0e0e0e",
+            "inverse-on-surface": "#313030",
+            "primary-fixed-dim": "#ffb4a2",
+            "on-tertiary-fixed-variant": "#004689",
+            "surface-container": "#201f1f",
+            "on-tertiary-container": "#002a55",
+            "surface-variant": "#353534",
+            "on-error-container": "#ffdad6",
+            "surface-tint": "#ffb4a2",
+            "error": "#ffb4ab",
+            "surface": "#131313",
+            "primary-fixed": "#ffdad2",
+            "tertiary-fixed": "#d5e3ff",
+            "on-surface": "#e5e2e1",
+            "secondary-fixed-dim": "#ffba20",
+            "primary": "#ffb4a2",
+            "on-primary-fixed-variant": "#891d00",
+            "background": "#131313",
+            "on-primary": "#611200",
+            "secondary-container": "#feb700",
+            "tertiary-container": "#3391ff",
+            "on-secondary": "#412d00",
+            "surface-container-high": "#2a2a2a",
+            "on-secondary-container": "#6b4b00",
+            "tertiary-fixed-dim": "#a7c8ff",
+            "surface-dim": "#131313",
+            "inverse-surface": "#e5e2e1",
+            "surface-container-highest": "#353534",
+            "on-tertiary-fixed": "#001b3c",
+            "on-tertiary": "#003061",
+            "on-secondary-fixed-variant": "#5e4200",
+            "inverse-primary": "#b42900",
+            "error-container": "#93000a",
+            "on-error": "#690005",
+            "outline": "#ae887f",
+            "on-background": "#e5e2e1",
+            "tertiary": "#a7c8ff",
+            "on-surface-variant": "#e7bdb3"
+          },
+          borderRadius: {
+            "DEFAULT": "0px",
+            "lg": "0px",
+            "xl": "0px",
+            "full": "0px"
+          },
+          fontFamily: {
+            "headline": ["Space Grotesk", "sans-serif"],
+            "body": ["Work Sans", "sans-serif"],
+            "label": ["Space Grotesk", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+      body {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+          background-color: #131313;
+      }
+      .stamp-confirmed {
+          border: 4px solid #ffb4a2;
+          color: #ffb4a2;
+          transform: rotate(-15deg);
+          padding: 4px 12px;
+          display: inline-block;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+      }
+      .stamp-redacted {
+          background-color: #e7bdb3;
+          color: #131313;
+          padding: 2px 8px;
+          display: inline-block;
+      }
+      .folder-tab {
+          clip-path: polygon(10% 0, 90% 0, 100% 100%, 0 100%);
+      }
+  </style>
+  <style>
+      body {
+          min-height: max(884px, 100dvh);
+      }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body min-h-screen flex flex-col md:hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-6 py-4 bg-neutral-950 dark:bg-[#131313] text-[#ffb4a2] font-['Space_Grotesk'] tracking-tighter uppercase text-sm border-b-0 docked full-width top-0 z-50">
+  <div class="flex items-center gap-4">
+    <span aria-hidden="true" class="material-symbols-outlined text-2xl">menu</span>
+    <h1 class="text-xl font-black text-[#ffb4a2] uppercase tracking-widest">[CLASSIFIED: DOSSIER]</h1>
+  </div>
+  <div class="flex items-center gap-4">
+    <span aria-hidden="true" class="material-symbols-outlined">encrypted</span>
+    <span aria-hidden="true" class="material-symbols-outlined text-primary">priority_high</span>
+    <img alt="Agent Avatar" class="w-8 h-8 object-cover grayscale border border-outline-variant" data-alt="Black and white high contrast portrait of a stern-looking man in a dark suit, resembling a 1960s intelligence agent." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHQVFhkiZjsehjRkfZ7xOtKpnZZqXm_BYEg8E9SBxC6jPOU3SXTlx0LMNtXl1WWJkwTKBcgfZFtHXtgmbipvoBDHoHK6WmHgHAtLJDVG4nOo6CZEZ42OCXIv_Blo0Qv3AQLLGgNX-E619Tu28smZ-K7lhogudITgSHTBUXC-fi3jVxC5tsXGf8ymQYu4zexHJj1nsP6HmaWlsUg9Smpr2gV8-b3mIt4EvmXP88BcJaHae3ctlpsmLzqhpeCzUICmdVvxXCZKbenonz"/>
+  </div>
+</header>
+<!-- Main Content Area - The Folder -->
+<main class="flex-grow w-full px-4 pt-2 pb-8 flex flex-col items-center">
+  <!-- Folder Tabs -->
+  <nav class="flex w-full justify-start items-end -mb-[1px] relative z-10 space-x-1 pl-2">
+    <!-- Active Tab: Bio -->
+    <button class="folder-tab bg-surface-container-low text-primary font-headline text-sm font-bold tracking-widest px-6 py-2 pb-3 flex items-center gap-2 outline-none border-t border-l border-r border-outline-variant/30">
+      <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">fingerprint</span>
+      Bio
+    </button>
+    <!-- Inactive Tab: Stats -->
+    <button class="folder-tab bg-surface-container-lowest text-secondary opacity-60 hover:opacity-100 font-headline text-sm font-bold tracking-widest px-6 py-2 pb-3 flex items-center gap-2 outline-none border-t border-l border-r border-outline-variant/30">
+      <span class="material-symbols-outlined text-[18px]">analytics</span>
+      Stats
+    </button>
+    <!-- Inactive Tab: Facts -->
+    <button class="folder-tab bg-surface-container-lowest text-secondary opacity-60 hover:opacity-100 font-headline text-sm font-bold tracking-widest px-6 py-2 pb-3 flex items-center gap-2 outline-none border-t border-l border-r border-outline-variant/30">
+      <span class="material-symbols-outlined text-[18px]">description</span>
+      Facts
+    </button>
+  </nav>
+  <!-- The Document Sheet -->
+  <article class="w-full bg-surface-container-low border border-outline-variant/30 shadow-[0_30px_60px_rgba(0,0,0,0.5)] relative flex flex-col">
+    <!-- Dossier Header Strip -->
+    <div class="bg-surface-container-highest px-6 py-3 flex justify-between items-center border-b border-outline-variant/30">
+      <span class="font-headline text-xs tracking-widest text-secondary">[FILE ID: XJ-8842-OMEGA]</span>
+      <span class="font-headline text-[10px] tracking-widest text-primary font-bold">[CLEARANCE: LEVEL 4]</span>
+    </div>
+    <div class="p-6 flex flex-col gap-8">
+      <!-- Subject Photo & Status -->
+      <section class="flex flex-col gap-4">
+        <div class="relative w-full h-64 bg-surface-container-lowest border border-outline-variant/50 p-2">
+          <img alt="Subject Photo" class="w-full h-full object-cover grayscale contrast-150 brightness-75 mix-blend-luminosity" data-alt="Gritty, high-contrast black and white surveillance photo of a woman in an urban setting, wearing a trench coat, looking over her shoulder." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3ePXyQ5xE8YePaRPXl1qHPGkTMyRjg3M4I7mq3BqnpaPuayLawa4GVktLit6Bpe_909p3x4jz9uY4g3BZplsmnnzjcX89SXpSS63l2dtUaSQqP_ikFv3fLolE1L4UvIyREjD4RIp0hHaxyQLIJViQRVaQl3z-6NcNPFx28mZilnjw521aS82gmJaeE0hJYU1zCGkEOY_9zxULnUkwPa6MyueZW_-IrLIVC9cQkUSg4YmDYwFkNQLOfmAO-ccQtjddRyYlIDCsCh95"/>
+          <!-- Overlay elements -->
+          <div class="absolute inset-0 bg-gradient-to-t from-primary-container/20 to-transparent pointer-events-none mix-blend-overlay"></div>
+          <!-- Physical Stamp -->
+          <div class="absolute bottom-4 right-4 z-10">
+            <div class="stamp-confirmed font-headline text-xl">CONFIRMED</div>
+          </div>
+          <!-- Target reticle -->
+          <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 border border-primary/50 rounded-full flex items-center justify-center opacity-70 pointer-events-none">
+            <div class="w-1 h-1 bg-primary"></div>
+            <div class="absolute top-0 bottom-0 left-1/2 w-[1px] bg-primary/50 h-full"></div>
+            <div class="absolute left-0 right-0 top-1/2 h-[1px] bg-primary/50 w-full"></div>
+          </div>
+        </div>
+        <!-- Core Identity Data -->
+        <div class="grid grid-cols-2 gap-x-4 gap-y-6 pt-4 border-t border-outline-variant/20">
+          <div class="flex flex-col">
+            <span class="font-headline text-[10px] text-secondary uppercase tracking-widest mb-1">Codename</span>
+            <span class="font-body text-base text-on-surface">"NIGHTSHADE"</span>
+          </div>
+          <div class="flex flex-col text-right">
+            <span class="font-headline text-[10px] text-secondary uppercase tracking-widest mb-1">Status</span>
+            <span class="font-body text-base text-primary font-bold">ACTIVE / ROGUE</span>
+          </div>
+          <div class="flex flex-col">
+            <span class="font-headline text-[10px] text-secondary uppercase tracking-widest mb-1">Last Known Location</span>
+            <span class="font-body text-sm text-on-surface">Sector 4, Industrial Zone</span>
+          </div>
+          <div class="flex flex-col text-right">
+            <span class="font-headline text-[10px] text-secondary uppercase tracking-widest mb-1">Threat Level</span>
+            <span class="font-body text-sm text-primary">CRITICAL</span>
+          </div>
+        </div>
+      </section>
+      <!-- Narrative / Bio Section -->
+      <section class="flex flex-col gap-4">
+        <h2 class="font-headline text-lg tracking-tight text-on-surface border-b border-outline-variant/30 pb-2 flex justify-between items-center">
+          BACKGROUND SUMMARY
+          <span class="material-symbols-outlined text-secondary text-sm">visibility</span>
+        </h2>
+        <div class="font-body text-sm text-on-surface/80 leading-relaxed space-y-4">
+          <p>
+            Subject was initially recruited during the <span class="stamp-redacted">[REDACTED]</span> initiative. Demonstrated exceptional proficiency in covert infiltration and close-quarters acquisition.
+          </p>
+          <p>
+            Following the incident at Facility 7, subject severed all communications and went dark. Current motives remain unknown, though recent activity suggests a focus on dismantling the <span class="stamp-redacted">Aegis Network</span>.
+          </p>
+          <div class="bg-surface-container p-4 border border-outline-variant/20 mt-2">
+            <p class="font-headline text-xs text-secondary mb-2 flex items-center gap-2">
+              <span class="material-symbols-outlined text-[16px]">warning</span>
+              FIELD AGENT ADVISORY
+            </p>
+            <p class="text-xs text-on-surface italic">
+              "Subject is highly volatile. Do not engage without backup. Maintain visual contact and report coordinates immediately." - Dir. Vance
+            </p>
+          </div>
+        </div>
+      </section>
+      <!-- Known Affiliations (Bento-ish grid) -->
+      <section class="flex flex-col gap-4">
+        <h2 class="font-headline text-lg tracking-tight text-on-surface border-b border-outline-variant/30 pb-2">
+          KNOWN AFFILIATIONS
+        </h2>
+        <div class="flex flex-col gap-2">
+          <!-- Affiliation 1 -->
+          <div class="flex items-center justify-between bg-surface-container-highest p-3 border-l-[3px] border-secondary">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-secondary">group</span>
+              <span class="font-body text-sm text-on-surface">The Silken Hand</span>
+            </div>
+            <span class="font-headline text-[10px] text-primary bg-primary/10 px-2 py-1">HOSTILE</span>
+          </div>
+          <!-- Affiliation 2 -->
+          <div class="flex items-center justify-between bg-surface-container-highest p-3 border-l-[3px] border-outline-variant">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-outline-variant">business</span>
+              <span class="font-body text-sm text-on-surface">OmniCorp (Former)</span>
+            </div>
+            <span class="font-headline text-[10px] text-outline-variant bg-outline-variant/10 px-2 py-1">SEVERED</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </article>
+</main>
+</body></html>
