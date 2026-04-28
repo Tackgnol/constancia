@@ -3,6 +3,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { BlockMessage } from '@constancia/contracts';
 import { getPrismaClient } from '../auth/prisma.js';
 import { sendMessagesToBotAsync } from '../services/bot-client.js';
+import { moderatePayloadText } from '../services/content-moderation.js';
 import {
   campaignParamsSchema,
   playerMessageBodySchema,
@@ -45,6 +46,7 @@ const messageRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
+      await moderatePayloadText(app.config, request.body);
       const { id: campaignId } = request.params;
       const { channelId, content, imageUrl } = request.body;
       const discordUserIds = uniqueTrimmedIds(request.body.discordUserIds);

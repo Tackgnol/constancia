@@ -1,4 +1,5 @@
 import 'fastify';
+import '@fastify/multipart';
 import type { BackendConfig } from './config.js';
 import type { AccessContext } from './auth/access-context.js';
 import type { auth } from './auth.js';

@@ -408,6 +408,19 @@ export const updateEventResponse = zod.object({
 })
 
 /**
+ * @summary Delete an event
+ */
+export const deleteEventParams = zod.object({
+  "id": zod.string(),
+  "eventId": zod.string()
+})
+
+export const deleteEventResponse = zod.object({
+  "status": zod.string(),
+  "deleted": zod.boolean()
+})
+
+/**
  * @summary Fire an event pipeline
  */
 export const fireEventParams = zod.object({

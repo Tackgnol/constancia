@@ -19,6 +19,7 @@ import {
   summaryParamsSchema,
 } from '../schemas.js';
 import { getPrismaClient } from '../auth/prisma.js';
+import { moderatePayloadText } from '../services/content-moderation.js';
 
 interface CampaignParams {
   id: string;
@@ -141,6 +142,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request, reply) => {
+      await moderatePayloadText(app.config, request.body);
       const { id } = request.params;
       const { name, description, visible } = request.body;
       const prisma = getPrismaClient();
@@ -168,6 +170,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request, reply) => {
+      await moderatePayloadText(app.config, request.body);
       const { questId } = request.params;
       const { name, description, status, visible } = request.body;
       const prisma = getPrismaClient();
@@ -212,6 +215,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request, reply) => {
+      await moderatePayloadText(app.config, request.body);
       const { questId } = request.params;
       const { content, status, sortOrder } = request.body;
       const prisma = getPrismaClient();
@@ -244,6 +248,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request, reply) => {
+      await moderatePayloadText(app.config, request.body);
       const { entryId } = request.params;
       const { content, status, sortOrder } = request.body;
       const prisma = getPrismaClient();
@@ -345,6 +350,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request, reply) => {
+      await moderatePayloadText(app.config, request.body);
       const { id } = request.params;
       const { title, content, sessionDate, visible, channelId } = request.body;
       const prisma = getPrismaClient();
@@ -379,6 +385,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request, reply) => {
+      await moderatePayloadText(app.config, request.body);
       const { sumId } = request.params;
       const { title, content, sessionDate, visible, channelId } = request.body;
       const prisma = getPrismaClient();

@@ -8,6 +8,7 @@ import {
   listResponseSchema,
   singleResponseSchema,
 } from '../schemas.js';
+import { moderatePayloadText } from '../services/content-moderation.js';
 
 interface CampaignParams {
   id: string;
@@ -64,6 +65,7 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
+      await moderatePayloadText(app.config, request.body);
       const { name, discordGuildId, gameSystemId } = request.body;
       const campaign = await prisma.campaign.create({
         data: { name, discordGuildId, gameSystemId },
@@ -89,6 +91,7 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
+      await moderatePayloadText(app.config, request.body);
       const { id } = request.params;
       const campaign = await prisma.campaign.findUnique({ where: { id }, select });
       if (campaign === null) {

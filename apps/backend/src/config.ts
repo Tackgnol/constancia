@@ -1,3 +1,5 @@
+import { resolve } from 'node:path';
+
 export interface BackendConfig {
   host: string;
   port: number;
@@ -14,6 +16,24 @@ export interface BackendConfig {
   magicLinkFrontendPath: string;
   botApiKey: string;
   botInternalUrl: string;
+  backendPublicUrl: string;
+  openAiApiKey?: string;
+  contentModerationEnabled: boolean;
+  contentModerationModel: string;
+  contentModerationFailClosed: boolean;
+  uploadStorageDriver: 'local' | 'r2';
+  uploadStorageDir: string;
+  uploadMaxBytes: number;
+  uploadImageMaxDimension: number;
+  uploadWebpQuality: number;
+  uploadDefaultEnabled: boolean;
+  uploadDefaultAllowanceBytes: number;
+  uploadQuotaWarningPercent: number;
+  uploadPublicBaseUrl?: string;
+  r2Endpoint?: string;
+  r2AccessKeyId?: string;
+  r2SecretAccessKey?: string;
+  r2Bucket?: string;
 }
 
 const DEFAULT_PORT = 3000;
@@ -28,13 +48,34 @@ const DEFAULT_MAGIC_LINK_FRONTEND_PATH = '/auth';
 const DEFAULT_BETTER_AUTH_SECRET = 'constancia-development-secret-change-me-12345';
 const DEFAULT_DEV_BOT_API_KEY = 'constancia-bot-dev-key';
 const DEFAULT_BOT_INTERNAL_URL = 'http://localhost:3002';
+const DEFAULT_CONTENT_MODERATION_MODEL = 'omni-moderation-latest';
+const DEFAULT_UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
+const DEFAULT_UPLOAD_IMAGE_MAX_DIMENSION = 1024;
+const DEFAULT_UPLOAD_WEBP_QUALITY = 80;
+const DEFAULT_UPLOAD_STORAGE_DIR = resolve(process.cwd(), 'data', 'uploads');
+const DEFAULT_UPLOAD_DEFAULT_ALLOWANCE_BYTES = 50 * 1024 * 1024;
+const DEFAULT_UPLOAD_QUOTA_WARNING_PERCENT = 80;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig {
   const nodeEnv = env.NODE_ENV ?? 'development';
   const isProduction = nodeEnv === 'production';
+  const port = parsePort(env.PORT);
+  const contentModerationEnabled = parseBoolean(env.CONTENT_MODERATION_ENABLED, false);
 
   if (isProduction && !env.BETTER_AUTH_SECRET) {
     throw new Error('BETTER_AUTH_SECRET must be set in production');
+  }
+
+  if (contentModerationEnabled && !env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY must be set when CONTENT_MODERATION_ENABLED=true');
+  }
+
+  const uploadStorageDriver = parseUploadStorageDriver(env.UPLOAD_STORAGE_DRIVER);
+  if (uploadStorageDriver === 'r2') {
+    assertRequiredEnv(env.R2_ENDPOINT, 'R2_ENDPOINT');
+    assertRequiredEnv(env.R2_ACCESS_KEY_ID, 'R2_ACCESS_KEY_ID');
+    assertRequiredEnv(env.R2_SECRET_ACCESS_KEY, 'R2_SECRET_ACCESS_KEY');
+    assertRequiredEnv(env.R2_BUCKET, 'R2_BUCKET');
   }
 
   const botApiKey = env.BOT_API_KEY ?? (isProduction ? undefined : DEFAULT_DEV_BOT_API_KEY);
@@ -48,7 +89,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
 
   return {
     host: env.BACKEND_HOST ?? DEFAULT_HOST,
-    port: parsePort(env.PORT),
+    port,
     nodeEnv,
     apiPrefix: env.API_PREFIX ?? DEFAULT_API_PREFIX,
     docsPrefix: env.DOCS_PREFIX ?? DEFAULT_DOCS_PREFIX,
@@ -62,6 +103,48 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     magicLinkFrontendPath: env.MAGIC_LINK_FRONTEND_PATH ?? DEFAULT_MAGIC_LINK_FRONTEND_PATH,
     botApiKey,
     botInternalUrl: env.BOT_INTERNAL_URL ?? DEFAULT_BOT_INTERNAL_URL,
+    backendPublicUrl: env.BACKEND_PUBLIC_URL ?? `http://localhost:${port}`,
+    openAiApiKey: env.OPENAI_API_KEY,
+    contentModerationEnabled,
+    contentModerationModel: env.CONTENT_MODERATION_MODEL ?? DEFAULT_CONTENT_MODERATION_MODEL,
+    contentModerationFailClosed: parseBoolean(env.CONTENT_MODERATION_FAIL_CLOSED, true),
+    uploadStorageDriver,
+    uploadStorageDir: resolve(env.UPLOAD_STORAGE_DIR ?? DEFAULT_UPLOAD_STORAGE_DIR),
+    uploadMaxBytes: parsePositiveInt(
+      env.UPLOAD_MAX_BYTES,
+      DEFAULT_UPLOAD_MAX_BYTES,
+      'UPLOAD_MAX_BYTES',
+    ),
+    uploadImageMaxDimension: parsePositiveInt(
+      env.UPLOAD_IMAGE_MAX_DIMENSION,
+      DEFAULT_UPLOAD_IMAGE_MAX_DIMENSION,
+      'UPLOAD_IMAGE_MAX_DIMENSION',
+    ),
+    uploadWebpQuality: parseBoundedInt(
+      env.UPLOAD_WEBP_QUALITY,
+      DEFAULT_UPLOAD_WEBP_QUALITY,
+      1,
+      100,
+      'UPLOAD_WEBP_QUALITY',
+    ),
+    uploadDefaultEnabled: parseBoolean(env.UPLOAD_DEFAULT_ENABLED, false),
+    uploadDefaultAllowanceBytes: parsePositiveInt(
+      env.UPLOAD_DEFAULT_ALLOWANCE_BYTES,
+      DEFAULT_UPLOAD_DEFAULT_ALLOWANCE_BYTES,
+      'UPLOAD_DEFAULT_ALLOWANCE_BYTES',
+    ),
+    uploadQuotaWarningPercent: parseBoundedInt(
+      env.UPLOAD_QUOTA_WARNING_PERCENT,
+      DEFAULT_UPLOAD_QUOTA_WARNING_PERCENT,
+      1,
+      100,
+      'UPLOAD_QUOTA_WARNING_PERCENT',
+    ),
+    uploadPublicBaseUrl: env.UPLOAD_PUBLIC_BASE_URL,
+    r2Endpoint: env.R2_ENDPOINT,
+    r2AccessKeyId: env.R2_ACCESS_KEY_ID,
+    r2SecretAccessKey: env.R2_SECRET_ACCESS_KEY,
+    r2Bucket: env.R2_BUCKET,
   };
 }
 
@@ -73,6 +156,68 @@ function parsePort(value: string | undefined): number {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
     throw new Error(`Invalid PORT value: "${value}"`);
+  }
+
+  return parsed;
+}
+
+function parseBoolean(value: string | undefined, fallback: boolean): boolean {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  if (value === 'true') {
+    return true;
+  }
+
+  if (value === 'false') {
+    return false;
+  }
+
+  throw new Error(`Invalid boolean value: "${value}"`);
+}
+
+function parseUploadStorageDriver(value: string | undefined): 'local' | 'r2' {
+  if (value === undefined || value === 'local') {
+    return 'local';
+  }
+
+  if (value === 'r2') {
+    return 'r2';
+  }
+
+  throw new Error(`Invalid UPLOAD_STORAGE_DRIVER value: "${value}"`);
+}
+
+function assertRequiredEnv(value: string | undefined, label: string): void {
+  if (!value) {
+    throw new Error(`${label} must be set when UPLOAD_STORAGE_DRIVER=r2`);
+  }
+}
+
+function parsePositiveInt(value: string | undefined, fallback: number, label: string): number {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`Invalid ${label} value: "${value}"`);
+  }
+
+  return parsed;
+}
+
+function parseBoundedInt(
+  value: string | undefined,
+  fallback: number,
+  min: number,
+  max: number,
+  label: string,
+): number {
+  const parsed = parsePositiveInt(value, fallback, label);
+  if (parsed < min || parsed > max) {
+    throw new Error(`Invalid ${label} value: "${value}"`);
   }
 
   return parsed;

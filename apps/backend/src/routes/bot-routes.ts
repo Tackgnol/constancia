@@ -26,6 +26,7 @@ import {
   listVisibleNpcRecordsForPlayer,
   mapPlayerVisibleNpc,
 } from '../services/player-visible-npcs.js';
+import { moderatePayloadText } from '../services/content-moderation.js';
 import { filterManualTestResolutionPipeline } from '../services/test-instance.js';
 
 interface BotTestResultBody {
@@ -224,6 +225,7 @@ const botRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request) => {
       const prisma = getPrismaClient();
+      await moderatePayloadText(app.config, request.body);
       const { guildId, discordChannelId, channelName, campaignName, gameSystemId } = request.body;
 
       const existingCampaign = await prisma.campaign.findUnique({
@@ -279,6 +281,7 @@ const botRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
+      await moderatePayloadText(app.config, request.body);
       const { guildId, participants } = request.body;
 
       const campaign = await prisma.campaign.findUnique({

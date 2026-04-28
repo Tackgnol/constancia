@@ -10,12 +10,13 @@ import {
   standardResponseSchema,
   singleResponseSchema,
 } from '../schemas.js';
-import { getPrismaClient } from '../auth/prisma.js';
 import type { Prisma } from '@constancia/db';
+import { getPrismaClient } from '../auth/prisma.js';
 import {
   getCharacterSheetForActor,
   updateCharacterSheetForActor,
 } from '../services/character-sheets.js';
+import { moderatePayloadText } from '../services/content-moderation.js';
 
 interface CampaignParams {
   id: string;
@@ -99,6 +100,7 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
+      await moderatePayloadText(app.config, request.body);
       const { id } = request.params;
       const { name, discordUserId, backstory, notes, systemData } = request.body;
       const character = await prisma.character.create({
@@ -132,6 +134,7 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
+      await moderatePayloadText(app.config, request.body);
       const { charId } = request.params;
       const character = await prisma.character.findUnique({ where: { id: charId }, select });
       if (character === null) {
@@ -212,6 +215,7 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
           .send({ status: 'error', data: { message: 'Discord identity required' } });
       }
 
+      await moderatePayloadText(app.config, request.body);
       const prisma = getPrismaClient();
       const { id, charId } = request.params;
       const sheet = await getCharacterSheetForActor(prisma, id, charId, discordUserId);

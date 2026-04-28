@@ -29,6 +29,23 @@ export const logoutSessionResponse = zod.object({
 })
 
 /**
+ * @summary Get the current user upload setting
+ */
+export const getUserUploadSettingsResponse = zod.object({
+  "status": zod.string(),
+  "data": zod.object({
+  "uploadsEnabled": zod.boolean(),
+  "quota": zod.object({
+  "uploadAllowanceBytes": zod.number(),
+  "uploadUsedBytes": zod.number(),
+  "uploadRemainingBytes": zod.number(),
+  "uploadUsagePercent": zod.number(),
+  "uploadNearLimit": zod.boolean()
+})
+})
+})
+
+/**
  * @summary Request a Discord magic link
  */
 export const createMagicLinkBody = zod.object({

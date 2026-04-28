@@ -122,6 +122,7 @@ describe('ensureDiscordUser', () => {
         email: syntheticEmail,
         name: `Discord ${discordUserId}`,
         emailVerified: true,
+        uploadsEnabled: false,
       },
       update: {
         emailVerified: true,

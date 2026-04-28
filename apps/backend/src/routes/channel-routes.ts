@@ -11,6 +11,8 @@ import {
   listResponseSchema,
   singleResponseSchema,
 } from '../schemas.js';
+import { moderatePayloadText } from '../services/content-moderation.js';
+import { deleteEventUploadAssets } from '../services/upload-assets.js';
 
 interface CampaignParams {
   id: string;
@@ -78,6 +80,7 @@ const channelRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
+      await moderatePayloadText(app.config, request.body);
       const { id } = request.params;
       const { name, discordChannelId, type } = request.body;
       const channel = await prisma.channel.create({
@@ -105,6 +108,7 @@ const channelRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
+      await moderatePayloadText(app.config, request.body);
       const { chanId } = request.params;
       const { name, type } = request.body;
       const data: { name?: string; type?: ChannelType } = {};
@@ -144,6 +148,13 @@ const channelRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrismaClient();
       const { chanId } = request.params;
       try {
+        const events = await prisma.event.findMany({
+          where: { channelId: chanId },
+          select: { id: true },
+        });
+        for (const event of events) {
+          await deleteEventUploadAssets(app.config, prisma, event.id);
+        }
         await prisma.channel.delete({ where: { id: chanId } });
         return { status: 'ok', deleted: true };
       } catch (err) {

@@ -9,6 +9,7 @@ import {
   getPlayerCharacterSheet,
   updatePlayerCharacterSheet,
 } from '../services/character-sheets.js';
+import { moderatePayloadText } from '../services/content-moderation.js';
 
 interface CampaignParams {
   id: string;
@@ -43,6 +44,7 @@ const playerCharacterRoutes: FastifyPluginAsync = async (app) => {
           .send({ status: 'error', data: { message: 'Discord identity required' } });
       }
 
+      await moderatePayloadText(app.config, request.body);
       const prisma = getPrismaClient();
       const { id } = request.params;
       const sheet = await getPlayerCharacterSheet(prisma, id, discordUserId);

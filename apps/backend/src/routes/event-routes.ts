@@ -5,10 +5,12 @@ import { PipelineRunner } from '@constancia/core';
 import { getPrismaClient } from '../auth/prisma.js';
 import { buildBlockRegistry } from '../blocks.js';
 import { sendMessagesToBotAsync } from '../services/bot-client.js';
+import { moderatePayloadText } from '../services/content-moderation.js';
 import { filterInsightResolutionPipeline, resolveInsightScore } from '../services/insight-event.js';
 import { buildTestInstancePayload } from '../services/test-instance.js';
 import {
   campaignParamsSchema,
+  deleteResponseSchema,
   eventBodySchema,
   eventParamsSchema,
   eventPatchBodySchema,
@@ -17,6 +19,13 @@ import {
   listResponseSchema,
   singleResponseSchema,
 } from '../schemas.js';
+import {
+  assertPipelineUploadAssetsAttachable,
+  deleteEventUploadAssets,
+  deleteUnlinkedEventUploadAssets,
+  extractUploadAssetIdsFromPipeline,
+  linkPipelineUploadAssets,
+} from '../services/upload-assets.js';
 
 interface CampaignParams {
   id: string;
@@ -101,8 +110,12 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
+      await moderatePayloadText(app.config, request.body);
       const { id } = request.params;
       const { name, type, channelId, shortCircuit, pipeline } = request.body;
+      const userId = getSessionUserId(request.access);
+      const assetIds = extractUploadAssetIdsFromPipeline(pipeline);
+      await assertPipelineUploadAssetsAttachable(prisma, { assetIds, userId });
       const event = await prisma.event.create({
         data: {
           name,
@@ -115,6 +128,7 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
         },
         select: eventSelect,
       });
+      await linkPipelineUploadAssets(prisma, { assetIds, userId, eventId: event.id });
       reply.code(201);
       return { status: 'ok', data: event };
     },
@@ -135,6 +149,7 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
+      await moderatePayloadText(app.config, request.body);
       const { eventId } = request.params;
       const event = await prisma.event.findUnique({ where: { id: eventId }, select: eventSelect });
       if (event === null) {
@@ -160,8 +175,15 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
+      await moderatePayloadText(app.config, request.body);
       const { eventId } = request.params;
       const { name, type, channelId, status, shortCircuit, pipeline } = request.body;
+      const userId = getSessionUserId(request.access);
+      const assetIds =
+        pipeline !== undefined ? extractUploadAssetIdsFromPipeline(pipeline) : undefined;
+      if (assetIds !== undefined) {
+        await assertPipelineUploadAssetsAttachable(prisma, { assetIds, userId, eventId });
+      }
       const data: Prisma.EventUpdateInput = {};
       if (name !== undefined) data.name = name;
       if (type !== undefined) data.type = type;
@@ -175,6 +197,13 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
           data,
           select: eventSelect,
         });
+        if (assetIds !== undefined) {
+          await linkPipelineUploadAssets(prisma, { assetIds, userId, eventId });
+          await deleteUnlinkedEventUploadAssets(app.config, prisma, {
+            eventId,
+            retainedAssetIds: assetIds,
+          });
+        }
         return { status: 'ok', data: event };
       } catch (err) {
         if (
@@ -187,6 +216,36 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
         }
         throw err;
       }
+    },
+  );
+
+  app.delete<{ Params: EventParams }>(
+    '/:eventId',
+    {
+      schema: {
+        tags: ['events'],
+        summary: 'Delete an event',
+        operationId: 'deleteEvent',
+        params: eventParamsSchema,
+        response: {
+          200: deleteResponseSchema,
+        },
+      },
+    },
+    async (request) => {
+      const prisma = getPrismaClient();
+      const { eventId } = request.params;
+      const event = await prisma.event.findUnique({
+        where: { id: eventId },
+        select: { id: true },
+      });
+      if (event === null) {
+        return { status: 'ok', deleted: false };
+      }
+
+      await deleteEventUploadAssets(app.config, prisma, eventId);
+      await prisma.event.delete({ where: { id: eventId } });
+      return { status: 'ok', deleted: true };
     },
   );
 
@@ -341,3 +400,11 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
 };
 
 export default eventRoutes;
+
+function getSessionUserId(access: { kind: 'session'; userId: string } | { kind: 'bot' }): string {
+  if (access.kind !== 'session') {
+    throw new Error('Session access required for event uploads.');
+  }
+
+  return access.userId;
+}

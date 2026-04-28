@@ -10,6 +10,7 @@ import type {
   CreateMagicLinkBody,
   CreatePlayerSheetMagicLink201,
   CreatePlayerSheetMagicLinkBody,
+  GetUserUploadSettings200,
   LogoutSession200,
   VerifyMagicLink200,
   VerifyMagicLinkParams
@@ -23,7 +24,7 @@ export const getVerifyMagicLinkUrl = (params: VerifyMagicLinkParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
+
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
@@ -35,18 +36,18 @@ export const getVerifyMagicLinkUrl = (params: VerifyMagicLinkParams,) => {
 }
 
 export const verifyMagicLink = async (params: VerifyMagicLinkParams, options?: RequestInit): Promise<VerifyMagicLink200> => {
-  
+
   const res = await fetch(getVerifyMagicLinkUrl(params),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: VerifyMagicLink200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -58,25 +59,54 @@ export const verifyMagicLink = async (params: VerifyMagicLinkParams, options?: R
 export const getLogoutSessionUrl = () => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/auth/logout`
 }
 
 export const logoutSession = async ( options?: RequestInit): Promise<LogoutSession200> => {
-  
+
   const res = await fetch(getLogoutSessionUrl(),
-  {      
+  {
     ...options,
     method: 'POST'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: LogoutSession200 = body ? JSON.parse(body) : {}
+  return data
+}
+
+
+/**
+ * @summary Get the current user upload setting
+ */
+export const getGetUserUploadSettingsUrl = () => {
+
+
+
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/users/me/upload-settings`
+}
+
+export const getUserUploadSettings = async ( options?: RequestInit): Promise<GetUserUploadSettings200> => {
+
+  const res = await fetch(getGetUserUploadSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: GetUserUploadSettings200 = body ? JSON.parse(body) : {}
   return data
 }
 
@@ -87,15 +117,15 @@ export const logoutSession = async ( options?: RequestInit): Promise<LogoutSessi
 export const getCreateMagicLinkUrl = () => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/auth/magic-link`
 }
 
 export const createMagicLink = async (createMagicLinkBody: CreateMagicLinkBody, options?: RequestInit): Promise<CreateMagicLink201> => {
-  
+
   const res = await fetch(getCreateMagicLinkUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -105,7 +135,7 @@ export const createMagicLink = async (createMagicLinkBody: CreateMagicLinkBody, 
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: CreateMagicLink201 = body ? JSON.parse(body) : {}
   return data
 }
@@ -117,15 +147,15 @@ export const createMagicLink = async (createMagicLinkBody: CreateMagicLinkBody, 
 export const getCreatePlayerSheetMagicLinkUrl = () => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/auth/player-sheet-link`
 }
 
 export const createPlayerSheetMagicLink = async (createPlayerSheetMagicLinkBody: CreatePlayerSheetMagicLinkBody, options?: RequestInit): Promise<CreatePlayerSheetMagicLink201> => {
-  
+
   const res = await fetch(getCreatePlayerSheetMagicLinkUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -135,9 +165,7 @@ export const createPlayerSheetMagicLink = async (createPlayerSheetMagicLinkBody:
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: CreatePlayerSheetMagicLink201 = body ? JSON.parse(body) : {}
   return data
 }
-
-

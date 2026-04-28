@@ -166,6 +166,336 @@
         }
       }
     },
+    "/api/v1/uploads/{assetId}": {
+      "get": {
+        "operationId": "getUploadedImage",
+        "summary": "Get a previously uploaded image asset",
+        "tags": ["uploads"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "assetId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/upload-settings": {
+      "get": {
+        "operationId": "getUserUploadSettings",
+        "summary": "Get the current user upload setting",
+        "tags": ["auth"],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "uploadsEnabled": {
+                          "type": "boolean"
+                        },
+                        "quota": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "uploadAllowanceBytes": {
+                              "type": "integer"
+                            },
+                            "uploadUsedBytes": {
+                              "type": "integer"
+                            },
+                            "uploadRemainingBytes": {
+                              "type": "integer"
+                            },
+                            "uploadUsagePercent": {
+                              "type": "integer"
+                            },
+                            "uploadNearLimit": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "uploadAllowanceBytes",
+                            "uploadUsedBytes",
+                            "uploadRemainingBytes",
+                            "uploadUsagePercent",
+                            "uploadNearLimit"
+                          ]
+                        }
+                      },
+                      "required": ["uploadsEnabled", "quota"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uploads/image": {
+      "post": {
+        "operationId": "uploadImage",
+        "summary": "Upload, moderate, and compress an image",
+        "tags": ["uploads"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "caption": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "assetId": {
+                          "type": "string"
+                        },
+                        "url": {
+                          "type": "string"
+                        },
+                        "mimeType": {
+                          "type": "string"
+                        },
+                        "sizeBytes": {
+                          "type": "integer"
+                        },
+                        "quota": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "uploadAllowanceBytes": {
+                              "type": "integer"
+                            },
+                            "uploadUsedBytes": {
+                              "type": "integer"
+                            },
+                            "uploadRemainingBytes": {
+                              "type": "integer"
+                            },
+                            "uploadUsagePercent": {
+                              "type": "integer"
+                            },
+                            "uploadNearLimit": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "uploadAllowanceBytes",
+                            "uploadUsedBytes",
+                            "uploadRemainingBytes",
+                            "uploadUsagePercent",
+                            "uploadNearLimit"
+                          ]
+                        }
+                      },
+                      "required": ["assetId", "url", "mimeType", "sizeBytes", "quota"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/campaigns/": {
       "get": {
         "operationId": "listCampaigns",
@@ -4053,6 +4383,51 @@
             }
           }
         }
+      },
+      "delete": {
+        "operationId": "deleteEvent",
+        "summary": "Delete an event",
+        "tags": ["events"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "eventId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "deleted": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["status", "deleted"]
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/campaigns/{id}/events/{eventId}/fire": {
@@ -6389,6 +6764,10 @@
     {
       "name": "systems",
       "description": "Registered game systems"
+    },
+    {
+      "name": "uploads",
+      "description": "Moderated image upload and asset delivery endpoints"
     }
   ]
 }

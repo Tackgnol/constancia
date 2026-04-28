@@ -22,6 +22,7 @@ const openApiPlugin: FastifyPluginAsync = async (app) => {
         { name: 'journal', description: 'Quest and session summary endpoints' },
         { name: 'bot', description: 'Discord bot integration endpoints' },
         { name: 'systems', description: 'Registered game systems' },
+        { name: 'uploads', description: 'Moderated image upload and asset delivery endpoints' },
       ],
     },
   });

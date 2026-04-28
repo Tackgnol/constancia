@@ -9,6 +9,8 @@ import type {
   CreateEvent201,
   CreateEventBody,
   CreateEventPathParameters,
+  DeleteEvent200,
+  DeleteEventPathParameters,
   FireEvent200,
   FireEventPathParameters,
   GetEvent200,
@@ -27,24 +29,24 @@ import type {
 export const getListEventsUrl = ({ id }: ListEventsPathParameters,) => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/`
 }
 
 export const listEvents = async ({ id }: ListEventsPathParameters, options?: RequestInit): Promise<ListEvents200> => {
-  
+
   const res = await fetch(getListEventsUrl({ id }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: ListEvents200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -56,16 +58,16 @@ export const listEvents = async ({ id }: ListEventsPathParameters, options?: Req
 export const getCreateEventUrl = ({ id }: CreateEventPathParameters,) => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/`
 }
 
 export const createEvent = async ({ id }: CreateEventPathParameters,
     createEventBody: CreateEventBody, options?: RequestInit): Promise<CreateEvent201> => {
-  
+
   const res = await fetch(getCreateEventUrl({ id }),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -75,7 +77,7 @@ export const createEvent = async ({ id }: CreateEventPathParameters,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: CreateEvent201 = body ? JSON.parse(body) : {}
   return data
 }
@@ -87,24 +89,24 @@ export const createEvent = async ({ id }: CreateEventPathParameters,
 export const getGetEventUrl = ({ id, eventId }: GetEventPathParameters,) => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/${eventId}`
 }
 
 export const getEvent = async ({ id, eventId }: GetEventPathParameters, options?: RequestInit): Promise<GetEvent200> => {
-  
+
   const res = await fetch(getGetEventUrl({ id, eventId }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: GetEvent200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -116,16 +118,16 @@ export const getEvent = async ({ id, eventId }: GetEventPathParameters, options?
 export const getUpdateEventUrl = ({ id, eventId }: UpdateEventPathParameters,) => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/${eventId}`
 }
 
 export const updateEvent = async ({ id, eventId }: UpdateEventPathParameters,
     updateEventBody: UpdateEventBody, options?: RequestInit): Promise<UpdateEvent200> => {
-  
+
   const res = await fetch(getUpdateEventUrl({ id, eventId }),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -135,8 +137,37 @@ export const updateEvent = async ({ id, eventId }: UpdateEventPathParameters,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: UpdateEvent200 = body ? JSON.parse(body) : {}
+  return data
+}
+
+
+/**
+ * @summary Delete an event
+ */
+export const getDeleteEventUrl = ({ id, eventId }: DeleteEventPathParameters,) => {
+
+
+
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/${eventId}`
+}
+
+export const deleteEvent = async ({ id, eventId }: DeleteEventPathParameters, options?: RequestInit): Promise<DeleteEvent200> => {
+
+  const res = await fetch(getDeleteEventUrl({ id, eventId }),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: DeleteEvent200 = body ? JSON.parse(body) : {}
   return data
 }
 
@@ -147,26 +178,24 @@ export const updateEvent = async ({ id, eventId }: UpdateEventPathParameters,
 export const getFireEventUrl = ({ id, eventId }: FireEventPathParameters,) => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/events/${eventId}/fire`
 }
 
 export const fireEvent = async ({ id, eventId }: FireEventPathParameters, options?: RequestInit): Promise<FireEvent200> => {
-  
+
   const res = await fetch(getFireEventUrl({ id, eventId }),
-  {      
+  {
     ...options,
     method: 'POST'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: FireEvent200 = body ? JSON.parse(body) : {}
   return data
 }
-
-

@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "binary"
 }
 
@@ -8,18 +8,42 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                   String   @id @default(cuid())
+  name                 String
+  email                String   @unique
+  emailVerified        Boolean  @default(false)
+  image                String?
+  uploadsEnabled       Boolean  @default(false)
+  uploadAllowanceBytes Int      @default(52428800)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  sessions Session[]
-  accounts Account[]
+  sessions     Session[]
+  accounts     Account[]
+  uploadAssets UploadAsset[]
 
   @@map("user")
+}
+
+model UploadAsset {
+  id               String   @id @default(uuid())
+  userId           String
+  storageKey       String   @unique
+  storageProvider  String
+  bucket           String?
+  publicUrl        String?
+  mimeType         String
+  sizeBytes        Int
+  originalMimeType String
+  eventId          String?
+  createdAt        DateTime @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([eventId])
+  @@map("upload_assets")
 }
 
 model Session {
@@ -133,13 +157,13 @@ model Character {
 }
 
 model Npc {
-  id          String   @id @default(cuid())
-  name        String
-  imageUrl    String?
-  description String   @default("")
-  systemBlocks Json    @default("[]")
-  campaignId  String
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  name         String
+  imageUrl     String?
+  description  String   @default("")
+  systemBlocks Json     @default("[]")
+  campaignId   String
+  createdAt    DateTime @default(now())
 
   campaign Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   facts    NpcFact[]
@@ -183,8 +207,9 @@ model Event {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
-  channel  Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  channel      Channel       @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  campaign     Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  uploadAssets UploadAsset[]
 
   @@map("events")
 }

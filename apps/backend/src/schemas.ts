@@ -170,6 +170,25 @@ export const playerSheetMagicLinkBodySchema = {
   ...authMagicLinkBodySchema,
 } as const;
 
+export const uploadAssetParamsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    assetId: { type: 'string' },
+  },
+  required: ['assetId'],
+} as const;
+
+export const uploadImageBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['file'],
+  properties: {
+    file: { type: 'string', format: 'binary' },
+    caption: { type: 'string' },
+  },
+} as const;
+
 export const campaignBodySchema = {
   type: 'object',
   additionalProperties: false,
@@ -465,6 +484,46 @@ export const campaignSchema = {
     gameSystemId: { type: 'string' },
   },
   required: ['id', 'name', 'discordGuildId', 'gameSystemId'],
+} as const;
+
+export const userUploadSettingsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    uploadsEnabled: { type: 'boolean' },
+    quota: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        uploadAllowanceBytes: { type: 'integer' },
+        uploadUsedBytes: { type: 'integer' },
+        uploadRemainingBytes: { type: 'integer' },
+        uploadUsagePercent: { type: 'integer' },
+        uploadNearLimit: { type: 'boolean' },
+      },
+      required: [
+        'uploadAllowanceBytes',
+        'uploadUsedBytes',
+        'uploadRemainingBytes',
+        'uploadUsagePercent',
+        'uploadNearLimit',
+      ],
+    },
+  },
+  required: ['uploadsEnabled', 'quota'],
+} as const;
+
+export const uploadAssetSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    assetId: { type: 'string' },
+    url: { type: 'string' },
+    mimeType: { type: 'string' },
+    sizeBytes: { type: 'integer' },
+    quota: userUploadSettingsSchema.properties.quota,
+  },
+  required: ['assetId', 'url', 'mimeType', 'sizeBytes', 'quota'],
 } as const;
 
 export const characterSchema = {

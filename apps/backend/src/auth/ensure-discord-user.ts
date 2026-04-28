@@ -1,6 +1,10 @@
 import { discordUserIdToAuthEmail } from './identity.js';
 import { getPrismaClient } from './prisma.js';
 
+function getUploadDefaultEnabled(): boolean {
+  return process.env.UPLOAD_DEFAULT_ENABLED === 'true';
+}
+
 export interface DiscordUserLookup {
   userId: string;
   email: string;
@@ -56,6 +60,7 @@ export async function ensureDiscordUser(discordUserId: string): Promise<DiscordU
           email,
           name: `Discord ${discordUserId}`,
           emailVerified: true,
+          uploadsEnabled: getUploadDefaultEnabled(),
         },
         // If the synthetic Discord email already exists, reuse it rather than
         // crashing on the unique index. This keeps bot magic-link login and

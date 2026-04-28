@@ -15,6 +15,7 @@ import {
   singleResponseSchema,
 } from '../schemas.js';
 import { getPrismaClient } from '../auth/prisma.js';
+import { moderatePayloadText } from '../services/content-moderation.js';
 
 interface CampaignParams {
   id: string;
@@ -299,6 +300,7 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
+      await moderatePayloadText(app.config, request.body);
       const { id } = request.params;
       const { name, imageUrl, description, systemBlocks, facts } = request.body;
 
@@ -351,6 +353,7 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
+      await moderatePayloadText(app.config, request.body);
       const { npcId } = request.params;
       const { name, imageUrl, description, systemBlocks } = request.body;
       const data: Partial<{
@@ -409,6 +412,7 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
+      await moderatePayloadText(app.config, request.body);
       const { npcId } = request.params;
       const { content, sortOrder } = request.body;
       const fact = await prisma.npcFact.create({

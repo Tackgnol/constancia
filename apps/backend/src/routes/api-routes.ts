@@ -11,15 +11,20 @@ import messageRoutes from './message-routes.js';
 import journalRoutes from './journal-routes.js';
 import botRoutes from './bot-routes.js';
 import systemRoutes from './system-routes.js';
+import userSettingsRoutes from './user-settings-routes.js';
+import { uploadProtectedRoutes, uploadPublicRoutes } from './upload-routes.js';
 import sessionGuardPlugin from '../plugins/session-guard-plugin.js';
 import botAuthPlugin from '../plugins/bot-auth-plugin.js';
 
 const apiRoutes: FastifyPluginAsync = async (app) => {
   await app.register(authPublicRoutes, { prefix: '/auth' });
+  await app.register(uploadPublicRoutes, { prefix: '/uploads' });
 
   // Session-guarded routes (user-facing)
   await app.register(async (protected_) => {
     await protected_.register(sessionGuardPlugin);
+    await protected_.register(userSettingsRoutes, { prefix: '/users' });
+    await protected_.register(uploadProtectedRoutes, { prefix: '/uploads' });
     await protected_.register(campaignRoutes, { prefix: '/campaigns' });
     await protected_.register(channelRoutes, { prefix: '/campaigns/:id/channels' });
     await protected_.register(characterRoutes, { prefix: '/campaigns/:id/characters' });
