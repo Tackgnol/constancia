@@ -11,11 +11,21 @@ import type {
   CreateCharacterPathParameters,
   GetCharacter200,
   GetCharacterPathParameters,
+  GetCharacterSheet200,
+  GetCharacterSheetPathParameters,
+  GetPlayerCharacterSheet200,
+  GetPlayerCharacterSheetPathParameters,
   ListCharacters200,
   ListCharactersPathParameters,
   UpdateCharacter200,
   UpdateCharacterBody,
-  UpdateCharacterPathParameters
+  UpdateCharacterPathParameters,
+  UpdateCharacterSheet200,
+  UpdateCharacterSheetBody,
+  UpdateCharacterSheetPathParameters,
+  UpdatePlayerCharacterSheet200,
+  UpdatePlayerCharacterSheetBody,
+  UpdatePlayerCharacterSheetPathParameters
 } from '../../model.js';
 
 
@@ -135,6 +145,126 @@ export const updateCharacter = async ({ id, charId }: UpdateCharacterPathParamet
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
   
   const data: UpdateCharacter200 = body ? JSON.parse(body) : {}
+  return data
+}
+
+
+/**
+ * @summary Get a character sheet
+ */
+export const getGetCharacterSheetUrl = ({ id, charId }: GetCharacterSheetPathParameters,) => {
+
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/characters/${charId}/sheet`
+}
+
+export const getCharacterSheet = async ({ id, charId }: GetCharacterSheetPathParameters, options?: RequestInit): Promise<GetCharacterSheet200> => {
+  
+  const res = await fetch(getGetCharacterSheetUrl({ id, charId }),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: GetCharacterSheet200 = body ? JSON.parse(body) : {}
+  return data
+}
+
+
+/**
+ * @summary Update a character sheet
+ */
+export const getUpdateCharacterSheetUrl = ({ id, charId }: UpdateCharacterSheetPathParameters,) => {
+
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/characters/${charId}/sheet`
+}
+
+export const updateCharacterSheet = async ({ id, charId }: UpdateCharacterSheetPathParameters,
+    updateCharacterSheetBody: UpdateCharacterSheetBody, options?: RequestInit): Promise<UpdateCharacterSheet200> => {
+  
+  const res = await fetch(getUpdateCharacterSheetUrl({ id, charId }),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateCharacterSheetBody,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: UpdateCharacterSheet200 = body ? JSON.parse(body) : {}
+  return data
+}
+
+
+/**
+ * @summary Get the current player sheet
+ */
+export const getGetPlayerCharacterSheetUrl = ({ id }: GetPlayerCharacterSheetPathParameters,) => {
+
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/player-character/sheet`
+}
+
+export const getPlayerCharacterSheet = async ({ id }: GetPlayerCharacterSheetPathParameters, options?: RequestInit): Promise<GetPlayerCharacterSheet200> => {
+  
+  const res = await fetch(getGetPlayerCharacterSheetUrl({ id }),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: GetPlayerCharacterSheet200 = body ? JSON.parse(body) : {}
+  return data
+}
+
+
+/**
+ * @summary Update the current player sheet
+ */
+export const getUpdatePlayerCharacterSheetUrl = ({ id }: UpdatePlayerCharacterSheetPathParameters,) => {
+
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/player-character/sheet`
+}
+
+export const updatePlayerCharacterSheet = async ({ id }: UpdatePlayerCharacterSheetPathParameters,
+    updatePlayerCharacterSheetBody: UpdatePlayerCharacterSheetBody, options?: RequestInit): Promise<UpdatePlayerCharacterSheet200> => {
+  
+  const res = await fetch(getUpdatePlayerCharacterSheetUrl({ id }),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updatePlayerCharacterSheetBody,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: UpdatePlayerCharacterSheet200 = body ? JSON.parse(body) : {}
   return data
 }
 

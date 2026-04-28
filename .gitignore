@@ -7,6 +7,7 @@ build/
 !.env.example
 *.local
 .superpowers/
+.playwright-mcp/
 coverage/
 .prisma/
 .react-router/

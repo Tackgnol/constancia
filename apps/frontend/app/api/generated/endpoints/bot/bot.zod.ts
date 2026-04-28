@@ -157,6 +157,12 @@ export const getChannelEventsResponse = zod.object({
   "skill": zod.string().describe('Key into characterData.skills'),
   "difficulty": zod.number().describe('Number of successes needed to succeed')
 })
+}),zod.object({
+  "blockType": zod.enum(['vtm-insight-resolver']),
+  "config": zod.object({
+  "attribute": zod.string().describe('Key into characterData.attributes'),
+  "skill": zod.string().describe('Key into characterData.skills')
+})
 })]))
 }))
 })

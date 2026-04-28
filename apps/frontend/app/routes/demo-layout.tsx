@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { NavLink, Outlet, useLoaderData, useLocation } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { PlayerWhisperForm } from '@/components/war-room/player-whisper-form';
 import { SceneRailExtras } from '@/components/war-room/scene-rail-extras';
 import { demoContext, demoCampaigns, demoHealth, demoSystems } from '@/lib/demo-data';
 import { triggerSections } from '@/lib/war-room-data';
@@ -242,13 +243,7 @@ export default function DemoLayout() {
             ))}
           </div>
 
-          <button
-            className="ghost-action"
-            title="Send a private Discord DM to one player"
-            type="button"
-          >
-            + Whisper a player
-          </button>
+          <PlayerWhisperForm warRoom={outletContext} />
 
           <div className="panel-title panel-title-secondary">Pulse</div>
           <p className="panel-copy">

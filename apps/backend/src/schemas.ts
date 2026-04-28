@@ -347,6 +347,8 @@ export const eventPatchBodySchema = {
   additionalProperties: false,
   properties: {
     name: { type: 'string' },
+    type: { type: 'string' },
+    channelId: { type: 'string' },
     status: { type: 'string' },
     shortCircuit: { type: 'boolean' },
     pipeline: {
@@ -354,6 +356,22 @@ export const eventPatchBodySchema = {
       items: blockInstanceSchema,
     },
   },
+} as const;
+
+export const playerMessageBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    channelId: { type: 'string' },
+    discordUserIds: {
+      type: 'array',
+      items: { type: 'string' },
+      minItems: 1,
+    },
+    content: { type: 'string', minLength: 1 },
+    imageUrl: { type: 'string' },
+  },
+  required: ['channelId', 'discordUserIds', 'content'],
 } as const;
 
 export const questBodySchema = {
@@ -702,6 +720,17 @@ export const fireEventResultSchema = {
     halted: { type: 'boolean' },
   },
   required: ['eventId', 'messages', 'halted'],
+} as const;
+
+export const playerMessageResultSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    campaignId: { type: 'string' },
+    channelId: { type: 'string' },
+    deliveredTo: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['campaignId', 'channelId', 'deliveredTo'],
 } as const;
 
 export const botTestResultResponseSchema = {

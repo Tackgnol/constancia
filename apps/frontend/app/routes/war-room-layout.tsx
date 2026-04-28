@@ -4,6 +4,7 @@ import { listCharacters } from '@/api/generated/endpoints/characters/characters'
 import { listEvents } from '@/api/generated/endpoints/events/events';
 import { getServiceHealth } from '@/api/generated/endpoints/meta/meta';
 import { listGameSystems } from '@/api/generated/endpoints/systems/systems';
+import { PlayerWhisperForm } from '@/components/war-room/player-whisper-form';
 import { SceneRailExtras } from '@/components/war-room/scene-rail-extras';
 import { authClient } from '@/lib/auth-client';
 import type { PlayerPresence } from '@/lib/war-room-data';
@@ -232,13 +233,7 @@ export default function WarRoomLayout() {
             ))}
           </div>
 
-          <button
-            className="ghost-action"
-            title="Send a private Discord DM to one player"
-            type="button"
-          >
-            + Whisper a player
-          </button>
+          <PlayerWhisperForm warRoom={outletContext} />
 
           <div className="panel-title panel-title-secondary">Recent Activity</div>
           <div className="activity-feed">

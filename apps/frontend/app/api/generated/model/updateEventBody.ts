@@ -9,6 +9,8 @@ import type { UpdateEventBodyPipelineItem } from './updateEventBodyPipelineItem.
 
 export type UpdateEventBody = {
   name?: string;
+  type?: string;
+  channelId?: string;
   status?: string;
   shortCircuit?: boolean;
   pipeline?: UpdateEventBodyPipelineItem[];

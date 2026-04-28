@@ -9,14 +9,6 @@ import * as zod from 'zod';
 
 
 /**
- * @summary Request a Discord magic link
- */
-export const createMagicLinkBody = zod.object({
-  "discordUserId": zod.string(),
-  "guildId": zod.string()
-})
-
-/**
  * @summary Verify a magic link token
  */
 export const verifyMagicLinkQueryParams = zod.object({
@@ -34,5 +26,21 @@ export const verifyMagicLinkResponse = zod.object({
 export const logoutSessionResponse = zod.object({
   "status": zod.string(),
   "data": zod.unknown()
+})
+
+/**
+ * @summary Request a Discord magic link
+ */
+export const createMagicLinkBody = zod.object({
+  "discordUserId": zod.string(),
+  "guildId": zod.string()
+})
+
+/**
+ * @summary Request a player sheet magic link
+ */
+export const createPlayerSheetMagicLinkBody = zod.object({
+  "discordUserId": zod.string(),
+  "guildId": zod.string()
 })
 

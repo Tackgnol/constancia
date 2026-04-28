@@ -13,5 +13,6 @@ import type { ListEvents200DataItemPipelineItemAnyOfOnefive } from './listEvents
 import type { ListEvents200DataItemPipelineItemAnyOfOneeight } from './listEvents200DataItemPipelineItemAnyOfOneeight.js';
 import type { ListEvents200DataItemPipelineItemAnyOfTwoone } from './listEvents200DataItemPipelineItemAnyOfTwoone.js';
 import type { ListEvents200DataItemPipelineItemAnyOfTwofive } from './listEvents200DataItemPipelineItemAnyOfTwofive.js';
+import type { ListEvents200DataItemPipelineItemAnyOfTwoeight } from './listEvents200DataItemPipelineItemAnyOfTwoeight.js';
 
-export type ListEvents200DataItemPipelineItem = ListEvents200DataItemPipelineItemAnyOf | ListEvents200DataItemPipelineItemAnyOfFive | ListEvents200DataItemPipelineItemAnyOfNine | ListEvents200DataItemPipelineItemAnyOfOnetwo | ListEvents200DataItemPipelineItemAnyOfOnefive | ListEvents200DataItemPipelineItemAnyOfOneeight | ListEvents200DataItemPipelineItemAnyOfTwoone | ListEvents200DataItemPipelineItemAnyOfTwofive;
+export type ListEvents200DataItemPipelineItem = ListEvents200DataItemPipelineItemAnyOf | ListEvents200DataItemPipelineItemAnyOfFive | ListEvents200DataItemPipelineItemAnyOfNine | ListEvents200DataItemPipelineItemAnyOfOnetwo | ListEvents200DataItemPipelineItemAnyOfOnefive | ListEvents200DataItemPipelineItemAnyOfOneeight | ListEvents200DataItemPipelineItemAnyOfTwoone | ListEvents200DataItemPipelineItemAnyOfTwofive | ListEvents200DataItemPipelineItemAnyOfTwoeight;

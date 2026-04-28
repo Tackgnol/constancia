@@ -81,6 +81,12 @@ export const listEventsResponse = zod.object({
   "skill": zod.string().describe('Key into characterData.skills'),
   "difficulty": zod.number().describe('Number of successes needed to succeed')
 })
+}),zod.object({
+  "blockType": zod.enum(['vtm-insight-resolver']),
+  "config": zod.object({
+  "attribute": zod.string().describe('Key into characterData.attributes'),
+  "skill": zod.string().describe('Key into characterData.skills')
+})
 })]))
 }))
 })
@@ -152,6 +158,12 @@ export const createEventBody = zod.object({
   "attribute": zod.string().describe('Key into characterData.attributes'),
   "skill": zod.string().describe('Key into characterData.skills'),
   "difficulty": zod.number().describe('Number of successes needed to succeed')
+})
+}),zod.object({
+  "blockType": zod.enum(['vtm-insight-resolver']),
+  "config": zod.object({
+  "attribute": zod.string().describe('Key into characterData.attributes'),
+  "skill": zod.string().describe('Key into characterData.skills')
 })
 })]))
 })
@@ -230,6 +242,12 @@ export const getEventResponse = zod.object({
   "skill": zod.string().describe('Key into characterData.skills'),
   "difficulty": zod.number().describe('Number of successes needed to succeed')
 })
+}),zod.object({
+  "blockType": zod.enum(['vtm-insight-resolver']),
+  "config": zod.object({
+  "attribute": zod.string().describe('Key into characterData.attributes'),
+  "skill": zod.string().describe('Key into characterData.skills')
+})
 })]))
 })
 })
@@ -244,6 +262,8 @@ export const updateEventParams = zod.object({
 
 export const updateEventBody = zod.object({
   "name": zod.string().optional(),
+  "type": zod.string().optional(),
+  "channelId": zod.string().optional(),
   "status": zod.string().optional(),
   "shortCircuit": zod.boolean().optional(),
   "pipeline": zod.array(zod.union([zod.object({
@@ -301,6 +321,12 @@ export const updateEventBody = zod.object({
   "attribute": zod.string().describe('Key into characterData.attributes'),
   "skill": zod.string().describe('Key into characterData.skills'),
   "difficulty": zod.number().describe('Number of successes needed to succeed')
+})
+}),zod.object({
+  "blockType": zod.enum(['vtm-insight-resolver']),
+  "config": zod.object({
+  "attribute": zod.string().describe('Key into characterData.attributes'),
+  "skill": zod.string().describe('Key into characterData.skills')
 })
 })])).optional()
 })
@@ -370,6 +396,12 @@ export const updateEventResponse = zod.object({
   "attribute": zod.string().describe('Key into characterData.attributes'),
   "skill": zod.string().describe('Key into characterData.skills'),
   "difficulty": zod.number().describe('Number of successes needed to succeed')
+})
+}),zod.object({
+  "blockType": zod.enum(['vtm-insight-resolver']),
+  "config": zod.object({
+  "attribute": zod.string().describe('Key into characterData.attributes'),
+  "skill": zod.string().describe('Key into characterData.skills')
 })
 })]))
 })

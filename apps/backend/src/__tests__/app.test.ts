@@ -91,6 +91,7 @@ describe('backend app', () => {
         '/api/v1/campaigns/{id}/events/',
         '/api/v1/campaigns/{id}/events/{eventId}',
         '/api/v1/campaigns/{id}/events/{eventId}/fire',
+        '/api/v1/campaigns/{id}/messages/players',
         '/api/v1/campaigns/{id}/quests',
         '/api/v1/campaigns/{id}/quests/{questId}',
         '/api/v1/campaigns/{id}/quests/{questId}/entries',
@@ -252,6 +253,16 @@ describe('backend app', () => {
         payload: { status: 'ready' },
       },
       { method: 'POST', url: '/api/v1/campaigns/campaign-1/events/event-1/fire', statusCode: 401 },
+      {
+        method: 'POST',
+        url: '/api/v1/campaigns/campaign-1/messages/players',
+        statusCode: 401,
+        payload: {
+          channelId: 'channel-1',
+          discordUserIds: ['discord-user-1'],
+          content: 'The prince watches you.',
+        },
+      },
       { method: 'GET', url: '/api/v1/campaigns/campaign-1/quests', statusCode: 401 },
       {
         method: 'POST',

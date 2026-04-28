@@ -13,5 +13,6 @@ import type { CreateEventBodyPipelineItemAnyOfOnefive } from './createEventBodyP
 import type { CreateEventBodyPipelineItemAnyOfOneeight } from './createEventBodyPipelineItemAnyOfOneeight.js';
 import type { CreateEventBodyPipelineItemAnyOfTwoone } from './createEventBodyPipelineItemAnyOfTwoone.js';
 import type { CreateEventBodyPipelineItemAnyOfTwofive } from './createEventBodyPipelineItemAnyOfTwofive.js';
+import type { CreateEventBodyPipelineItemAnyOfTwoeight } from './createEventBodyPipelineItemAnyOfTwoeight.js';
 
-export type CreateEventBodyPipelineItem = CreateEventBodyPipelineItemAnyOf | CreateEventBodyPipelineItemAnyOfFive | CreateEventBodyPipelineItemAnyOfNine | CreateEventBodyPipelineItemAnyOfOnetwo | CreateEventBodyPipelineItemAnyOfOnefive | CreateEventBodyPipelineItemAnyOfOneeight | CreateEventBodyPipelineItemAnyOfTwoone | CreateEventBodyPipelineItemAnyOfTwofive;
+export type CreateEventBodyPipelineItem = CreateEventBodyPipelineItemAnyOf | CreateEventBodyPipelineItemAnyOfFive | CreateEventBodyPipelineItemAnyOfNine | CreateEventBodyPipelineItemAnyOfOnetwo | CreateEventBodyPipelineItemAnyOfOnefive | CreateEventBodyPipelineItemAnyOfOneeight | CreateEventBodyPipelineItemAnyOfTwoone | CreateEventBodyPipelineItemAnyOfTwofive | CreateEventBodyPipelineItemAnyOfTwoeight;

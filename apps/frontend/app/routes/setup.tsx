@@ -1,27 +1,87 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, useOutletContext } from 'react-router';
+import { Link, useOutletContext, useRevalidator } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createEvent } from '@/api/generated/endpoints/events/events';
-import type { CreateEventBody } from '@/api/generated/model';
+import { createEvent, updateEvent } from '@/api/generated/endpoints/events/events';
+import type {
+  CreateEventBody,
+  ListEvents200DataItem,
+  UpdateEventBody,
+} from '@/api/generated/model';
 import { EventSetupForm } from '@/components/setup/event-setup-form';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import { SetupNpcForm } from '@/components/npcs/setup-npc-form';
 import {
+  BLOCK_TYPES,
+  EVENT_TYPES,
   eventFormSchema,
   getDefaultPipelineForEventType,
   normalizeEventFormValues,
+  type PipelineBlock,
   type EventFormValues,
 } from '@/lib/event-schema';
 import type { WarRoomContext } from '@/lib/war-room-data';
 
 type SetupStep = 'event' | 'dossier';
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isEventType(value: string): value is EventFormValues['type'] {
+  return EVENT_TYPES.includes(value as EventFormValues['type']);
+}
+
+function isPipelineBlockType(value: string): value is PipelineBlock['blockType'] {
+  return BLOCK_TYPES.includes(value as PipelineBlock['blockType']);
+}
+
+function normalizeEventPipeline(event: ListEvents200DataItem): PipelineBlock[] {
+  const type = isEventType(event.type) ? event.type : 'narration';
+  if (!Array.isArray(event.pipeline)) {
+    return getDefaultPipelineForEventType(type);
+  }
+
+  const pipeline = event.pipeline.flatMap((block): PipelineBlock[] => {
+    if (!isRecord(block) || typeof block.blockType !== 'string') {
+      return [];
+    }
+
+    if (!isPipelineBlockType(block.blockType)) {
+      return [];
+    }
+
+    return [
+      {
+        blockType: block.blockType,
+        config: isRecord(block.config) ? block.config : {},
+      },
+    ];
+  });
+
+  return pipeline.length > 0 ? pipeline : getDefaultPipelineForEventType(type);
+}
+
+function eventToFormValues(event: ListEvents200DataItem): EventFormValues {
+  const type = isEventType(event.type) ? event.type : 'narration';
+
+  return {
+    name: event.name,
+    type,
+    channelId: event.channelId,
+    shortCircuit: event.shortCircuit,
+    pipeline: normalizeEventPipeline(event),
+  };
+}
+
 export default function SetupRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
+  const revalidator = useRevalidator();
   const isDemoCampaign = warRoom.campaign.id.startsWith('demo-');
   const [savedEvent, setSavedEvent] = useState<EventFormValues | null>(null);
+  const [savedEventMode, setSavedEventMode] = useState<'created' | 'updated'>('created');
   const [eventError, setEventError] = useState<string | null>(null);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [savedNpc, setSavedNpc] = useState<{ name: string; factCount: number } | null>(null);
   const [npcError, setNpcError] = useState<string | null>(null);
   const [step, setStep] = useState<SetupStep>('event');
@@ -37,19 +97,55 @@ export default function SetupRoute() {
     },
   });
 
+  const editingEvent = warRoom.events.find((event) => event.id === editingEventId) ?? null;
+
+  const startEventEdit = (event: ListEvents200DataItem) => {
+    setEventError(null);
+    setSavedEvent(null);
+    setEditingEventId(event.id);
+    setStep('event');
+    eventMethods.clearErrors();
+    eventMethods.reset(eventToFormValues(event));
+  };
+
+  const cancelEventEdit = () => {
+    setEditingEventId(null);
+    setEventError(null);
+    eventMethods.clearErrors();
+    eventMethods.reset({
+      name: '',
+      type: 'narration',
+      channelId: '',
+      shortCircuit: false,
+      pipeline: getDefaultPipelineForEventType('narration'),
+    });
+  };
+
   const onSubmitEvent = async (values: EventFormValues) => {
     try {
       setEventError(null);
       eventMethods.clearErrors('root');
       const normalizedValues = normalizeEventFormValues(values);
+      const isEditing = editingEventId !== null;
 
       if (!isDemoCampaign) {
-        await createEvent({ id: warRoom.campaign.id }, normalizedValues as CreateEventBody, {
-          credentials: 'include',
-        });
+        if (isEditing) {
+          await updateEvent(
+            { id: warRoom.campaign.id, eventId: editingEventId },
+            normalizedValues as UpdateEventBody,
+            { credentials: 'include' },
+          );
+        } else {
+          await createEvent({ id: warRoom.campaign.id }, normalizedValues as CreateEventBody, {
+            credentials: 'include',
+          });
+        }
+        revalidator.revalidate();
       }
 
+      setSavedEventMode(isEditing ? 'updated' : 'created');
       setSavedEvent(normalizedValues);
+      setEditingEventId(null);
       eventMethods.reset({
         name: '',
         type: 'narration',
@@ -58,8 +154,10 @@ export default function SetupRoute() {
         pipeline: getDefaultPipelineForEventType('narration'),
       });
     } catch (err) {
-      console.error('Create event error:', err);
-      const message = 'The event dossier did not stage cleanly. Try again in a moment.';
+      console.error('Save event error:', err);
+      const message = editingEventId
+        ? 'The event dossier did not update cleanly. Try again in a moment.'
+        : 'The event dossier did not stage cleanly. Try again in a moment.';
       eventMethods.setError('root.serverError', { type: 'manual', message });
       setEventError(message);
     }
@@ -111,17 +209,21 @@ export default function SetupRoute() {
           <div className="setup-panel-header">
             <div>
               <p className="eyebrow">Event staging</p>
-              <h2>Queue the next move</h2>
+              <h2>{editingEvent ? 'Revise a staged move' : 'Queue the next move'}</h2>
             </div>
-            <p className="form-hint">Draft the trigger now; fire it when the table is ready.</p>
+            <p className="form-hint">
+              {editingEvent
+                ? `Editing ${editingEvent.name}. Save it before firing from Play.`
+                : 'Draft the trigger now; fire it when the table is ready.'}
+            </p>
           </div>
 
           {savedEvent ? (
-            <SetupNotice label="Event staged">
+            <SetupNotice label={savedEventMode === 'updated' ? 'Event updated' : 'Event staged'}>
               <strong>{savedEvent.name}</strong>
               <span>
                 {savedEvent.pipeline.length} block{savedEvent.pipeline.length !== 1 ? 's' : ''} are
-                ready to fire.
+                ready.
               </span>
               <button
                 className="setup-inline-link"
@@ -143,7 +245,44 @@ export default function SetupRoute() {
             methods={eventMethods}
             channels={warRoom.channels}
             onSubmit={onSubmitEvent}
+            submitLabel={editingEvent ? 'Update Event' : 'Save Event'}
           />
+
+          {editingEvent ? (
+            <button className="setup-inline-link" onClick={cancelEventEdit} type="button">
+              Cancel edit
+            </button>
+          ) : null}
+
+          {warRoom.events.length > 0 ? (
+            <section className="setup-subsection">
+              <div className="setup-subsection-header">
+                <div>
+                  <p className="eyebrow">Existing events</p>
+                  <h3>Patch the board before the table sees it.</h3>
+                </div>
+              </div>
+              <div className="event-edit-list">
+                {warRoom.events.map((event) => {
+                  const channel = warRoom.channels.find((entry) => entry.id === event.channelId);
+                  return (
+                    <button
+                      key={event.id}
+                      className={`event-edit-row${editingEventId === event.id ? ' is-active' : ''}`}
+                      onClick={() => startEventEdit(event)}
+                      type="button"
+                    >
+                      <span className="event-edit-kind">{event.type}</span>
+                      <span className="event-edit-name">{event.name}</span>
+                      <span className="event-edit-meta">
+                        {channel ? `# ${channel.name}` : event.channelId} · {event.status}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
         </section>
       ) : (
         <section className="setup-panel">

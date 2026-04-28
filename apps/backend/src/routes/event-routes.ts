@@ -42,6 +42,8 @@ interface EventBody {
 
 interface EventPatchBody {
   name?: string;
+  type?: string;
+  channelId?: string;
   status?: string;
   shortCircuit?: boolean;
   pipeline?: EventBlockInput[];
@@ -159,9 +161,11 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const prisma = getPrismaClient();
       const { eventId } = request.params;
-      const { name, status, shortCircuit, pipeline } = request.body;
+      const { name, type, channelId, status, shortCircuit, pipeline } = request.body;
       const data: Prisma.EventUpdateInput = {};
       if (name !== undefined) data.name = name;
+      if (type !== undefined) data.type = type;
+      if (channelId !== undefined) data.channel = { connect: { id: channelId } };
       if (status !== undefined) data.status = status as EventStatus;
       if (shortCircuit !== undefined) data.shortCircuit = shortCircuit;
       if (pipeline !== undefined) data.pipeline = pipeline as unknown as Prisma.InputJsonValue;

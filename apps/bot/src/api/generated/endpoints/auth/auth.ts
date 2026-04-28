@@ -8,40 +8,12 @@
 import type {
   CreateMagicLink201,
   CreateMagicLinkBody,
+  CreatePlayerSheetMagicLink201,
+  CreatePlayerSheetMagicLinkBody,
   LogoutSession200,
   VerifyMagicLink200,
   VerifyMagicLinkParams
 } from '../../model.js';
-
-
-/**
- * @summary Request a Discord magic link
- */
-export const getCreateMagicLinkUrl = () => {
-
-
-  
-
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/auth/magic-link`
-}
-
-export const createMagicLink = async (createMagicLinkBody: CreateMagicLinkBody, options?: RequestInit): Promise<CreateMagicLink201> => {
-  
-  const res = await fetch(getCreateMagicLinkUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createMagicLinkBody,)
-  }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: CreateMagicLink201 = body ? JSON.parse(body) : {}
-  return data
-}
 
 
 /**
@@ -105,6 +77,66 @@ export const logoutSession = async ( options?: RequestInit): Promise<LogoutSessi
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
   
   const data: LogoutSession200 = body ? JSON.parse(body) : {}
+  return data
+}
+
+
+/**
+ * @summary Request a Discord magic link
+ */
+export const getCreateMagicLinkUrl = () => {
+
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/auth/magic-link`
+}
+
+export const createMagicLink = async (createMagicLinkBody: CreateMagicLinkBody, options?: RequestInit): Promise<CreateMagicLink201> => {
+  
+  const res = await fetch(getCreateMagicLinkUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createMagicLinkBody,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: CreateMagicLink201 = body ? JSON.parse(body) : {}
+  return data
+}
+
+
+/**
+ * @summary Request a player sheet magic link
+ */
+export const getCreatePlayerSheetMagicLinkUrl = () => {
+
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/auth/player-sheet-link`
+}
+
+export const createPlayerSheetMagicLink = async (createPlayerSheetMagicLinkBody: CreatePlayerSheetMagicLinkBody, options?: RequestInit): Promise<CreatePlayerSheetMagicLink201> => {
+  
+  const res = await fetch(getCreatePlayerSheetMagicLinkUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createPlayerSheetMagicLinkBody,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: CreatePlayerSheetMagicLink201 = body ? JSON.parse(body) : {}
   return data
 }
 

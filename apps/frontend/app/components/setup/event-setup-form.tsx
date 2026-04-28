@@ -24,10 +24,12 @@ export function EventSetupForm({
   methods,
   channels,
   onSubmit,
+  submitLabel = 'Save Event',
 }: {
   methods: UseFormReturn<EventFormValues>;
   channels: ChannelEntry[];
   onSubmit: (values: EventFormValues) => Promise<void> | void;
+  submitLabel?: string;
 }) {
   const {
     register,
@@ -165,7 +167,7 @@ export function EventSetupForm({
 
         <div className="form-actions">
           <button className="form-submit" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving…' : 'Save Event'}
+            {isSubmitting ? 'Saving…' : submitLabel}
           </button>
         </div>
       </form>

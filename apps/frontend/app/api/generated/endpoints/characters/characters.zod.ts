@@ -99,3 +99,67 @@ export const updateCharacterResponse = zod.object({
 })
 })
 
+/**
+ * @summary Get a character sheet
+ */
+export const getCharacterSheetParams = zod.object({
+  "id": zod.string(),
+  "charId": zod.string()
+})
+
+export const getCharacterSheetResponse = zod.object({
+  "status": zod.string(),
+  "data": zod.unknown()
+})
+
+/**
+ * @summary Update a character sheet
+ */
+export const updateCharacterSheetParams = zod.object({
+  "id": zod.string(),
+  "charId": zod.string()
+})
+
+export const updateCharacterSheetBody = zod.object({
+  "gameName": zod.string().optional(),
+  "backstory": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "stats": zod.record(zod.string(), zod.unknown()).optional()
+})
+
+export const updateCharacterSheetResponse = zod.object({
+  "status": zod.string(),
+  "data": zod.unknown()
+})
+
+/**
+ * @summary Get the current player sheet
+ */
+export const getPlayerCharacterSheetParams = zod.object({
+  "id": zod.string()
+})
+
+export const getPlayerCharacterSheetResponse = zod.object({
+  "status": zod.string(),
+  "data": zod.unknown()
+})
+
+/**
+ * @summary Update the current player sheet
+ */
+export const updatePlayerCharacterSheetParams = zod.object({
+  "id": zod.string()
+})
+
+export const updatePlayerCharacterSheetBody = zod.object({
+  "gameName": zod.string().optional(),
+  "backstory": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "stats": zod.record(zod.string(), zod.unknown()).optional()
+})
+
+export const updatePlayerCharacterSheetResponse = zod.object({
+  "status": zod.string(),
+  "data": zod.unknown()
+})
+

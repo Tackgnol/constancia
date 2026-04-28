@@ -13,5 +13,6 @@ import type { UpdateEvent200DataPipelineItemAnyOfOnefive } from './updateEvent20
 import type { UpdateEvent200DataPipelineItemAnyOfOneeight } from './updateEvent200DataPipelineItemAnyOfOneeight.js';
 import type { UpdateEvent200DataPipelineItemAnyOfTwoone } from './updateEvent200DataPipelineItemAnyOfTwoone.js';
 import type { UpdateEvent200DataPipelineItemAnyOfTwofive } from './updateEvent200DataPipelineItemAnyOfTwofive.js';
+import type { UpdateEvent200DataPipelineItemAnyOfTwoeight } from './updateEvent200DataPipelineItemAnyOfTwoeight.js';
 
-export type UpdateEvent200DataPipelineItem = UpdateEvent200DataPipelineItemAnyOf | UpdateEvent200DataPipelineItemAnyOfFive | UpdateEvent200DataPipelineItemAnyOfNine | UpdateEvent200DataPipelineItemAnyOfOnetwo | UpdateEvent200DataPipelineItemAnyOfOnefive | UpdateEvent200DataPipelineItemAnyOfOneeight | UpdateEvent200DataPipelineItemAnyOfTwoone | UpdateEvent200DataPipelineItemAnyOfTwofive;
+export type UpdateEvent200DataPipelineItem = UpdateEvent200DataPipelineItemAnyOf | UpdateEvent200DataPipelineItemAnyOfFive | UpdateEvent200DataPipelineItemAnyOfNine | UpdateEvent200DataPipelineItemAnyOfOnetwo | UpdateEvent200DataPipelineItemAnyOfOnefive | UpdateEvent200DataPipelineItemAnyOfOneeight | UpdateEvent200DataPipelineItemAnyOfTwoone | UpdateEvent200DataPipelineItemAnyOfTwofive | UpdateEvent200DataPipelineItemAnyOfTwoeight;

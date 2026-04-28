@@ -13,5 +13,6 @@ import type { CreateEvent201DataPipelineItemAnyOfOnefive } from './createEvent20
 import type { CreateEvent201DataPipelineItemAnyOfOneeight } from './createEvent201DataPipelineItemAnyOfOneeight.js';
 import type { CreateEvent201DataPipelineItemAnyOfTwoone } from './createEvent201DataPipelineItemAnyOfTwoone.js';
 import type { CreateEvent201DataPipelineItemAnyOfTwofive } from './createEvent201DataPipelineItemAnyOfTwofive.js';
+import type { CreateEvent201DataPipelineItemAnyOfTwoeight } from './createEvent201DataPipelineItemAnyOfTwoeight.js';
 
-export type CreateEvent201DataPipelineItem = CreateEvent201DataPipelineItemAnyOf | CreateEvent201DataPipelineItemAnyOfFive | CreateEvent201DataPipelineItemAnyOfNine | CreateEvent201DataPipelineItemAnyOfOnetwo | CreateEvent201DataPipelineItemAnyOfOnefive | CreateEvent201DataPipelineItemAnyOfOneeight | CreateEvent201DataPipelineItemAnyOfTwoone | CreateEvent201DataPipelineItemAnyOfTwofive;
+export type CreateEvent201DataPipelineItem = CreateEvent201DataPipelineItemAnyOf | CreateEvent201DataPipelineItemAnyOfFive | CreateEvent201DataPipelineItemAnyOfNine | CreateEvent201DataPipelineItemAnyOfOnetwo | CreateEvent201DataPipelineItemAnyOfOnefive | CreateEvent201DataPipelineItemAnyOfOneeight | CreateEvent201DataPipelineItemAnyOfTwoone | CreateEvent201DataPipelineItemAnyOfTwofive | CreateEvent201DataPipelineItemAnyOfTwoeight;

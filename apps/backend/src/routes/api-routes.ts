@@ -7,6 +7,7 @@ import playerCharacterRoutes from './player-character-routes.js';
 import channelRoutes from './channel-routes.js';
 import characterRoutes from './character-routes.js';
 import eventRoutes from './event-routes.js';
+import messageRoutes from './message-routes.js';
 import journalRoutes from './journal-routes.js';
 import botRoutes from './bot-routes.js';
 import systemRoutes from './system-routes.js';
@@ -26,6 +27,7 @@ const apiRoutes: FastifyPluginAsync = async (app) => {
     await protected_.register(campaignNpcRoutes, { prefix: '/campaigns/:id/npcs' });
     await protected_.register(playerNpcRoutes, { prefix: '/campaigns/:id/player-npcs' });
     await protected_.register(eventRoutes, { prefix: '/campaigns/:id/events' });
+    await protected_.register(messageRoutes, { prefix: '/campaigns/:id/messages' });
     await protected_.register(journalRoutes, { prefix: '/campaigns/:id' });
     await protected_.register(systemRoutes, { prefix: '/systems' });
   });

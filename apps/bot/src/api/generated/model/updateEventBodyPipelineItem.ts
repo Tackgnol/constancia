@@ -13,5 +13,6 @@ import type { UpdateEventBodyPipelineItemAnyOfOnefive } from './updateEventBodyP
 import type { UpdateEventBodyPipelineItemAnyOfOneeight } from './updateEventBodyPipelineItemAnyOfOneeight.js';
 import type { UpdateEventBodyPipelineItemAnyOfTwoone } from './updateEventBodyPipelineItemAnyOfTwoone.js';
 import type { UpdateEventBodyPipelineItemAnyOfTwofive } from './updateEventBodyPipelineItemAnyOfTwofive.js';
+import type { UpdateEventBodyPipelineItemAnyOfTwoeight } from './updateEventBodyPipelineItemAnyOfTwoeight.js';
 
-export type UpdateEventBodyPipelineItem = UpdateEventBodyPipelineItemAnyOf | UpdateEventBodyPipelineItemAnyOfFive | UpdateEventBodyPipelineItemAnyOfNine | UpdateEventBodyPipelineItemAnyOfOnetwo | UpdateEventBodyPipelineItemAnyOfOnefive | UpdateEventBodyPipelineItemAnyOfOneeight | UpdateEventBodyPipelineItemAnyOfTwoone | UpdateEventBodyPipelineItemAnyOfTwofive;
+export type UpdateEventBodyPipelineItem = UpdateEventBodyPipelineItemAnyOf | UpdateEventBodyPipelineItemAnyOfFive | UpdateEventBodyPipelineItemAnyOfNine | UpdateEventBodyPipelineItemAnyOfOnetwo | UpdateEventBodyPipelineItemAnyOfOnefive | UpdateEventBodyPipelineItemAnyOfOneeight | UpdateEventBodyPipelineItemAnyOfTwoone | UpdateEventBodyPipelineItemAnyOfTwofive | UpdateEventBodyPipelineItemAnyOfTwoeight;
