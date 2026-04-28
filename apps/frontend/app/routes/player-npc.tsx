@@ -1,30 +1,31 @@
-import { getPublicVisibleNpcForPlayer } from '@/api/generated/endpoints/npcs/npcs';
 import type { LoaderFunctionArgs } from 'react-router';
 import { useLoaderData } from 'react-router';
+import { getVisibleNpcForCurrentPlayer } from '@/api/generated/endpoints/npcs/npcs';
+import { NpcPortraitFallback } from '@/components/npcs/npc-portrait-fallback';
 
-export async function loader({ params, request }: LoaderFunctionArgs) {
+export async function loader({ params, request: _request }: LoaderFunctionArgs) {
   const campaignId = params.campaignId;
   const npcId = params.npcId;
-  const discordId = params.discordId;
 
-  if (!campaignId || !npcId || !discordId) {
+  if (!campaignId || !npcId) {
     throw new Response('NPC dossier link is incomplete.', { status: 400 });
   }
 
-  const response = await getPublicVisibleNpcForPlayer(
-    { id: campaignId, npcId, discordId },
-    {
-      headers: {
-        cookie: request.headers.get('Cookie') || '',
-      },
-    },
-  );
+  try {
+    const response = await getVisibleNpcForCurrentPlayer(
+      { id: campaignId, npcId },
+      { credentials: 'include' },
+    );
 
-  if (response.status !== 'ok') {
-    throw new Response('NPC dossier not found.', { status: 404 });
+    if (!response || response.status !== 'ok' || !response.data) {
+      throw new Response('NPC dossier not found.', { status: 404 });
+    }
+
+    return response.data;
+  } catch (err) {
+    console.error('Failed to load NPC dossier:', err);
+    throw new Response('Failed to load NPC dossier.', { status: 502 });
   }
-
-  return response.data;
 }
 
 export function meta() {
@@ -54,13 +55,7 @@ export default function PlayerNpcRoute() {
             {npc.imageUrl ? (
               <img className="npc-portrait" src={npc.imageUrl} alt={`${npc.name} portrait`} />
             ) : (
-              <div className="npc-portrait npc-portrait-fallback" aria-hidden="true">
-                {npc.name
-                  .split(' ')
-                  .slice(0, 2)
-                  .map((part) => part.charAt(0))
-                  .join('')}
-              </div>
+              <NpcPortraitFallback name={npc.name} />
             )}
             <div className="npc-portrait-stamp">known</div>
           </div>
@@ -79,7 +74,9 @@ export default function PlayerNpcRoute() {
           <div className="setup-subsection-header">
             <div>
               <p className="detail-label">Confirmed knowledge</p>
-              <p className="form-hint">Everything below has been explicitly marked as known to your character.</p>
+              <p className="form-hint">
+                Everything below has been explicitly marked as known to your character.
+              </p>
             </div>
           </div>
 
@@ -99,4 +96,3 @@ export default function PlayerNpcRoute() {
     </main>
   );
 }
-

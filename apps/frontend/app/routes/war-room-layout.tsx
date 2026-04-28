@@ -4,6 +4,7 @@ import { listCharacters } from '@/api/generated/endpoints/characters/characters'
 import { listEvents } from '@/api/generated/endpoints/events/events';
 import { getServiceHealth } from '@/api/generated/endpoints/meta/meta';
 import { listGameSystems } from '@/api/generated/endpoints/systems/systems';
+import { SceneRailExtras } from '@/components/war-room/scene-rail-extras';
 import { authClient } from '@/lib/auth-client';
 import type { PlayerPresence } from '@/lib/war-room-data';
 import {
@@ -198,6 +199,13 @@ export default function WarRoomLayout() {
               );
             })}
           </div>
+
+          <SceneRailExtras
+            tags={outletContext.tags}
+            activeTag={activeTag}
+            eventCount={Array.from(tagEventCounts.values()).reduce((a, b) => a + b, 0)}
+            activeEventCount={activeTag ? (tagEventCounts.get(activeTag) ?? 0) : 0}
+          />
         </aside>
 
         <main className="route-panel">
@@ -224,8 +232,12 @@ export default function WarRoomLayout() {
             ))}
           </div>
 
-          <button className="ghost-action" type="button">
-            + Quick Message
+          <button
+            className="ghost-action"
+            title="Send a private Discord DM to one player"
+            type="button"
+          >
+            + Whisper a player
           </button>
 
           <div className="panel-title panel-title-secondary">Recent Activity</div>

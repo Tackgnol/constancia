@@ -8,12 +8,14 @@ import { EventSetupForm } from '@/components/setup/event-setup-form';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import { SetupNpcForm } from '@/components/npcs/setup-npc-form';
 import {
-  defaultBlockConfigs,
   eventFormSchema,
+  getDefaultPipelineForEventType,
   normalizeEventFormValues,
   type EventFormValues,
 } from '@/lib/event-schema';
 import type { WarRoomContext } from '@/lib/war-room-data';
+
+type SetupStep = 'event' | 'dossier';
 
 export default function SetupRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
@@ -22,6 +24,7 @@ export default function SetupRoute() {
   const [eventError, setEventError] = useState<string | null>(null);
   const [savedNpc, setSavedNpc] = useState<{ name: string; factCount: number } | null>(null);
   const [npcError, setNpcError] = useState<string | null>(null);
+  const [step, setStep] = useState<SetupStep>('event');
 
   const eventMethods = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
@@ -30,13 +33,14 @@ export default function SetupRoute() {
       type: 'narration',
       channelId: '',
       shortCircuit: false,
-      pipeline: [{ blockType: 'message-channel', config: defaultBlockConfigs['message-channel'] }],
+      pipeline: getDefaultPipelineForEventType('narration'),
     },
   });
 
   const onSubmitEvent = async (values: EventFormValues) => {
     try {
       setEventError(null);
+      eventMethods.clearErrors('root');
       const normalizedValues = normalizeEventFormValues(values);
 
       if (!isDemoCampaign) {
@@ -51,11 +55,13 @@ export default function SetupRoute() {
         type: 'narration',
         channelId: '',
         shortCircuit: false,
-        pipeline: [{ blockType: 'message-channel', config: defaultBlockConfigs['message-channel'] }],
+        pipeline: getDefaultPipelineForEventType('narration'),
       });
     } catch (err) {
       console.error('Create event error:', err);
-      setEventError('The event dossier did not stage cleanly. Try again in a moment.');
+      const message = 'The event dossier did not stage cleanly. Try again in a moment.';
+      eventMethods.setError('root.serverError', { type: 'manual', message });
+      setEventError(message);
     }
   };
 
@@ -79,7 +85,28 @@ export default function SetupRoute() {
         </div>
       </section>
 
-      <div className="setup-grid">
+      <nav className="setup-steps" aria-label="Setup steps">
+        <button
+          aria-current={step === 'event' ? 'step' : undefined}
+          className={`setup-step${step === 'event' ? ' is-active' : ''}`}
+          onClick={() => setStep('event')}
+          type="button"
+        >
+          <span className="setup-step-index">01</span>
+          <span className="setup-step-label">Stage event</span>
+        </button>
+        <button
+          aria-current={step === 'dossier' ? 'step' : undefined}
+          className={`setup-step${step === 'dossier' ? ' is-active' : ''}`}
+          onClick={() => setStep('dossier')}
+          type="button"
+        >
+          <span className="setup-step-index">02</span>
+          <span className="setup-step-label">Pin dossier</span>
+        </button>
+      </nav>
+
+      {step === 'event' ? (
         <section className="setup-panel">
           <div className="setup-panel-header">
             <div>
@@ -96,6 +123,13 @@ export default function SetupRoute() {
                 {savedEvent.pipeline.length} block{savedEvent.pipeline.length !== 1 ? 's' : ''} are
                 ready to fire.
               </span>
+              <button
+                className="setup-inline-link"
+                onClick={() => setStep('dossier')}
+                type="button"
+              >
+                Next: pin a dossier →
+              </button>
             </SetupNotice>
           ) : null}
 
@@ -105,9 +139,13 @@ export default function SetupRoute() {
             </SetupNotice>
           ) : null}
 
-          <EventSetupForm methods={eventMethods} channels={warRoom.channels} onSubmit={onSubmitEvent} />
+          <EventSetupForm
+            methods={eventMethods}
+            channels={warRoom.channels}
+            onSubmit={onSubmitEvent}
+          />
         </section>
-
+      ) : (
         <section className="setup-panel">
           <div className="setup-panel-header">
             <div>
@@ -146,7 +184,7 @@ export default function SetupRoute() {
             onError={setNpcError}
           />
         </section>
-      </div>
+      )}
     </div>
   );
 }

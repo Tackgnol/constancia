@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { PipelineRunner } from '../pipeline-runner.js';
+import { BlockConfigValidationError, PipelineRunner } from '../pipeline-runner.js';
 import { BlockRegistry } from '../block-registry.js';
 import type { BlockDefinition, BlockContext, BlockInstance } from '@constancia/contracts';
 
@@ -107,5 +107,36 @@ describe('PipelineRunner', () => {
     await runner.run([{ blockType: 'spy', config: { key: 'val' } }], ctx);
 
     expect(executeSpy).toHaveBeenCalledWith({ key: 'val' }, ctx);
+  });
+
+  it('fails fast when block config does not match the schema', async () => {
+    const registry = new BlockRegistry();
+    const executeSpy = vi.fn(async () => ({ output: 'ok' }));
+
+    const block: BlockDefinition<{ text: string }> = {
+      type: 'say',
+      label: 'Say',
+      configSchema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          text: { type: 'string' },
+        },
+        required: ['text'],
+      },
+      execute: executeSpy,
+    };
+
+    registry.register(block);
+
+    const runner = new PipelineRunner(registry);
+
+    await expect(runner.run([{ blockType: 'say', config: {} }], createContext())).rejects.toThrow(
+      BlockConfigValidationError,
+    );
+    await expect(runner.run([{ blockType: 'say', config: {} }], createContext())).rejects.toThrow(
+      'Invalid config for block "say" at pipeline index 0',
+    );
+    expect(executeSpy).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,7 @@
 import fp from 'fastify-plugin';
 import type { FastifyPluginAsync } from 'fastify';
 import { fromNodeHeaders } from 'better-auth/node';
+import { createSessionAccessContext } from '../auth/access-context.js';
 import { auth } from '../auth.js';
 
 const sessionGuardPlugin: FastifyPluginAsync = async (app) => {
@@ -19,6 +20,7 @@ const sessionGuardPlugin: FastifyPluginAsync = async (app) => {
     }
 
     request.session = session;
+    request.access = await createSessionAccessContext(session);
   });
 };
 

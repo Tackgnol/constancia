@@ -29,12 +29,13 @@ export interface BotChatCommand {
 }
 
 export interface BotComponentHandler {
-  customId: string;
+  customId?: string;
+  customIdPrefix?: string;
   execute: (interaction: MessageComponentInteraction) => Promise<void>;
 }
 
 export interface BotModalHandler {
-  customId: string;
+  customId?: string;
+  customIdPrefix?: string;
   execute: (interaction: ModalSubmitInteraction) => Promise<void>;
 }
-

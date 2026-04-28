@@ -13,6 +13,7 @@ import {
   type KnownPlayerRef,
 } from '@/components/npcs/block-registry';
 import { KnownToPicker } from '@/components/npcs/known-to-picker';
+import { NpcPortraitFallback } from '@/components/npcs/npc-portrait-fallback';
 import { NpcEditForm } from '@/components/npcs/npc-edit-form';
 import { SystemBlockRenderer } from '@/components/npcs/system-block-renderer';
 import { buildRecipientOptions, type WarRoomContext } from '@/lib/war-room-data';
@@ -163,7 +164,7 @@ export default function NpcsRoute() {
   const isDemoCampaign = warRoom.campaign.id.startsWith('demo-');
   const [npcs, setNpcs] = useState<CampaignNpc[]>(() => (isDemoCampaign ? demoNpcs : []));
   const [selectedNpcId, setSelectedNpcId] = useState<string | null>(
-    isDemoCampaign ? demoNpcs[0]?.id ?? null : null,
+    isDemoCampaign ? (demoNpcs[0]?.id ?? null) : null,
   );
   const [pendingAssignments, setPendingAssignments] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(!isDemoCampaign);
@@ -338,7 +339,7 @@ export default function NpcsRoute() {
 
     try {
       const url = new URL(
-        `/player/campaigns/${encodeURIComponent(warRoom.campaign.id)}/npcs/${encodeURIComponent(selectedNpc.id)}/for/${encodeURIComponent(discordUserId)}`,
+        `/player/campaigns/${encodeURIComponent(warRoom.campaign.id)}/npcs/${encodeURIComponent(selectedNpc.id)}`,
         window.location.origin,
       );
 
@@ -450,13 +451,7 @@ export default function NpcsRoute() {
                       alt={`${selectedNpc.name} portrait`}
                     />
                   ) : (
-                    <div className="npc-portrait npc-portrait-fallback" aria-hidden="true">
-                      {selectedNpc.name
-                        .split(' ')
-                        .slice(0, 2)
-                        .map((part) => part.charAt(0))
-                        .join('')}
-                    </div>
+                    <NpcPortraitFallback name={selectedNpc.name} />
                   )}
                   <div className="npc-portrait-stamp">verified</div>
                 </div>
@@ -548,8 +543,8 @@ export default function NpcsRoute() {
                       <div>
                         <p className="detail-label">Background summary</p>
                         <p className="form-hint">
-                          Use the description for what the GM needs at a glance; revealable truths stay in the
-                          facts panel.
+                          Use the description for what the GM needs at a glance; revealable truths
+                          stay in the facts panel.
                         </p>
                       </div>
                     </div>
@@ -564,8 +559,8 @@ export default function NpcsRoute() {
                       <div>
                         <p className="detail-label">Player dossier links</p>
                         <p className="form-hint">
-                          Copy a player-safe page. It only shows the facts that have already been revealed to that
-                          player.
+                          Copy a player-safe page. It only shows the facts that have already been
+                          revealed to that player.
                         </p>
                       </div>
                     </div>
@@ -579,7 +574,8 @@ export default function NpcsRoute() {
                               <strong>{recipient.displayName}</strong>
                             </div>
                             <span>
-                              {recipient.knownFacts} known fact{recipient.knownFacts === 1 ? '' : 's'}
+                              {recipient.knownFacts} known fact
+                              {recipient.knownFacts === 1 ? '' : 's'}
                             </span>
                             <button
                               className="ghost-action ghost-action-inline"
@@ -602,7 +598,8 @@ export default function NpcsRoute() {
                       </div>
                     ) : (
                       <p className="form-hint">
-                        Player identities are still loading. Dossier links appear once participants are synced.
+                        Player identities are still loading. Dossier links appear once participants
+                        are synced.
                       </p>
                     )}
                   </section>
@@ -616,7 +613,8 @@ export default function NpcsRoute() {
                       <div>
                         <p className="detail-label">System blocks</p>
                         <p className="form-hint">
-                          Full GM reference, including stat-backed blocks that never appear on player dossiers.
+                          Full GM reference, including stat-backed blocks that never appear on
+                          player dossiers.
                         </p>
                       </div>
                     </div>
@@ -645,7 +643,8 @@ export default function NpcsRoute() {
                       <div>
                         <p className="detail-label">Facts on file</p>
                         <p className="form-hint">
-                          Reveal one fact at a time. Knowledge only expands from here — the board remembers.
+                          Reveal one fact at a time. Knowledge only expands from here — the board
+                          remembers.
                         </p>
                       </div>
                     </div>
@@ -673,13 +672,18 @@ export default function NpcsRoute() {
                         return (
                           <article key={fact.id} className="npc-fact-card">
                             <div className="npc-fact-card-header">
-                              <span className="npc-fact-number">{String(index + 1).padStart(2, '0')}</span>
+                              <span className="npc-fact-number">
+                                {String(index + 1).padStart(2, '0')}
+                              </span>
                               <div>
                                 <p className="detail-label">Known to</p>
                                 {fact.knownTo.length > 0 ? (
                                   <div className="npc-chip-row">
                                     {fact.knownTo.map((player) => (
-                                      <span key={player.discordUserId} className="npc-chip is-known">
+                                      <span
+                                        key={player.discordUserId}
+                                        className="npc-chip is-known"
+                                      >
                                         {player.displayName}
                                       </span>
                                     ))}
@@ -697,7 +701,9 @@ export default function NpcsRoute() {
                               recipientOptions={recipientOptions}
                               pending={pending}
                               assigning={assigningFactId === fact.id}
-                              onToggle={(recipientId) => togglePendingAssignment(fact.id, recipientId)}
+                              onToggle={(recipientId) =>
+                                togglePendingAssignment(fact.id, recipientId)
+                              }
                               onApply={() => void applyFactKnowledge(fact)}
                             />
                           </article>

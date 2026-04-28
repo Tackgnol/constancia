@@ -17,6 +17,10 @@ export async function handleRoll(interaction: ChatInputCommandInteraction): Prom
   }
 
   const event = eventsResult.data[0];
+  if (event.type === 'test') {
+    await interaction.editReply('Use the active test card in this channel to submit your result.');
+    return;
+  }
 
   const result = await submitBotTestResult(
     {
@@ -56,4 +60,3 @@ export const rollCommand: BotChatCommand = {
   },
   execute: handleRoll,
 };
-

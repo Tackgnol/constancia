@@ -5,23 +5,11 @@ import {
   listResponseSchema,
   singleResponseSchema,
 } from '../schemas.js';
+import { getGameSystemSummary, listSupportedGameSystems } from '@constancia/systems';
 
 interface SystemParams {
   id: string;
 }
-
-const sampleSystems = [
-  {
-    id: 'vtm-v5',
-    name: 'Vampire: The Masquerade 5th Edition',
-    version: '0.1.0',
-  },
-  {
-    id: 'mork-borg',
-    name: 'Mork Borg',
-    version: '0.1.0',
-  },
-];
 
 const systemRoutes: FastifyPluginAsync = async (app) => {
   app.get(
@@ -38,7 +26,7 @@ const systemRoutes: FastifyPluginAsync = async (app) => {
     },
     async () => ({
       status: 'ok',
-      data: sampleSystems,
+      data: listSupportedGameSystems(),
     }),
   );
 
@@ -57,7 +45,7 @@ const systemRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const params = request.params;
-      const system = sampleSystems.find((s) => s.id === params.id);
+      const system = getGameSystemSummary(params.id);
       if (!system) {
         return reply
           .code(404)

@@ -10,6 +10,8 @@ import type {
   GetCampaignByGuildPathParameters,
   GetChannelEvents200,
   GetChannelEventsPathParameters,
+  ListBotVisibleNpcsForPlayer200,
+  ListBotVisibleNpcsForPlayerPathParameters,
   RemoveParticipant200,
   RemoveParticipantPathParameters,
   SetupChannel200,
@@ -76,6 +78,35 @@ export const getCampaignByGuild = async ({ guildId }: GetCampaignByGuildPathPara
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
   
   const data: GetCampaignByGuild200 = body ? JSON.parse(body) : {}
+  return data
+}
+
+
+/**
+ * @summary List NPCs visible to a Discord player
+ */
+export const getListBotVisibleNpcsForPlayerUrl = ({ id, discordUserId }: ListBotVisibleNpcsForPlayerPathParameters,) => {
+
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/campaigns/${id}/visible-npcs/${discordUserId}`
+}
+
+export const listBotVisibleNpcsForPlayer = async ({ id, discordUserId }: ListBotVisibleNpcsForPlayerPathParameters, options?: RequestInit): Promise<ListBotVisibleNpcsForPlayer200> => {
+  
+  const res = await fetch(getListBotVisibleNpcsForPlayerUrl({ id, discordUserId }),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: ListBotVisibleNpcsForPlayer200 = body ? JSON.parse(body) : {}
   return data
 }
 

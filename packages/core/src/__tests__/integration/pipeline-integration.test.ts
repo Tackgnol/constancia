@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { BlockRegistry } from '../../block-registry.js';
-import { PipelineRunner } from '../../pipeline-runner.js';
+import { BlockConfigValidationError, PipelineRunner } from '../../pipeline-runner.js';
 import { outcomeMapBlock } from '../../blocks/outcome-map.js';
 import { conditionalGateBlock } from '../../blocks/conditional-gate.js';
 import { messagePlayerBlock } from '../../blocks/message-player.js';
@@ -143,5 +143,36 @@ describe('Pipeline Integration', () => {
     expect(result.messages[0].imageUrl).toBe('https://img.com/dark-alley.jpg');
     expect(result.messages[1].content).toContain('alley reeks');
     expect(result.messages[1].target).toBe('channel');
+  });
+
+  it('fails fast on invalid nested outcome-map config', async () => {
+    const registry = createRegistry();
+    const runner = new PipelineRunner(registry);
+
+    const pipeline: BlockInstance[] = [
+      {
+        blockType: 'outcome-map',
+        config: {
+          outcomes: [{ minScore: 0, maxScore: 1 }],
+        },
+      },
+      {
+        blockType: 'message-player',
+        config: { content: 'Should never run.' },
+      },
+    ];
+
+    const ctx: BlockContext = {
+      campaignId: 'c1',
+      channelId: 'ch1',
+      playerId: 'p1',
+      playerScore: 1,
+      characterData: {},
+    };
+
+    await expect(runner.run(pipeline, ctx)).rejects.toThrow(BlockConfigValidationError);
+    await expect(runner.run(pipeline, ctx)).rejects.toThrow(
+      'Invalid config for block "outcome-map"',
+    );
   });
 });

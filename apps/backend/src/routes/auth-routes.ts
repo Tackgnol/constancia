@@ -3,9 +3,15 @@ import { fromNodeHeaders } from 'better-auth/node';
 import { randomUUID } from 'node:crypto';
 import { auth } from '../auth.js';
 import { consumeMagicLinkDelivery } from '../auth/magic-link-delivery.js';
-import { discordUserIdToAuthEmail } from '../auth/identity.js';
+import { ensureDiscordUser } from '../auth/ensure-discord-user.js';
 import { forwardToBetterAuth } from '../auth/http.js';
-import { authMagicLinkBodySchema, standardResponseSchema, tokenQuerySchema } from '../schemas.js';
+import {
+  authMagicLinkBodySchema,
+  playerSheetMagicLinkBodySchema,
+  standardResponseSchema,
+  tokenQuerySchema,
+} from '../schemas.js';
+import { getPrismaClient } from '../auth/prisma.js';
 
 interface MagicLinkBody {
   discordUserId: string;
@@ -24,57 +30,10 @@ interface VerifyPayload {
   };
 }
 
-const authRoutes: FastifyPluginAsync = async (app) => {
-  app.post<{ Body: MagicLinkBody }>(
-    '/magic-link',
-    {
-      schema: {
-        tags: ['auth'],
-        summary: 'Request a Discord magic link',
-        operationId: 'createMagicLink',
-        body: authMagicLinkBodySchema,
-        response: {
-          201: standardResponseSchema,
-        },
-      },
-    },
-    async (request, reply) => {
-      const body = request.body;
-      const requestId = randomUUID();
-      const callbackURL = '/';
-      const result = await auth.api.signInMagicLink({
-        body: {
-          email: discordUserIdToAuthEmail(body.discordUserId),
-          name: `Discord ${body.discordUserId}`,
-          callbackURL,
-          metadata: {
-            requestId,
-            discordUserId: body.discordUserId,
-            guildId: body.guildId,
-            callbackURL,
-          },
-        },
-        headers: fromNodeHeaders(request.headers),
-      });
-      const delivery = consumeMagicLinkDelivery(requestId);
-
-      if (!delivery) {
-        throw new Error('Magic link delivery payload was not captured');
-      }
-
-      reply.code(201);
-      return {
-        status: result.status ? 'ok' : 'error',
-        data: {
-          token: delivery.token,
-          url: delivery.url,
-          email: delivery.email,
-          ...body,
-        },
-      };
-    },
-  );
-
+// Public auth endpoints — safe to expose without bot or session auth.
+// /verify is hit by the browser when the user clicks the magic link.
+// /logout ends the current session cookie.
+export const authPublicRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: VerifyQuery }>(
     '/verify',
     {
@@ -148,4 +107,150 @@ const authRoutes: FastifyPluginAsync = async (app) => {
   );
 };
 
-export default authRoutes;
+// Bot-only auth endpoints — must be registered inside the bot-auth scope.
+// /magic-link mints a login token for an arbitrary Discord user id, so it is
+// protected by the bot API key.
+export const authBotRoutes: FastifyPluginAsync = async (app) => {
+  app.post<{ Body: MagicLinkBody }>(
+    '/magic-link',
+    {
+      schema: {
+        tags: ['auth'],
+        summary: 'Request a Discord magic link',
+        operationId: 'createMagicLink',
+        body: authMagicLinkBodySchema,
+        response: {
+          201: standardResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const body = request.body;
+      const requestId = randomUUID();
+      const callbackURL = '/';
+      const discordUser = await ensureDiscordUser(body.discordUserId);
+      if (process.env.NODE_ENV !== 'test') {
+        const prisma = getPrismaClient();
+        const campaign = await prisma.campaign.findUnique({
+          where: { discordGuildId: body.guildId },
+          select: { id: true },
+        });
+
+        if (campaign) {
+          await prisma.campaignAdmin.upsert({
+            where: {
+              discordUserId_campaignId: {
+                discordUserId: body.discordUserId,
+                campaignId: campaign.id,
+              },
+            },
+            create: {
+              discordUserId: body.discordUserId,
+              campaignId: campaign.id,
+              role: 'gm',
+            },
+            update: {
+              role: 'gm',
+            },
+          });
+        }
+      }
+
+      const result = await auth.api.signInMagicLink({
+        body: {
+          email: discordUser.email,
+          name: `Discord ${body.discordUserId}`,
+          callbackURL,
+          metadata: {
+            requestId,
+            discordUserId: body.discordUserId,
+            guildId: body.guildId,
+            callbackURL,
+          },
+        },
+        headers: fromNodeHeaders(request.headers),
+      });
+      const delivery = consumeMagicLinkDelivery(requestId);
+
+      if (!delivery) {
+        throw new Error('Magic link delivery payload was not captured');
+      }
+
+      reply.code(201);
+      return {
+        status: result.status ? 'ok' : 'error',
+        data: {
+          token: delivery.token,
+          url: delivery.url,
+          email: delivery.email,
+          ...body,
+        },
+      };
+    },
+  );
+
+  app.post<{ Body: MagicLinkBody }>(
+    '/player-sheet-link',
+    {
+      schema: {
+        tags: ['auth'],
+        summary: 'Request a player sheet magic link',
+        operationId: 'createPlayerSheetMagicLink',
+        body: playerSheetMagicLinkBodySchema,
+        response: {
+          201: standardResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const body = request.body;
+      const prisma = getPrismaClient();
+      const campaign = await prisma.campaign.findUnique({
+        where: { discordGuildId: body.guildId },
+        select: { id: true },
+      });
+
+      if (campaign === null) {
+        return reply
+          .code(404)
+          .send({ status: 'error', data: { message: 'Campaign not found for this guild' } });
+      }
+
+      const requestId = randomUUID();
+      const callbackURL = `/player/campaigns/${campaign.id}/sheet`;
+      const discordUser = await ensureDiscordUser(body.discordUserId);
+      const result = await auth.api.signInMagicLink({
+        body: {
+          email: discordUser.email,
+          name: `Discord ${body.discordUserId}`,
+          callbackURL,
+          metadata: {
+            requestId,
+            discordUserId: body.discordUserId,
+            guildId: body.guildId,
+            campaignId: campaign.id,
+            callbackURL,
+          },
+        },
+        headers: fromNodeHeaders(request.headers),
+      });
+      const delivery = consumeMagicLinkDelivery(requestId);
+
+      if (!delivery) {
+        throw new Error('Magic link delivery payload was not captured');
+      }
+
+      reply.code(201);
+      return {
+        status: result.status ? 'ok' : 'error',
+        data: {
+          token: delivery.token,
+          url: delivery.url,
+          email: delivery.email,
+          campaignId: campaign.id,
+          ...body,
+        },
+      };
+    },
+  );
+};

@@ -6,12 +6,22 @@ export type {
   BlockResult,
   BlockMessage,
   SendMessagesPayload,
+  TestThreshold,
+  SendTestInstancePayload,
+  BotDeliveryPayload,
   ResolvedMessageRecipients,
   BlockInstance,
   EventPipeline,
 } from './block.js';
 
-export { blockMessageSchema, sendMessagesPayloadSchema, resolveMessageRecipients } from './block.js';
+export {
+  blockMessageSchema,
+  sendMessagesPayloadSchema,
+  testThresholdSchema,
+  sendTestInstancePayloadSchema,
+  botDeliveryPayloadSchema,
+  resolveMessageRecipients,
+} from './block.js';
 
 export type {
   TestConfig,

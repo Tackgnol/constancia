@@ -1,15 +1,17 @@
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import {
-  BLOCK_LABELS,
   BLOCK_TYPES,
+  BLOCK_LABELS,
   type BlockType,
-  defaultBlockConfigs,
+  createPipelineBlock,
   type EventFormValues,
+  getSuggestedBlockTypesForEventType,
+  type EventType,
 } from '@/lib/event-schema';
 import { BlockConfigFields } from './block-config-fields.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select.js';
 
-export function PipelineBuilder() {
+export function PipelineBuilder({ eventType }: { eventType?: EventType }) {
   const {
     control,
     register,
@@ -21,10 +23,19 @@ export function PipelineBuilder() {
   const { fields, append, remove } = useFieldArray({ control, name: 'pipeline' });
 
   const pipelineValues = watch('pipeline');
+  const addableBlockTypes = eventType ? getSuggestedBlockTypesForEventType(eventType) : BLOCK_TYPES;
 
   const handleBlockTypeChange = (index: number, newType: BlockType) => {
     setValue(`pipeline.${index}.blockType`, newType);
-    setValue(`pipeline.${index}.config`, defaultBlockConfigs[newType]);
+    setValue(`pipeline.${index}.config`, createPipelineBlock(newType).config);
+  };
+
+  const addBlock = (blockType: string) => {
+    if (!BLOCK_TYPES.includes(blockType as BlockType)) {
+      return;
+    }
+
+    append(createPipelineBlock(blockType as BlockType));
   };
 
   return (
@@ -63,7 +74,7 @@ export function PipelineBuilder() {
                     <SelectValue placeholder="Select block type…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {BLOCK_TYPES.map((type) => (
+                    {addableBlockTypes.map((type) => (
                       <SelectItem key={type} value={type} className="text-xs font-mono">
                         {BLOCK_LABELS[type]}
                       </SelectItem>
@@ -94,15 +105,18 @@ export function PipelineBuilder() {
         })}
       </div>
 
-      <button
-        className="ghost-action pipeline-add"
-        onClick={() =>
-          append({ blockType: 'message-channel', config: defaultBlockConfigs['message-channel'] })
-        }
-        type="button"
-      >
-        + Add Block
-      </button>
+      <Select onValueChange={addBlock} value="">
+        <SelectTrigger className="pipeline-add-trigger">
+          <SelectValue placeholder="+ Add Block" />
+        </SelectTrigger>
+        <SelectContent>
+          {addableBlockTypes.map((type) => (
+            <SelectItem key={type} value={type} className="text-xs font-mono">
+              {BLOCK_LABELS[type]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

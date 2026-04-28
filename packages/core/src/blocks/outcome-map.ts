@@ -37,6 +37,12 @@ export const outcomeMapBlock: BlockDefinition<OutcomeMapConfig> = {
   },
   execute: async (config: OutcomeMapConfig, ctx: BlockContext) => {
     const score = ctx.playerScore ?? 0;
+    const targetId =
+      typeof ctx.playerId === 'string' &&
+      ctx.playerId.trim().length > 0 &&
+      ctx.playerId !== 'system'
+        ? ctx.playerId
+        : undefined;
     const selectedOutcomes =
       config.shortCircuit === false
         ? config.outcomes.filter((outcome: Outcome) => score >= outcome.minScore)
@@ -46,6 +52,7 @@ export const outcomeMapBlock: BlockDefinition<OutcomeMapConfig> = {
 
     const messages: BlockMessage[] = selectedOutcomes.map((outcome: Outcome) => ({
       target: 'player',
+      ...(targetId ? { targetId } : {}),
       content: outcome.text,
     }));
 

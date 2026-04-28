@@ -1,7 +1,9 @@
 import type { FastifyPluginAsync } from 'fastify';
-import authRoutes from './auth-routes.js';
+import { authBotRoutes, authPublicRoutes } from './auth-routes.js';
 import campaignRoutes from './campaign-routes.js';
 import campaignNpcRoutes from './campaign-npc-routes.js';
+import playerNpcRoutes from './player-npc-routes.js';
+import playerCharacterRoutes from './player-character-routes.js';
 import channelRoutes from './channel-routes.js';
 import characterRoutes from './character-routes.js';
 import eventRoutes from './event-routes.js';
@@ -12,11 +14,7 @@ import sessionGuardPlugin from '../plugins/session-guard-plugin.js';
 import botAuthPlugin from '../plugins/bot-auth-plugin.js';
 
 const apiRoutes: FastifyPluginAsync = async (app) => {
-  await app.register(authRoutes, { prefix: '/auth' });
-  await app.register<{ publicMode: boolean }>(campaignNpcRoutes, {
-    prefix: '/public/campaigns/:id/npcs',
-    publicMode: true,
-  });
+  await app.register(authPublicRoutes, { prefix: '/auth' });
 
   // Session-guarded routes (user-facing)
   await app.register(async (protected_) => {
@@ -24,15 +22,19 @@ const apiRoutes: FastifyPluginAsync = async (app) => {
     await protected_.register(campaignRoutes, { prefix: '/campaigns' });
     await protected_.register(channelRoutes, { prefix: '/campaigns/:id/channels' });
     await protected_.register(characterRoutes, { prefix: '/campaigns/:id/characters' });
+    await protected_.register(playerCharacterRoutes, { prefix: '/campaigns/:id/player-character' });
     await protected_.register(campaignNpcRoutes, { prefix: '/campaigns/:id/npcs' });
+    await protected_.register(playerNpcRoutes, { prefix: '/campaigns/:id/player-npcs' });
     await protected_.register(eventRoutes, { prefix: '/campaigns/:id/events' });
     await protected_.register(journalRoutes, { prefix: '/campaigns/:id' });
     await protected_.register(systemRoutes, { prefix: '/systems' });
   });
 
-  // Bot-to-backend routes (API key protected)
+  // Bot-to-backend routes (API key protected). /auth/magic-link lives here so
+  // only the Discord bot can mint login tokens for Discord users.
   await app.register(async (botScope) => {
     await botScope.register(botAuthPlugin);
+    await botScope.register(authBotRoutes, { prefix: '/auth' });
     await botScope.register(botRoutes, { prefix: '/bot' });
   });
 };

@@ -2,28 +2,19 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { Prisma } from '@constancia/db';
 import {
   campaignParamsSchema,
-  discordTargetParamsSchema,
   listResponseSchema,
   npcBodySchema,
   npcFactBodySchema,
   npcFactSchema,
   npcParamsSchema,
-  npcPlayerParamsSchema,
   npcPatchBodySchema,
   npcRevealBodySchema,
   npcSchema,
   npcWithFactsSchema,
   npcWithKnowledgeSchema,
-  playerVisibleNpcSchema,
   singleResponseSchema,
 } from '../schemas.js';
 import { getPrismaClient } from '../auth/prisma.js';
-
-type PrismaClient = ReturnType<typeof getPrismaClient>;
-
-interface NpcRoutesOptions {
-  publicMode?: boolean;
-}
 
 interface CampaignParams {
   id: string;
@@ -32,17 +23,6 @@ interface CampaignParams {
 interface NpcParams {
   id: string;
   npcId: string;
-}
-
-interface DiscordTargetParams {
-  id: string;
-  discordId: string;
-}
-
-interface NpcPlayerParams {
-  id: string;
-  npcId: string;
-  discordId: string;
 }
 
 type NpcSystemBlockInput = {
@@ -119,19 +99,6 @@ type NpcWithFactsRecord = {
   imageUrl: string | null;
   description: string;
   systemBlocks: Prisma.JsonValue;
-  campaignId: string;
-  facts: Array<{
-    id: string;
-    content: string;
-    sortOrder: number;
-    npcId: string;
-  }>;
-};
-
-type PlayerVisibleNpcRecord = {
-  id: string;
-  name: string;
-  imageUrl: string | null;
   campaignId: string;
   facts: Array<{
     id: string;
@@ -229,7 +196,9 @@ function normalizeNpcSystemBlocks(input: Prisma.JsonValue): NpcSystemBlockRecord
   });
 }
 
-function toNpcSystemBlocksInput(systemBlocks: NpcSystemBlockInput[] | undefined): Prisma.InputJsonValue {
+function toNpcSystemBlocksInput(
+  systemBlocks: NpcSystemBlockInput[] | undefined,
+): Prisma.InputJsonValue {
   return (systemBlocks ?? []).map((block) => ({
     systemId: block.systemId,
     blockType: block.blockType,
@@ -287,126 +256,7 @@ function mapNpcWithFacts(npc: NpcWithFactsRecord) {
   };
 }
 
-function mapPlayerVisibleNpc(npc: PlayerVisibleNpcRecord) {
-  return {
-    id: npc.id,
-    name: npc.name,
-    imageUrl: npc.imageUrl ?? undefined,
-    campaignId: npc.campaignId,
-    facts: [...npc.facts].sort((left, right) => left.sortOrder - right.sortOrder),
-  };
-}
-
-async function listVisibleNpcRecordsForPlayer(
-  prisma: PrismaClient,
-  campaignId: string,
-  discordId: string,
-): Promise<PlayerVisibleNpcRecord[]> {
-  const character = await prisma.character.findUnique({
-    where: { discordUserId_campaignId: { discordUserId: discordId, campaignId } },
-    select: { id: true },
-  });
-  if (character === null) {
-    return [];
-  }
-
-  const knowledge = await prisma.npcKnowledge.findMany({
-    where: { characterId: character.id },
-    select: {
-      npcFact: {
-        select: {
-          ...npcFactSelect,
-          npc: {
-            select: {
-              id: true,
-              name: true,
-              imageUrl: true,
-              campaignId: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  const npcMap = new Map<string, PlayerVisibleNpcRecord>();
-  for (const { npcFact } of knowledge) {
-    const npc = npcFact.npc;
-    const existing = npcMap.get(npc.id);
-
-    if (existing === undefined) {
-      npcMap.set(npc.id, {
-        id: npc.id,
-        name: npc.name,
-        imageUrl: npc.imageUrl,
-        campaignId: npc.campaignId,
-        facts: [npcFact],
-      });
-      continue;
-    }
-
-    existing.facts.push(npcFact);
-  }
-
-  return [...npcMap.values()].sort((left, right) => left.name.localeCompare(right.name));
-}
-
-const npcRoutes: FastifyPluginAsync<NpcRoutesOptions> = async (app, options) => {
-  if (options.publicMode) {
-    app.get<{ Params: DiscordTargetParams }>(
-      '/for/:discordId',
-      {
-        schema: {
-          tags: ['npcs'],
-          summary: 'List player-safe NPC dossiers',
-          operationId: 'listPublicVisibleNpcsForPlayer',
-          params: discordTargetParamsSchema,
-          response: {
-            200: listResponseSchema(playerVisibleNpcSchema),
-          },
-        },
-      },
-      async (request) => {
-        const prisma = getPrismaClient();
-        const { id, discordId } = request.params;
-        const npcs = await listVisibleNpcRecordsForPlayer(prisma, id, discordId);
-
-        return { status: 'ok', data: npcs.map(mapPlayerVisibleNpc) };
-      },
-    );
-
-    app.get<{ Params: NpcPlayerParams }>(
-      '/:npcId/for/:discordId',
-      {
-        schema: {
-          tags: ['npcs'],
-          summary: 'Get a player-safe NPC dossier',
-          operationId: 'getPublicVisibleNpcForPlayer',
-          params: npcPlayerParamsSchema,
-          response: {
-            200: singleResponseSchema(playerVisibleNpcSchema),
-          },
-        },
-      },
-      async (request, reply) => {
-        const prisma = getPrismaClient();
-        const { id, npcId, discordId } = request.params;
-        const npcs = await listVisibleNpcRecordsForPlayer(prisma, id, discordId);
-        const npc = npcs.find((entry) => entry.id === npcId);
-
-        if (npc === undefined) {
-          return reply
-            .code(404)
-            .send({ status: 'error', data: { message: 'NPC dossier not found' } });
-        }
-
-        return { status: 'ok', data: mapPlayerVisibleNpc(npc) };
-      },
-    );
-
-    return;
-  }
-
+const npcRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: CampaignParams }>(
     '/',
     {
@@ -613,71 +463,6 @@ const npcRoutes: FastifyPluginAsync<NpcRoutesOptions> = async (app, options) => 
       return { status: 'ok', data: mapNpcWithKnowledge(npc) };
     },
   );
-
-  app.get<{ Params: DiscordTargetParams }>(
-    '/for/:discordId',
-    {
-      schema: {
-        tags: ['npcs'],
-        summary: 'List NPCs visible to a player',
-        operationId: 'listVisibleNpcsForPlayer',
-        params: discordTargetParamsSchema,
-        response: {
-          200: listResponseSchema(npcWithFactsSchema),
-        },
-      },
-    },
-    async (request) => {
-      const prisma = getPrismaClient();
-      const { id, discordId } = request.params;
-
-      const character = await prisma.character.findUnique({
-        where: { discordUserId_campaignId: { discordUserId: discordId, campaignId: id } },
-        select: { id: true },
-      });
-      if (character === null) {
-        return { status: 'ok', data: [] };
-      }
-
-      const knowledge = await prisma.npcKnowledge.findMany({
-        where: { characterId: character.id },
-        select: {
-          npcFact: {
-            select: {
-              ...npcFactSelect,
-              npc: {
-                select: npcBaseSelect,
-              },
-            },
-          },
-        },
-      });
-
-      const npcMap = new Map<string, NpcWithFactsRecord>();
-      for (const { npcFact } of knowledge) {
-        const npc = npcFact.npc;
-        const existing = npcMap.get(npc.id);
-
-        if (existing === undefined) {
-          npcMap.set(npc.id, {
-            id: npc.id,
-            name: npc.name,
-            imageUrl: npc.imageUrl,
-            description: npc.description,
-            systemBlocks: npc.systemBlocks,
-            campaignId: npc.campaignId,
-            facts: [npcFact],
-          });
-          continue;
-        }
-
-        existing.facts.push(npcFact);
-      }
-
-      return { status: 'ok', data: [...npcMap.values()].map(mapNpcWithFacts) };
-    },
-  );
 };
 
 export default npcRoutes;
-

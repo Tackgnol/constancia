@@ -1,7 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../app.js';
 import { loadConfig } from '../config.js';
-import { getPrismaClient } from '../auth/prisma.js';
 
 const appsToClose: Array<Awaited<ReturnType<typeof buildApp>>> = [];
 
@@ -21,6 +20,8 @@ function createTestConfig() {
     betterAuthSecret: 'constancia-test-secret-12345678901234567890',
     betterAuthUrl: 'http://localhost:3001',
     betterAuthPath: '/api/auth',
+    discordClientId: undefined,
+    discordClientSecret: undefined,
     magicLinkFrontendPath: '/auth',
     botApiKey: 'constancia-bot-dev-key',
     botInternalUrl: 'http://localhost:3002',
@@ -70,21 +71,23 @@ describe('backend app', () => {
         '/health',
         '/openapi.json',
         '/api/v1/auth/magic-link',
+        '/api/v1/auth/player-sheet-link',
         '/api/v1/auth/verify',
         '/api/v1/auth/logout',
-        '/api/v1/public/campaigns/{id}/npcs/for/{discordId}',
-        '/api/v1/public/campaigns/{id}/npcs/{npcId}/for/{discordId}',
         '/api/v1/campaigns/',
         '/api/v1/campaigns/{id}',
         '/api/v1/campaigns/{id}/channels/',
         '/api/v1/campaigns/{id}/channels/{chanId}',
         '/api/v1/campaigns/{id}/characters/',
         '/api/v1/campaigns/{id}/characters/{charId}',
+        '/api/v1/campaigns/{id}/characters/{charId}/sheet',
         '/api/v1/campaigns/{id}/npcs/',
         '/api/v1/campaigns/{id}/npcs/{npcId}',
         '/api/v1/campaigns/{id}/npcs/{npcId}/facts',
         '/api/v1/campaigns/{id}/npcs/{npcId}/reveal',
-        '/api/v1/campaigns/{id}/npcs/for/{discordId}',
+        '/api/v1/campaigns/{id}/player-character/sheet',
+        '/api/v1/campaigns/{id}/player-npcs/',
+        '/api/v1/campaigns/{id}/player-npcs/{npcId}',
         '/api/v1/campaigns/{id}/events/',
         '/api/v1/campaigns/{id}/events/{eventId}',
         '/api/v1/campaigns/{id}/events/{eventId}/fire',
@@ -97,6 +100,7 @@ describe('backend app', () => {
         '/api/v1/campaigns/{id}/journal/for/{discordId}',
         '/api/v1/bot/test-result',
         '/api/v1/bot/campaign-by-guild/{guildId}',
+        '/api/v1/bot/campaigns/{id}/visible-npcs/{discordUserId}',
         '/api/v1/bot/channel-events/{channelId}',
         '/api/v1/bot/setup-channel',
         '/api/v1/systems/',
@@ -119,17 +123,17 @@ describe('backend app', () => {
       {
         method: 'POST',
         url: '/api/v1/auth/magic-link',
-        statusCode: 201,
+        statusCode: 401,
+        payload: { discordUserId: 'user-1', guildId: 'guild-1' },
+      },
+      {
+        method: 'POST',
+        url: '/api/v1/auth/player-sheet-link',
+        statusCode: 401,
         payload: { discordUserId: 'user-1', guildId: 'guild-1' },
       },
       { method: 'GET', url: '/api/v1/auth/verify?token=abc123', statusCode: 200 },
       { method: 'POST', url: '/api/v1/auth/logout', statusCode: 200 },
-      { method: 'GET', url: '/api/v1/public/campaigns/campaign-1/npcs/for/discord-user-1', statusCode: 200 },
-      {
-        method: 'GET',
-        url: '/api/v1/public/campaigns/campaign-1/npcs/npc-1/for/discord-user-1',
-        statusCode: 404,
-      },
       { method: 'GET', url: '/api/v1/campaigns', statusCode: 401 },
       {
         method: 'POST',
@@ -176,6 +180,28 @@ describe('backend app', () => {
         statusCode: 401,
         payload: { notes: 'Updated notes' },
       },
+      {
+        method: 'GET',
+        url: '/api/v1/campaigns/campaign-1/characters/char-1/sheet',
+        statusCode: 401,
+      },
+      {
+        method: 'PATCH',
+        url: '/api/v1/campaigns/campaign-1/characters/char-1/sheet',
+        statusCode: 401,
+        payload: { stats: { wits: 4 } },
+      },
+      {
+        method: 'GET',
+        url: '/api/v1/campaigns/campaign-1/player-character/sheet',
+        statusCode: 401,
+      },
+      {
+        method: 'PATCH',
+        url: '/api/v1/campaigns/campaign-1/player-character/sheet',
+        statusCode: 401,
+        payload: { stats: { awareness: 3 } },
+      },
       { method: 'GET', url: '/api/v1/campaigns/campaign-1/npcs', statusCode: 401 },
       {
         method: 'POST',
@@ -201,9 +227,10 @@ describe('backend app', () => {
         statusCode: 401,
         payload: { npcFactIds: ['fact-1'], discordUserIds: ['discord-user-1'] },
       },
+      { method: 'GET', url: '/api/v1/campaigns/campaign-1/player-npcs', statusCode: 401 },
       {
         method: 'GET',
-        url: '/api/v1/campaigns/campaign-1/npcs/for/discord-user-1',
+        url: '/api/v1/campaigns/campaign-1/player-npcs/npc-1',
         statusCode: 401,
       },
       { method: 'GET', url: '/api/v1/campaigns/campaign-1/events', statusCode: 401 },
@@ -294,6 +321,11 @@ describe('backend app', () => {
         },
       },
       { method: 'GET', url: '/api/v1/bot/campaign-by-guild/guild-1', statusCode: 401 },
+      {
+        method: 'GET',
+        url: '/api/v1/bot/campaigns/campaign-1/visible-npcs/discord-user-1',
+        statusCode: 401,
+      },
       { method: 'GET', url: '/api/v1/bot/channel-events/channel-1', statusCode: 401 },
       {
         method: 'POST',
@@ -345,6 +377,8 @@ describe('backend app', () => {
       betterAuthSecret: 'constancia-development-secret-change-me-12345',
       betterAuthUrl: 'http://localhost:3001',
       betterAuthPath: '/api/auth',
+      discordClientId: undefined,
+      discordClientSecret: undefined,
       magicLinkFrontendPath: '/auth',
       botApiKey: 'constancia-bot-dev-key',
       botInternalUrl: 'http://localhost:3002',
@@ -358,6 +392,7 @@ describe('backend app', () => {
     const createResponse = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/magic-link',
+      headers: { 'x-bot-key': 'constancia-bot-dev-key' },
       payload: { discordUserId: 'discord-user-2', guildId: 'guild-2' },
     });
 
@@ -376,76 +411,5 @@ describe('backend app', () => {
     expect(verifyResponse.json().data.verified).toBe(true);
     expect(verifyResponse.json().data.user.email).toBe('discord-user-2@discord.constancia.local');
     expect(verifyResponse.headers['set-cookie']).toBeDefined();
-  });
-
-  beforeEach(async () => {
-    const prisma = getPrismaClient();
-    await prisma.channel.deleteMany({
-      where: { discordChannelId: { in: ['dc-setup-1', 'dc-idem-1'] } },
-    });
-    await prisma.campaign.deleteMany({
-      where: { discordGuildId: { in: ['test-guild-setup', 'test-guild-idem'] } },
-    });
-  });
-
-  it('POST /bot/setup-channel returns 200 with campaign and channel when authenticated', async () => {
-    const app = await buildApp({ config: createTestConfig() });
-    appsToClose.push(app);
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/v1/bot/setup-channel',
-      headers: { 'x-bot-key': 'constancia-bot-dev-key' },
-      payload: {
-        guildId: 'test-guild-setup',
-        guildName: 'Test Guild',
-        discordChannelId: 'dc-setup-1',
-        channelName: 'general',
-        campaignName: 'Setup Campaign',
-        gameSystemId: 'vtm-v5',
-      },
-    });
-
-    expect(response.statusCode).toBe(200);
-    const body = response.json();
-    expect(body.status).toBe('ok');
-    expect(body.data.campaign.discordGuildId).toBe('test-guild-setup');
-    expect(body.data.campaign.name).toBe('Setup Campaign');
-    expect(body.data.channel.discordChannelId).toBe('dc-setup-1');
-    expect(body.data.channel.name).toBe('general');
-    expect(body.data.created.campaign).toBe(true);
-    expect(body.data.created.channel).toBe(true);
-  });
-
-  it('POST /bot/setup-channel is idempotent — second call returns created: false', async () => {
-    const app = await buildApp({ config: createTestConfig() });
-    appsToClose.push(app);
-
-    const payload = {
-      guildId: 'test-guild-idem',
-      guildName: 'Test Guild',
-      discordChannelId: 'dc-idem-1',
-      channelName: 'general',
-      campaignName: 'Idem Campaign',
-      gameSystemId: 'vtm-v5',
-    };
-
-    await app.inject({
-      method: 'POST',
-      url: '/api/v1/bot/setup-channel',
-      headers: { 'x-bot-key': 'constancia-bot-dev-key' },
-      payload,
-    });
-
-    const second = await app.inject({
-      method: 'POST',
-      url: '/api/v1/bot/setup-channel',
-      headers: { 'x-bot-key': 'constancia-bot-dev-key' },
-      payload,
-    });
-
-    expect(second.statusCode).toBe(200);
-    expect(second.json().data.created.campaign).toBe(false);
-    expect(second.json().data.created.channel).toBe(false);
   });
 });

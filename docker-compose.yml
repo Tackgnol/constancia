@@ -114,6 +114,7 @@ services:
       BOT_API_KEY: ${BOT_API_KEY:-constancia-bot-dev-key}
       BOT_HTTP_PORT: ${BOT_HTTP_PORT:-3002}
     networks:
+      - edge
       - control-plane
     command:
       [
@@ -216,4 +217,3 @@ networks:
   control-plane:
     driver: bridge
     internal: true
-

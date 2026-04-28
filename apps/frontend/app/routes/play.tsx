@@ -1,28 +1,165 @@
-import { startTransition, useRef, useState } from 'react';
+import { startTransition, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router';
 
 import { fireEvent } from '@/api/generated/endpoints/events/events';
-import type { TriggerCard, TriggerKind, WarRoomContext } from '@/lib/war-room-data';
+import type { ListEvents200DataItem } from '@/api/generated/model';
+import type { TriggerKind, WarRoomContext } from '@/lib/war-room-data';
 
 const HOLD_DURATION_MS = 1800;
+
+const PREVIEW_MAX = 72;
+
+type TriggerView = {
+  id: string;
+  kind: TriggerKind;
+  name: string;
+  meta: string;
+  scene: string | null;
+  sceneLabel: string | null;
+  target: string | null;
+  preview: string | null;
+};
+
+type ArtifactSize = 'standard' | 'wide' | 'tall';
+type PendingUndo = {
+  id: string;
+  name: string;
+  target: string | null;
+  expiresAt: number;
+};
+
+function truncate(text: string, limit = PREVIEW_MAX) {
+  const trimmed = text.trim().replace(/\s+/g, ' ');
+  return trimmed.length > limit ? `${trimmed.slice(0, limit - 1)}…` : trimmed;
+}
+
+function extractTargetAndPreview(
+  event: ListEvents200DataItem,
+  channelName: string | null,
+  playerLabelById: Map<string, string>,
+): { target: string | null; preview: string | null } {
+  let target: string | null = channelName ? `#${channelName}` : null;
+  let preview: string | null = null;
+
+  for (const block of event.pipeline ?? []) {
+    const cfg = (block?.config ?? {}) as Record<string, unknown>;
+
+    if (block.blockType === 'message-channel' && typeof cfg.content === 'string' && !preview) {
+      preview = cfg.content;
+    }
+    if (block.blockType === 'display-image' && typeof cfg.caption === 'string' && !preview) {
+      preview = cfg.caption;
+    }
+    if (block.blockType === 'message-player') {
+      const ids = Array.isArray(cfg.playerIds) ? (cfg.playerIds as string[]) : [];
+      if (ids.length > 0) {
+        const labels = ids.map((id) => playerLabelById.get(id) ?? id);
+        target = labels.length === 1 ? `→ ${labels[0]}` : `→ ${labels.length} players`;
+      }
+      if (typeof cfg.content === 'string' && !preview) {
+        preview = cfg.content;
+      }
+    }
+    if (block.blockType === 'message-group') {
+      const ids = Array.isArray(cfg.groupPlayerIds) ? (cfg.groupPlayerIds as string[]) : [];
+      target = ids.length > 0 ? `→ ${ids.length} player group` : target;
+      if (typeof cfg.content === 'string' && !preview) {
+        preview = cfg.content;
+      }
+    }
+    if (block.blockType === 'conditional-gate') {
+      const op =
+        cfg.operator === 'gte'
+          ? '≥'
+          : cfg.operator === 'lte'
+            ? '≤'
+            : cfg.operator === 'gt'
+              ? '>'
+              : cfg.operator === 'lt'
+                ? '<'
+                : '=';
+      const stat = typeof cfg.statPath === 'string' ? cfg.statPath.split('.').pop() : '?';
+      const threshold = cfg.threshold ?? '?';
+      target = `→ players where ${stat} ${op} ${threshold}`;
+    }
+    if (block.blockType === 'vtm-pool-resolver' && !preview) {
+      const attr = typeof cfg.attribute === 'string' ? cfg.attribute : '?';
+      const skill = typeof cfg.skill === 'string' ? cfg.skill : '?';
+      const diff = cfg.difficulty ?? '?';
+      preview = `${attr} + ${skill} · difficulty ${diff}`;
+      target = null;
+    }
+  }
+
+  return { target, preview: preview ? truncate(preview) : null };
+}
+
+function getArtifactSize(kind: TriggerKind, index: number, length: number): ArtifactSize {
+  if (length < 2) {
+    return 'standard';
+  }
+
+  if (kind === 'narration' && index === 0) {
+    return 'wide';
+  }
+
+  if (kind === 'test' && length > 2 && index === 0) {
+    return 'tall';
+  }
+
+  if (kind === 'insight' && length > 2 && index === length - 1) {
+    return 'wide';
+  }
+
+  if (kind === 'message' && index === 0 && length > 1) {
+    return 'wide';
+  }
+
+  if (length > 3 && index === 1) {
+    return 'wide';
+  }
+
+  return 'standard';
+}
+
+function isTypingTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  const tagName = target.tagName;
+  return (
+    tagName === 'INPUT' ||
+    tagName === 'TEXTAREA' ||
+    target.isContentEditable ||
+    target.getAttribute('role') === 'textbox'
+  );
+}
 
 export default function PlayRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
   const liveEvents = warRoom.events;
+  const isDemoMode = warRoom.demoMode ?? warRoom.campaign.id.startsWith('demo-');
 
-  const [firedItems, setFiredItems] = useState(new Set<string>());
-  const [lastAction, setLastAction] = useState(
-    'Elysium narration is queued and ready for the next beat.',
-  );
+  const [lastAction, setLastAction] = useState<string | null>(null);
   const [armedItemId, setArmedItemId] = useState<string | null>(null);
   const [errorItemId, setErrorItemId] = useState<string | null>(null);
   const [holdProgress, setHoldProgress] = useState(0);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [pendingUndo, setPendingUndo] = useState<PendingUndo | null>(null);
+  const [undoCountdownMs, setUndoCountdownMs] = useState(0);
 
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const armedItemRef = useRef<string | null>(null);
+  const pendingUndoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const sections: { id: TriggerKind; title: string; items: TriggerCard[] }[] = [
+  const channelById = new Map(warRoom.channels.map((c) => [c.id, c]));
+  const tagLabelById = new Map(warRoom.tags.map((t) => [t.id, t.label]));
+  const playerLabelById = new Map(warRoom.players.map((p) => [p.id, p.name]));
+
+  const sections: { id: TriggerKind; title: string; items: TriggerView[] }[] = [
     { id: 'test', title: 'Tests', items: [] },
     { id: 'narration', title: 'Narrations', items: [] },
     { id: 'insight', title: 'Stat Insights', items: [] },
@@ -31,16 +168,65 @@ export default function PlayRoute() {
 
   for (const event of liveEvents) {
     const section = sections.find((s) => s.id === event.type) || sections[3];
-    if (warRoom.activeTag && event.channelId !== warRoom.activeTag) continue;
+    const channel = event.channelId ? (channelById.get(event.channelId) ?? null) : null;
+    const sceneId = channel?.name ?? null;
+
+    if (warRoom.activeTag && sceneId !== warRoom.activeTag) continue;
+
+    const { target, preview } = extractTargetAndPreview(
+      event,
+      channel?.name ?? null,
+      playerLabelById,
+    );
 
     section.items.push({
       id: event.id,
       kind: (event.type as TriggerKind) ?? 'message',
       name: event.name,
       meta: event.status,
-      tags: [event.channelId],
+      scene: sceneId,
+      sceneLabel: sceneId ? (tagLabelById.get(sceneId) ?? sceneId) : null,
+      target,
+      preview,
     });
   }
+
+  const visibleItems = sections.flatMap((section) => section.items);
+  const firedItems = new Set(warRoom.firedEventIds ?? []);
+  const nextUpItem = visibleItems.find((item) => !firedItems.has(item.id)) ?? null;
+  const commandEcho =
+    lastAction ??
+    (nextUpItem
+      ? `${nextUpItem.name} queued${nextUpItem.target ? ` ${nextUpItem.target}` : nextUpItem.sceneLabel ? ` in ${nextUpItem.sceneLabel}` : ''}.`
+      : 'Standing by — no commands fired yet.');
+  const selectedItem =
+    visibleItems.find((item) => item.id === selectedItemId) ?? nextUpItem ?? null;
+
+  useEffect(() => {
+    if (pendingUndo === null) {
+      setUndoCountdownMs(0);
+      return;
+    }
+
+    setUndoCountdownMs(Math.max(pendingUndo.expiresAt - Date.now(), 0));
+    const intervalId = window.setInterval(() => {
+      const remaining = Math.max(pendingUndo.expiresAt - Date.now(), 0);
+      setUndoCountdownMs(remaining);
+      if (remaining === 0) {
+        setPendingUndo(null);
+      }
+    }, 100);
+
+    return () => window.clearInterval(intervalId);
+  }, [pendingUndo]);
+
+  useEffect(() => {
+    if (selectedItemId && visibleItems.some((item) => item.id === selectedItemId)) {
+      return;
+    }
+
+    setSelectedItemId(nextUpItem?.id ?? visibleItems[0]?.id ?? null);
+  }, [nextUpItem?.id, selectedItemId, visibleItems]);
 
   const clearHoldRefs = () => {
     if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
@@ -49,10 +235,82 @@ export default function PlayRoute() {
     holdIntervalRef.current = null;
   };
 
+  const clearUndoRefs = () => {
+    if (pendingUndoTimerRef.current) {
+      clearTimeout(pendingUndoTimerRef.current);
+      pendingUndoTimerRef.current = null;
+    }
+  };
+
+  const armTrigger = (itemId: string) => {
+    setArmedItemId(itemId);
+    armedItemRef.current = itemId;
+    setErrorItemId(null);
+    const item = visibleItems.find((entry) => entry.id === itemId);
+    setLastAction(
+      item ? `${item.name} armed. Press Enter again to fire or Escape to stand down.` : null,
+    );
+  };
+
+  const finalizeFire = async (itemId: string) => {
+    const item = visibleItems.find((entry) => entry.id === itemId);
+    if (!item) {
+      return;
+    }
+
+    try {
+      if (!isDemoMode) {
+        await fireEvent({ id: warRoom.campaign.id, eventId: itemId }, { credentials: 'include' });
+      }
+
+      warRoom.setEventFiredState?.(itemId, true);
+      warRoom.recordActivity?.(`${item.name} fired${item.target ? ` ${item.target}` : ''}`);
+
+      startTransition(() => {
+        setLastAction(`${item.name} fired.`);
+        setSelectedItemId(itemId);
+      });
+
+      if (isDemoMode) {
+        clearUndoRefs();
+        const expiresAt = Date.now() + 5000;
+        setPendingUndo({ id: itemId, name: item.name, target: item.target, expiresAt });
+        pendingUndoTimerRef.current = setTimeout(() => {
+          setPendingUndo(null);
+          pendingUndoTimerRef.current = null;
+        }, 5000);
+      } else {
+        setPendingUndo(null);
+      }
+    } catch (err) {
+      console.error('Fire event error:', err);
+      setLastAction('Failed to fire event.');
+      setErrorItemId(itemId);
+    } finally {
+      setArmedItemId(null);
+      armedItemRef.current = null;
+      setHoldProgress(0);
+    }
+  };
+
+  const handleUndo = () => {
+    if (!pendingUndo) {
+      return;
+    }
+
+    clearUndoRefs();
+    warRoom.setEventFiredState?.(pendingUndo.id, false);
+    warRoom.recordActivity?.(`${pendingUndo.name} re-armed for correction`);
+    setLastAction(`${pendingUndo.name} re-armed.`);
+    setSelectedItemId(pendingUndo.id);
+    setPendingUndo(null);
+  };
+
   const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>, itemId: string) => {
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
 
+    setSelectedItemId(itemId);
     armedItemRef.current = itemId;
     setArmedItemId(itemId);
     setErrorItemId(null);
@@ -68,29 +326,7 @@ export default function PlayRoute() {
       const currentItemId = armedItemRef.current;
       armedItemRef.current = null;
       if (!currentItemId) return;
-
-      try {
-        await fireEvent(
-          { id: warRoom.campaign.id, eventId: currentItemId },
-          { credentials: 'include' },
-        );
-
-        startTransition(() => {
-          setFiredItems((current) => {
-            const next = new Set(current);
-            next.add(currentItemId);
-            return next;
-          });
-          const item = liveEvents.find((i) => i.id === currentItemId);
-          setLastAction(`${item?.name ?? 'Event'} fired.`);
-        });
-      } catch (err) {
-        console.error('Fire event error:', err);
-        setLastAction('Failed to fire event.');
-      }
-
-      setArmedItemId(null);
-      setHoldProgress(0);
+      await finalizeFire(currentItemId);
     }, HOLD_DURATION_MS);
   };
 
@@ -104,14 +340,162 @@ export default function PlayRoute() {
     setHoldProgress(0);
   };
 
+  const handleGlobalKeyDown = useEffectEvent((event: KeyboardEvent) => {
+    if (isTypingTarget(event.target)) {
+      return;
+    }
+
+    const visibleItemIds = visibleItems.map((item) => item.id);
+    if ((event.key === '?' || (event.key === '/' && event.shiftKey)) && !event.metaKey) {
+      event.preventDefault();
+      setShortcutsOpen((current) => !current);
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      if (shortcutsOpen) {
+        event.preventDefault();
+        setShortcutsOpen(false);
+        return;
+      }
+
+      if (armedItemId) {
+        event.preventDefault();
+        clearHoldRefs();
+        armedItemRef.current = null;
+        setArmedItemId(null);
+        setHoldProgress(0);
+        setLastAction('Command stood down.');
+      }
+      return;
+    }
+
+    if (visibleItemIds.length === 0) {
+      return;
+    }
+
+    const currentIndex = selectedItem ? visibleItemIds.indexOf(selectedItem.id) : 0;
+
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      const nextIndex = (currentIndex + 1 + visibleItemIds.length) % visibleItemIds.length;
+      setSelectedItemId(visibleItemIds[nextIndex]);
+      return;
+    }
+
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const nextIndex = (currentIndex - 1 + visibleItemIds.length) % visibleItemIds.length;
+      setSelectedItemId(visibleItemIds[nextIndex]);
+      return;
+    }
+
+    if ((event.key === 'u' || event.key === 'U') && pendingUndo) {
+      event.preventDefault();
+      handleUndo();
+      return;
+    }
+
+    if (event.key !== 'Enter' || !selectedItem || firedItems.has(selectedItem.id)) {
+      return;
+    }
+
+    event.preventDefault();
+    if (armedItemId === selectedItem.id) {
+      void finalizeFire(selectedItem.id);
+      return;
+    }
+
+    armTrigger(selectedItem.id);
+  });
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      handleGlobalKeyDown(event);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleGlobalKeyDown]);
+
   return (
     <div className="play-route">
       <section className="last-action-banner">
         <span className="eyebrow">Command Echo</span>
         <p key={lastAction} className="command-echo-text">
-          {lastAction}
+          {commandEcho}
         </p>
       </section>
+
+      {pendingUndo ? (
+        <section className="undo-banner" aria-live="polite">
+          <div>
+            <p className="eyebrow">Undo window</p>
+            <p className="undo-copy">
+              {pendingUndo.name} just fired. Retract the cue within{' '}
+              {Math.max(1, Math.ceil(undoCountdownMs / 1000))}s if it was a misfire.
+            </p>
+          </div>
+          <button className="undo-button" onClick={handleUndo} type="button">
+            Undo misfire
+          </button>
+        </section>
+      ) : null}
+
+      {shortcutsOpen ? (
+        <section className="shortcut-panel">
+          <div className="shortcut-panel-header">
+            <div>
+              <p className="eyebrow">Keyboard guide</p>
+              <h2>Run the board without hunting.</h2>
+            </div>
+            <button
+              className="ghost-action ghost-action-inline"
+              onClick={() => setShortcutsOpen(false)}
+              type="button"
+            >
+              Close
+            </button>
+          </div>
+          <div className="shortcut-grid">
+            <div className="shortcut-row">
+              <span className="shortcut-key">?</span>
+              <span className="shortcut-copy">Open or close this legend.</span>
+            </div>
+            <div className="shortcut-row">
+              <span className="shortcut-key">← ↑ ↓ →</span>
+              <span className="shortcut-copy">Move the active selection across staged beats.</span>
+            </div>
+            <div className="shortcut-row">
+              <span className="shortcut-key">Enter</span>
+              <span className="shortcut-copy">
+                Arm the selected beat, then press again to fire.
+              </span>
+            </div>
+            <div className="shortcut-row">
+              <span className="shortcut-key">Esc</span>
+              <span className="shortcut-copy">Stand down the armed beat or close the legend.</span>
+            </div>
+            <div className="shortcut-row">
+              <span className="shortcut-key">U</span>
+              <span className="shortcut-copy">
+                Undo the latest demo misfire while the retract window is live.
+              </span>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {visibleItems.length === 0 ? (
+        <section className="detail-card board-empty-state">
+          <p className="eyebrow">Scene filter</p>
+          <h2>No staged beats for this thread.</h2>
+          <p>
+            This scene does not have a ready trigger yet. Clear the filter or stage a fresh beat in
+            Setup.
+          </p>
+        </section>
+      ) : null}
 
       {sections.map((section) => {
         if (section.items.length === 0) return null;
@@ -125,24 +509,43 @@ export default function PlayRoute() {
                 const isFired = firedItems.has(item.id);
                 const isArmed = armedItemId === item.id && !isFired;
                 const hasError = errorItemId === item.id && !isFired;
+                const isNextUp = nextUpItem?.id === item.id && !isArmed && !isFired && !hasError;
+                const artifactSize = getArtifactSize(
+                  section.id,
+                  section.items.indexOf(item),
+                  section.items.length,
+                );
 
                 return (
                   <button
                     key={item.id}
-                    className={`trigger-card is-${item.kind}${isFired ? ' is-fired' : ''}${isArmed ? ' is-armed' : ''}${hasError ? ' is-error' : ''}`}
+                    className={`trigger-card is-${item.kind} is-${artifactSize}${isFired ? ' is-fired' : ''}${isArmed ? ' is-armed' : ''}${hasError ? ' is-error' : ''}${isNextUp ? ' is-next-up' : ''}${selectedItem?.id === item.id ? ' is-selected' : ''}`}
+                    onFocus={() => setSelectedItemId(item.id)}
                     onPointerDown={(e) => {
                       if (!isFired) handlePointerDown(e, item.id);
                     }}
                     onPointerUp={() => handlePointerUp(item.id)}
                     type="button"
                   >
-                    <span className="trigger-type">
-                      {item.kind === 'message' ? 'DM' : item.kind}
+                    <span className="trigger-type-row">
+                      <span className="trigger-type">
+                        {item.kind === 'message' ? 'DM' : item.kind}
+                      </span>
+                      {item.sceneLabel ? (
+                        <span className="trigger-scene">{item.sceneLabel}</span>
+                      ) : null}
                     </span>
                     <strong className="trigger-name">{item.name}</strong>
-                    <span className="trigger-meta">{item.meta}</span>
+                    {item.target ? <span className="trigger-target">{item.target}</span> : null}
+                    {item.preview ? (
+                      <span className="trigger-preview">{item.preview}</span>
+                    ) : (
+                      <span className="trigger-meta">{item.meta}</span>
+                    )}
                     {isFired ? (
                       <span className="trigger-flag">Fired</span>
+                    ) : isNextUp ? (
+                      <span className="trigger-flag is-next-up-flag">Next up</span>
                     ) : isArmed ? (
                       <span className="trigger-flag">Hold to fire</span>
                     ) : hasError ? (

@@ -1,9 +1,9 @@
-import type { SendMessagesPayload } from '@constancia/contracts';
+import type { BotDeliveryPayload } from '@constancia/contracts';
 
 export async function sendMessagesToBotAsync(
   botInternalUrl: string,
   botApiKey: string,
-  payload: SendMessagesPayload,
+  payload: BotDeliveryPayload,
 ): Promise<void> {
   const url = `${botInternalUrl}/send-messages`;
   const headers: Record<string, string> = {

@@ -11,9 +11,27 @@ export default function AuthRoute() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const next = normalizeNext(searchParams.get('next'));
+  const discordOauthEnabled = import.meta.env.VITE_DISCORD_AUTH_ENABLED === 'true';
   const session = authClient.useSession();
   const [mode, setMode] = useState<'idle' | 'verifying' | 'error'>(token ? 'verifying' : 'idle');
   const [message, setMessage] = useState('Waiting for a Discord-delivered magic link.');
+  const [discordAuthPending, setDiscordAuthPending] = useState(false);
+
+  async function handleDiscordSignIn() {
+    setDiscordAuthPending(true);
+    setMode('idle');
+    setMessage('Handing off to Discord sign-in...');
+
+    try {
+      await authClient.signIn.social({
+        provider: 'discord',
+      });
+    } catch (error) {
+      setMode('error');
+      setMessage(error instanceof Error ? error.message : 'Discord sign-in could not be started.');
+      setDiscordAuthPending(false);
+    }
+  }
 
   useEffect(() => {
     if (session.data) {
@@ -69,11 +87,27 @@ export default function AuthRoute() {
     <main className="auth-shell">
       <section className="auth-panel">
         <p className="eyebrow">Constancia Access</p>
-        <h1>GM login via Discord magic link</h1>
+        <h1>Discord access for GMs and players</h1>
         <p className="hero-copy">
-          The primary login flow starts in Discord: use the bot-triggered admin flow, then open the
-          link from your DM to land back here with a live Better Auth session.
+          Authentication stays Discord-native. Use the direct Discord sign-in when the OAuth
+          provider is configured, or fall back to the bot-delivered magic link while that rollout is
+          still in progress.
         </p>
+
+        {discordOauthEnabled ? (
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => void handleDiscordSignIn()}
+            disabled={discordAuthPending || mode === 'verifying'}
+          >
+            {discordAuthPending ? 'Redirecting to Discord…' : 'Continue with Discord'}
+          </button>
+        ) : (
+          <p className="form-hint">
+            Discord OAuth will appear here once the backend provider credentials are configured.
+          </p>
+        )}
 
         <div className={`auth-status auth-status-${mode}`}>
           <strong>{mode === 'verifying' ? 'Verifying link' : 'Auth status'}</strong>
@@ -84,19 +118,19 @@ export default function AuthRoute() {
           <article className="detail-card">
             <p className="detail-label">Primary flow</p>
             <ol className="detail-list auth-list">
-              <li>Run the bot admin login command in Discord.</li>
-              <li>Receive a magic link in your DM.</li>
-              <li>Open the link to establish a backend session.</li>
+              <li>Use direct Discord sign-in when it is available for this environment.</li>
+              <li>Otherwise run the bot admin login command in Discord.</li>
+              <li>Open the DM-delivered link to establish the backend session.</li>
             </ol>
           </article>
 
           <article className="detail-card">
             <p className="detail-label">Current scope</p>
             <div className="detail-stack">
-              <p>The first auth capability is intentionally Discord-first.</p>
+              <p>All access still resolves back to a Discord identity on the backend.</p>
               <p>
-                The bot asks the backend for a Better Auth magic link, then DMs the frontend URL
-                that lands here and completes verification.
+                That lets the player-safe dossier routes stop trusting a raw Discord id in the URL
+                and use the authenticated session instead.
               </p>
             </div>
           </article>

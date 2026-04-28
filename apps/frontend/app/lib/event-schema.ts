@@ -59,12 +59,18 @@ export const outcomeMapConfigSchema = z.object({
 
 export const retrieveDataConfigSchema = z.object({
   dataType: z.string().min(1, 'Data type is required'),
+  query: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const vtmPoolResolverConfigSchema = z.object({
   attribute: z.string().min(1, 'Attribute key is required'),
   skill: z.string().min(1, 'Skill key is required'),
   difficulty: z.coerce.number().min(1).max(10),
+});
+
+export const vtmInsightResolverConfigSchema = z.object({
+  attribute: z.string().min(1, 'Attribute key is required'),
+  skill: z.string().min(1, 'Skill key is required'),
 });
 
 // ── Block types ───────────────────────────────────────────────────────────────
@@ -78,9 +84,12 @@ export const BLOCK_TYPES = [
   'outcome-map',
   'retrieve-data',
   'vtm-pool-resolver',
+  'vtm-insight-resolver',
 ] as const;
 
 export type BlockType = (typeof BLOCK_TYPES)[number];
+export const EVENT_TYPES = ['test', 'narration', 'insight', 'message'] as const;
+export type EventType = (typeof EVENT_TYPES)[number];
 
 export const BLOCK_LABELS: Record<BlockType, string> = {
   'message-player': 'Message Player',
@@ -90,7 +99,8 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   'conditional-gate': 'Conditional Gate',
   'outcome-map': 'Outcome Map',
   'retrieve-data': 'Retrieve Data',
-  'vtm-pool-resolver': 'VTM V5 Dice Pool',
+  'vtm-pool-resolver': 'VTM V5 Dice Pool Resolver',
+  'vtm-insight-resolver': 'VTM V5 Insight Resolver',
 };
 
 export const defaultBlockConfigs: Record<BlockType, Record<string, unknown>> = {
@@ -99,10 +109,93 @@ export const defaultBlockConfigs: Record<BlockType, Record<string, unknown>> = {
   'message-group': { content: '', imageUrl: '', groupPlayerIds: [] },
   'display-image': { imageUrl: '', caption: '' },
   'conditional-gate': { statPath: '', operator: 'gte', threshold: 1 },
-  'outcome-map': { outcomes: [{ minScore: 0, maxScore: 10, text: '' }] },
-  'retrieve-data': { dataType: '' },
+  'outcome-map': { outcomes: [{ minScore: 0, maxScore: 10, text: '' }], shortCircuit: true },
+  'retrieve-data': { dataType: '', query: {} },
   'vtm-pool-resolver': { attribute: '', skill: '', difficulty: 3 },
+  'vtm-insight-resolver': { attribute: '', skill: '' },
 };
+
+const DEFAULT_PIPELINE_BLOCKS_BY_EVENT_TYPE: Record<EventType, readonly BlockType[]> = {
+  test: ['vtm-pool-resolver', 'outcome-map'],
+  narration: ['message-channel'],
+  insight: ['vtm-insight-resolver', 'outcome-map'],
+  message: ['message-player'],
+};
+
+const SUGGESTED_BLOCK_TYPES_BY_EVENT_TYPE: Record<EventType, readonly BlockType[]> = {
+  test: [
+    'vtm-pool-resolver',
+    'outcome-map',
+    'conditional-gate',
+    'message-player',
+    'message-channel',
+    'display-image',
+    'retrieve-data',
+    'message-group',
+  ],
+  narration: [
+    'message-channel',
+    'display-image',
+    'message-player',
+    'message-group',
+    'conditional-gate',
+    'retrieve-data',
+    'outcome-map',
+    'vtm-pool-resolver',
+  ],
+  insight: [
+    'vtm-insight-resolver',
+    'outcome-map',
+    'conditional-gate',
+    'message-player',
+    'retrieve-data',
+    'vtm-pool-resolver',
+  ],
+  message: [
+    'message-player',
+    'message-group',
+    'message-channel',
+    'display-image',
+    'conditional-gate',
+    'retrieve-data',
+    'outcome-map',
+    'vtm-pool-resolver',
+  ],
+};
+
+function cloneDefaultBlockConfig(blockType: BlockType): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(defaultBlockConfigs[blockType])) as Record<string, unknown>;
+}
+
+export function createPipelineBlock(blockType: BlockType): PipelineBlock {
+  return {
+    blockType,
+    config: cloneDefaultBlockConfig(blockType),
+  };
+}
+
+export function getDefaultPipelineForEventType(type: EventType): PipelineBlock[] {
+  return DEFAULT_PIPELINE_BLOCKS_BY_EVENT_TYPE[type].map(createPipelineBlock);
+}
+
+export function getSuggestedBlockTypesForEventType(type: EventType): readonly BlockType[] {
+  return SUGGESTED_BLOCK_TYPES_BY_EVENT_TYPE[type];
+}
+
+function serializePipeline(pipeline: PipelineBlock[]): string {
+  return JSON.stringify(pipeline);
+}
+
+export function isPipelineEqualToEventDefault(
+  type: EventType,
+  pipeline: PipelineBlock[] | undefined,
+): boolean {
+  if (!pipeline) {
+    return false;
+  }
+
+  return serializePipeline(pipeline) === serializePipeline(getDefaultPipelineForEventType(type));
+}
 
 // ── Event form schema ─────────────────────────────────────────────────────────
 
@@ -113,7 +206,7 @@ export const pipelineBlockSchema = z.object({
 
 export const eventFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  type: z.enum(['test', 'narration', 'insight', 'message']),
+  type: z.enum(EVENT_TYPES),
   channelId: z.string().min(1, 'Channel is required'),
   shortCircuit: z.boolean(),
   pipeline: z.array(pipelineBlockSchema).min(1, 'Add at least one block'),
@@ -155,4 +248,3 @@ export function normalizeEventFormValues(values: EventFormValues): EventFormValu
     pipeline: normalizePipelineForSubmission(values.pipeline),
   };
 }
-

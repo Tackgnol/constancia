@@ -1,10 +1,21 @@
+import { useMemo, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { useOutletContext } from 'react-router';
+import { VTM_ATTRIBUTES, VTM_SKILLS, type VtmStatOption } from '@constancia/systems';
 import { Input } from './ui/input.js';
 import { RecipientMultiValueField } from './recipient-multi-value-field.js';
 import { Label } from './ui/label.js';
 import { Textarea } from './ui/textarea.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select.js';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from './ui/command.js';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover.js';
 import type { BlockType, EventFormValues } from '@/lib/event-schema';
 import { buildRecipientOptions, type WarRoomContext } from '@/lib/war-room-data';
 
@@ -225,18 +236,30 @@ export function BlockConfigFields({ index, blockType }: Props) {
   if (blockType === 'vtm-pool-resolver') {
     return (
       <div className="grid grid-cols-3 gap-3">
-        <ConfigField label="Attribute Key" error={blockErrors.attribute?.message}>
-          <Input
-            type="text"
-            placeholder="strength"
-            {...register(`pipeline.${index}.config.attribute` as const)}
+        <ConfigField
+          label="Attribute"
+          hint="VTM attribute list only for this resolver block."
+          error={blockErrors.attribute?.message}
+        >
+          <VtmStatAutocomplete
+            name={`pipeline.${index}.config.attribute` as const}
+            options={VTM_ATTRIBUTES}
+            placeholder="Pick attribute…"
+            searchPlaceholder="Search attributes…"
+            emptyLabel="No matching VTM attribute."
           />
         </ConfigField>
-        <ConfigField label="Skill Key" error={blockErrors.skill?.message}>
-          <Input
-            type="text"
-            placeholder="athletics"
-            {...register(`pipeline.${index}.config.skill` as const)}
+        <ConfigField
+          label="Skill"
+          hint="VTM skill list only for this resolver block."
+          error={blockErrors.skill?.message}
+        >
+          <VtmStatAutocomplete
+            name={`pipeline.${index}.config.skill` as const}
+            options={VTM_SKILLS}
+            placeholder="Pick skill…"
+            searchPlaceholder="Search skills…"
+            emptyLabel="No matching VTM skill."
           />
         </ConfigField>
         <ConfigField label="Difficulty (1–10)" error={blockErrors.difficulty?.message}>
@@ -251,7 +274,107 @@ export function BlockConfigFields({ index, blockType }: Props) {
     );
   }
 
+  if (blockType === 'vtm-insight-resolver') {
+    return (
+      <div className="grid grid-cols-2 gap-3">
+        <ConfigField
+          label="Attribute"
+          hint="VTM attribute used in the passive insight total."
+          error={blockErrors.attribute?.message}
+        >
+          <VtmStatAutocomplete
+            name={`pipeline.${index}.config.attribute` as const}
+            options={VTM_ATTRIBUTES}
+            placeholder="Pick attribute…"
+            searchPlaceholder="Search attributes…"
+            emptyLabel="No matching VTM attribute."
+          />
+        </ConfigField>
+        <ConfigField
+          label="Skill"
+          hint="VTM skill added to the insight total for each player."
+          error={blockErrors.skill?.message}
+        >
+          <VtmStatAutocomplete
+            name={`pipeline.${index}.config.skill` as const}
+            options={VTM_SKILLS}
+            placeholder="Pick skill…"
+            searchPlaceholder="Search skills…"
+            emptyLabel="No matching VTM skill."
+          />
+        </ConfigField>
+      </div>
+    );
+  }
+
   return null;
+}
+
+function VtmStatAutocomplete({
+  name,
+  options,
+  placeholder,
+  searchPlaceholder,
+  emptyLabel,
+}: {
+  name: `pipeline.${number}.config.attribute` | `pipeline.${number}.config.skill`;
+  options: readonly VtmStatOption[];
+  placeholder: string;
+  searchPlaceholder: string;
+  emptyLabel: string;
+}) {
+  const { register, setValue, watch } = useFormContext<EventFormValues>();
+  const [open, setOpen] = useState(false);
+  const value = (watch(name) as string | undefined) ?? '';
+  const selectedOption = useMemo(
+    () => options.find((option) => option.value === value) ?? null,
+    [options, value],
+  );
+
+  return (
+    <>
+      <input type="hidden" {...register(name)} />
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button className="stat-autocomplete-trigger" type="button">
+            <span>{selectedOption?.label ?? placeholder}</span>
+            <span className="stat-autocomplete-value">
+              {selectedOption ? selectedOption.value : 'Search'}
+            </span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="stat-autocomplete-popover p-0">
+          <Command>
+            <CommandInput placeholder={searchPlaceholder} />
+            <CommandList>
+              <CommandEmpty>{emptyLabel}</CommandEmpty>
+              <CommandGroup heading="VTM V5">
+                {options.map((option) => (
+                  <CommandItem
+                    key={option.value}
+                    value={`${option.label} ${option.value}`}
+                    onSelect={() => {
+                      setValue(name, option.value, {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                        shouldValidate: true,
+                      });
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="stat-option-copy">
+                      <strong>{option.label}</strong>
+                      <span>{option.value}</span>
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </>
+  );
 }
 
 // Operator select — uses Radix Select via Shadcn

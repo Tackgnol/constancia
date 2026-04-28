@@ -13,9 +13,7 @@
       "get": {
         "operationId": "getOpenApiDocument",
         "summary": "Get OpenAPI document",
-        "tags": [
-          "meta"
-        ],
+        "tags": ["meta"],
         "responses": {
           "200": {
             "description": "OpenAPI document",
@@ -36,9 +34,7 @@
       "get": {
         "operationId": "getServiceMetadata",
         "summary": "Get service metadata",
-        "tags": [
-          "meta"
-        ],
+        "tags": ["meta"],
         "responses": {
           "200": {
             "description": "Service metadata",
@@ -65,13 +61,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "name",
-                    "status",
-                    "apiPrefix",
-                    "docsPrefix",
-                    "openApiPath"
-                  ]
+                  "required": ["name", "status", "apiPrefix", "docsPrefix", "openApiPath"]
                 }
               }
             }
@@ -83,9 +73,7 @@
       "get": {
         "operationId": "getServiceHealth",
         "summary": "Get service health",
-        "tags": [
-          "meta"
-        ],
+        "tags": ["meta"],
         "responses": {
           "200": {
             "description": "Health status",
@@ -106,11 +94,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "status",
-                    "service",
-                    "environment"
-                  ]
+                  "required": ["status", "service", "environment"]
                 }
               }
             }
@@ -122,9 +106,7 @@
       "post": {
         "operationId": "createMagicLink",
         "summary": "Request a Discord magic link",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "requestBody": {
           "required": true,
           "content": {
@@ -140,10 +122,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "discordUserId",
-                  "guildId"
-                ]
+                "required": ["discordUserId", "guildId"]
               }
             }
           }
@@ -162,10 +141,7 @@
                     },
                     "data": {}
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -177,9 +153,7 @@
       "get": {
         "operationId": "verifyMagicLink",
         "summary": "Verify a magic link token",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "parameters": [
           {
             "schema": {
@@ -204,10 +178,7 @@
                     },
                     "data": {}
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -219,9 +190,7 @@
       "post": {
         "operationId": "logoutSession",
         "summary": "Logout the current session",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "responses": {
           "200": {
             "description": "Default Response",
@@ -236,219 +205,7 @@
                     },
                     "data": {}
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/public/campaigns/{id}/npcs/for/{discordId}": {
-      "get": {
-        "operationId": "listPublicVisibleNpcsForPlayer",
-        "summary": "List player-safe NPC dossiers",
-        "tags": [
-          "npcs"
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "discordId",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "imageUrl": {
-                            "type": "string"
-                          },
-                          "campaignId": {
-                            "type": "string"
-                          },
-                          "facts": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "id": {
-                                  "type": "string"
-                                },
-                                "content": {
-                                  "type": "string"
-                                },
-                                "sortOrder": {
-                                  "type": "integer"
-                                },
-                                "npcId": {
-                                  "type": "string"
-                                }
-                              },
-                              "required": [
-                                "id",
-                                "content",
-                                "sortOrder",
-                                "npcId"
-                              ]
-                            }
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "name",
-                          "campaignId",
-                          "facts"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/public/campaigns/{id}/npcs/{npcId}/for/{discordId}": {
-      "get": {
-        "operationId": "getPublicVisibleNpcForPlayer",
-        "summary": "Get a player-safe NPC dossier",
-        "tags": [
-          "npcs"
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "npcId",
-            "required": true
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "discordId",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "imageUrl": {
-                          "type": "string"
-                        },
-                        "campaignId": {
-                          "type": "string"
-                        },
-                        "facts": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "content": {
-                                "type": "string"
-                              },
-                              "sortOrder": {
-                                "type": "integer"
-                              },
-                              "npcId": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "id",
-                              "content",
-                              "sortOrder",
-                              "npcId"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "name",
-                        "campaignId",
-                        "facts"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -460,9 +217,7 @@
       "get": {
         "operationId": "listCampaigns",
         "summary": "List campaigns",
-        "tags": [
-          "campaigns"
-        ],
+        "tags": ["campaigns"],
         "responses": {
           "200": {
             "description": "Default Response",
@@ -493,19 +248,11 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "discordGuildId",
-                          "gameSystemId"
-                        ]
+                        "required": ["id", "name", "discordGuildId", "gameSystemId"]
                       }
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -515,9 +262,7 @@
       "post": {
         "operationId": "createCampaign",
         "summary": "Create a campaign",
-        "tags": [
-          "campaigns"
-        ],
+        "tags": ["campaigns"],
         "requestBody": {
           "required": true,
           "content": {
@@ -536,11 +281,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "name",
-                  "discordGuildId",
-                  "gameSystemId"
-                ]
+                "required": ["name", "discordGuildId", "gameSystemId"]
               }
             }
           }
@@ -573,18 +314,10 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "discordGuildId",
-                        "gameSystemId"
-                      ]
+                      "required": ["id", "name", "discordGuildId", "gameSystemId"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -596,9 +329,7 @@
       "get": {
         "operationId": "getCampaign",
         "summary": "Get campaign details",
-        "tags": [
-          "campaigns"
-        ],
+        "tags": ["campaigns"],
         "parameters": [
           {
             "schema": {
@@ -637,18 +368,10 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "discordGuildId",
-                        "gameSystemId"
-                      ]
+                      "required": ["id", "name", "discordGuildId", "gameSystemId"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -658,9 +381,7 @@
       "patch": {
         "operationId": "updateCampaign",
         "summary": "Update a campaign",
-        "tags": [
-          "campaigns"
-        ],
+        "tags": ["campaigns"],
         "requestBody": {
           "required": true,
           "content": {
@@ -718,18 +439,10 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "discordGuildId",
-                        "gameSystemId"
-                      ]
+                      "required": ["id", "name", "discordGuildId", "gameSystemId"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -741,9 +454,7 @@
       "get": {
         "operationId": "listChannels",
         "summary": "List channels for a campaign",
-        "tags": [
-          "channels"
-        ],
+        "tags": ["channels"],
         "parameters": [
           {
             "schema": {
@@ -787,20 +498,11 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "discordChannelId",
-                          "campaignId",
-                          "type"
-                        ]
+                        "required": ["id", "name", "discordChannelId", "campaignId", "type"]
                       }
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -810,9 +512,7 @@
       "post": {
         "operationId": "createChannel",
         "summary": "Register a Discord channel with a campaign",
-        "tags": [
-          "channels"
-        ],
+        "tags": ["channels"],
         "requestBody": {
           "required": true,
           "content": {
@@ -829,17 +529,10 @@
                   },
                   "type": {
                     "type": "string",
-                    "enum": [
-                      "main",
-                      "scene",
-                      "temp"
-                    ]
+                    "enum": ["main", "scene", "temp"]
                   }
                 },
-                "required": [
-                  "name",
-                  "discordChannelId"
-                ]
+                "required": ["name", "discordChannelId"]
               }
             }
           }
@@ -885,19 +578,10 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "discordChannelId",
-                        "campaignId",
-                        "type"
-                      ]
+                      "required": ["id", "name", "discordChannelId", "campaignId", "type"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -909,9 +593,7 @@
       "patch": {
         "operationId": "updateChannel",
         "summary": "Update a channel",
-        "tags": [
-          "channels"
-        ],
+        "tags": ["channels"],
         "requestBody": {
           "required": true,
           "content": {
@@ -925,11 +607,7 @@
                   },
                   "type": {
                     "type": "string",
-                    "enum": [
-                      "main",
-                      "scene",
-                      "temp"
-                    ]
+                    "enum": ["main", "scene", "temp"]
                   }
                 }
               }
@@ -985,19 +663,10 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "discordChannelId",
-                        "campaignId",
-                        "type"
-                      ]
+                      "required": ["id", "name", "discordChannelId", "campaignId", "type"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -1007,9 +676,7 @@
       "delete": {
         "operationId": "deleteChannel",
         "summary": "Delete a channel",
-        "tags": [
-          "channels"
-        ],
+        "tags": ["channels"],
         "parameters": [
           {
             "schema": {
@@ -1044,10 +711,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "status",
-                    "deleted"
-                  ]
+                  "required": ["status", "deleted"]
                 }
               }
             }
@@ -1059,9 +723,7 @@
       "get": {
         "operationId": "listCharacters",
         "summary": "List campaign characters",
-        "tags": [
-          "characters"
-        ],
+        "tags": ["characters"],
         "parameters": [
           {
             "schema": {
@@ -1131,10 +793,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -1144,9 +803,7 @@
       "post": {
         "operationId": "createCharacter",
         "summary": "Create a character",
-        "tags": [
-          "characters"
-        ],
+        "tags": ["characters"],
         "requestBody": {
           "required": true,
           "content": {
@@ -1172,10 +829,7 @@
                     "additionalProperties": true
                   }
                 },
-                "required": [
-                  "name",
-                  "discordUserId"
-                ]
+                "required": ["name", "discordUserId"]
               }
             }
           }
@@ -1246,10 +900,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -1261,9 +912,7 @@
       "get": {
         "operationId": "getCharacter",
         "summary": "Get a character",
-        "tags": [
-          "characters"
-        ],
+        "tags": ["characters"],
         "parameters": [
           {
             "schema": {
@@ -1338,10 +987,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -1351,9 +997,7 @@
       "patch": {
         "operationId": "updateCharacter",
         "summary": "Update a character",
-        "tags": [
-          "characters"
-        ],
+        "tags": ["characters"],
         "requestBody": {
           "required": true,
           "content": {
@@ -1457,10 +1101,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -1472,9 +1113,7 @@
       "get": {
         "operationId": "listNpcs",
         "summary": "List campaign NPCs",
-        "tags": [
-          "npcs"
-        ],
+        "tags": ["npcs"],
         "parameters": [
           {
             "schema": {
@@ -1531,11 +1170,7 @@
                                 },
                                 "value": {}
                               },
-                              "required": [
-                                "blockType",
-                                "label",
-                                "value"
-                              ]
+                              "required": ["blockType", "label", "value"]
                             }
                           },
                           "campaignId": {
@@ -1587,13 +1222,7 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "id",
-                                "content",
-                                "sortOrder",
-                                "npcId",
-                                "knownTo"
-                              ]
+                              "required": ["id", "content", "sortOrder", "npcId", "knownTo"]
                             }
                           }
                         },
@@ -1608,10 +1237,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -1621,9 +1247,7 @@
       "post": {
         "operationId": "createNpc",
         "summary": "Create an NPC",
-        "tags": [
-          "npcs"
-        ],
+        "tags": ["npcs"],
         "requestBody": {
           "required": true,
           "content": {
@@ -1652,11 +1276,7 @@
                         },
                         "value": {}
                       },
-                      "required": [
-                        "blockType",
-                        "label",
-                        "value"
-                      ]
+                      "required": ["blockType", "label", "value"]
                     }
                   },
                   "imageUrl": {
@@ -1678,15 +1298,11 @@
                           "type": "integer"
                         }
                       },
-                      "required": [
-                        "content"
-                      ]
+                      "required": ["content"]
                     }
                   }
                 },
-                "required": [
-                  "name"
-                ]
+                "required": ["name"]
               }
             }
           }
@@ -1745,11 +1361,7 @@
                               },
                               "value": {}
                             },
-                            "required": [
-                              "blockType",
-                              "label",
-                              "value"
-                            ]
+                            "required": ["blockType", "label", "value"]
                           }
                         },
                         "campaignId": {
@@ -1774,12 +1386,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "id",
-                              "content",
-                              "sortOrder",
-                              "npcId"
-                            ]
+                            "required": ["id", "content", "sortOrder", "npcId"]
                           }
                         }
                       },
@@ -1793,10 +1400,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -1808,9 +1412,7 @@
       "patch": {
         "operationId": "updateNpc",
         "summary": "Update an NPC",
-        "tags": [
-          "npcs"
-        ],
+        "tags": ["npcs"],
         "requestBody": {
           "required": true,
           "content": {
@@ -1839,11 +1441,7 @@
                         },
                         "value": {}
                       },
-                      "required": [
-                        "blockType",
-                        "label",
-                        "value"
-                      ]
+                      "required": ["blockType", "label", "value"]
                     }
                   },
                   "imageUrl": {
@@ -1919,30 +1517,17 @@
                               },
                               "value": {}
                             },
-                            "required": [
-                              "blockType",
-                              "label",
-                              "value"
-                            ]
+                            "required": ["blockType", "label", "value"]
                           }
                         },
                         "campaignId": {
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "description",
-                        "systemBlocks",
-                        "campaignId"
-                      ]
+                      "required": ["id", "name", "description", "systemBlocks", "campaignId"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -1954,9 +1539,7 @@
       "post": {
         "operationId": "createNpcFact",
         "summary": "Add an NPC fact",
-        "tags": [
-          "npcs"
-        ],
+        "tags": ["npcs"],
         "requestBody": {
           "required": true,
           "content": {
@@ -1972,9 +1555,7 @@
                     "type": "integer"
                   }
                 },
-                "required": [
-                  "content"
-                ]
+                "required": ["content"]
               }
             }
           }
@@ -2025,18 +1606,10 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "id",
-                        "content",
-                        "sortOrder",
-                        "npcId"
-                      ]
+                      "required": ["id", "content", "sortOrder", "npcId"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -2048,9 +1621,7 @@
       "post": {
         "operationId": "revealNpcFacts",
         "summary": "Reveal NPC facts to players",
-        "tags": [
-          "npcs"
-        ],
+        "tags": ["npcs"],
         "requestBody": {
           "required": true,
           "content": {
@@ -2074,10 +1645,7 @@
                     "minItems": 1
                   }
                 },
-                "required": [
-                  "npcFactIds",
-                  "discordUserIds"
-                ]
+                "required": ["npcFactIds", "discordUserIds"]
               }
             }
           }
@@ -2144,11 +1712,7 @@
                               },
                               "value": {}
                             },
-                            "required": [
-                              "blockType",
-                              "label",
-                              "value"
-                            ]
+                            "required": ["blockType", "label", "value"]
                           }
                         },
                         "campaignId": {
@@ -2200,13 +1764,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "content",
-                              "sortOrder",
-                              "npcId",
-                              "knownTo"
-                            ]
+                            "required": ["id", "content", "sortOrder", "npcId", "knownTo"]
                           }
                         }
                       },
@@ -2220,10 +1778,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -2231,13 +1786,11 @@
         }
       }
     },
-    "/api/v1/campaigns/{id}/npcs/for/{discordId}": {
+    "/api/v1/campaigns/{id}/player-npcs/": {
       "get": {
-        "operationId": "listVisibleNpcsForPlayer",
-        "summary": "List NPCs visible to a player",
-        "tags": [
-          "npcs"
-        ],
+        "operationId": "listVisibleNpcsForCurrentPlayer",
+        "summary": "List NPCs visible to the current player",
+        "tags": ["npcs"],
         "parameters": [
           {
             "schema": {
@@ -2245,14 +1798,6 @@
             },
             "in": "path",
             "name": "id",
-            "required": true
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "discordId",
             "required": true
           }
         ],
@@ -2282,33 +1827,6 @@
                           "imageUrl": {
                             "type": "string"
                           },
-                          "description": {
-                            "type": "string"
-                          },
-                          "systemBlocks": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "systemId": {
-                                  "type": "string"
-                                },
-                                "blockType": {
-                                  "type": "string"
-                                },
-                                "label": {
-                                  "type": "string"
-                                },
-                                "value": {}
-                              },
-                              "required": [
-                                "blockType",
-                                "label",
-                                "value"
-                              ]
-                            }
-                          },
                           "campaignId": {
                             "type": "string"
                           },
@@ -2331,30 +1849,99 @@
                                   "type": "string"
                                 }
                               },
-                              "required": [
-                                "id",
-                                "content",
-                                "sortOrder",
-                                "npcId"
-                              ]
+                              "required": ["id", "content", "sortOrder", "npcId"]
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description",
-                          "systemBlocks",
-                          "campaignId",
-                          "facts"
-                        ]
+                        "required": ["id", "name", "campaignId", "facts"]
                       }
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/{id}/player-npcs/{npcId}": {
+      "get": {
+        "operationId": "getVisibleNpcForCurrentPlayer",
+        "summary": "Get an NPC dossier for the current player",
+        "tags": ["npcs"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "npcId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "imageUrl": {
+                          "type": "string"
+                        },
+                        "campaignId": {
+                          "type": "string"
+                        },
+                        "facts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "content": {
+                                "type": "string"
+                              },
+                              "sortOrder": {
+                                "type": "integer"
+                              },
+                              "npcId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["id", "content", "sortOrder", "npcId"]
+                          }
+                        }
+                      },
+                      "required": ["id", "name", "campaignId", "facts"]
+                    }
+                  },
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -2366,9 +1953,7 @@
       "get": {
         "operationId": "listEvents",
         "summary": "List events",
-        "tags": [
-          "events"
-        ],
+        "tags": ["events"],
         "parameters": [
           {
             "schema": {
@@ -2427,9 +2012,7 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": [
-                                        "outcome-map"
-                                      ]
+                                      "enum": ["outcome-map"]
                                     },
                                     "config": {
                                       "type": "object",
@@ -2451,26 +2034,17 @@
                                                 "type": "string"
                                               }
                                             },
-                                            "required": [
-                                              "minScore",
-                                              "maxScore",
-                                              "text"
-                                            ]
+                                            "required": ["minScore", "maxScore", "text"]
                                           }
                                         },
                                         "shortCircuit": {
                                           "type": "boolean"
                                         }
                                       },
-                                      "required": [
-                                        "outcomes"
-                                      ]
+                                      "required": ["outcomes"]
                                     }
                                   },
-                                  "required": [
-                                    "blockType",
-                                    "config"
-                                  ]
+                                  "required": ["blockType", "config"]
                                 },
                                 {
                                   "type": "object",
@@ -2478,9 +2052,7 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": [
-                                        "conditional-gate"
-                                      ]
+                                      "enum": ["conditional-gate"]
                                     },
                                     "config": {
                                       "type": "object",
@@ -2491,29 +2063,16 @@
                                         },
                                         "operator": {
                                           "type": "string",
-                                          "enum": [
-                                            "gte",
-                                            "gt",
-                                            "lte",
-                                            "lt",
-                                            "eq"
-                                          ]
+                                          "enum": ["gte", "gt", "lte", "lt", "eq"]
                                         },
                                         "threshold": {
                                           "type": "number"
                                         }
                                       },
-                                      "required": [
-                                        "statPath",
-                                        "operator",
-                                        "threshold"
-                                      ]
+                                      "required": ["statPath", "operator", "threshold"]
                                     }
                                   },
-                                  "required": [
-                                    "blockType",
-                                    "config"
-                                  ]
+                                  "required": ["blockType", "config"]
                                 },
                                 {
                                   "type": "object",
@@ -2521,9 +2080,7 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": [
-                                        "message-player"
-                                      ]
+                                      "enum": ["message-player"]
                                     },
                                     "config": {
                                       "type": "object",
@@ -2542,15 +2099,10 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "content"
-                                      ]
+                                      "required": ["content"]
                                     }
                                   },
-                                  "required": [
-                                    "blockType",
-                                    "config"
-                                  ]
+                                  "required": ["blockType", "config"]
                                 },
                                 {
                                   "type": "object",
@@ -2558,9 +2110,7 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": [
-                                        "message-channel"
-                                      ]
+                                      "enum": ["message-channel"]
                                     },
                                     "config": {
                                       "type": "object",
@@ -2573,15 +2123,10 @@
                                           "type": "string"
                                         }
                                       },
-                                      "required": [
-                                        "content"
-                                      ]
+                                      "required": ["content"]
                                     }
                                   },
-                                  "required": [
-                                    "blockType",
-                                    "config"
-                                  ]
+                                  "required": ["blockType", "config"]
                                 },
                                 {
                                   "type": "object",
@@ -2589,9 +2134,7 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": [
-                                        "message-group"
-                                      ]
+                                      "enum": ["message-group"]
                                     },
                                     "config": {
                                       "type": "object",
@@ -2610,15 +2153,10 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "content"
-                                      ]
+                                      "required": ["content"]
                                     }
                                   },
-                                  "required": [
-                                    "blockType",
-                                    "config"
-                                  ]
+                                  "required": ["blockType", "config"]
                                 },
                                 {
                                   "type": "object",
@@ -2626,9 +2164,7 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": [
-                                        "display-image"
-                                      ]
+                                      "enum": ["display-image"]
                                     },
                                     "config": {
                                       "type": "object",
@@ -2641,15 +2177,10 @@
                                           "type": "string"
                                         }
                                       },
-                                      "required": [
-                                        "imageUrl"
-                                      ]
+                                      "required": ["imageUrl"]
                                     }
                                   },
-                                  "required": [
-                                    "blockType",
-                                    "config"
-                                  ]
+                                  "required": ["blockType", "config"]
                                 },
                                 {
                                   "type": "object",
@@ -2657,9 +2188,7 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": [
-                                        "retrieve-data"
-                                      ]
+                                      "enum": ["retrieve-data"]
                                     },
                                     "config": {
                                       "type": "object",
@@ -2673,15 +2202,10 @@
                                           "additionalProperties": true
                                         }
                                       },
-                                      "required": [
-                                        "dataType"
-                                      ]
+                                      "required": ["dataType"]
                                     }
                                   },
-                                  "required": [
-                                    "blockType",
-                                    "config"
-                                  ]
+                                  "required": ["blockType", "config"]
                                 },
                                 {
                                   "type": "object",
@@ -2689,9 +2213,7 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": [
-                                        "vtm-pool-resolver"
-                                      ]
+                                      "enum": ["vtm-pool-resolver"]
                                     },
                                     "config": {
                                       "type": "object",
@@ -2710,17 +2232,10 @@
                                           "description": "Number of successes needed to succeed"
                                         }
                                       },
-                                      "required": [
-                                        "attribute",
-                                        "skill",
-                                        "difficulty"
-                                      ]
+                                      "required": ["attribute", "skill", "difficulty"]
                                     }
                                   },
-                                  "required": [
-                                    "blockType",
-                                    "config"
-                                  ]
+                                  "required": ["blockType", "config"]
                                 }
                               ]
                             }
@@ -2739,10 +2254,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -2752,9 +2264,7 @@
       "post": {
         "operationId": "createEvent",
         "summary": "Create an event",
-        "tags": [
-          "events"
-        ],
+        "tags": ["events"],
         "requestBody": {
           "required": true,
           "content": {
@@ -2785,9 +2295,7 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": [
-                                "outcome-map"
-                              ]
+                              "enum": ["outcome-map"]
                             },
                             "config": {
                               "type": "object",
@@ -2809,26 +2317,17 @@
                                         "type": "string"
                                       }
                                     },
-                                    "required": [
-                                      "minScore",
-                                      "maxScore",
-                                      "text"
-                                    ]
+                                    "required": ["minScore", "maxScore", "text"]
                                   }
                                 },
                                 "shortCircuit": {
                                   "type": "boolean"
                                 }
                               },
-                              "required": [
-                                "outcomes"
-                              ]
+                              "required": ["outcomes"]
                             }
                           },
-                          "required": [
-                            "blockType",
-                            "config"
-                          ]
+                          "required": ["blockType", "config"]
                         },
                         {
                           "type": "object",
@@ -2836,9 +2335,7 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": [
-                                "conditional-gate"
-                              ]
+                              "enum": ["conditional-gate"]
                             },
                             "config": {
                               "type": "object",
@@ -2849,29 +2346,16 @@
                                 },
                                 "operator": {
                                   "type": "string",
-                                  "enum": [
-                                    "gte",
-                                    "gt",
-                                    "lte",
-                                    "lt",
-                                    "eq"
-                                  ]
+                                  "enum": ["gte", "gt", "lte", "lt", "eq"]
                                 },
                                 "threshold": {
                                   "type": "number"
                                 }
                               },
-                              "required": [
-                                "statPath",
-                                "operator",
-                                "threshold"
-                              ]
+                              "required": ["statPath", "operator", "threshold"]
                             }
                           },
-                          "required": [
-                            "blockType",
-                            "config"
-                          ]
+                          "required": ["blockType", "config"]
                         },
                         {
                           "type": "object",
@@ -2879,9 +2363,7 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": [
-                                "message-player"
-                              ]
+                              "enum": ["message-player"]
                             },
                             "config": {
                               "type": "object",
@@ -2900,15 +2382,10 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "content"
-                              ]
+                              "required": ["content"]
                             }
                           },
-                          "required": [
-                            "blockType",
-                            "config"
-                          ]
+                          "required": ["blockType", "config"]
                         },
                         {
                           "type": "object",
@@ -2916,9 +2393,7 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": [
-                                "message-channel"
-                              ]
+                              "enum": ["message-channel"]
                             },
                             "config": {
                               "type": "object",
@@ -2931,15 +2406,10 @@
                                   "type": "string"
                                 }
                               },
-                              "required": [
-                                "content"
-                              ]
+                              "required": ["content"]
                             }
                           },
-                          "required": [
-                            "blockType",
-                            "config"
-                          ]
+                          "required": ["blockType", "config"]
                         },
                         {
                           "type": "object",
@@ -2947,9 +2417,7 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": [
-                                "message-group"
-                              ]
+                              "enum": ["message-group"]
                             },
                             "config": {
                               "type": "object",
@@ -2968,15 +2436,10 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "content"
-                              ]
+                              "required": ["content"]
                             }
                           },
-                          "required": [
-                            "blockType",
-                            "config"
-                          ]
+                          "required": ["blockType", "config"]
                         },
                         {
                           "type": "object",
@@ -2984,9 +2447,7 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": [
-                                "display-image"
-                              ]
+                              "enum": ["display-image"]
                             },
                             "config": {
                               "type": "object",
@@ -2999,15 +2460,10 @@
                                   "type": "string"
                                 }
                               },
-                              "required": [
-                                "imageUrl"
-                              ]
+                              "required": ["imageUrl"]
                             }
                           },
-                          "required": [
-                            "blockType",
-                            "config"
-                          ]
+                          "required": ["blockType", "config"]
                         },
                         {
                           "type": "object",
@@ -3015,9 +2471,7 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": [
-                                "retrieve-data"
-                              ]
+                              "enum": ["retrieve-data"]
                             },
                             "config": {
                               "type": "object",
@@ -3031,15 +2485,10 @@
                                   "additionalProperties": true
                                 }
                               },
-                              "required": [
-                                "dataType"
-                              ]
+                              "required": ["dataType"]
                             }
                           },
-                          "required": [
-                            "blockType",
-                            "config"
-                          ]
+                          "required": ["blockType", "config"]
                         },
                         {
                           "type": "object",
@@ -3047,9 +2496,7 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": [
-                                "vtm-pool-resolver"
-                              ]
+                              "enum": ["vtm-pool-resolver"]
                             },
                             "config": {
                               "type": "object",
@@ -3068,28 +2515,16 @@
                                   "description": "Number of successes needed to succeed"
                                 }
                               },
-                              "required": [
-                                "attribute",
-                                "skill",
-                                "difficulty"
-                              ]
+                              "required": ["attribute", "skill", "difficulty"]
                             }
                           },
-                          "required": [
-                            "blockType",
-                            "config"
-                          ]
+                          "required": ["blockType", "config"]
                         }
                       ]
                     }
                   }
                 },
-                "required": [
-                  "name",
-                  "type",
-                  "channelId",
-                  "pipeline"
-                ]
+                "required": ["name", "type", "channelId", "pipeline"]
               }
             }
           }
@@ -3150,9 +2585,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "outcome-map"
-                                    ]
+                                    "enum": ["outcome-map"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -3174,26 +2607,17 @@
                                               "type": "string"
                                             }
                                           },
-                                          "required": [
-                                            "minScore",
-                                            "maxScore",
-                                            "text"
-                                          ]
+                                          "required": ["minScore", "maxScore", "text"]
                                         }
                                       },
                                       "shortCircuit": {
                                         "type": "boolean"
                                       }
                                     },
-                                    "required": [
-                                      "outcomes"
-                                    ]
+                                    "required": ["outcomes"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -3201,9 +2625,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "conditional-gate"
-                                    ]
+                                    "enum": ["conditional-gate"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -3214,29 +2636,16 @@
                                       },
                                       "operator": {
                                         "type": "string",
-                                        "enum": [
-                                          "gte",
-                                          "gt",
-                                          "lte",
-                                          "lt",
-                                          "eq"
-                                        ]
+                                        "enum": ["gte", "gt", "lte", "lt", "eq"]
                                       },
                                       "threshold": {
                                         "type": "number"
                                       }
                                     },
-                                    "required": [
-                                      "statPath",
-                                      "operator",
-                                      "threshold"
-                                    ]
+                                    "required": ["statPath", "operator", "threshold"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -3244,9 +2653,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "message-player"
-                                    ]
+                                    "enum": ["message-player"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -3265,15 +2672,10 @@
                                         }
                                       }
                                     },
-                                    "required": [
-                                      "content"
-                                    ]
+                                    "required": ["content"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -3281,9 +2683,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "message-channel"
-                                    ]
+                                    "enum": ["message-channel"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -3296,15 +2696,10 @@
                                         "type": "string"
                                       }
                                     },
-                                    "required": [
-                                      "content"
-                                    ]
+                                    "required": ["content"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -3312,9 +2707,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "message-group"
-                                    ]
+                                    "enum": ["message-group"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -3333,15 +2726,10 @@
                                         }
                                       }
                                     },
-                                    "required": [
-                                      "content"
-                                    ]
+                                    "required": ["content"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -3349,9 +2737,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "display-image"
-                                    ]
+                                    "enum": ["display-image"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -3364,15 +2750,10 @@
                                         "type": "string"
                                       }
                                     },
-                                    "required": [
-                                      "imageUrl"
-                                    ]
+                                    "required": ["imageUrl"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -3380,9 +2761,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "retrieve-data"
-                                    ]
+                                    "enum": ["retrieve-data"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -3396,15 +2775,10 @@
                                         "additionalProperties": true
                                       }
                                     },
-                                    "required": [
-                                      "dataType"
-                                    ]
+                                    "required": ["dataType"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -3412,9 +2786,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "vtm-pool-resolver"
-                                    ]
+                                    "enum": ["vtm-pool-resolver"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -3433,17 +2805,10 @@
                                         "description": "Number of successes needed to succeed"
                                       }
                                     },
-                                    "required": [
-                                      "attribute",
-                                      "skill",
-                                      "difficulty"
-                                    ]
+                                    "required": ["attribute", "skill", "difficulty"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               }
                             ]
                           }
@@ -3461,10 +2826,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -3476,9 +2838,7 @@
       "get": {
         "operationId": "getEvent",
         "summary": "Get an event",
-        "tags": [
-          "events"
-        ],
+        "tags": ["events"],
         "parameters": [
           {
             "schema": {
@@ -3543,9 +2903,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "outcome-map"
-                                    ]
+                                    "enum": ["outcome-map"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -3567,26 +2925,17 @@
                                               "type": "string"
                                             }
                                           },
-                                          "required": [
-                                            "minScore",
-                                            "maxScore",
-                                            "text"
-                                          ]
+                                          "required": ["minScore", "maxScore", "text"]
                                         }
                                       },
                                       "shortCircuit": {
                                         "type": "boolean"
                                       }
                                     },
-                                    "required": [
-                                      "outcomes"
-                                    ]
+                                    "required": ["outcomes"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -3594,9 +2943,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "conditional-gate"
-                                    ]
+                                    "enum": ["conditional-gate"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -3607,29 +2954,16 @@
                                       },
                                       "operator": {
                                         "type": "string",
-                                        "enum": [
-                                          "gte",
-                                          "gt",
-                                          "lte",
-                                          "lt",
-                                          "eq"
-                                        ]
+                                        "enum": ["gte", "gt", "lte", "lt", "eq"]
                                       },
                                       "threshold": {
                                         "type": "number"
                                       }
                                     },
-                                    "required": [
-                                      "statPath",
-                                      "operator",
-                                      "threshold"
-                                    ]
+                                    "required": ["statPath", "operator", "threshold"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -3637,9 +2971,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "message-player"
-                                    ]
+                                    "enum": ["message-player"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -3658,15 +2990,10 @@
                                         }
                                       }
                                     },
-                                    "required": [
-                                      "content"
-                                    ]
+                                    "required": ["content"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -3674,9 +3001,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "message-channel"
-                                    ]
+                                    "enum": ["message-channel"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -3689,15 +3014,10 @@
                                         "type": "string"
                                       }
                                     },
-                                    "required": [
-                                      "content"
-                                    ]
+                                    "required": ["content"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -3705,9 +3025,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "message-group"
-                                    ]
+                                    "enum": ["message-group"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -3726,15 +3044,10 @@
                                         }
                                       }
                                     },
-                                    "required": [
-                                      "content"
-                                    ]
+                                    "required": ["content"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -3742,9 +3055,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "display-image"
-                                    ]
+                                    "enum": ["display-image"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -3757,15 +3068,10 @@
                                         "type": "string"
                                       }
                                     },
-                                    "required": [
-                                      "imageUrl"
-                                    ]
+                                    "required": ["imageUrl"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -3773,9 +3079,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "retrieve-data"
-                                    ]
+                                    "enum": ["retrieve-data"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -3789,15 +3093,10 @@
                                         "additionalProperties": true
                                       }
                                     },
-                                    "required": [
-                                      "dataType"
-                                    ]
+                                    "required": ["dataType"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -3805,9 +3104,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "vtm-pool-resolver"
-                                    ]
+                                    "enum": ["vtm-pool-resolver"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -3826,17 +3123,10 @@
                                         "description": "Number of successes needed to succeed"
                                       }
                                     },
-                                    "required": [
-                                      "attribute",
-                                      "skill",
-                                      "difficulty"
-                                    ]
+                                    "required": ["attribute", "skill", "difficulty"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               }
                             ]
                           }
@@ -3854,10 +3144,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -3867,9 +3154,7 @@
       "patch": {
         "operationId": "updateEvent",
         "summary": "Update an event",
-        "tags": [
-          "events"
-        ],
+        "tags": ["events"],
         "requestBody": {
           "required": true,
           "content": {
@@ -3897,9 +3182,7 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": [
-                                "outcome-map"
-                              ]
+                              "enum": ["outcome-map"]
                             },
                             "config": {
                               "type": "object",
@@ -3921,26 +3204,17 @@
                                         "type": "string"
                                       }
                                     },
-                                    "required": [
-                                      "minScore",
-                                      "maxScore",
-                                      "text"
-                                    ]
+                                    "required": ["minScore", "maxScore", "text"]
                                   }
                                 },
                                 "shortCircuit": {
                                   "type": "boolean"
                                 }
                               },
-                              "required": [
-                                "outcomes"
-                              ]
+                              "required": ["outcomes"]
                             }
                           },
-                          "required": [
-                            "blockType",
-                            "config"
-                          ]
+                          "required": ["blockType", "config"]
                         },
                         {
                           "type": "object",
@@ -3948,9 +3222,7 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": [
-                                "conditional-gate"
-                              ]
+                              "enum": ["conditional-gate"]
                             },
                             "config": {
                               "type": "object",
@@ -3961,29 +3233,16 @@
                                 },
                                 "operator": {
                                   "type": "string",
-                                  "enum": [
-                                    "gte",
-                                    "gt",
-                                    "lte",
-                                    "lt",
-                                    "eq"
-                                  ]
+                                  "enum": ["gte", "gt", "lte", "lt", "eq"]
                                 },
                                 "threshold": {
                                   "type": "number"
                                 }
                               },
-                              "required": [
-                                "statPath",
-                                "operator",
-                                "threshold"
-                              ]
+                              "required": ["statPath", "operator", "threshold"]
                             }
                           },
-                          "required": [
-                            "blockType",
-                            "config"
-                          ]
+                          "required": ["blockType", "config"]
                         },
                         {
                           "type": "object",
@@ -3991,9 +3250,7 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": [
-                                "message-player"
-                              ]
+                              "enum": ["message-player"]
                             },
                             "config": {
                               "type": "object",
@@ -4012,15 +3269,10 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "content"
-                              ]
+                              "required": ["content"]
                             }
                           },
-                          "required": [
-                            "blockType",
-                            "config"
-                          ]
+                          "required": ["blockType", "config"]
                         },
                         {
                           "type": "object",
@@ -4028,9 +3280,7 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": [
-                                "message-channel"
-                              ]
+                              "enum": ["message-channel"]
                             },
                             "config": {
                               "type": "object",
@@ -4043,15 +3293,10 @@
                                   "type": "string"
                                 }
                               },
-                              "required": [
-                                "content"
-                              ]
+                              "required": ["content"]
                             }
                           },
-                          "required": [
-                            "blockType",
-                            "config"
-                          ]
+                          "required": ["blockType", "config"]
                         },
                         {
                           "type": "object",
@@ -4059,9 +3304,7 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": [
-                                "message-group"
-                              ]
+                              "enum": ["message-group"]
                             },
                             "config": {
                               "type": "object",
@@ -4080,15 +3323,10 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "content"
-                              ]
+                              "required": ["content"]
                             }
                           },
-                          "required": [
-                            "blockType",
-                            "config"
-                          ]
+                          "required": ["blockType", "config"]
                         },
                         {
                           "type": "object",
@@ -4096,9 +3334,7 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": [
-                                "display-image"
-                              ]
+                              "enum": ["display-image"]
                             },
                             "config": {
                               "type": "object",
@@ -4111,15 +3347,10 @@
                                   "type": "string"
                                 }
                               },
-                              "required": [
-                                "imageUrl"
-                              ]
+                              "required": ["imageUrl"]
                             }
                           },
-                          "required": [
-                            "blockType",
-                            "config"
-                          ]
+                          "required": ["blockType", "config"]
                         },
                         {
                           "type": "object",
@@ -4127,9 +3358,7 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": [
-                                "retrieve-data"
-                              ]
+                              "enum": ["retrieve-data"]
                             },
                             "config": {
                               "type": "object",
@@ -4143,15 +3372,10 @@
                                   "additionalProperties": true
                                 }
                               },
-                              "required": [
-                                "dataType"
-                              ]
+                              "required": ["dataType"]
                             }
                           },
-                          "required": [
-                            "blockType",
-                            "config"
-                          ]
+                          "required": ["blockType", "config"]
                         },
                         {
                           "type": "object",
@@ -4159,9 +3383,7 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": [
-                                "vtm-pool-resolver"
-                              ]
+                              "enum": ["vtm-pool-resolver"]
                             },
                             "config": {
                               "type": "object",
@@ -4180,17 +3402,10 @@
                                   "description": "Number of successes needed to succeed"
                                 }
                               },
-                              "required": [
-                                "attribute",
-                                "skill",
-                                "difficulty"
-                              ]
+                              "required": ["attribute", "skill", "difficulty"]
                             }
                           },
-                          "required": [
-                            "blockType",
-                            "config"
-                          ]
+                          "required": ["blockType", "config"]
                         }
                       ]
                     }
@@ -4264,9 +3479,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "outcome-map"
-                                    ]
+                                    "enum": ["outcome-map"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -4288,26 +3501,17 @@
                                               "type": "string"
                                             }
                                           },
-                                          "required": [
-                                            "minScore",
-                                            "maxScore",
-                                            "text"
-                                          ]
+                                          "required": ["minScore", "maxScore", "text"]
                                         }
                                       },
                                       "shortCircuit": {
                                         "type": "boolean"
                                       }
                                     },
-                                    "required": [
-                                      "outcomes"
-                                    ]
+                                    "required": ["outcomes"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -4315,9 +3519,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "conditional-gate"
-                                    ]
+                                    "enum": ["conditional-gate"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -4328,29 +3530,16 @@
                                       },
                                       "operator": {
                                         "type": "string",
-                                        "enum": [
-                                          "gte",
-                                          "gt",
-                                          "lte",
-                                          "lt",
-                                          "eq"
-                                        ]
+                                        "enum": ["gte", "gt", "lte", "lt", "eq"]
                                       },
                                       "threshold": {
                                         "type": "number"
                                       }
                                     },
-                                    "required": [
-                                      "statPath",
-                                      "operator",
-                                      "threshold"
-                                    ]
+                                    "required": ["statPath", "operator", "threshold"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -4358,9 +3547,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "message-player"
-                                    ]
+                                    "enum": ["message-player"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -4379,15 +3566,10 @@
                                         }
                                       }
                                     },
-                                    "required": [
-                                      "content"
-                                    ]
+                                    "required": ["content"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -4395,9 +3577,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "message-channel"
-                                    ]
+                                    "enum": ["message-channel"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -4410,15 +3590,10 @@
                                         "type": "string"
                                       }
                                     },
-                                    "required": [
-                                      "content"
-                                    ]
+                                    "required": ["content"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -4426,9 +3601,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "message-group"
-                                    ]
+                                    "enum": ["message-group"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -4447,15 +3620,10 @@
                                         }
                                       }
                                     },
-                                    "required": [
-                                      "content"
-                                    ]
+                                    "required": ["content"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -4463,9 +3631,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "display-image"
-                                    ]
+                                    "enum": ["display-image"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -4478,15 +3644,10 @@
                                         "type": "string"
                                       }
                                     },
-                                    "required": [
-                                      "imageUrl"
-                                    ]
+                                    "required": ["imageUrl"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -4494,9 +3655,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "retrieve-data"
-                                    ]
+                                    "enum": ["retrieve-data"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -4510,15 +3669,10 @@
                                         "additionalProperties": true
                                       }
                                     },
-                                    "required": [
-                                      "dataType"
-                                    ]
+                                    "required": ["dataType"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               },
                               {
                                 "type": "object",
@@ -4526,9 +3680,7 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": [
-                                      "vtm-pool-resolver"
-                                    ]
+                                    "enum": ["vtm-pool-resolver"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -4547,17 +3699,10 @@
                                         "description": "Number of successes needed to succeed"
                                       }
                                     },
-                                    "required": [
-                                      "attribute",
-                                      "skill",
-                                      "difficulty"
-                                    ]
+                                    "required": ["attribute", "skill", "difficulty"]
                                   }
                                 },
-                                "required": [
-                                  "blockType",
-                                  "config"
-                                ]
+                                "required": ["blockType", "config"]
                               }
                             ]
                           }
@@ -4575,10 +3720,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -4590,9 +3732,7 @@
       "post": {
         "operationId": "fireEvent",
         "summary": "Fire an event pipeline",
-        "tags": [
-          "events"
-        ],
+        "tags": ["events"],
         "parameters": [
           {
             "schema": {
@@ -4639,9 +3779,7 @@
                                 "properties": {
                                   "target": {
                                     "type": "string",
-                                    "enum": [
-                                      "player"
-                                    ]
+                                    "enum": ["player"]
                                   },
                                   "targetId": {
                                     "type": "string"
@@ -4653,10 +3791,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "target",
-                                  "content"
-                                ]
+                                "required": ["target", "content"]
                               },
                               {
                                 "type": "object",
@@ -4664,9 +3799,7 @@
                                 "properties": {
                                   "target": {
                                     "type": "string",
-                                    "enum": [
-                                      "channel"
-                                    ]
+                                    "enum": ["channel"]
                                   },
                                   "content": {
                                     "type": "string"
@@ -4675,10 +3808,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "target",
-                                  "content"
-                                ]
+                                "required": ["target", "content"]
                               },
                               {
                                 "type": "object",
@@ -4686,9 +3816,7 @@
                                 "properties": {
                                   "target": {
                                     "type": "string",
-                                    "enum": [
-                                      "group"
-                                    ]
+                                    "enum": ["group"]
                                   },
                                   "targetIds": {
                                     "type": "array",
@@ -4703,11 +3831,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "target",
-                                  "targetIds",
-                                  "content"
-                                ]
+                                "required": ["target", "targetIds", "content"]
                               }
                             ]
                           }
@@ -4716,17 +3840,10 @@
                           "type": "boolean"
                         }
                       },
-                      "required": [
-                        "eventId",
-                        "messages",
-                        "halted"
-                      ]
+                      "required": ["eventId", "messages", "halted"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -4738,9 +3855,7 @@
       "get": {
         "operationId": "listQuests",
         "summary": "List quests",
-        "tags": [
-          "journal"
-        ],
+        "tags": ["journal"],
         "parameters": [
           {
             "schema": {
@@ -4811,13 +3926,7 @@
                                   "type": "integer"
                                 }
                               },
-                              "required": [
-                                "id",
-                                "content",
-                                "questId",
-                                "status",
-                                "sortOrder"
-                              ]
+                              "required": ["id", "content", "questId", "status", "sortOrder"]
                             }
                           }
                         },
@@ -4833,10 +3942,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -4846,9 +3952,7 @@
       "post": {
         "operationId": "createQuest",
         "summary": "Create a quest",
-        "tags": [
-          "journal"
-        ],
+        "tags": ["journal"],
         "requestBody": {
           "required": true,
           "content": {
@@ -4867,9 +3971,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "name"
-                ]
+                "required": ["name"]
               }
             }
           }
@@ -4942,13 +4044,7 @@
                                 "type": "integer"
                               }
                             },
-                            "required": [
-                              "id",
-                              "content",
-                              "questId",
-                              "status",
-                              "sortOrder"
-                            ]
+                            "required": ["id", "content", "questId", "status", "sortOrder"]
                           }
                         }
                       },
@@ -4963,10 +4059,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -4978,9 +4071,7 @@
       "patch": {
         "operationId": "updateQuest",
         "summary": "Update a quest",
-        "tags": [
-          "journal"
-        ],
+        "tags": ["journal"],
         "requestBody": {
           "required": true,
           "content": {
@@ -5082,13 +4173,7 @@
                                 "type": "integer"
                               }
                             },
-                            "required": [
-                              "id",
-                              "content",
-                              "questId",
-                              "status",
-                              "sortOrder"
-                            ]
+                            "required": ["id", "content", "questId", "status", "sortOrder"]
                           }
                         }
                       },
@@ -5103,10 +4188,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -5118,9 +4200,7 @@
       "post": {
         "operationId": "createQuestEntry",
         "summary": "Create a quest entry",
-        "tags": [
-          "journal"
-        ],
+        "tags": ["journal"],
         "requestBody": {
           "required": true,
           "content": {
@@ -5139,9 +4219,7 @@
                     "type": "integer"
                   }
                 },
-                "required": [
-                  "content"
-                ]
+                "required": ["content"]
               }
             }
           }
@@ -5195,19 +4273,10 @@
                           "type": "integer"
                         }
                       },
-                      "required": [
-                        "id",
-                        "content",
-                        "questId",
-                        "status",
-                        "sortOrder"
-                      ]
+                      "required": ["id", "content", "questId", "status", "sortOrder"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -5219,9 +4288,7 @@
       "patch": {
         "operationId": "updateQuestEntry",
         "summary": "Update a quest entry",
-        "tags": [
-          "journal"
-        ],
+        "tags": ["journal"],
         "requestBody": {
           "required": true,
           "content": {
@@ -5240,9 +4307,7 @@
                     "type": "integer"
                   }
                 },
-                "required": [
-                  "content"
-                ]
+                "required": ["content"]
               }
             }
           }
@@ -5304,19 +4369,10 @@
                           "type": "integer"
                         }
                       },
-                      "required": [
-                        "id",
-                        "content",
-                        "questId",
-                        "status",
-                        "sortOrder"
-                      ]
+                      "required": ["id", "content", "questId", "status", "sortOrder"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -5326,9 +4382,7 @@
       "delete": {
         "operationId": "deleteQuestEntry",
         "summary": "Delete a quest entry",
-        "tags": [
-          "journal"
-        ],
+        "tags": ["journal"],
         "parameters": [
           {
             "schema": {
@@ -5371,10 +4425,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "status",
-                    "deleted"
-                  ]
+                  "required": ["status", "deleted"]
                 }
               }
             }
@@ -5386,9 +4437,7 @@
       "get": {
         "operationId": "listSessionSummaries",
         "summary": "List session summaries",
-        "tags": [
-          "journal"
-        ],
+        "tags": ["journal"],
         "parameters": [
           {
             "schema": {
@@ -5450,10 +4499,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -5463,9 +4509,7 @@
       "post": {
         "operationId": "createSessionSummary",
         "summary": "Create a session summary",
-        "tags": [
-          "journal"
-        ],
+        "tags": ["journal"],
         "requestBody": {
           "required": true,
           "content": {
@@ -5491,11 +4535,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "title",
-                  "content",
-                  "sessionDate"
-                ]
+                "required": ["title", "content", "sessionDate"]
               }
             }
           }
@@ -5548,20 +4588,10 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "id",
-                        "title",
-                        "content",
-                        "campaignId",
-                        "sessionDate",
-                        "visible"
-                      ]
+                      "required": ["id", "title", "content", "campaignId", "sessionDate", "visible"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -5573,9 +4603,7 @@
       "patch": {
         "operationId": "updateSessionSummary",
         "summary": "Update a session summary",
-        "tags": [
-          "journal"
-        ],
+        "tags": ["journal"],
         "requestBody": {
           "required": true,
           "content": {
@@ -5601,11 +4629,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "title",
-                  "content",
-                  "sessionDate"
-                ]
+                "required": ["title", "content", "sessionDate"]
               }
             }
           }
@@ -5666,20 +4690,10 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "id",
-                        "title",
-                        "content",
-                        "campaignId",
-                        "sessionDate",
-                        "visible"
-                      ]
+                      "required": ["id", "title", "content", "campaignId", "sessionDate", "visible"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -5691,9 +4705,7 @@
       "get": {
         "operationId": "getJournalForPlayer",
         "summary": "Get player journal view",
-        "tags": [
-          "journal"
-        ],
+        "tags": ["journal"],
         "parameters": [
           {
             "schema": {
@@ -5776,13 +4788,7 @@
                                       "type": "integer"
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "content",
-                                    "questId",
-                                    "status",
-                                    "sortOrder"
-                                  ]
+                                  "required": ["id", "content", "questId", "status", "sortOrder"]
                                 }
                               }
                             },
@@ -5837,16 +4843,10 @@
                           }
                         }
                       },
-                      "required": [
-                        "quests",
-                        "summaries"
-                      ]
+                      "required": ["quests", "summaries"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -5858,9 +4858,7 @@
       "get": {
         "operationId": "listGameSystems",
         "summary": "List registered game systems",
-        "tags": [
-          "systems"
-        ],
+        "tags": ["systems"],
         "responses": {
           "200": {
             "description": "Default Response",
@@ -5888,18 +4886,11 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "version"
-                        ]
+                        "required": ["id", "name", "version"]
                       }
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -5911,9 +4902,7 @@
       "get": {
         "operationId": "getGameSystem",
         "summary": "Get a game system",
-        "tags": [
-          "systems"
-        ],
+        "tags": ["systems"],
         "parameters": [
           {
             "schema": {
@@ -5949,17 +4938,10 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "version"
-                      ]
+                      "required": ["id", "name", "version"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -5971,9 +4953,7 @@
       "post": {
         "operationId": "submitBotTestResult",
         "summary": "Submit a player test result",
-        "tags": [
-          "bot"
-        ],
+        "tags": ["bot"],
         "requestBody": {
           "required": true,
           "content": {
@@ -5998,13 +4978,7 @@
                     "type": "number"
                   }
                 },
-                "required": [
-                  "eventId",
-                  "campaignId",
-                  "channelId",
-                  "discordUserId",
-                  "playerScore"
-                ]
+                "required": ["eventId", "campaignId", "channelId", "discordUserId", "playerScore"]
               }
             }
           }
@@ -6040,9 +5014,7 @@
                                 "properties": {
                                   "target": {
                                     "type": "string",
-                                    "enum": [
-                                      "player"
-                                    ]
+                                    "enum": ["player"]
                                   },
                                   "targetId": {
                                     "type": "string"
@@ -6054,10 +5026,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "target",
-                                  "content"
-                                ]
+                                "required": ["target", "content"]
                               },
                               {
                                 "type": "object",
@@ -6065,9 +5034,7 @@
                                 "properties": {
                                   "target": {
                                     "type": "string",
-                                    "enum": [
-                                      "channel"
-                                    ]
+                                    "enum": ["channel"]
                                   },
                                   "content": {
                                     "type": "string"
@@ -6076,10 +5043,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "target",
-                                  "content"
-                                ]
+                                "required": ["target", "content"]
                               },
                               {
                                 "type": "object",
@@ -6087,9 +5051,7 @@
                                 "properties": {
                                   "target": {
                                     "type": "string",
-                                    "enum": [
-                                      "group"
-                                    ]
+                                    "enum": ["group"]
                                   },
                                   "targetIds": {
                                     "type": "array",
@@ -6104,11 +5066,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "target",
-                                  "targetIds",
-                                  "content"
-                                ]
+                                "required": ["target", "targetIds", "content"]
                               }
                             ]
                           }
@@ -6117,18 +5075,10 @@
                           "type": "boolean"
                         }
                       },
-                      "required": [
-                        "eventId",
-                        "campaignId",
-                        "messages",
-                        "halted"
-                      ]
+                      "required": ["eventId", "campaignId", "messages", "halted"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -6140,9 +5090,7 @@
       "get": {
         "operationId": "getCampaignByGuild",
         "summary": "Resolve guild to campaign",
-        "tags": [
-          "bot"
-        ],
+        "tags": ["bot"],
         "parameters": [
           {
             "schema": {
@@ -6181,18 +5129,97 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "discordGuildId",
-                        "gameSystemId"
-                      ]
+                      "required": ["id", "name", "discordGuildId", "gameSystemId"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bot/campaigns/{id}/visible-npcs/{discordUserId}": {
+      "get": {
+        "operationId": "listBotVisibleNpcsForPlayer",
+        "summary": "List NPCs visible to a Discord player",
+        "tags": ["bot"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "discordUserId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "imageUrl": {
+                            "type": "string"
+                          },
+                          "campaignId": {
+                            "type": "string"
+                          },
+                          "facts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "content": {
+                                  "type": "string"
+                                },
+                                "sortOrder": {
+                                  "type": "integer"
+                                },
+                                "npcId": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["id", "content", "sortOrder", "npcId"]
+                            }
+                          }
+                        },
+                        "required": ["id", "name", "campaignId", "facts"]
+                      }
+                    }
+                  },
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -6204,9 +5231,7 @@
       "get": {
         "operationId": "getChannelEvents",
         "summary": "Get active channel events",
-        "tags": [
-          "bot"
-        ],
+        "tags": ["bot"],
         "parameters": [
           {
             "schema": {
@@ -6265,9 +5290,7 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": [
-                                        "outcome-map"
-                                      ]
+                                      "enum": ["outcome-map"]
                                     },
                                     "config": {
                                       "type": "object",
@@ -6289,26 +5312,17 @@
                                                 "type": "string"
                                               }
                                             },
-                                            "required": [
-                                              "minScore",
-                                              "maxScore",
-                                              "text"
-                                            ]
+                                            "required": ["minScore", "maxScore", "text"]
                                           }
                                         },
                                         "shortCircuit": {
                                           "type": "boolean"
                                         }
                                       },
-                                      "required": [
-                                        "outcomes"
-                                      ]
+                                      "required": ["outcomes"]
                                     }
                                   },
-                                  "required": [
-                                    "blockType",
-                                    "config"
-                                  ]
+                                  "required": ["blockType", "config"]
                                 },
                                 {
                                   "type": "object",
@@ -6316,9 +5330,7 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": [
-                                        "conditional-gate"
-                                      ]
+                                      "enum": ["conditional-gate"]
                                     },
                                     "config": {
                                       "type": "object",
@@ -6329,29 +5341,16 @@
                                         },
                                         "operator": {
                                           "type": "string",
-                                          "enum": [
-                                            "gte",
-                                            "gt",
-                                            "lte",
-                                            "lt",
-                                            "eq"
-                                          ]
+                                          "enum": ["gte", "gt", "lte", "lt", "eq"]
                                         },
                                         "threshold": {
                                           "type": "number"
                                         }
                                       },
-                                      "required": [
-                                        "statPath",
-                                        "operator",
-                                        "threshold"
-                                      ]
+                                      "required": ["statPath", "operator", "threshold"]
                                     }
                                   },
-                                  "required": [
-                                    "blockType",
-                                    "config"
-                                  ]
+                                  "required": ["blockType", "config"]
                                 },
                                 {
                                   "type": "object",
@@ -6359,9 +5358,7 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": [
-                                        "message-player"
-                                      ]
+                                      "enum": ["message-player"]
                                     },
                                     "config": {
                                       "type": "object",
@@ -6380,15 +5377,10 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "content"
-                                      ]
+                                      "required": ["content"]
                                     }
                                   },
-                                  "required": [
-                                    "blockType",
-                                    "config"
-                                  ]
+                                  "required": ["blockType", "config"]
                                 },
                                 {
                                   "type": "object",
@@ -6396,9 +5388,7 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": [
-                                        "message-channel"
-                                      ]
+                                      "enum": ["message-channel"]
                                     },
                                     "config": {
                                       "type": "object",
@@ -6411,15 +5401,10 @@
                                           "type": "string"
                                         }
                                       },
-                                      "required": [
-                                        "content"
-                                      ]
+                                      "required": ["content"]
                                     }
                                   },
-                                  "required": [
-                                    "blockType",
-                                    "config"
-                                  ]
+                                  "required": ["blockType", "config"]
                                 },
                                 {
                                   "type": "object",
@@ -6427,9 +5412,7 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": [
-                                        "message-group"
-                                      ]
+                                      "enum": ["message-group"]
                                     },
                                     "config": {
                                       "type": "object",
@@ -6448,15 +5431,10 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "content"
-                                      ]
+                                      "required": ["content"]
                                     }
                                   },
-                                  "required": [
-                                    "blockType",
-                                    "config"
-                                  ]
+                                  "required": ["blockType", "config"]
                                 },
                                 {
                                   "type": "object",
@@ -6464,9 +5442,7 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": [
-                                        "display-image"
-                                      ]
+                                      "enum": ["display-image"]
                                     },
                                     "config": {
                                       "type": "object",
@@ -6479,15 +5455,10 @@
                                           "type": "string"
                                         }
                                       },
-                                      "required": [
-                                        "imageUrl"
-                                      ]
+                                      "required": ["imageUrl"]
                                     }
                                   },
-                                  "required": [
-                                    "blockType",
-                                    "config"
-                                  ]
+                                  "required": ["blockType", "config"]
                                 },
                                 {
                                   "type": "object",
@@ -6495,9 +5466,7 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": [
-                                        "retrieve-data"
-                                      ]
+                                      "enum": ["retrieve-data"]
                                     },
                                     "config": {
                                       "type": "object",
@@ -6511,15 +5480,10 @@
                                           "additionalProperties": true
                                         }
                                       },
-                                      "required": [
-                                        "dataType"
-                                      ]
+                                      "required": ["dataType"]
                                     }
                                   },
-                                  "required": [
-                                    "blockType",
-                                    "config"
-                                  ]
+                                  "required": ["blockType", "config"]
                                 },
                                 {
                                   "type": "object",
@@ -6527,9 +5491,7 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": [
-                                        "vtm-pool-resolver"
-                                      ]
+                                      "enum": ["vtm-pool-resolver"]
                                     },
                                     "config": {
                                       "type": "object",
@@ -6548,17 +5510,10 @@
                                           "description": "Number of successes needed to succeed"
                                         }
                                       },
-                                      "required": [
-                                        "attribute",
-                                        "skill",
-                                        "difficulty"
-                                      ]
+                                      "required": ["attribute", "skill", "difficulty"]
                                     }
                                   },
-                                  "required": [
-                                    "blockType",
-                                    "config"
-                                  ]
+                                  "required": ["blockType", "config"]
                                 }
                               ]
                             }
@@ -6577,10 +5532,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -6592,9 +5544,7 @@
       "post": {
         "operationId": "setupChannel",
         "summary": "Upsert campaign and channel from Discord context",
-        "tags": [
-          "bot"
-        ],
+        "tags": ["bot"],
         "requestBody": {
           "required": true,
           "content": {
@@ -6666,12 +5616,7 @@
                               "type": "string"
                             }
                           },
-                          "required": [
-                            "id",
-                            "name",
-                            "discordGuildId",
-                            "gameSystemId"
-                          ]
+                          "required": ["id", "name", "discordGuildId", "gameSystemId"]
                         },
                         "channel": {
                           "type": "object",
@@ -6693,13 +5638,7 @@
                               "type": "string"
                             }
                           },
-                          "required": [
-                            "id",
-                            "name",
-                            "discordChannelId",
-                            "campaignId",
-                            "type"
-                          ]
+                          "required": ["id", "name", "discordChannelId", "campaignId", "type"]
                         },
                         "created": {
                           "type": "object",
@@ -6712,23 +5651,13 @@
                               "type": "boolean"
                             }
                           },
-                          "required": [
-                            "campaign",
-                            "channel"
-                          ]
+                          "required": ["campaign", "channel"]
                         }
                       },
-                      "required": [
-                        "campaign",
-                        "channel",
-                        "created"
-                      ]
+                      "required": ["campaign", "channel", "created"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -6740,9 +5669,7 @@
       "post": {
         "operationId": "syncParticipants",
         "summary": "Upsert campaign participants from Discord users",
-        "tags": [
-          "bot"
-        ],
+        "tags": ["bot"],
         "requestBody": {
           "required": true,
           "content": {
@@ -6767,18 +5694,12 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "discordUserId",
-                        "discordName"
-                      ]
+                      "required": ["discordUserId", "discordName"]
                     },
                     "minItems": 1
                   }
                 },
-                "required": [
-                  "guildId",
-                  "participants"
-                ]
+                "required": ["guildId", "participants"]
               }
             }
           }
@@ -6805,16 +5726,10 @@
                           "type": "integer"
                         }
                       },
-                      "required": [
-                        "campaignId",
-                        "upserted"
-                      ]
+                      "required": ["campaignId", "upserted"]
                     }
                   },
-                  "required": [
-                    "status",
-                    "data"
-                  ]
+                  "required": ["status", "data"]
                 }
               }
             }
@@ -6826,9 +5741,7 @@
       "delete": {
         "operationId": "removeParticipant",
         "summary": "Remove a participant from a campaign",
-        "tags": [
-          "bot"
-        ],
+        "tags": ["bot"],
         "parameters": [
           {
             "schema": {
@@ -6863,10 +5776,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "status",
-                    "deleted"
-                  ]
+                  "required": ["status", "deleted"]
                 }
               }
             }

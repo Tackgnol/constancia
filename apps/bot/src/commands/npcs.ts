@@ -1,6 +1,8 @@
 import { ApplicationCommandOptionType, type ChatInputCommandInteraction } from 'discord.js';
-import { getCampaignByGuild } from '../api/generated/endpoints/bot/bot.js';
-import { listPublicVisibleNpcsForPlayer } from '../api/generated/endpoints/npcs/npcs.js';
+import {
+  getCampaignByGuild,
+  listBotVisibleNpcsForPlayer,
+} from '../api/generated/endpoints/bot/bot.js';
 import { botRequestOptions } from '../api/bot-headers.js';
 import { loadBotConfig } from '../config.js';
 import type { BotChatCommand } from '../discord/command-types.js';
@@ -11,10 +13,10 @@ function normalizeQuery(input: string): string {
   return input.trim().toLowerCase();
 }
 
-function getPlayerNpcUrl(campaignId: string, npcId: string, discordId: string): string {
+function getPlayerNpcUrl(campaignId: string, npcId: string): string {
   const config = loadBotConfig();
   return new URL(
-    `/player/campaigns/${encodeURIComponent(campaignId)}/npcs/${encodeURIComponent(npcId)}/for/${encodeURIComponent(discordId)}`,
+    `/player/campaigns/${encodeURIComponent(campaignId)}/npcs/${encodeURIComponent(npcId)}`,
     config.frontendUrl,
   ).toString();
 }
@@ -33,8 +35,8 @@ export async function handleNpcs(interaction: ChatInputCommandInteraction): Prom
   const requestedName = interaction.options.getString(NPC_NAME_OPTION, true);
   const normalizedQuery = normalizeQuery(requestedName);
 
-  const npcsResult = await listPublicVisibleNpcsForPlayer(
-    { id: campaignId, discordId: interaction.user.id },
+  const npcsResult = await listBotVisibleNpcsForPlayer(
+    { id: campaignId, discordUserId: interaction.user.id },
     botRequestOptions(),
   );
 
@@ -79,7 +81,7 @@ export async function handleNpcs(interaction: ChatInputCommandInteraction): Prom
     ...previewFacts.map((fact) => `• ${fact.content}`),
     ...(remainingFacts > 0 ? ['', `…and ${remainingFacts} more in the linked dossier.`] : []),
     '',
-    `Field dossier: ${getPlayerNpcUrl(campaignId, selectedNpc.id, interaction.user.id)}`,
+    `Field dossier: ${getPlayerNpcUrl(campaignId, selectedNpc.id)}`,
   ];
 
   await interaction.editReply(lines.join('\n'));
@@ -100,4 +102,3 @@ export const npcCommand: BotChatCommand = {
   },
   execute: handleNpcs,
 };
-

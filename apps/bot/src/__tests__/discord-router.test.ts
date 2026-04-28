@@ -13,6 +13,7 @@ describe('command registry', () => {
       'journal',
       'npc',
       'login',
+      'sheet',
       'setup',
       'participants',
     ]);
@@ -176,5 +177,3 @@ describe('interaction router', () => {
     await expect(routeInteraction(interaction as never)).resolves.toBeUndefined();
   });
 });
-
-

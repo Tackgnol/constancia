@@ -1,10 +1,12 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { Prisma, EventStatus } from '@constancia/db';
-import type { BlockInstance } from '@constancia/contracts';
+import type { BlockInstance, BlockMessage } from '@constancia/contracts';
 import { PipelineRunner } from '@constancia/core';
 import { getPrismaClient } from '../auth/prisma.js';
 import { buildBlockRegistry } from '../blocks.js';
 import { sendMessagesToBotAsync } from '../services/bot-client.js';
+import { filterInsightResolutionPipeline, resolveInsightScore } from '../services/insight-event.js';
+import { buildTestInstancePayload } from '../services/test-instance.js';
 import {
   campaignParamsSchema,
   eventBodySchema,
@@ -205,38 +207,129 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(404).send({ status: 'error', data: { message: 'Event not found' } });
       }
 
-      const registry = buildBlockRegistry();
-      const runner = new PipelineRunner(registry);
-      const result = await runner.run(event.pipeline as unknown as BlockInstance[], {
-        campaignId: event.campaignId,
-        channelId: event.channelId,
-        playerId: 'system',
-        characterData: {},
+      const channel = await prisma.channel.findUnique({
+        where: { id: event.channelId },
+        select: { discordChannelId: true },
       });
-
-      if (result.messages.length > 0) {
-        const channel = await prisma.channel.findUnique({
-          where: { id: event.channelId },
-          select: { discordChannelId: true },
+      if (channel === null) {
+        request.log.warn(
+          { eventId, channelId: event.channelId },
+          'Skipping bot delivery: channel not found',
+        );
+      } else if (event.type === 'test') {
+        const testInstance = buildTestInstancePayload(event, channel.discordChannelId);
+        if (testInstance === null) {
+          request.log.warn(
+            { eventId },
+            'Skipping test-instance delivery: no threshold mapping found',
+          );
+        } else {
+          const config = app.config;
+          void sendMessagesToBotAsync(config.botInternalUrl, config.botApiKey, testInstance);
+        }
+      } else if (event.type === 'insight') {
+        const characters = await prisma.character.findMany({
+          where: { campaignId: event.campaignId },
+          select: {
+            discordUserId: true,
+            systemData: true,
+          },
         });
-        if (channel !== null) {
+
+        const registry = buildBlockRegistry();
+        const runner = new PipelineRunner(registry);
+        const eventPipeline = event.pipeline as unknown as BlockInstance[];
+        const filteredPipeline = filterInsightResolutionPipeline(eventPipeline);
+        const insightMessages: BlockMessage[] = [];
+
+        if (filteredPipeline.length === eventPipeline.length) {
+          request.log.warn(
+            { eventId },
+            'Skipping insight delivery: no supported insight resolver found',
+          );
+          return {
+            status: 'ok',
+            data: {
+              eventId,
+              messages: [],
+              halted: false,
+            },
+          };
+        }
+
+        for (const character of characters) {
+          const characterData = (character.systemData ?? {}) as Record<string, unknown>;
+          const scoreResult = resolveInsightScore(eventPipeline, characterData);
+
+          if (scoreResult === null) {
+            continue;
+          }
+
+          const result = await runner.run(filteredPipeline, {
+            campaignId: event.campaignId,
+            channelId: event.channelId,
+            playerId: character.discordUserId,
+            playerScore: scoreResult.score,
+            characterData,
+          });
+
+          insightMessages.push(...result.messages);
+        }
+
+        if (insightMessages.length > 0) {
           const config = app.config;
           void sendMessagesToBotAsync(config.botInternalUrl, config.botApiKey, {
+            kind: 'messages',
+            eventId,
+            discordChannelId: channel.discordChannelId,
+            messages: insightMessages,
+          });
+        }
+
+        return {
+          status: 'ok',
+          data: {
+            eventId,
+            messages: insightMessages,
+            halted: false,
+          },
+        };
+      } else {
+        const registry = buildBlockRegistry();
+        const runner = new PipelineRunner(registry);
+        const result = await runner.run(event.pipeline as unknown as BlockInstance[], {
+          campaignId: event.campaignId,
+          channelId: event.channelId,
+          playerId: 'system',
+          characterData: {},
+        });
+
+        if (result.messages.length > 0) {
+          const config = app.config;
+          void sendMessagesToBotAsync(config.botInternalUrl, config.botApiKey, {
+            kind: 'messages',
             eventId,
             discordChannelId: channel.discordChannelId,
             messages: result.messages,
           });
-        } else {
-          request.log.warn({ eventId, channelId: event.channelId }, 'Skipping bot delivery: channel not found');
         }
+
+        return {
+          status: 'ok',
+          data: {
+            eventId,
+            messages: result.messages,
+            halted: result.halted,
+          },
+        };
       }
 
       return {
         status: 'ok',
         data: {
           eventId,
-          messages: result.messages,
-          halted: result.halted,
+          messages: [],
+          halted: false,
         },
       };
     },

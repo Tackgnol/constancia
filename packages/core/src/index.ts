@@ -1,5 +1,6 @@
 export { BlockRegistry } from './block-registry.js';
 export { PipelineRunner } from './pipeline-runner.js';
+export { BlockConfigValidationError } from './pipeline-runner.js';
 export type { PipelineResult } from './pipeline-runner.js';
 export { outcomeMapBlock } from './blocks/outcome-map.js';
 export { conditionalGateBlock } from './blocks/conditional-gate.js';

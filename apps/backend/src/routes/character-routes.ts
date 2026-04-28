@@ -2,14 +2,20 @@ import type { FastifyPluginAsync } from 'fastify';
 import {
   campaignParamsSchema,
   characterBodySchema,
+  characterSheetPatchBodySchema,
   characterParamsSchema,
   characterPatchBodySchema,
   characterSchema,
   listResponseSchema,
+  standardResponseSchema,
   singleResponseSchema,
 } from '../schemas.js';
 import { getPrismaClient } from '../auth/prisma.js';
 import type { Prisma } from '@constancia/db';
+import {
+  getCharacterSheetForActor,
+  updateCharacterSheetForActor,
+} from '../services/character-sheets.js';
 
 interface CampaignParams {
   id: string;
@@ -34,6 +40,13 @@ interface CharacterPatchBody {
   backstory?: string;
   notes?: string;
   systemData?: Record<string, unknown>;
+}
+
+interface CharacterSheetPatchBody {
+  gameName?: string;
+  backstory?: string;
+  notes?: string;
+  stats?: Record<string, unknown>;
 }
 
 const select = {
@@ -174,6 +187,83 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
         }
         throw err;
       }
+    },
+  );
+
+  app.get<{ Params: CharacterParams }>(
+    '/:charId/sheet',
+    {
+      schema: {
+        tags: ['characters'],
+        summary: 'Get a character sheet',
+        operationId: 'getCharacterSheet',
+        params: characterParamsSchema,
+        response: {
+          200: standardResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const discordUserId = request.access.kind === 'session' ? request.access.discordUserId : null;
+
+      if (!discordUserId) {
+        return reply
+          .code(403)
+          .send({ status: 'error', data: { message: 'Discord identity required' } });
+      }
+
+      const prisma = getPrismaClient();
+      const { id, charId } = request.params;
+      const sheet = await getCharacterSheetForActor(prisma, id, charId, discordUserId);
+      if (sheet === null) {
+        return reply
+          .code(404)
+          .send({ status: 'error', data: { message: 'Character sheet not found' } });
+      }
+
+      return { status: 'ok', data: sheet };
+    },
+  );
+
+  app.patch<{ Params: CharacterParams; Body: CharacterSheetPatchBody }>(
+    '/:charId/sheet',
+    {
+      schema: {
+        tags: ['characters'],
+        summary: 'Update a character sheet',
+        operationId: 'updateCharacterSheet',
+        params: characterParamsSchema,
+        body: characterSheetPatchBodySchema,
+        response: {
+          200: standardResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const discordUserId = request.access.kind === 'session' ? request.access.discordUserId : null;
+
+      if (!discordUserId) {
+        return reply
+          .code(403)
+          .send({ status: 'error', data: { message: 'Discord identity required' } });
+      }
+
+      const prisma = getPrismaClient();
+      const { id, charId } = request.params;
+      const sheet = await updateCharacterSheetForActor(
+        prisma,
+        id,
+        charId,
+        discordUserId,
+        request.body,
+      );
+      if (sheet === null) {
+        return reply
+          .code(404)
+          .send({ status: 'error', data: { message: 'Character sheet not found' } });
+      }
+
+      return { status: 'ok', data: sheet };
     },
   );
 };

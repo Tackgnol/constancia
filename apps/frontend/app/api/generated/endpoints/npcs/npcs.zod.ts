@@ -9,55 +9,6 @@ import * as zod from 'zod';
 
 
 /**
- * @summary List player-safe NPC dossiers
- */
-export const listPublicVisibleNpcsForPlayerParams = zod.object({
-  "id": zod.string(),
-  "discordId": zod.string()
-})
-
-export const listPublicVisibleNpcsForPlayerResponse = zod.object({
-  "status": zod.string(),
-  "data": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "imageUrl": zod.string().optional(),
-  "campaignId": zod.string(),
-  "facts": zod.array(zod.object({
-  "id": zod.string(),
-  "content": zod.string(),
-  "sortOrder": zod.number(),
-  "npcId": zod.string()
-}))
-}))
-})
-
-/**
- * @summary Get a player-safe NPC dossier
- */
-export const getPublicVisibleNpcForPlayerParams = zod.object({
-  "id": zod.string(),
-  "npcId": zod.string(),
-  "discordId": zod.string()
-})
-
-export const getPublicVisibleNpcForPlayerResponse = zod.object({
-  "status": zod.string(),
-  "data": zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "imageUrl": zod.string().optional(),
-  "campaignId": zod.string(),
-  "facts": zod.array(zod.object({
-  "id": zod.string(),
-  "content": zod.string(),
-  "sortOrder": zod.number(),
-  "npcId": zod.string()
-}))
-})
-})
-
-/**
  * @summary List campaign NPCs
  */
 export const listNpcsParams = zod.object({
@@ -213,26 +164,18 @@ export const revealNpcFactsResponse = zod.object({
 })
 
 /**
- * @summary List NPCs visible to a player
+ * @summary List NPCs visible to the current player
  */
-export const listVisibleNpcsForPlayerParams = zod.object({
-  "id": zod.string(),
-  "discordId": zod.string()
+export const listVisibleNpcsForCurrentPlayerParams = zod.object({
+  "id": zod.string()
 })
 
-export const listVisibleNpcsForPlayerResponse = zod.object({
+export const listVisibleNpcsForCurrentPlayerResponse = zod.object({
   "status": zod.string(),
   "data": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "imageUrl": zod.string().optional(),
-  "description": zod.string(),
-  "systemBlocks": zod.array(zod.object({
-  "systemId": zod.string().optional(),
-  "blockType": zod.string(),
-  "label": zod.string(),
-  "value": zod.unknown()
-})),
   "campaignId": zod.string(),
   "facts": zod.array(zod.object({
   "id": zod.string(),
@@ -241,5 +184,29 @@ export const listVisibleNpcsForPlayerResponse = zod.object({
   "npcId": zod.string()
 }))
 }))
+})
+
+/**
+ * @summary Get an NPC dossier for the current player
+ */
+export const getVisibleNpcForCurrentPlayerParams = zod.object({
+  "id": zod.string(),
+  "npcId": zod.string()
+})
+
+export const getVisibleNpcForCurrentPlayerResponse = zod.object({
+  "status": zod.string(),
+  "data": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "imageUrl": zod.string().optional(),
+  "campaignId": zod.string(),
+  "facts": zod.array(zod.object({
+  "id": zod.string(),
+  "content": zod.string(),
+  "sortOrder": zod.number(),
+  "npcId": zod.string()
+}))
+})
 })
 

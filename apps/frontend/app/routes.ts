@@ -2,7 +2,8 @@ import { index, layout, route, type RouteConfig } from '@react-router/dev/routes
 
 export default [
   route('auth', './routes/auth.tsx'),
-  route('player/campaigns/:campaignId/npcs/:npcId/for/:discordId', './routes/player-npc.tsx'),
+  route('player/campaigns/:campaignId/sheet', './routes/player-sheet.tsx'),
+  route('player/campaigns/:campaignId/npcs/:npcId', './routes/player-npc.tsx'),
   layout('./routes/demo-layout.tsx', { id: 'demo-layout' }, [
     route('demo', './routes/play.tsx', { id: 'demo-play' }),
     route('demo/setup', './routes/setup.tsx', { id: 'demo-setup' }),
@@ -15,6 +16,7 @@ export default [
     route('setup', './routes/setup.tsx'),
     route('npcs', './routes/npcs.tsx'),
     route('participants', './routes/participants.tsx'),
+    route('participants/:charId', './routes/participant-sheet.tsx'),
     route('log', './routes/log.tsx'),
   ]),
 ] satisfies RouteConfig;

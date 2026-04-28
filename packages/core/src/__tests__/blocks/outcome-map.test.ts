@@ -24,6 +24,7 @@ describe('OutcomeMap block', () => {
     expect(result.messages).toHaveLength(1);
     expect(result.messages?.[0].content).toBe('Full success');
     expect(result.messages?.[0].target).toBe('player');
+    expect(result.messages?.[0]).toMatchObject({ targetId: 'p1' });
   });
 
   it('returns no messages when no outcome matches', async () => {

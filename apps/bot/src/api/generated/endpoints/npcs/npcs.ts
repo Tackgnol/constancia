@@ -12,14 +12,12 @@ import type {
   CreateNpcFactBody,
   CreateNpcFactPathParameters,
   CreateNpcPathParameters,
-  GetPublicVisibleNpcForPlayer200,
-  GetPublicVisibleNpcForPlayerPathParameters,
+  GetVisibleNpcForCurrentPlayer200,
+  GetVisibleNpcForCurrentPlayerPathParameters,
   ListNpcs200,
   ListNpcsPathParameters,
-  ListPublicVisibleNpcsForPlayer200,
-  ListPublicVisibleNpcsForPlayerPathParameters,
-  ListVisibleNpcsForPlayer200,
-  ListVisibleNpcsForPlayerPathParameters,
+  ListVisibleNpcsForCurrentPlayer200,
+  ListVisibleNpcsForCurrentPlayerPathParameters,
   RevealNpcFacts200,
   RevealNpcFactsBody,
   RevealNpcFactsPathParameters,
@@ -27,64 +25,6 @@ import type {
   UpdateNpcBody,
   UpdateNpcPathParameters
 } from '../../model.js';
-
-
-/**
- * @summary List player-safe NPC dossiers
- */
-export const getListPublicVisibleNpcsForPlayerUrl = ({ id, discordId }: ListPublicVisibleNpcsForPlayerPathParameters,) => {
-
-
-  
-
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/public/campaigns/${id}/npcs/for/${discordId}`
-}
-
-export const listPublicVisibleNpcsForPlayer = async ({ id, discordId }: ListPublicVisibleNpcsForPlayerPathParameters, options?: RequestInit): Promise<ListPublicVisibleNpcsForPlayer200> => {
-  
-  const res = await fetch(getListPublicVisibleNpcsForPlayerUrl({ id, discordId }),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: ListPublicVisibleNpcsForPlayer200 = body ? JSON.parse(body) : {}
-  return data
-}
-
-
-/**
- * @summary Get a player-safe NPC dossier
- */
-export const getGetPublicVisibleNpcForPlayerUrl = ({ id, npcId, discordId }: GetPublicVisibleNpcForPlayerPathParameters,) => {
-
-
-  
-
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/public/campaigns/${id}/npcs/${npcId}/for/${discordId}`
-}
-
-export const getPublicVisibleNpcForPlayer = async ({ id, npcId, discordId }: GetPublicVisibleNpcForPlayerPathParameters, options?: RequestInit): Promise<GetPublicVisibleNpcForPlayer200> => {
-  
-  const res = await fetch(getGetPublicVisibleNpcForPlayerUrl({ id, npcId, discordId }),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: GetPublicVisibleNpcForPlayer200 = body ? JSON.parse(body) : {}
-  return data
-}
 
 
 /**
@@ -241,19 +181,19 @@ export const revealNpcFacts = async ({ id, npcId }: RevealNpcFactsPathParameters
 
 
 /**
- * @summary List NPCs visible to a player
+ * @summary List NPCs visible to the current player
  */
-export const getListVisibleNpcsForPlayerUrl = ({ id, discordId }: ListVisibleNpcsForPlayerPathParameters,) => {
+export const getListVisibleNpcsForCurrentPlayerUrl = ({ id }: ListVisibleNpcsForCurrentPlayerPathParameters,) => {
 
 
   
 
-  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/npcs/for/${discordId}`
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/player-npcs/`
 }
 
-export const listVisibleNpcsForPlayer = async ({ id, discordId }: ListVisibleNpcsForPlayerPathParameters, options?: RequestInit): Promise<ListVisibleNpcsForPlayer200> => {
+export const listVisibleNpcsForCurrentPlayer = async ({ id }: ListVisibleNpcsForCurrentPlayerPathParameters, options?: RequestInit): Promise<ListVisibleNpcsForCurrentPlayer200> => {
   
-  const res = await fetch(getListVisibleNpcsForPlayerUrl({ id, discordId }),
+  const res = await fetch(getListVisibleNpcsForCurrentPlayerUrl({ id }),
   {      
     ...options,
     method: 'GET'
@@ -264,7 +204,36 @@ export const listVisibleNpcsForPlayer = async ({ id, discordId }: ListVisibleNpc
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
   
-  const data: ListVisibleNpcsForPlayer200 = body ? JSON.parse(body) : {}
+  const data: ListVisibleNpcsForCurrentPlayer200 = body ? JSON.parse(body) : {}
+  return data
+}
+
+
+/**
+ * @summary Get an NPC dossier for the current player
+ */
+export const getGetVisibleNpcForCurrentPlayerUrl = ({ id, npcId }: GetVisibleNpcForCurrentPlayerPathParameters,) => {
+
+
+  
+
+  return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/player-npcs/${npcId}`
+}
+
+export const getVisibleNpcForCurrentPlayer = async ({ id, npcId }: GetVisibleNpcForCurrentPlayerPathParameters, options?: RequestInit): Promise<GetVisibleNpcForCurrentPlayer200> => {
+  
+  const res = await fetch(getGetVisibleNpcForCurrentPlayerUrl({ id, npcId }),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: GetVisibleNpcForCurrentPlayer200 = body ? JSON.parse(body) : {}
   return data
 }
 

@@ -38,15 +38,14 @@ export const npcParamsSchema = {
   required: ['id', 'npcId'],
 } as const;
 
-export const npcPlayerParamsSchema = {
+export const campaignDiscordUserParamsSchema = {
   type: 'object',
   additionalProperties: false,
   properties: {
     id: { type: 'string' },
-    npcId: { type: 'string' },
-    discordId: { type: 'string' },
+    discordUserId: { type: 'string' },
   },
-  required: ['id', 'npcId', 'discordId'],
+  required: ['id', 'discordUserId'],
 } as const;
 
 export const eventParamsSchema = {
@@ -167,6 +166,10 @@ export const authMagicLinkBodySchema = {
   required: ['discordUserId', 'guildId'],
 } as const;
 
+export const playerSheetMagicLinkBodySchema = {
+  ...authMagicLinkBodySchema,
+} as const;
+
 export const campaignBodySchema = {
   type: 'object',
   additionalProperties: false,
@@ -209,6 +212,17 @@ export const characterPatchBodySchema = {
     backstory: { type: 'string' },
     notes: { type: 'string' },
     systemData: { type: 'object', additionalProperties: true },
+  },
+} as const;
+
+export const characterSheetPatchBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    gameName: { type: 'string' },
+    backstory: { type: 'string' },
+    notes: { type: 'string' },
+    stats: { type: 'object', additionalProperties: true },
   },
 } as const;
 

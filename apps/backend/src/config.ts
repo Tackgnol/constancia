@@ -9,6 +9,8 @@ export interface BackendConfig {
   betterAuthSecret: string;
   betterAuthUrl: string;
   betterAuthPath: string;
+  discordClientId?: string;
+  discordClientSecret?: string;
   magicLinkFrontendPath: string;
   botApiKey: string;
   botInternalUrl: string;
@@ -55,6 +57,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     betterAuthSecret: env.BETTER_AUTH_SECRET ?? DEFAULT_BETTER_AUTH_SECRET,
     betterAuthUrl: env.BETTER_AUTH_URL ?? DEFAULT_BETTER_AUTH_URL,
     betterAuthPath: env.BETTER_AUTH_PATH ?? DEFAULT_BETTER_AUTH_PATH,
+    discordClientId: env.DISCORD_CLIENT_ID,
+    discordClientSecret: env.DISCORD_CLIENT_SECRET,
     magicLinkFrontendPath: env.MAGIC_LINK_FRONTEND_PATH ?? DEFAULT_MAGIC_LINK_FRONTEND_PATH,
     botApiKey,
     botInternalUrl: env.BOT_INTERNAL_URL ?? DEFAULT_BOT_INTERNAL_URL,

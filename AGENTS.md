@@ -16,6 +16,11 @@ Priority order for this repo:
 
 Use official documentation to choose the implementation shape. Do not rely on memory when the docs can settle the question.
 
+## Repo-Specific Skills
+
+- Use `.claude/skills/constancia-block-architecture/SKILL.md` for any task touching `BlockDefinition`, `BlockRegistry`, event pipelines, block config changes, frontend pipeline editing, or system-specific block wiring.
+- `AGENTS.md` remains authoritative if the skill and this file ever disagree.
+
 ## Execution Order
 
 Plan 1 (Foundation) is complete. The repo has moved beyond the plan into app scaffolding.

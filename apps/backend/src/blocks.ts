@@ -8,7 +8,7 @@ import {
   displayImageBlock,
   retrieveDataBlock,
 } from '@constancia/core';
-import { vtmPoolResolverBlock } from '@constancia/systems';
+import { vtmInsightResolverBlock, vtmPoolResolverBlock } from '@constancia/systems';
 
 const registeredBlocks = [
   outcomeMapBlock,
@@ -19,6 +19,7 @@ const registeredBlocks = [
   displayImageBlock,
   retrieveDataBlock,
   vtmPoolResolverBlock,
+  vtmInsightResolverBlock,
 ] as const;
 
 export const registeredBlockSchemas = registeredBlocks.map((block) => ({

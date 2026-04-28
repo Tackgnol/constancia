@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Controller, FormProvider, type UseFormReturn } from 'react-hook-form';
 import { PipelineBuilder } from '@/components/pipeline-builder';
 import { formFieldLabelClassName } from '@/components/forms/field-label';
@@ -12,9 +13,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { ChannelEntry } from '@/lib/war-room-data';
-import type { EventFormValues } from '@/lib/event-schema';
-
-const EVENT_TYPES = ['test', 'narration', 'insight', 'message'] as const;
+import {
+  EVENT_TYPES,
+  getDefaultPipelineForEventType,
+  isPipelineEqualToEventDefault,
+  type EventFormValues,
+} from '@/lib/event-schema';
 
 export function EventSetupForm({
   methods,
@@ -29,12 +33,44 @@ export function EventSetupForm({
     register,
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, submitCount },
   } = methods;
+  const eventType = methods.watch('type');
+  const pipeline = methods.watch('pipeline') ?? [];
+  const previousTypeRef = useRef(eventType);
+  const hasValidationErrors = submitCount > 0 && Object.keys(errors).some((key) => key !== 'root');
+
+  useEffect(() => {
+    const previousType = previousTypeRef.current;
+    if (previousType === eventType) {
+      return;
+    }
+
+    if (pipeline.length === 0 || isPipelineEqualToEventDefault(previousType, pipeline)) {
+      methods.setValue('pipeline', getDefaultPipelineForEventType(eventType), {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      });
+    }
+
+    previousTypeRef.current = eventType;
+  }, [eventType, methods, pipeline]);
 
   return (
     <FormProvider {...methods}>
       <form className="event-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+        {hasValidationErrors ? (
+          <div className="form-status form-status-error" role="alert">
+            The event dossier still has validation gaps. Check the highlighted fields before you
+            save.
+          </div>
+        ) : null}
+        {errors.root?.serverError?.message ? (
+          <div className="form-status form-status-error" role="alert">
+            {errors.root.serverError.message}
+          </div>
+        ) : null}
         <div className="form-section">
           <div className="grid gap-1.5">
             <Label htmlFor="event-name" className={formFieldLabelClassName}>
@@ -89,13 +125,18 @@ export function EventSetupForm({
                     </SelectTrigger>
                     <SelectContent>
                       {channels.map((channel) => (
-                        <SelectItem key={channel.id} value={channel.id}>{`# ${channel.name}`}</SelectItem>
+                        <SelectItem
+                          key={channel.id}
+                          value={channel.id}
+                        >{`# ${channel.name}`}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 )}
               />
-              {errors.channelId ? <span className="form-error">{errors.channelId.message}</span> : null}
+              {errors.channelId ? (
+                <span className="form-error">{errors.channelId.message}</span>
+              ) : null}
             </div>
 
             <div className="form-field form-field-toggle">
@@ -105,7 +146,11 @@ export function EventSetupForm({
                   control={control}
                   name="shortCircuit"
                   render={({ field }) => (
-                    <Checkbox id="event-sc" checked={field.value} onCheckedChange={field.onChange} />
+                    <Checkbox
+                      id="event-sc"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
                   )}
                 />
                 <label htmlFor="event-sc" className="form-hint cursor-pointer select-none">
@@ -116,7 +161,7 @@ export function EventSetupForm({
           </div>
         </div>
 
-        <PipelineBuilder />
+        <PipelineBuilder eventType={eventType} />
 
         <div className="form-actions">
           <button className="form-submit" type="submit" disabled={isSubmitting}>

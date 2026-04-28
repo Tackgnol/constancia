@@ -3,7 +3,7 @@ import type {
   GameSystem,
   BlockDefinition,
   BlockContext,
-   BlockMessage,
+  BlockMessage,
   Character,
   GameEvent,
   Npc,
@@ -13,9 +13,15 @@ import type {
   Quest,
   QuestEntry,
   SessionSummary,
+  BotDeliveryPayload,
+  SendTestInstancePayload,
   SendMessagesPayload,
 } from '../index.js';
-import { resolveMessageRecipients, sendMessagesPayloadSchema } from '../index.js';
+import {
+  botDeliveryPayloadSchema,
+  resolveMessageRecipients,
+  sendMessagesPayloadSchema,
+} from '../index.js';
 
 describe('Contract types', () => {
   it('GameSystem has required properties', () => {
@@ -71,6 +77,17 @@ describe('Contract types', () => {
     expectTypeOf<SendMessagesPayload['messages']>().toBeArray();
   });
 
+  it('SendTestInstancePayload includes test metadata and thresholds', () => {
+    expectTypeOf<SendTestInstancePayload>().toHaveProperty('title');
+    expectTypeOf<SendTestInstancePayload>().toHaveProperty('thresholds');
+  });
+
+  it('BotDeliveryPayload supports both message and test-instance deliveries', () => {
+    expectTypeOf<BotDeliveryPayload>().toMatchTypeOf<
+      SendMessagesPayload | SendTestInstancePayload
+    >();
+  });
+
   it('sendMessagesPayloadSchema accepts a valid payload', () => {
     expect(
       sendMessagesPayloadSchema.safeParse({
@@ -89,6 +106,22 @@ describe('Contract types', () => {
         messages: [{ target: 'group', content: 'Missing target ids' }],
       }).success,
     ).toBe(false);
+  });
+
+  it('botDeliveryPayloadSchema accepts a valid test-instance payload', () => {
+    expect(
+      botDeliveryPayloadSchema.safeParse({
+        kind: 'test-instance',
+        eventId: 'event-1',
+        campaignId: 'campaign-1',
+        discordChannelId: 'channel-1',
+        title: 'Dexterity + Stealth',
+        thresholds: [
+          { minScore: 0, maxScore: 3, text: 'They fall over.' },
+          { minScore: 4, maxScore: 6, text: 'They pull it off.' },
+        ],
+      }).success,
+    ).toBe(true);
   });
 
   it('resolveMessageRecipients resolves channel, player, and group targets', () => {

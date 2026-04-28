@@ -25,10 +25,9 @@ const npcEditorBlockSchema = z.object({
 });
 
 const setupNpcFormSchema = setupNpcBaseSchema.extend({
-  facts: z.array(z.object({ content: z.string().trim().min(1, 'Facts cannot be blank.') })).min(
-    1,
-    'Add at least one fact to the dossier.',
-  ),
+  facts: z
+    .array(z.object({ content: z.string().trim().min(1, 'Facts cannot be blank.') }))
+    .min(1, 'Add at least one fact to the dossier.'),
   systemBlocks: z.array(npcEditorBlockSchema),
 });
 
@@ -60,7 +59,9 @@ export function SetupNpcForm({
     control,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    setError,
+    clearErrors,
+    formState: { errors, isSubmitting, submitCount },
   } = useForm<SetupNpcFormValues>({
     resolver: zodResolver(setupNpcFormSchema),
     defaultValues: createDefaultValues(),
@@ -72,15 +73,20 @@ export function SetupNpcForm({
   });
 
   const factRootError = Array.isArray(errors.facts) ? undefined : errors.facts?.message;
+  const hasValidationErrors = submitCount > 0 && Object.keys(errors).some((key) => key !== 'root');
 
   const onSubmit = async (values: SetupNpcFormValues) => {
     try {
+      clearErrors('root');
       onError(null);
 
       const payload: CreateNpcBody = {
         name: values.name.trim(),
         description: values.description.trim(),
-        facts: values.facts.map((fact, index) => ({ content: fact.content.trim(), sortOrder: index })),
+        facts: values.facts.map((fact, index) => ({
+          content: fact.content.trim(),
+          sortOrder: index,
+        })),
         systemBlocks: toApiBlocks(systemId, values.systemBlocks),
       };
 
@@ -97,12 +103,24 @@ export function SetupNpcForm({
       reset(createDefaultValues());
     } catch (error) {
       console.error('Create NPC error:', error);
-      onError('The dossier did not bind cleanly. Check the fields and try again.');
+      const message = 'The dossier did not bind cleanly. Check the fields and try again.';
+      setError('root.serverError', { type: 'manual', message });
+      onError(message);
     }
   };
 
   return (
     <form className="event-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+      {hasValidationErrors ? (
+        <div className="form-status form-status-error" role="alert">
+          The dossier is not ready yet. Fix the highlighted fields before you bind it to the board.
+        </div>
+      ) : null}
+      {errors.root?.serverError?.message ? (
+        <div className="form-status form-status-error" role="alert">
+          {errors.root.serverError.message}
+        </div>
+      ) : null}
       <div className="form-section">
         <div className="form-row">
           <div className="form-field form-field-grow">
@@ -128,7 +146,9 @@ export function SetupNpcForm({
             placeholder="What they project, what they want, and why the room should fear the moment they speak."
             {...register('description')}
           />
-          {errors.description ? <span className="form-error">{errors.description.message}</span> : null}
+          {errors.description ? (
+            <span className="form-error">{errors.description.message}</span>
+          ) : null}
         </div>
 
         <div className="grid gap-1.5">
@@ -218,4 +238,3 @@ export function SetupNpcForm({
     </form>
   );
 }
-

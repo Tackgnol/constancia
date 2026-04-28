@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useOutletContext, useFetcher } from 'react-router';
+import { Link, useFetcher, useOutletContext } from 'react-router';
 import { z } from 'zod';
 import { updateCharacter } from '@/api/generated/endpoints/characters/characters';
 import { Button } from '@/components/ui/button';
@@ -232,7 +232,9 @@ function ParticipantRow({
                 </Select>
               )}
             />
-            {errors.archetype ? <span className="form-error">{errors.archetype.message}</span> : null}
+            {errors.archetype ? (
+              <span className="form-error">{errors.archetype.message}</span>
+            ) : null}
           </div>
         </div>
 
@@ -245,9 +247,14 @@ function ParticipantRow({
         )}
 
         <div className="flex justify-end">
-          <Button variant="outline" type="submit" disabled={isSaving} className="min-w-25">
-            {isSaving ? 'Saving...' : 'Update Participant'}
-          </Button>
+          <div className="sheet-row-actions">
+            <Button asChild variant="ghost">
+              <Link to={`/participants/${char.id}`}>Open Sheet</Link>
+            </Button>
+            <Button variant="outline" type="submit" disabled={isSaving} className="min-w-25">
+              {isSaving ? 'Saving...' : 'Update Participant'}
+            </Button>
+          </div>
         </div>
       </form>
     </article>

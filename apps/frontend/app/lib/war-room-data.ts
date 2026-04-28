@@ -75,6 +75,10 @@ export type WarRoomContext = {
   activity: ActivityItem[];
   apiOnline: boolean;
   events: ListEvents200DataItem[];
+  demoMode?: boolean;
+  firedEventIds?: string[];
+  recordActivity?: (label: string) => void;
+  setEventFiredState?: (eventId: string, fired: boolean) => void;
 };
 
 export const fallbackCampaign: CampaignSummary = {
@@ -358,4 +362,3 @@ export function buildRecipientOptions(
     secondaryLabel: `${player.character} · ${player.player}`,
   }));
 }
-

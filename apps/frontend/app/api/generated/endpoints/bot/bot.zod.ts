@@ -61,6 +61,30 @@ export const getCampaignByGuildResponse = zod.object({
 })
 
 /**
+ * @summary List NPCs visible to a Discord player
+ */
+export const listBotVisibleNpcsForPlayerParams = zod.object({
+  "id": zod.string(),
+  "discordUserId": zod.string()
+})
+
+export const listBotVisibleNpcsForPlayerResponse = zod.object({
+  "status": zod.string(),
+  "data": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "imageUrl": zod.string().optional(),
+  "campaignId": zod.string(),
+  "facts": zod.array(zod.object({
+  "id": zod.string(),
+  "content": zod.string(),
+  "sortOrder": zod.number(),
+  "npcId": zod.string()
+}))
+}))
+})
+
+/**
  * @summary Get active channel events
  */
 export const getChannelEventsParams = zod.object({

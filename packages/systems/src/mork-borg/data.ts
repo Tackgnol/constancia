@@ -1,5 +1,9 @@
 import type { Archetype } from '../vtm-v5/data.js';
-import type { NpcSystemBlockDefinition } from '@constancia/contracts';
+import type { NpcSystemBlockDefinition, StatSchema } from '@constancia/contracts';
+
+export const MB_STAT_SCHEMA: StatSchema = {
+  groups: [],
+};
 
 export const MB_CLASSES: Archetype[] = [
   {
@@ -69,4 +73,3 @@ export const MB_NPC_BLOCKS: NpcSystemBlockDefinition[] = [
     defaultValue: {},
   },
 ];
-

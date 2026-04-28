@@ -1,10 +1,86 @@
-import type { NpcSystemBlockDefinition } from '@constancia/contracts';
+import type { NpcSystemBlockDefinition, StatSchema } from '@constancia/contracts';
 
 export interface Archetype {
   name: string;
   icon: string;
   description: string;
 }
+
+export interface VtmStatOption {
+  value: string;
+  label: string;
+}
+
+export const VTM_ATTRIBUTES: VtmStatOption[] = [
+  { value: 'strength', label: 'Strength' },
+  { value: 'dexterity', label: 'Dexterity' },
+  { value: 'stamina', label: 'Stamina' },
+  { value: 'charisma', label: 'Charisma' },
+  { value: 'manipulation', label: 'Manipulation' },
+  { value: 'composure', label: 'Composure' },
+  { value: 'intelligence', label: 'Intelligence' },
+  { value: 'wits', label: 'Wits' },
+  { value: 'resolve', label: 'Resolve' },
+];
+
+export const VTM_SKILLS: VtmStatOption[] = [
+  { value: 'athletics', label: 'Athletics' },
+  { value: 'brawl', label: 'Brawl' },
+  { value: 'craft', label: 'Craft' },
+  { value: 'drive', label: 'Drive' },
+  { value: 'firearms', label: 'Firearms' },
+  { value: 'larceny', label: 'Larceny' },
+  { value: 'melee', label: 'Melee' },
+  { value: 'stealth', label: 'Stealth' },
+  { value: 'survival', label: 'Survival' },
+  { value: 'animalKen', label: 'Animal Ken' },
+  { value: 'etiquette', label: 'Etiquette' },
+  { value: 'insight', label: 'Insight' },
+  { value: 'intimidation', label: 'Intimidation' },
+  { value: 'leadership', label: 'Leadership' },
+  { value: 'performance', label: 'Performance' },
+  { value: 'persuasion', label: 'Persuasion' },
+  { value: 'streetwise', label: 'Streetwise' },
+  { value: 'subterfuge', label: 'Subterfuge' },
+  { value: 'academics', label: 'Academics' },
+  { value: 'awareness', label: 'Awareness' },
+  { value: 'finance', label: 'Finance' },
+  { value: 'investigation', label: 'Investigation' },
+  { value: 'medicine', label: 'Medicine' },
+  { value: 'occult', label: 'Occult' },
+  { value: 'politics', label: 'Politics' },
+  { value: 'science', label: 'Science' },
+  { value: 'technology', label: 'Technology' },
+];
+
+export const VTM_STAT_SCHEMA: StatSchema = {
+  groups: [
+    {
+      key: 'attributes',
+      label: 'Attributes',
+      fields: VTM_ATTRIBUTES.map((attribute) => ({
+        key: attribute.value,
+        label: attribute.label,
+        type: 'number' as const,
+        min: 0,
+        max: 5,
+        defaultValue: 0,
+      })),
+    },
+    {
+      key: 'skills',
+      label: 'Skills',
+      fields: VTM_SKILLS.map((skill) => ({
+        key: skill.value,
+        label: skill.label,
+        type: 'number' as const,
+        min: 0,
+        max: 5,
+        defaultValue: 0,
+      })),
+    },
+  ],
+};
 
 export const VTM_CLANS: Archetype[] = [
   {
@@ -148,4 +224,3 @@ export const VTM_NPC_BLOCKS: NpcSystemBlockDefinition[] = [
     defaultValue: {},
   },
 ];
-

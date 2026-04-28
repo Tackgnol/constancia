@@ -30,12 +30,29 @@ function getRequestId(metadata?: Record<string, unknown>) {
   return typeof metadata?.requestId === 'string' ? metadata.requestId : randomUUID();
 }
 
+const socialProviders =
+  config.discordClientId && config.discordClientSecret
+    ? {
+        discord: {
+          clientId: config.discordClientId,
+          clientSecret: config.discordClientSecret,
+        },
+      }
+    : undefined;
+
 export const auth = betterAuth({
   appName: 'Constancia',
   baseURL: config.betterAuthUrl,
   basePath: config.betterAuthPath,
   secret: config.betterAuthSecret,
   trustedOrigins: [config.frontendUrl, config.betterAuthUrl],
+  ...(socialProviders ? { socialProviders } : {}),
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ['discord'],
+    },
+  },
   database:
     process.env.NODE_ENV === 'test'
       ? memoryAdapter(memoryDb)

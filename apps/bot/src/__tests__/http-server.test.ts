@@ -57,6 +57,7 @@ describe('bot HTTP server', () => {
         url: '/send-messages',
         headers: { 'x-bot-key': 'test-key' },
         payload: {
+          kind: 'messages',
           eventId: 'event-1',
           discordChannelId: 'channel-1',
           messages: [{ target: 'channel', content: 'The coterie hears the door unlock.' }],
@@ -74,25 +75,78 @@ describe('bot HTTP server', () => {
     }
   });
 
+  it('delivers a test-instance embed for authorized requests', async () => {
+    process.env.BOT_API_KEY = 'test-key';
+    const { client, send } = createClientMock();
+    const app = buildBotHttpApp(client);
+
+    try {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/send-messages',
+        headers: { 'x-bot-key': 'test-key' },
+        payload: {
+          kind: 'test-instance',
+          eventId: 'event-7',
+          campaignId: 'campaign-3',
+          discordChannelId: 'channel-1',
+          title: 'Dexterity + Stealth',
+          description: 'Cross the gallery unseen.',
+          imageUrl: 'https://example.com/gallery.jpg',
+          thresholds: [
+            { minScore: 0, maxScore: 3, text: 'They stumble into the display case.' },
+            { minScore: 4, maxScore: 6, text: 'They move through cleanly.' },
+          ],
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({
+        status: 'ok',
+        data: { eventId: 'event-7', delivered: 1, skipped: 0 },
+      });
+      const sentPayload = send.mock.calls[0]?.[0];
+      expect(sentPayload).toBeDefined();
+      expect(sentPayload.embeds[0].data).toEqual(
+        expect.objectContaining({
+          color: 0x58a6ff,
+          title: 'Dexterity + Stealth',
+          description: 'Cross the gallery unseen.',
+          footer: expect.objectContaining({
+            text: 'Submit your actual result. The bot does not roll for you.',
+          }),
+          image: {
+            url: 'https://example.com/gallery.jpg',
+          },
+        }),
+      );
+      expect(sentPayload.embeds[0].data).not.toHaveProperty('fields');
+      expect(sentPayload.components[0].components[0].data.custom_id).toBe(
+        'test-instance:submit:event-7:campaign-3',
+      );
+      expect(sentPayload.components[0].components[0].data.label).toBe('Submit Result');
+    } finally {
+      await app.close();
+    }
+  });
+
   it('delivers player and group messages using target IDs', async () => {
     const { client, send } = createClientMock();
 
     await expect(
-      deliverMessages(
-        client,
-        {
-          eventId: 'event-1',
-          discordChannelId: 'channel-1',
-          messages: [
-            { target: 'player', targetId: 'user-1', content: 'You notice the blood stain.' },
-            {
-              target: 'group',
-              targetIds: ['user-2', 'user-3'],
-              content: 'Only the scouts hear this.',
-            },
-          ],
-        } as unknown as Parameters<typeof deliverMessages>[1],
-      ),
+      deliverMessages(client, {
+        kind: 'messages',
+        eventId: 'event-1',
+        discordChannelId: 'channel-1',
+        messages: [
+          { target: 'player', targetId: 'user-1', content: 'You notice the blood stain.' },
+          {
+            target: 'group',
+            targetIds: ['user-2', 'user-3'],
+            content: 'Only the scouts hear this.',
+          },
+        ],
+      } as unknown as Parameters<typeof deliverMessages>[1]),
     ).resolves.toEqual({ delivered: 3, skipped: 0 });
 
     expect(send).toHaveBeenCalledTimes(3);
@@ -112,6 +166,7 @@ describe('bot HTTP server', () => {
 
     await expect(
       deliverMessages(client, {
+        kind: 'messages',
         eventId: 'event-1',
         discordChannelId: 'channel-1',
         messages: [{ target: 'player', targetId: 'user-1', content: 'Private clue' }],
@@ -137,14 +192,12 @@ describe('bot HTTP server', () => {
     } as unknown as Client;
 
     await expect(
-      deliverMessages(
-        client,
-        {
-          eventId: 'event-1',
-          discordChannelId: 'channel-1',
-          messages: [{ target: 'group', targetIds: ['user-1', 'user-2'], content: 'Scout update' }],
-        } as unknown as Parameters<typeof deliverMessages>[1],
-      ),
+      deliverMessages(client, {
+        kind: 'messages',
+        eventId: 'event-1',
+        discordChannelId: 'channel-1',
+        messages: [{ target: 'group', targetIds: ['user-1', 'user-2'], content: 'Scout update' }],
+      } as unknown as Parameters<typeof deliverMessages>[1]),
     ).resolves.toEqual({ delivered: 1, skipped: 1 });
   });
 });

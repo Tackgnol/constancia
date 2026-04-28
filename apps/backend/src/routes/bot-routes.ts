@@ -8,11 +8,13 @@ import {
   botTestResultBodySchema,
   botTestResultResponseSchema,
   campaignSchema,
+  campaignDiscordUserParamsSchema,
   channelParamsSchema,
   deleteResponseSchema,
   gameEventSchema,
   guildParamsSchema,
   listResponseSchema,
+  playerVisibleNpcSchema,
   participantParamsSchema,
   setupChannelBodySchema,
   setupChannelDataSchema,
@@ -20,6 +22,11 @@ import {
   syncParticipantsBodySchema,
   syncParticipantsDataSchema,
 } from '../schemas.js';
+import {
+  listVisibleNpcRecordsForPlayer,
+  mapPlayerVisibleNpc,
+} from '../services/player-visible-npcs.js';
+import { filterManualTestResolutionPipeline } from '../services/test-instance.js';
 
 interface BotTestResultBody {
   eventId: string;
@@ -56,6 +63,11 @@ interface ParticipantParams {
   discordUserId: string;
 }
 
+interface CampaignDiscordUserParams {
+  id: string;
+  discordUserId: string;
+}
+
 const botRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Body: BotTestResultBody }>(
     '/test-result',
@@ -76,7 +88,7 @@ const botRoutes: FastifyPluginAsync = async (app) => {
 
       const event = await prisma.event.findUnique({
         where: { id: eventId },
-        select: { id: true, pipeline: true, channelId: true, campaignId: true },
+        select: { id: true, type: true, pipeline: true, channelId: true, campaignId: true },
       });
       if (!event) {
         return reply.code(404).send({ status: 'error', data: { message: 'Event not found' } });
@@ -89,7 +101,11 @@ const botRoutes: FastifyPluginAsync = async (app) => {
 
       const registry = buildBlockRegistry();
       const runner = new PipelineRunner(registry);
-      const result = await runner.run(event.pipeline as unknown as BlockInstance[], {
+      const pipeline =
+        event.type === 'test'
+          ? filterManualTestResolutionPipeline(event.pipeline as unknown as BlockInstance[])
+          : (event.pipeline as unknown as BlockInstance[]);
+      const result = await runner.run(pipeline, {
         campaignId,
         channelId,
         playerId: discordUserId,
@@ -130,6 +146,28 @@ const botRoutes: FastifyPluginAsync = async (app) => {
       }
 
       return { status: 'ok', data: campaign };
+    },
+  );
+
+  app.get<{ Params: CampaignDiscordUserParams }>(
+    '/campaigns/:id/visible-npcs/:discordUserId',
+    {
+      schema: {
+        tags: ['bot'],
+        summary: 'List NPCs visible to a Discord player',
+        operationId: 'listBotVisibleNpcsForPlayer',
+        params: campaignDiscordUserParamsSchema,
+        response: {
+          200: listResponseSchema(playerVisibleNpcSchema),
+        },
+      },
+    },
+    async (request) => {
+      const prisma = getPrismaClient();
+      const { id, discordUserId } = request.params;
+      const npcs = await listVisibleNpcRecordsForPlayer(prisma, id, discordUserId);
+
+      return { status: 'ok', data: npcs.map(mapPlayerVisibleNpc) };
     },
   );
 
