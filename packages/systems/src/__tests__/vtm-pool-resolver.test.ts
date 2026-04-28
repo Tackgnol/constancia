@@ -235,10 +235,31 @@ describe('vtmPoolResolverBlock', () => {
 
     expect(playerMsg).toBeDefined();
     expect(channelMsg).toBeDefined();
+    expect(playerMsg).toMatchObject({ targetId: 'player-1' });
 
     // Player message should contain key numbers
     expect(playerMsg?.content).toContain('Pool: 2');
     expect(playerMsg?.content).toContain('2'); // successes
     expect(playerMsg?.content).toContain('difficulty 1');
+  });
+
+  it('does not target a system pseudo-player when directly executed', async () => {
+    const ctx = makeContext({
+      playerId: 'system',
+      characterData: { attributes: {}, skills: {} },
+    });
+
+    const result = await vtmPoolResolverBlock.execute(
+      { attribute: 'missing_attr', skill: 'missing_skill', difficulty: 2 },
+      ctx,
+    );
+
+    expect(result.messages).toEqual([
+      {
+        target: 'player',
+        content: '🎲 Pool: 0 dice — no dice to roll. Successes: 0 vs difficulty 2 → Failure',
+      },
+      { target: 'channel', content: '❌ Failure — no dice in pool.' },
+    ]);
   });
 });

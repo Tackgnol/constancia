@@ -1,4 +1,4 @@
-import type { BlockDefinition, BlockContext } from '@constancia/contracts';
+import type { BlockDefinition, BlockContext, BlockMessage } from '@constancia/contracts';
 
 interface VtmPoolResolverConfig {
   attribute: string;
@@ -27,6 +27,27 @@ function rollDice(count: number): number[] {
     results.push(rollDie());
   }
   return results;
+}
+
+function readNumberRecord(value: unknown): Record<string, number> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      (entry): entry is [string, number] => typeof entry[1] === 'number',
+    ),
+  );
+}
+
+function readNumber(value: unknown): number {
+  return typeof value === 'number' ? value : 0;
+}
+
+function contextPlayerTargetId(ctx: BlockContext): string | undefined {
+  const targetId = ctx.playerId.trim();
+  return targetId.length > 0 && targetId !== 'system' ? targetId : undefined;
 }
 
 function outcomeLabel(outcome: VtmPoolResult['outcome']): string {
@@ -62,14 +83,15 @@ export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
     ctx: BlockContext,
   ): Promise<{
     output: VtmPoolResult;
-    messages: { target: 'player' | 'channel'; content: string }[];
+    messages: BlockMessage[];
   }> => {
-    const attrs = ctx.characterData.attributes as Record<string, number> | undefined;
-    const skills = ctx.characterData.skills as Record<string, number> | undefined;
-    const attrVal = attrs?.[config.attribute] ?? 0;
-    const skillVal = skills?.[config.skill] ?? 0;
-    const hunger = (ctx.characterData.hunger as number | undefined) ?? 0;
+    const attrs = readNumberRecord(ctx.characterData.attributes);
+    const skills = readNumberRecord(ctx.characterData.skills);
+    const attrVal = attrs[config.attribute] ?? 0;
+    const skillVal = skills[config.skill] ?? 0;
+    const hunger = readNumber(ctx.characterData.hunger);
     const pool = attrVal + skillVal;
+    const targetId = contextPlayerTargetId(ctx);
 
     if (pool <= 0) {
       const result: VtmPoolResult = {
@@ -87,6 +109,7 @@ export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
         messages: [
           {
             target: 'player',
+            ...(targetId ? { targetId } : {}),
             content: `🎲 Pool: 0 dice — no dice to roll. Successes: 0 vs difficulty ${config.difficulty} → Failure`,
           },
           { target: 'channel', content: `❌ Failure — no dice in pool.` },
@@ -163,7 +186,7 @@ export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
     return {
       output: result,
       messages: [
-        { target: 'player', content: playerMsg },
+        { target: 'player', ...(targetId ? { targetId } : {}), content: playerMsg },
         { target: 'channel', content: channelMsg },
       ],
     };

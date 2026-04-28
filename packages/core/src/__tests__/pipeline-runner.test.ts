@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { BlockConfigValidationError, PipelineRunner } from '../pipeline-runner.js';
 import { BlockRegistry } from '../block-registry.js';
+import { resolveMessageRecipients } from '@constancia/contracts';
 import type { BlockDefinition, BlockContext, BlockInstance } from '@constancia/contracts';
 
 function createContext(overrides?: Partial<BlockContext>): BlockContext {
@@ -107,6 +108,59 @@ describe('PipelineRunner', () => {
     await runner.run([{ blockType: 'spy', config: { key: 'val' } }], ctx);
 
     expect(executeSpy).toHaveBeenCalledWith({ key: 'val' }, ctx);
+  });
+
+  it('defaults player messages without a targetId to the context player', async () => {
+    const registry = new BlockRegistry();
+
+    const block: BlockDefinition<{ text: string }> = {
+      type: 'say',
+      label: 'Say',
+      configSchema: { type: 'object' },
+      execute: async (config: { text: string }) => ({
+        output: config.text,
+        messages: [{ target: 'player' as const, content: config.text }],
+      }),
+    };
+
+    registry.register(block);
+
+    const runner = new PipelineRunner(registry);
+    const result = await runner.run(
+      [{ blockType: 'say', config: { text: 'Private result' } }],
+      createContext({ playerId: 'player-42' }),
+    );
+
+    expect(result.messages[0]).toMatchObject({ target: 'player', targetId: 'player-42' });
+    expect(resolveMessageRecipients('channel-1', result.messages[0])).toEqual({
+      target: 'player',
+      userIds: ['player-42'],
+    });
+  });
+
+  it('does not default player messages for system-triggered runs', async () => {
+    const registry = new BlockRegistry();
+
+    const block: BlockDefinition<{ text: string }> = {
+      type: 'say',
+      label: 'Say',
+      configSchema: { type: 'object' },
+      execute: async (config: { text: string }) => ({
+        output: config.text,
+        messages: [{ target: 'player' as const, content: config.text }],
+      }),
+    };
+
+    registry.register(block);
+
+    const runner = new PipelineRunner(registry);
+    const result = await runner.run(
+      [{ blockType: 'say', config: { text: 'No implicit system DM' } }],
+      createContext({ playerId: 'system' }),
+    );
+
+    expect(result.messages[0]).toEqual({ target: 'player', content: 'No implicit system DM' });
+    expect(resolveMessageRecipients('channel-1', result.messages[0])).toBeNull();
   });
 
   it('fails fast when block config does not match the schema', async () => {

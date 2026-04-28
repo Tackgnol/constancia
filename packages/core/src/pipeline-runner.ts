@@ -31,6 +31,27 @@ function formatValidationErrors(errors: ErrorObject[] | null | undefined): strin
     .join('; ');
 }
 
+function contextPlayerTargetId(ctx: BlockContext): string | undefined {
+  const targetId = ctx.playerId.trim();
+  return targetId.length > 0 && targetId !== 'system' ? targetId : undefined;
+}
+
+function normalizeMessages(messages: BlockMessage[], ctx: BlockContext): BlockMessage[] {
+  const targetId = contextPlayerTargetId(ctx);
+
+  if (!targetId) {
+    return messages;
+  }
+
+  return messages.map((message) => {
+    if (message.target === 'player' && !message.targetId?.trim()) {
+      return { ...message, targetId };
+    }
+
+    return message;
+  });
+}
+
 export class BlockConfigValidationError extends Error {
   constructor(
     readonly blockType: string,
@@ -92,7 +113,7 @@ export class PipelineRunner {
       outputs.push(result.output);
 
       if (result.messages) {
-        messages.push(...result.messages);
+        messages.push(...normalizeMessages(result.messages, ctx));
       }
 
       if (result.halt) {
