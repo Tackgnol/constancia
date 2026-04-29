@@ -183,6 +183,10 @@ export const playerSheetMagicLinkBodySchema = {
   ...authMagicLinkBodySchema,
 } as const;
 
+export const playerJournalMagicLinkBodySchema = {
+  ...authMagicLinkBodySchema,
+} as const;
+
 export const uploadAssetParamsSchema = {
   type: 'object',
   additionalProperties: false,
@@ -740,8 +744,9 @@ export const journalForPlayerSchema = {
   properties: {
     quests: { type: 'array', items: questSchema },
     summaries: { type: 'array', items: sessionSummarySchema },
+    npcs: { type: 'array', items: playerVisibleNpcSchema },
   },
-  required: ['quests', 'summaries'],
+  required: ['quests', 'summaries', 'npcs'],
 } as const;
 
 export const blockMessagePlayerSchema = {

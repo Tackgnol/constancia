@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
-import { useLoaderData } from 'react-router';
+import { Link, useLoaderData } from 'react-router';
 import { CharacterSheetForm } from '@/components/character-sheet/character-sheet-form';
 import {
   getPlayerCharacterSheet,
@@ -43,6 +43,9 @@ export function meta() {
 export default function PlayerSheetRoute() {
   const loaderSheet = useLoaderData<typeof loader>();
   const [sheet, setSheet] = useState<CharacterSheetData>(loaderSheet);
+  const playerBasePath = sheet.campaign.id.startsWith('demo-')
+    ? '/demo/player'
+    : `/player/campaigns/${sheet.campaign.id}`;
 
   const handleSave = async (payload: CharacterSheetPatchBody) => {
     if (sheet.campaign.id.startsWith('demo-')) {
@@ -75,6 +78,12 @@ export default function PlayerSheetRoute() {
           <span>PLAYER SHEET</span>
           <span>{sheet.campaign.name}</span>
           <span>{sheet.system.id}</span>
+        </div>
+
+        <div className="player-journal-nav">
+          <Link className="ghost-action ghost-action-inline" to={`${playerBasePath}/journal`}>
+            Open journal
+          </Link>
         </div>
 
         <section className="player-dossier-copy sheet-intro">

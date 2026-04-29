@@ -4,11 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "npm --workspace @constancia/api-client run build",
     "dev": "tsx watch src/main.ts",
+    "prebuild": "npm --workspace @constancia/api-client run build",
     "build": "tsc",
     "generate:api": "cd ../.. && npm run generate:api",
+    "pretypecheck": "npm --workspace @constancia/api-client run build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
+    "pretest": "npm --workspace @constancia/api-client run build",
     "test": "vitest run",
     "test:watch": "vitest watch"
   },

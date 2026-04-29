@@ -1,4 +1,7 @@
-import type { GetVisibleNpcForCurrentPlayer200Data } from '@constancia/api-client/model';
+import type {
+  GetJournalForCurrentPlayer200Data,
+  GetVisibleNpcForCurrentPlayer200Data,
+} from '@constancia/api-client/model';
 import { VTM_STAT_SCHEMA } from '@constancia/systems';
 import type { CharacterSheetData } from '@/lib/character-sheet';
 
@@ -106,6 +109,49 @@ export const demoPlayerNpcs: GetVisibleNpcForCurrentPlayer200Data[] = [
     ],
   },
 ];
+
+export const demoPlayerJournal: GetJournalForCurrentPlayer200Data = {
+  quests: [
+    {
+      id: 'demo-quest-ledger',
+      name: 'Recover the Harpy ledger',
+      description: 'Find who lifted the Elysium ledger before Prince Voss turns the room on you.',
+      campaignId: 'demo-crimson-dynasty',
+      status: 'active',
+      sortOrder: 0,
+      visible: true,
+      entries: [
+        {
+          id: 'demo-quest-ledger-step-1',
+          content: 'Question the last neonate seen near the gallery exit.',
+          questId: 'demo-quest-ledger',
+          status: 'done',
+          sortOrder: 0,
+        },
+        {
+          id: 'demo-quest-ledger-step-2',
+          content: 'Get Mara to confirm whether the ledger was traded or destroyed.',
+          questId: 'demo-quest-ledger',
+          status: 'pending',
+          sortOrder: 1,
+        },
+      ],
+    },
+  ],
+  summaries: [
+    {
+      id: 'demo-summary-elysium',
+      title: 'Elysium fractures',
+      content:
+        'The ledger vanished during the prince’s reception. The coterie left with one boon, two enemies, and a name nobody wanted spoken aloud.',
+      campaignId: 'demo-crimson-dynasty',
+      sessionDate: '2026-04-28T20:00:00.000Z',
+      visible: true,
+      channelId: undefined,
+    },
+  ],
+  npcs: demoPlayerNpcs,
+};
 
 export function getDemoPlayerNpc(npcId: string): GetVisibleNpcForCurrentPlayer200Data | null {
   return demoPlayerNpcs.find((npc) => npc.id === npcId) ?? null;

@@ -2053,6 +2053,29 @@ h1, h2, h3 {
   margin: 0;
 }
 
+.player-journal-nav {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.player-journal-sheet {
+  gap: 1.25rem;
+}
+
+.player-journal-grid,
+.player-summary-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.player-summary-card h2,
+.player-npc-fact-card h2 {
+  margin: 0;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
 .sheet-hero-copy {
   display: grid;
   gap: 0.6rem;

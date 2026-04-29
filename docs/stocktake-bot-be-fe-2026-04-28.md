@@ -74,7 +74,7 @@ Legend:
 
 ## Journal
 - [ ] A place that summarizes Quests, NPCs, and Lore  
-  Partial: BE journal covers quests + session summaries, and bot `/journal` shows quests + summaries to players. FE `log` is a static mock timeline, NPCs are separate, and lore does not exist yet.
+  Partial: BE journal now returns visible quests, session summaries, and revealed NPC knowledge through one shared player shape. Bot `/journal` and the FE player journal consume that shape. Lore does not exist yet, so the full Quest/NPC/Lore journal remains blocked by the lore domain step.
 
 ## Lore
 - [ ] Lore tidbits about the world  
@@ -132,7 +132,7 @@ These are the next implementation steps needed to close the remaining unchecked 
 
 - [ ] **Step 11: Replace the static FE log with a real player journal surface**
   Build a frontend journal/log view backed by BE data that summarizes quests, revealed NPC knowledge, lore, and session summaries. Align the bot `/journal` output with that same backend shape so players see consistent information across Discord and web.
-  Closes: a place that summarizes quests, NPCs, and lore.
+  Status: mostly complete for quests, revealed NPC knowledge, and session summaries. Lore remains pending until Step 10 introduces a lore model and visibility system.
 
 - [ ] **Step 12: Add event pipeline write-back blocks**
   Add backend-executed pipeline blocks for writing NPC facts, lore reveals, quest updates, and journal/session-summary entries from fired events. Treat every editable pipeline block as a mirrored backend/frontend contract: update core/system block definitions, backend registration/OpenAPI, frontend block schemas/default configs/edit fields, Orval output, and `check:block-drift` together.
@@ -148,6 +148,7 @@ These are the next implementation steps needed to close the remaining unchecked 
 ## Short version
 - Strongest working loop today: **event creation in FE → event firing in FE → backend execution → Discord delivery by bot**, plus **ad-hoc player whispers**.
 - Best-developed content management area today: **NPC dossiers + facts + per-player fact reveal**, with moderation/upload plumbing now behind the backend.
-- Present in backend but not truly surfaced yet: **session-summary journal APIs** and **admin upload controls**.
+- Present in backend but not truly surfaced yet: **admin upload controls**.
+- Newly surfaced: **player journal** for visible quests, session summaries, and revealed NPC facts in both web and bot.
 - Not implemented yet: **lore**, **NPC↔quest links**, and **automatic event-driven writes into journal/NPC/lore systems**.
 

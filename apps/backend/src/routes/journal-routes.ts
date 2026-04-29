@@ -19,8 +19,14 @@ import {
   summaryParamsSchema,
 } from '../schemas.js';
 import { getPrismaClient } from '../auth/prisma.js';
-import { deleted, isPrismaNotFoundError, ok, sendNotFound } from '../http-responses.js';
+import { deleted, isPrismaNotFoundError, ok, sendError, sendNotFound } from '../http-responses.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
+import {
+  getPlayerJournal,
+  questEntrySelect,
+  questSelect,
+  summarySelect,
+} from '../services/player-journal.js';
 
 interface CampaignParams {
   id: string;
@@ -73,34 +79,6 @@ interface SummaryBody {
   visible?: boolean;
   channelId?: string;
 }
-
-const questSelect = {
-  id: true,
-  name: true,
-  description: true,
-  campaignId: true,
-  status: true,
-  sortOrder: true,
-  visible: true,
-} as const;
-
-const questEntrySelect = {
-  id: true,
-  content: true,
-  questId: true,
-  status: true,
-  sortOrder: true,
-} as const;
-
-const summarySelect = {
-  id: true,
-  title: true,
-  content: true,
-  campaignId: true,
-  sessionDate: true,
-  visible: true,
-  channelId: true,
-} as const;
 
 const journalRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: CampaignParams }>(
@@ -413,26 +391,32 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
     async (request) => {
       const { id, discordId } = request.params;
       const prisma = getPrismaClient();
-      const character = await prisma.character.findUnique({
-        where: { discordUserId_campaignId: { discordUserId: discordId, campaignId: id } },
-        select: { id: true },
-      });
-      if (!character) {
-        return ok({ quests: [], summaries: [] });
+      return ok(await getPlayerJournal(prisma, id, discordId));
+    },
+  );
+
+  app.get<{ Params: CampaignParams }>(
+    '/journal/me',
+    {
+      schema: {
+        tags: ['journal'],
+        summary: 'Get current player journal view',
+        operationId: 'getJournalForCurrentPlayer',
+        params: campaignParamsSchema,
+        response: {
+          200: singleResponseSchema(journalForPlayerSchema),
+        },
+      },
+    },
+    async (request, reply) => {
+      const discordUserId = request.access.kind === 'session' ? request.access.discordUserId : null;
+      if (!discordUserId) {
+        return sendError(reply, 403, 'Discord identity required');
       }
-      const [quests, summaries] = await Promise.all([
-        prisma.quest.findMany({
-          where: { campaignId: id, visible: true },
-          select: { ...questSelect, entries: { select: questEntrySelect } },
-          orderBy: { sortOrder: 'asc' },
-        }),
-        prisma.sessionSummary.findMany({
-          where: { campaignId: id, visible: true },
-          select: summarySelect,
-          orderBy: { sessionDate: 'desc' },
-        }),
-      ]);
-      return ok({ quests, summaries });
+
+      const { id } = request.params;
+      const prisma = getPrismaClient();
+      return ok(await getPlayerJournal(prisma, id, discordUserId));
     },
   );
 };

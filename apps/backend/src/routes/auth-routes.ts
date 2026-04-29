@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync } from 'fastify';
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import { fromNodeHeaders } from 'better-auth/node';
 import { randomUUID } from 'node:crypto';
 import { auth } from '../auth.js';
@@ -7,6 +7,7 @@ import { ensureDiscordUser } from '../auth/ensure-discord-user.js';
 import { forwardToBetterAuth } from '../auth/http.js';
 import {
   authMagicLinkBodySchema,
+  playerJournalMagicLinkBodySchema,
   playerSheetMagicLinkBodySchema,
   standardResponseSchema,
   tokenQuerySchema,
@@ -18,6 +19,8 @@ interface MagicLinkBody {
   discordUserId: string;
   guildId: string;
 }
+
+type PlayerLinkTarget = 'sheet' | 'journal';
 
 interface VerifyQuery {
   token: string;
@@ -190,6 +193,59 @@ export const authBotRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
+  async function createPlayerLink(
+    request: FastifyRequest<{ Body: MagicLinkBody }>,
+    reply: FastifyReply,
+    target: PlayerLinkTarget,
+  ) {
+    const body = request.body;
+    const prisma = getPrismaClient();
+    const campaign = await prisma.campaign.findUnique({
+      where: { discordGuildId: body.guildId },
+      select: { id: true },
+    });
+
+    if (campaign === null) {
+      return sendNotFound(reply, 'Campaign not found for this guild');
+    }
+
+    const requestId = randomUUID();
+    const callbackURL = `/player/campaigns/${campaign.id}/${target}`;
+    const discordUser = await ensureDiscordUser(body.discordUserId);
+    const result = await auth.api.signInMagicLink({
+      body: {
+        email: discordUser.email,
+        name: `Discord ${body.discordUserId}`,
+        callbackURL,
+        metadata: {
+          requestId,
+          discordUserId: body.discordUserId,
+          guildId: body.guildId,
+          campaignId: campaign.id,
+          callbackURL,
+        },
+      },
+      headers: fromNodeHeaders(request.headers),
+    });
+    const delivery = consumeMagicLinkDelivery(requestId);
+
+    if (!delivery) {
+      throw new Error('Magic link delivery payload was not captured');
+    }
+
+    reply.code(201);
+    return {
+      status: result.status ? 'ok' : 'error',
+      data: {
+        token: delivery.token,
+        url: delivery.url,
+        email: delivery.email,
+        campaignId: campaign.id,
+        ...body,
+      },
+    };
+  }
+
   app.post<{ Body: MagicLinkBody }>(
     '/player-sheet-link',
     {
@@ -203,53 +259,22 @@ export const authBotRoutes: FastifyPluginAsync = async (app) => {
         },
       },
     },
-    async (request, reply) => {
-      const body = request.body;
-      const prisma = getPrismaClient();
-      const campaign = await prisma.campaign.findUnique({
-        where: { discordGuildId: body.guildId },
-        select: { id: true },
-      });
+    async (request, reply) => createPlayerLink(request, reply, 'sheet'),
+  );
 
-      if (campaign === null) {
-        return sendNotFound(reply, 'Campaign not found for this guild');
-      }
-
-      const requestId = randomUUID();
-      const callbackURL = `/player/campaigns/${campaign.id}/sheet`;
-      const discordUser = await ensureDiscordUser(body.discordUserId);
-      const result = await auth.api.signInMagicLink({
-        body: {
-          email: discordUser.email,
-          name: `Discord ${body.discordUserId}`,
-          callbackURL,
-          metadata: {
-            requestId,
-            discordUserId: body.discordUserId,
-            guildId: body.guildId,
-            campaignId: campaign.id,
-            callbackURL,
-          },
+  app.post<{ Body: MagicLinkBody }>(
+    '/player-journal-link',
+    {
+      schema: {
+        tags: ['auth'],
+        summary: 'Request a player journal magic link',
+        operationId: 'createPlayerJournalMagicLink',
+        body: playerJournalMagicLinkBodySchema,
+        response: {
+          201: standardResponseSchema,
         },
-        headers: fromNodeHeaders(request.headers),
-      });
-      const delivery = consumeMagicLinkDelivery(requestId);
-
-      if (!delivery) {
-        throw new Error('Magic link delivery payload was not captured');
-      }
-
-      reply.code(201);
-      return {
-        status: result.status ? 'ok' : 'error',
-        data: {
-          token: delivery.token,
-          url: delivery.url,
-          email: delivery.email,
-          campaignId: campaign.id,
-          ...body,
-        },
-      };
+      },
     },
+    async (request, reply) => createPlayerLink(request, reply, 'journal'),
   );
 };

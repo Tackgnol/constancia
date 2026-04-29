@@ -4,9 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "npm --workspace @constancia/api-client run build",
     "dev": "react-router dev",
+    "prebuild": "npm --workspace @constancia/api-client run build",
     "build": "react-router build",
     "generate:api": "cd ../.. && npm run generate:api",
+    "pretypecheck": "npm --workspace @constancia/api-client run build",
     "typecheck": "react-router typegen && tsc --noEmit",
     "lint": "eslint app/"
   },

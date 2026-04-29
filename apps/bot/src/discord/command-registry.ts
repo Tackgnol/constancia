@@ -1,4 +1,4 @@
-import { journalCommand } from '../commands/journal.js';
+import { journalCommand, journalComponentHandler } from '../commands/journal.js';
 import { loginCommand } from '../commands/login.js';
 import { npcCommand } from '../commands/npcs.js';
 import { participantsCommand } from '../commands/participants.js';
@@ -27,7 +27,10 @@ const commandMap = new Map<string, BotChatCommand>(
   chatCommands.map((command) => [command.data.name, command]),
 );
 
-export const componentHandlers: readonly BotComponentHandler[] = [testInstanceComponentHandler];
+export const componentHandlers: readonly BotComponentHandler[] = [
+  testInstanceComponentHandler,
+  journalComponentHandler,
+];
 export const modalHandlers: readonly BotModalHandler[] = [testInstanceModalHandler];
 
 const componentMap = new Map<string, BotComponentHandler>(

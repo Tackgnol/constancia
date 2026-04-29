@@ -12,6 +12,7 @@ import {
   channelParamsSchema,
   deleteResponseSchema,
   gameEventSchema,
+  journalForPlayerSchema,
   guildParamsSchema,
   listResponseSchema,
   playerVisibleNpcSchema,
@@ -27,6 +28,7 @@ import {
   mapPlayerVisibleNpc,
 } from '../services/player-visible-npcs.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
+import { getPlayerJournal } from '../services/player-journal.js';
 import { filterManualTestResolutionPipeline } from '../services/test-instance.js';
 
 interface BotTestResultBody {
@@ -166,6 +168,27 @@ const botRoutes: FastifyPluginAsync = async (app) => {
       const npcs = await listVisibleNpcRecordsForPlayer(prisma, id, discordUserId);
 
       return ok(npcs.map(mapPlayerVisibleNpc));
+    },
+  );
+
+  app.get<{ Params: CampaignDiscordUserParams }>(
+    '/campaigns/:id/journal/:discordUserId',
+    {
+      schema: {
+        tags: ['bot'],
+        summary: 'Get player journal for a Discord player',
+        operationId: 'getBotJournalForPlayer',
+        params: campaignDiscordUserParamsSchema,
+        response: {
+          200: singleResponseSchema(journalForPlayerSchema),
+        },
+      },
+    },
+    async (request) => {
+      const prisma = getPrismaClient();
+      const { id, discordUserId } = request.params;
+
+      return ok(await getPlayerJournal(prisma, id, discordUserId));
     },
   );
 

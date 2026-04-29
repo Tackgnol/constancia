@@ -3,8 +3,10 @@ import { index, layout, route, type RouteConfig } from '@react-router/dev/routes
 export default [
   route('auth', './routes/auth.tsx'),
   route('player/campaigns/:campaignId/sheet', './routes/player-sheet.tsx'),
+  route('player/campaigns/:campaignId/journal', './routes/player-journal.tsx'),
   route('player/campaigns/:campaignId/npcs/:npcId', './routes/player-npc.tsx'),
   route('demo/player/sheet', './routes/player-sheet.tsx', { id: 'demo-player-sheet' }),
+  route('demo/player/journal', './routes/player-journal.tsx', { id: 'demo-player-journal' }),
   route('demo/player/npcs/:npcId', './routes/player-npc.tsx', { id: 'demo-player-npc' }),
   layout('./routes/demo-layout.tsx', { id: 'demo-layout' }, [
     route('demo', './routes/play.tsx', { id: 'demo-play' }),

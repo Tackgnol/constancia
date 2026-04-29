@@ -5669,9 +5669,242 @@
                               "visible"
                             ]
                           }
+                        },
+                        "npcs": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "imageUrl": {
+                                "type": "string"
+                              },
+                              "campaignId": {
+                                "type": "string"
+                              },
+                              "facts": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "content": {
+                                      "type": "string"
+                                    },
+                                    "sortOrder": {
+                                      "type": "integer"
+                                    },
+                                    "npcId": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["id", "content", "sortOrder", "npcId"]
+                                }
+                              }
+                            },
+                            "required": ["id", "name", "campaignId", "facts"]
+                          }
                         }
                       },
-                      "required": ["quests", "summaries"]
+                      "required": ["quests", "summaries", "npcs"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/{id}/journal/me": {
+      "get": {
+        "operationId": "getJournalForCurrentPlayer",
+        "summary": "Get current player journal view",
+        "tags": ["journal"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "quests": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              },
+                              "campaignId": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string"
+                              },
+                              "sortOrder": {
+                                "type": "integer"
+                              },
+                              "visible": {
+                                "type": "boolean"
+                              },
+                              "entries": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "content": {
+                                      "type": "string"
+                                    },
+                                    "questId": {
+                                      "type": "string"
+                                    },
+                                    "status": {
+                                      "type": "string"
+                                    },
+                                    "sortOrder": {
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": ["id", "content", "questId", "status", "sortOrder"]
+                                }
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "description",
+                              "campaignId",
+                              "status",
+                              "sortOrder",
+                              "visible"
+                            ]
+                          }
+                        },
+                        "summaries": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "content": {
+                                "type": "string"
+                              },
+                              "campaignId": {
+                                "type": "string"
+                              },
+                              "sessionDate": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "visible": {
+                                "type": "boolean"
+                              },
+                              "channelId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title",
+                              "content",
+                              "campaignId",
+                              "sessionDate",
+                              "visible"
+                            ]
+                          }
+                        },
+                        "npcs": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "imageUrl": {
+                                "type": "string"
+                              },
+                              "campaignId": {
+                                "type": "string"
+                              },
+                              "facts": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "content": {
+                                      "type": "string"
+                                    },
+                                    "sortOrder": {
+                                      "type": "integer"
+                                    },
+                                    "npcId": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["id", "content", "sortOrder", "npcId"]
+                                }
+                              }
+                            },
+                            "required": ["id", "name", "campaignId", "facts"]
+                          }
+                        }
+                      },
+                      "required": ["quests", "summaries", "npcs"]
                     }
                   },
                   "required": ["status", "data"]
@@ -5828,6 +6061,53 @@
       "post": {
         "operationId": "createPlayerSheetMagicLink",
         "summary": "Request a player sheet magic link",
+        "tags": ["auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "discordUserId": {
+                    "type": "string"
+                  },
+                  "guildId": {
+                    "type": "string"
+                  }
+                },
+                "required": ["discordUserId", "guildId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/player-journal-link": {
+      "post": {
+        "operationId": "createPlayerJournalMagicLink",
+        "summary": "Request a player journal magic link",
         "tags": ["auth"],
         "requestBody": {
           "required": true,
@@ -6139,6 +6419,203 @@
                         },
                         "required": ["id", "name", "campaignId", "facts"]
                       }
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bot/campaigns/{id}/journal/{discordUserId}": {
+      "get": {
+        "operationId": "getBotJournalForPlayer",
+        "summary": "Get player journal for a Discord player",
+        "tags": ["bot"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "discordUserId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "quests": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              },
+                              "campaignId": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string"
+                              },
+                              "sortOrder": {
+                                "type": "integer"
+                              },
+                              "visible": {
+                                "type": "boolean"
+                              },
+                              "entries": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "content": {
+                                      "type": "string"
+                                    },
+                                    "questId": {
+                                      "type": "string"
+                                    },
+                                    "status": {
+                                      "type": "string"
+                                    },
+                                    "sortOrder": {
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": ["id", "content", "questId", "status", "sortOrder"]
+                                }
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "description",
+                              "campaignId",
+                              "status",
+                              "sortOrder",
+                              "visible"
+                            ]
+                          }
+                        },
+                        "summaries": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "content": {
+                                "type": "string"
+                              },
+                              "campaignId": {
+                                "type": "string"
+                              },
+                              "sessionDate": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "visible": {
+                                "type": "boolean"
+                              },
+                              "channelId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title",
+                              "content",
+                              "campaignId",
+                              "sessionDate",
+                              "visible"
+                            ]
+                          }
+                        },
+                        "npcs": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "imageUrl": {
+                                "type": "string"
+                              },
+                              "campaignId": {
+                                "type": "string"
+                              },
+                              "facts": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "content": {
+                                      "type": "string"
+                                    },
+                                    "sortOrder": {
+                                      "type": "integer"
+                                    },
+                                    "npcId": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["id", "content", "sortOrder", "npcId"]
+                                }
+                              }
+                            },
+                            "required": ["id", "name", "campaignId", "facts"]
+                          }
+                        }
+                      },
+                      "required": ["quests", "summaries", "npcs"]
                     }
                   },
                   "required": ["status", "data"]

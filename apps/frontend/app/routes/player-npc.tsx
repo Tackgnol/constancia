@@ -1,10 +1,10 @@
 import type { LoaderFunctionArgs } from 'react-router';
-import { useLoaderData } from 'react-router';
+import { Link, useLoaderData } from 'react-router';
 import { getVisibleNpcForCurrentPlayer } from '@constancia/api-client/endpoints/npcs/npcs';
 import { NpcPortraitFallback } from '@/components/npcs/npc-portrait-fallback';
 import { getDemoPlayerNpc } from '@/lib/demo-player-data';
 
-export async function loader({ params, request: _request }: LoaderFunctionArgs) {
+export async function loader({ params, request }: LoaderFunctionArgs) {
   const campaignId = params.campaignId ?? 'demo-crimson-dynasty';
   const npcId = params.npcId;
 
@@ -25,7 +25,12 @@ export async function loader({ params, request: _request }: LoaderFunctionArgs) 
   try {
     const response = await getVisibleNpcForCurrentPlayer(
       { id: campaignId, npcId },
-      { credentials: 'include' },
+      {
+        credentials: 'include',
+        headers: {
+          cookie: request.headers.get('Cookie') || '',
+        },
+      },
     );
 
     if (!response || response.status !== 'ok' || !response.data) {
@@ -51,6 +56,9 @@ export function meta() {
 
 export default function PlayerNpcRoute() {
   const npc = useLoaderData<typeof loader>();
+  const playerBasePath = npc.campaignId.startsWith('demo-')
+    ? '/demo/player'
+    : `/player/campaigns/${npc.campaignId}`;
 
   return (
     <main className="player-dossier-shell">
@@ -59,6 +67,12 @@ export default function PlayerNpcRoute() {
           <span>FIELD DOSSIER</span>
           <span>PLAYER-SAFE EXCERPT</span>
           <span>{npc.facts.length} CONFIRMED</span>
+        </div>
+
+        <div className="player-journal-nav">
+          <Link className="ghost-action ghost-action-inline" to={`${playerBasePath}/journal`}>
+            Back to journal
+          </Link>
         </div>
 
         <section className="player-dossier-hero">

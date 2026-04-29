@@ -19,6 +19,7 @@ Use official documentation to choose the implementation shape. Do not rely on me
 ## Repo-Specific Skills
 
 - Use `.claude/skills/constancia-block-architecture/SKILL.md` for any task touching `BlockDefinition`, `BlockRegistry`, event pipelines, block config changes, frontend pipeline editing, or system-specific block wiring.
+- Use `.claude/skills/tell-me-why/SKILL.md` when `tell me why` is invoked or when a task needs a per-session rationale log; when routed there, create one new session log file automatically and record why each change was made, alternatives considered, and why the chosen file/layer is the right place for the change.
 - `AGENTS.md` remains authoritative if the skill and this file ever disagree.
 
 ## Execution Order
