@@ -27,6 +27,7 @@
 #   POSTGRES_USER=constancia
 #   FRONTEND_PORT=3010                # host loopback port; Caddy → localhost:3010
 #   BACKEND_PORT=3011                 # host loopback port; Caddy → localhost:3011
+#   AUTH_COOKIE_DOMAIN=constancia.rpgtools.eu.org
 #   VITE_DISCORD_AUTH_ENABLED=false
 #   CONTENT_MODERATION_ENABLED=false
 #   UPLOAD_STORAGE_DRIVER=local
@@ -46,6 +47,7 @@ steps:
       POSTGRES_USER: constancia
       FRONTEND_PORT: '3010'
       BACKEND_PORT: '3011'
+      AUTH_COOKIE_DOMAIN: 'constancia.rpgtools.eu.org'
       VITE_DISCORD_AUTH_ENABLED: 'false'
       CONTENT_MODERATION_ENABLED: 'true'
       UPLOAD_STORAGE_DRIVER: r2
