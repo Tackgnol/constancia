@@ -2,6 +2,7 @@ import { listCampaigns } from '@constancia/api-client/endpoints/campaigns/campai
 import { listChannels } from '@constancia/api-client/endpoints/channels/channels';
 import { listCharacters } from '@constancia/api-client/endpoints/characters/characters';
 import { listEvents } from '@constancia/api-client/endpoints/events/events';
+import { listQuests } from '@constancia/api-client/endpoints/journal/journal';
 import { getServiceHealth } from '@constancia/api-client/endpoints/meta/meta';
 import { listGameSystems } from '@constancia/api-client/endpoints/systems/systems';
 import { PlayerWhisperForm } from '@/components/war-room/player-whisper-form';
@@ -19,7 +20,7 @@ import {
 } from '@/lib/war-room-data';
 import { useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
-import { NavLink, Outlet, redirect, useLoaderData, useNavigate } from 'react-router';
+import { NavLink, Outlet, redirect, useLoaderData, useLocation, useNavigate } from 'react-router';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const fetchOpts: RequestInit = {
@@ -40,19 +41,21 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   const campaignId = campaigns.data[0]?.id;
-  const [channels, events, characters] = campaignId
+  const [channels, events, characters, quests] = campaignId
     ? await Promise.all([
         listChannels({ id: campaignId }, fetchOpts),
         listEvents({ id: campaignId }, fetchOpts),
         listCharacters({ id: campaignId }, fetchOpts),
+        listQuests({ id: campaignId }, fetchOpts),
       ])
     : [
         { status: 'error', data: [] },
         { status: 'error', data: [] },
         { status: 'error', data: [] },
+        { status: 'error', data: [] },
       ];
 
-  return { health, campaigns, systems, channels, events, characters };
+  return { health, campaigns, systems, channels, events, characters, quests };
 }
 
 const tabs = [
@@ -60,12 +63,13 @@ const tabs = [
   { to: '/', label: 'Play', end: true },
   { to: '/npcs', label: 'NPCs' },
   { to: '/participants', label: 'Participants' },
-  { to: '/log', label: 'Log' },
+  { to: '/log', label: 'Quests' },
 ];
 
 export default function WarRoomLayout() {
   const navigate = useNavigate();
-  const { health, campaigns, systems, channels, events, characters } =
+  const location = useLocation();
+  const { health, campaigns, systems, channels, events, characters, quests } =
     useLoaderData<typeof loader>();
   const session = authClient.useSession();
 
@@ -82,6 +86,8 @@ export default function WarRoomLayout() {
   }));
 
   const liveEvents = events.status === 'ok' ? events.data : [];
+  const liveQuests = quests.status === 'ok' ? quests.data : [];
+  const showQuickBar = location.pathname === '/';
   const tagEventCounts = new Map<string, number>();
   for (const event of liveEvents) {
     tagEventCounts.set(event.channelId, (tagEventCounts.get(event.channelId) ?? 0) + 1);
@@ -117,6 +123,7 @@ export default function WarRoomLayout() {
     activity: activityFeed,
     apiOnline: health.status === 'ok',
     events: liveEvents,
+    quests: liveQuests,
   };
 
   return (
@@ -247,17 +254,19 @@ export default function WarRoomLayout() {
         </aside>
       </div>
 
-      <footer className="quick-bar">
-        <input
-          aria-label="Quick narration"
-          className="quick-input"
-          placeholder="Quick narration... type and press Enter to broadcast to channel"
-          type="text"
-        />
-        <button className="quick-send" type="button">
-          Broadcast
-        </button>
-      </footer>
+      {showQuickBar ? (
+        <footer className="quick-bar">
+          <input
+            aria-label="Quick narration"
+            className="quick-input"
+            placeholder="Quick narration... type and press Enter to broadcast to channel"
+            type="text"
+          />
+          <button className="quick-send" type="button">
+            Broadcast
+          </button>
+        </footer>
+      ) : null}
     </div>
   );
 }

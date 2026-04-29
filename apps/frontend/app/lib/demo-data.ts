@@ -51,6 +51,52 @@ export const demoContext: WarRoomContext = {
   players,
   activity: activityFeed,
   apiOnline: true,
+  quests: [
+    {
+      id: 'quest-blood-ledger',
+      name: 'Recover the blood ledger',
+      description:
+        'Find the ledger before the Harpy can use the debt records to fracture the coterie.',
+      campaignId: 'demo-crimson-dynasty',
+      status: 'active',
+      sortOrder: 0,
+      visible: true,
+      entries: [
+        {
+          id: 'quest-entry-ledger-1',
+          questId: 'quest-blood-ledger',
+          content: 'Question the Elysium steward about the missing archive key.',
+          status: 'done',
+          sortOrder: 0,
+        },
+        {
+          id: 'quest-entry-ledger-2',
+          questId: 'quest-blood-ledger',
+          content: 'Search the basement records room before dawn.',
+          status: 'pending',
+          sortOrder: 1,
+        },
+      ],
+    },
+    {
+      id: 'quest-chantry-signal',
+      name: 'Trace the chantry signal',
+      description: 'Identify who placed Tremere marks inside the court without causing open panic.',
+      campaignId: 'demo-crimson-dynasty',
+      status: 'active',
+      sortOrder: 1,
+      visible: false,
+      entries: [
+        {
+          id: 'quest-entry-chantry-1',
+          questId: 'quest-chantry-signal',
+          content: 'Compare the sigils against Vivienne’s occult notes.',
+          status: 'pending',
+          sortOrder: 0,
+        },
+      ],
+    },
+  ],
   events: [
     {
       id: 'event-stealth-approach',

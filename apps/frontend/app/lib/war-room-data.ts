@@ -1,6 +1,7 @@
 import type {
   ListEvents200DataItem,
   ListCharacters200DataItem,
+  ListQuests200DataItem,
 } from '@constancia/api-client/model';
 
 export type TriggerKind = 'test' | 'narration' | 'insight' | 'message';
@@ -78,6 +79,7 @@ export type WarRoomContext = {
   activity: ActivityItem[];
   apiOnline: boolean;
   events: ListEvents200DataItem[];
+  quests: ListQuests200DataItem[];
   demoMode?: boolean;
   firedEventIds?: string[];
   recordActivity?: (label: string) => void;

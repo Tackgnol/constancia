@@ -25,7 +25,7 @@ const tabs = [
   { to: '/demo/setup', label: 'Setup' },
   { to: '/demo', label: 'Play', end: true },
   { to: '/demo/npcs', label: 'NPCs' },
-  { to: '/demo/log', label: 'Log' },
+  { to: '/demo/log', label: 'Quests' },
 ];
 
 const quickNarrationSchema = z.object({
@@ -65,6 +65,7 @@ export default function DemoLayout() {
   useLoaderData<typeof loader>();
 
   const location = useLocation();
+  const showQuickBar = location.pathname === '/demo';
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [activity, setActivity] = useState(demoContext.activity);
   const [firedEventIds, setFiredEventIds] = useState<string[]>([]);
@@ -266,35 +267,39 @@ export default function DemoLayout() {
         </aside>
       </div>
 
-      <footer className="quick-bar">
-        <form className="quick-form" onSubmit={onSubmitQuickBar} noValidate>
-          <div className="quick-form-row">
-            <input
-              aria-label="Quick narration"
-              className="quick-input"
-              placeholder="Quick narration... type and press Enter to broadcast to channel"
-              type="text"
-              {...register('message')}
-            />
-            <button className="quick-send" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Broadcasting…' : 'Broadcast'}
-            </button>
-          </div>
-          {errors.message ? (
-            <p className="quick-bar-feedback quick-bar-error">{errors.message.message}</p>
-          ) : null}
-          {errors.root?.serverError?.message ? (
-            <p className="quick-bar-feedback quick-bar-error">{errors.root.serverError.message}</p>
-          ) : null}
-          {!errors.message && !errors.root?.serverError?.message && quickBarNotice ? (
-            <p className="quick-bar-feedback quick-bar-success">{quickBarNotice}</p>
-          ) : (
-            <p className="quick-bar-feedback quick-bar-hint">
-              Press Enter to send. Keep it short enough to play like a live cue.
-            </p>
-          )}
-        </form>
-      </footer>
+      {showQuickBar ? (
+        <footer className="quick-bar">
+          <form className="quick-form" onSubmit={onSubmitQuickBar} noValidate>
+            <div className="quick-form-row">
+              <input
+                aria-label="Quick narration"
+                className="quick-input"
+                placeholder="Quick narration... type and press Enter to broadcast to channel"
+                type="text"
+                {...register('message')}
+              />
+              <button className="quick-send" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Broadcasting…' : 'Broadcast'}
+              </button>
+            </div>
+            {errors.message ? (
+              <p className="quick-bar-feedback quick-bar-error">{errors.message.message}</p>
+            ) : null}
+            {errors.root?.serverError?.message ? (
+              <p className="quick-bar-feedback quick-bar-error">
+                {errors.root.serverError.message}
+              </p>
+            ) : null}
+            {!errors.message && !errors.root?.serverError?.message && quickBarNotice ? (
+              <p className="quick-bar-feedback quick-bar-success">{quickBarNotice}</p>
+            ) : (
+              <p className="quick-bar-feedback quick-bar-hint">
+                Press Enter to send. Keep it short enough to play like a live cue.
+              </p>
+            )}
+          </form>
+        </footer>
+      ) : null}
     </div>
   );
 }

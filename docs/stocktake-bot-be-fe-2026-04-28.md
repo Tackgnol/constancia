@@ -61,16 +61,16 @@ Legend:
   Partial: FE can edit core NPC dossier fields and append facts, but existing facts are not editable, quest links do not exist, and there is no full CRUD surface.
 
 ## Quests
-- [ ] Add tasks for players  
-  Partial: BE has quest creation APIs, but no FE GM UI, no bot GM flow, and quests are campaign-level rather than assigned to selected players.
-- [ ] Add steps to those task  
-  Partial: BE supports quest entries/steps, but there is no FE or bot management surface.
-- [ ] Reveal and hide tasks (all tasks hidden by default)  
-  Partial: BE supports `visible` and defaults quests to hidden, but there is no FE or bot UI for toggling visibility.
-- [ ] Mark tasks as completed with new information attached  
-  Partial: BE can update quest status and add/update entries, but there is no end-to-end UI flow.
-- [ ] Edit all that  
-  Partial: backend CRUD exists for quests and entries, but FE/bot management is missing.
+- [x] Add tasks for players
+  The GM Quests tab can create campaign quests, and visible quests are already consumed by the player journal API and bot `/journal`.
+- [x] Add steps to those tasks
+  The GM Quests tab can add quest entries/steps under each quest.
+- [x] Reveal and hide tasks (all tasks hidden by default)
+  Quest visibility is editable in the GM Quests tab; backend-created quests still default hidden.
+- [x] Mark tasks as completed with new information attached
+  Quest entries can be edited and marked `done`, so completion notes can be attached to the same step.
+- [x] Edit all that
+  Quest name, description, status, visibility, step content, step status, and step deletion are surfaced in the GM UI. Current visibility is campaign-wide, not per-player.
 
 ## Journal
 - [ ] A place that summarizes Quests, NPCs, and Lore  
@@ -118,7 +118,7 @@ These are the next implementation steps needed to close the remaining unchecked 
   Build a FE edit flow around the existing BE `PATCH /campaigns/:id/events/:eventId` route. Reuse the current pipeline editor, preserve uploaded `imageUrl` values, surface moderation errors, and verify create/edit/fire still works for all three event types.
   Closes: update test event, update insight event, update narration event.
 
-- [ ] **Step 8: Surface quest management in the GM UI**
+- [x] **Step 8: Surface quest management in the GM UI**
   Add a dense quest/task management surface for creating quests, adding steps, editing status, toggling visibility, and attaching completion notes. Keep BE as source of truth, regenerate the shared API client if route contracts change, and keep bot `/journal` reading the same data.
   Closes: add tasks for players, add steps to those tasks, reveal/hide tasks, mark tasks completed, edit quests.
 
@@ -148,6 +148,6 @@ These are the next implementation steps needed to close the remaining unchecked 
 ## Short version
 - Strongest working loop today: **event creation in FE → event firing in FE → backend execution → Discord delivery by bot**, plus **ad-hoc player whispers**.
 - Best-developed content management area today: **NPC dossiers + facts + per-player fact reveal**, with moderation/upload plumbing now behind the backend.
-- Present in backend but not truly surfaced yet: **quests**, **session-summary journal APIs**, and **admin upload controls**.
+- Present in backend but not truly surfaced yet: **session-summary journal APIs** and **admin upload controls**.
 - Not implemented yet: **lore**, **NPC↔quest links**, and **automatic event-driven writes into journal/NPC/lore systems**.
 
