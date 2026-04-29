@@ -1,5 +1,5 @@
 import { loadBotConfig } from '../config.js';
-import { botRequestOptions } from '../api/bot-headers.js';
+import { botRequestOptions } from '../config.js';
 
 export interface PlayerSheetMagicLinkRequestInput {
   discordUserId: string;

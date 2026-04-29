@@ -1,6 +1,6 @@
 import type { ChatInputCommandInteraction } from 'discord.js';
 import { getChannelEvents, submitBotTestResult } from '@constancia/api-client/endpoints/bot/bot';
-import { botRequestOptions } from '../api/bot-headers.js';
+import { botRequestOptions } from '../config.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
 export async function handleRoll(interaction: ChatInputCommandInteraction): Promise<void> {

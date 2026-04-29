@@ -1,5 +1,5 @@
 import { createMagicLink } from '@constancia/api-client/endpoints/auth/auth';
-import { botRequestOptions } from '../api/bot-headers.js';
+import { botRequestOptions } from '../config.js';
 
 export interface MagicLinkRequestInput {
   discordUserId: string;

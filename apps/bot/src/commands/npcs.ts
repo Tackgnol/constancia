@@ -3,8 +3,7 @@ import {
   getCampaignByGuild,
   listBotVisibleNpcsForPlayer,
 } from '@constancia/api-client/endpoints/bot/bot';
-import { botRequestOptions } from '../api/bot-headers.js';
-import { loadBotConfig } from '../config.js';
+import { botRequestOptions, loadBotConfig } from '../config.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
 const NPC_NAME_OPTION = 'name';

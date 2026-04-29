@@ -16,7 +16,7 @@ import {
   type SendTestInstancePayload,
 } from '@constancia/contracts';
 import { submitBotTestResult } from '@constancia/api-client/endpoints/bot/bot';
-import { botRequestOptions } from '../api/bot-headers.js';
+import { botRequestOptions } from '../config.js';
 import { deliverMessages } from '../delivery.js';
 import type { BotComponentHandler, BotModalHandler } from './command-types.js';
 
