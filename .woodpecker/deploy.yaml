@@ -68,6 +68,16 @@ steps:
         from_secret: discord_client_id
       VITE_API_URL:
         from_secret: vite_api_url
+      OPENAI_API_KEY:
+        from_secret: openai_api_key
+      R2_ENDPOINT:
+        from_secret: r2_endpoint
+      R2_ACCESS_KEY_ID:
+        from_secret: r2_access_key_id
+      R2_SECRET_ACCESS_KEY:
+        from_secret: r2_secret_access_key
+      R2_BUCKET:
+        from_secret: r2_bucket
     commands:
       - |
         set -e
@@ -75,6 +85,7 @@ steps:
 
         docker compose -f compose.prod.yaml config > /dev/null
         docker compose -f compose.prod.yaml build backend frontend bot migrate
+        docker compose -f compose.prod.yaml run --rm backend sh -lc 'test -n "$OPENAI_API_KEY" && test "$UPLOAD_STORAGE_DRIVER" = "r2" && test -n "$R2_ENDPOINT" && test -n "$R2_ACCESS_KEY_ID" && test -n "$R2_SECRET_ACCESS_KEY" && test -n "$R2_BUCKET"'
         docker compose -f compose.prod.yaml up -d postgres
         docker compose -f compose.prod.yaml run --rm migrate
         docker compose -f compose.prod.yaml up -d --wait backend frontend
