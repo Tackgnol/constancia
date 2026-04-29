@@ -7,9 +7,10 @@ RUN apt-get update \
 WORKDIR /app
 
 FROM base AS deps
-COPY package.json package-lock.json .npmrc turbo.json tsconfig.base.json ./
+COPY package.json package-lock.json .npmrc turbo.json tsconfig.base.json orval.config.ts ./
 COPY apps ./apps
 COPY packages ./packages
+COPY scripts ./scripts
 RUN npm ci
 
 FROM deps AS build

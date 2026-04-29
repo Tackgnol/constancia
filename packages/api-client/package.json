@@ -36,8 +36,10 @@
     }
   },
   "scripts": {
+    "prebuild": "npm run generate",
     "build": "tsc",
     "generate": "cd ../.. && npm run generate:api",
+    "pretypecheck": "npm run generate",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/"
   }
