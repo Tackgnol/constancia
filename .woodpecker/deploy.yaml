@@ -47,8 +47,8 @@ steps:
       FRONTEND_PORT: '3010'
       BACKEND_PORT: '3011'
       VITE_DISCORD_AUTH_ENABLED: 'false'
-      CONTENT_MODERATION_ENABLED: 'false'
-      UPLOAD_STORAGE_DRIVER: local
+      CONTENT_MODERATION_ENABLED: 'true'
+      UPLOAD_STORAGE_DRIVER: r2
 
       POSTGRES_PASSWORD:
         from_secret: postgres_password
