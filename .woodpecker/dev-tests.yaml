@@ -1,0 +1,13 @@
+# Runs on the integration branch. Lighter than PR checks.
+
+when:
+  - event: push
+    branch: dev
+
+steps:
+  workspace-checks:
+    image: node:22-bookworm
+    commands:
+      - npm ci --no-audit --no-fund
+      - npm run typecheck
+      - npm run test

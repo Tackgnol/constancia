@@ -1,0 +1,45 @@
+# Runs on pull requests. Full merge gate for the monorepo.
+# Smoke-builds production images under an isolated Compose project so prod
+# image tags on the host docker daemon are not touched.
+
+when:
+  - event: pull_request
+
+steps:
+  quality-checks:
+    image: node:22-bookworm
+    commands:
+      - npm ci --no-audit --no-fund
+      - npm run lint
+      - npm run typecheck
+      - npm run test
+      - npm run build
+
+  prod-compose-smoke:
+    image: docker:27-cli
+    depends_on:
+      - quality-checks
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      COMPOSE_PROJECT_NAME: ci-${CI_COMMIT_SHA}
+      POSTGRES_PASSWORD: ci-postgres-password
+      BETTER_AUTH_SECRET: ci-better-auth-secret
+      BOT_API_KEY: ci-bot-api-key
+      FRONTEND_URL: https://gm.example.test
+      BETTER_AUTH_URL: https://api.example.test
+      BACKEND_PUBLIC_URL: https://api.example.test
+      DISCORD_TOKEN: ci-discord-token
+      DISCORD_CLIENT_ID: ci-discord-client-id
+      VITE_API_URL: https://api.example.test
+      VITE_DISCORD_AUTH_ENABLED: 'false'
+    commands:
+      - |
+        set -e
+        cleanup() {
+          docker compose -f compose.prod.yaml down --rmi local --volumes --remove-orphans || true
+        }
+        trap cleanup EXIT
+
+        docker compose -f compose.prod.yaml config > /dev/null
+        docker compose -f compose.prod.yaml build backend frontend bot migrate

@@ -8,12 +8,14 @@
     "dev": "react-router dev",
     "prebuild": "npm --workspace @constancia/api-client run build",
     "build": "react-router build",
+    "start": "react-router-serve build/server/index.js",
     "generate:api": "cd ../.. && npm run generate:api",
     "pretypecheck": "npm --workspace @constancia/api-client run build",
     "typecheck": "react-router typegen && tsc --noEmit",
     "lint": "eslint app/"
   },
   "dependencies": {
+    "@react-router/serve": "^7.14.1",
     "@constancia/api-client": "*",
     "@constancia/contracts": "*",
     "@constancia/systems": "*",

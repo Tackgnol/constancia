@@ -1,0 +1,83 @@
+# Deploys master only. Secrets/config to create in Woodpecker (repo scoped):
+#
+# Required for a full production deploy:
+#   postgres_password
+#   better_auth_secret
+#   bot_api_key
+#   frontend_url
+#   better_auth_url
+#   backend_public_url
+#   discord_token
+#   discord_client_id
+#   vite_api_url
+#
+# Optional (only when enabling the corresponding feature):
+#   discord_client_secret      # Better Auth Discord OAuth in the backend/frontend
+#   discord_guild_id           # Faster per-guild slash-command registration
+#   openai_api_key             # Required when CONTENT_MODERATION_ENABLED=true
+#   upload_public_base_url     # Public URL prefix for local upload files
+#   r2_endpoint                # Required when UPLOAD_STORAGE_DRIVER=r2
+#   r2_access_key_id           #   "
+#   r2_secret_access_key       #   "
+#   r2_bucket                  #   "
+#
+# Non-secret defaults baked into this pipeline (see env.production.example
+# for the full list of toggles):
+#   POSTGRES_DB=constancia
+#   POSTGRES_USER=constancia
+#   FRONTEND_PORT=3010                # host loopback port; Caddy → localhost:3010
+#   BACKEND_PORT=3011                 # host loopback port; Caddy → localhost:3011
+#   VITE_DISCORD_AUTH_ENABLED=false
+#   CONTENT_MODERATION_ENABLED=false
+#   UPLOAD_STORAGE_DRIVER=local
+
+when:
+  - event: push
+    branch: master
+
+steps:
+  deploy:
+    image: docker:27-cli
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      COMPOSE_PROJECT_NAME: constancia
+      POSTGRES_DB: constancia
+      POSTGRES_USER: constancia
+      FRONTEND_PORT: '3010'
+      BACKEND_PORT: '3011'
+      VITE_DISCORD_AUTH_ENABLED: 'false'
+      CONTENT_MODERATION_ENABLED: 'false'
+      UPLOAD_STORAGE_DRIVER: local
+
+      POSTGRES_PASSWORD:
+        from_secret: postgres_password
+      BETTER_AUTH_SECRET:
+        from_secret: better_auth_secret
+      BOT_API_KEY:
+        from_secret: bot_api_key
+      FRONTEND_URL:
+        from_secret: frontend_url
+      BETTER_AUTH_URL:
+        from_secret: better_auth_url
+      BACKEND_PUBLIC_URL:
+        from_secret: backend_public_url
+      DISCORD_TOKEN:
+        from_secret: discord_token
+      DISCORD_CLIENT_ID:
+        from_secret: discord_client_id
+      VITE_API_URL:
+        from_secret: vite_api_url
+    commands:
+      - |
+        set -e
+        trap 'docker compose -f compose.prod.yaml logs --no-color --tail=200 backend frontend bot postgres || true' ERR
+
+        docker compose -f compose.prod.yaml config > /dev/null
+        docker compose -f compose.prod.yaml build backend frontend bot migrate
+        docker compose -f compose.prod.yaml up -d postgres
+        docker compose -f compose.prod.yaml run --rm migrate
+        docker compose -f compose.prod.yaml up -d --wait backend frontend
+        docker compose -f compose.prod.yaml up -d bot
+        docker compose -f compose.prod.yaml ps
+        docker image prune -f

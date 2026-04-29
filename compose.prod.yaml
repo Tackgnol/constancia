@@ -1,0 +1,180 @@
+name: constancia
+
+# ---------------------------------------------------------------------------
+# Network topology (least-privilege, see networks: at the bottom)
+#
+#   db      [internal]  postgres ⇄ backend, migrate
+#   fe-be   [internal]  backend  ⇄ frontend
+#   bot-be  [internal]  backend  ⇄ bot
+#   egress  [bridge]    backend, bot  → internet (OpenAI, R2, Discord)
+#
+# Postgres is unreachable except from backend/migrate. Frontend cannot reach
+# Postgres or the bot. Bot cannot reach Postgres or the frontend. Caddy on the
+# host reverse-proxies to the loopback ports published below.
+# ---------------------------------------------------------------------------
+
+x-runtime-deploy: &runtime-deploy
+  restart: unless-stopped
+  init: true
+
+x-backend-environment: &backend-environment
+  NODE_ENV: production
+  PORT: 3000
+  BACKEND_HOST: 0.0.0.0
+  DATABASE_URL: postgresql://${POSTGRES_USER:-constancia}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-constancia}?schema=public
+  FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL is required}
+  BETTER_AUTH_URL: ${BETTER_AUTH_URL:?BETTER_AUTH_URL is required}
+  BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is required}
+  BOT_API_KEY: ${BOT_API_KEY:?BOT_API_KEY is required}
+  BOT_INTERNAL_URL: http://bot:${BOT_HTTP_PORT:-3002}
+  BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:?BACKEND_PUBLIC_URL is required}
+  MAGIC_LINK_FRONTEND_PATH: ${MAGIC_LINK_FRONTEND_PATH:-/auth}
+  CONTENT_MODERATION_ENABLED: ${CONTENT_MODERATION_ENABLED:-false}
+  CONTENT_MODERATION_MODEL: ${CONTENT_MODERATION_MODEL:-omni-moderation-latest}
+  CONTENT_MODERATION_FAIL_CLOSED: ${CONTENT_MODERATION_FAIL_CLOSED:-true}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  UPLOAD_STORAGE_DRIVER: ${UPLOAD_STORAGE_DRIVER:-local}
+  UPLOAD_STORAGE_DIR: /app/data/uploads
+  UPLOAD_PUBLIC_BASE_URL: ${UPLOAD_PUBLIC_BASE_URL:-}
+  UPLOAD_MAX_BYTES: ${UPLOAD_MAX_BYTES:-5242880}
+  UPLOAD_IMAGE_MAX_DIMENSION: ${UPLOAD_IMAGE_MAX_DIMENSION:-1024}
+  UPLOAD_WEBP_QUALITY: ${UPLOAD_WEBP_QUALITY:-80}
+  UPLOAD_DEFAULT_ENABLED: ${UPLOAD_DEFAULT_ENABLED:-false}
+  UPLOAD_DEFAULT_ALLOWANCE_BYTES: ${UPLOAD_DEFAULT_ALLOWANCE_BYTES:-52428800}
+  UPLOAD_QUOTA_WARNING_PERCENT: ${UPLOAD_QUOTA_WARNING_PERCENT:-80}
+  DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
+  DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:-}
+  R2_ENDPOINT: ${R2_ENDPOINT:-}
+  R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+  R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+  R2_BUCKET: ${R2_BUCKET:-}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-constancia}
+      POSTGRES_USER: ${POSTGRES_USER:-constancia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - db
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-constancia} -d ${POSTGRES_DB:-constancia}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/backend.prod.Dockerfile
+      target: migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-constancia}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-constancia}?schema=public
+    networks:
+      - db
+    restart: 'no'
+
+  backend:
+    <<: *runtime-deploy
+    build:
+      context: .
+      dockerfile: docker/backend.prod.Dockerfile
+      target: runtime
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment: *backend-environment
+    volumes:
+      - backend_uploads:/app/data/uploads
+    networks:
+      - db
+      - fe-be
+      - bot-be
+      - egress
+    ports:
+      - '127.0.0.1:${BACKEND_PORT:-3001}:3000'
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/health').then((r) => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  bot:
+    <<: *runtime-deploy
+    build:
+      context: .
+      dockerfile: docker/bot.prod.Dockerfile
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      BACKEND_URL: http://backend:3000
+      FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL is required}
+      BOT_API_KEY: ${BOT_API_KEY:?BOT_API_KEY is required}
+      BOT_HTTP_HOST: 0.0.0.0
+      BOT_HTTP_PORT: ${BOT_HTTP_PORT:-3002}
+      DISCORD_TOKEN: ${DISCORD_TOKEN:?DISCORD_TOKEN is required}
+      CLIENT_ID: ${DISCORD_CLIENT_ID:?DISCORD_CLIENT_ID is required}
+      GUILD_ID: ${DISCORD_GUILD_ID:-}
+    networks:
+      - bot-be
+      - egress
+
+  frontend:
+    <<: *runtime-deploy
+    build:
+      context: .
+      dockerfile: docker/frontend.prod.Dockerfile
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      BACKEND_URL: http://backend:3000
+      VITE_API_URL: ${VITE_API_URL:?VITE_API_URL is required}
+      VITE_DISCORD_AUTH_ENABLED: ${VITE_DISCORD_AUTH_ENABLED:-false}
+    networks:
+      - fe-be
+    ports:
+      - '127.0.0.1:${FRONTEND_PORT:-3000}:3000'
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/').then((r) => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  postgres_data:
+  backend_uploads:
+
+networks:
+  db:
+    internal: true
+  fe-be:
+    internal: true
+  bot-be:
+    internal: true
+  egress:
+    driver: bridge

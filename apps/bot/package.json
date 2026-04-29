@@ -8,6 +8,7 @@
     "dev": "tsx watch src/main.ts",
     "prebuild": "npm --workspace @constancia/api-client run build",
     "build": "tsc",
+    "start": "node dist/main.js",
     "generate:api": "cd ../.. && npm run generate:api",
     "pretypecheck": "npm --workspace @constancia/api-client run build",
     "typecheck": "tsc --noEmit",

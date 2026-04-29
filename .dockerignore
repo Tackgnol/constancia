@@ -7,9 +7,31 @@ dist
 *.tsbuildinfo
 **/*.tsbuildinfo
 .git
+.gitignore
 .idea
 .claude
 .superpowers
 coverage
 **/coverage
+
+# Secrets — never bake into images
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!env.production.example
+
+# Logs and scratch files
+*.log
+**/*.log
+.tmp-*
+.codex-*
 npm-debug.log*
+
+# Not needed inside images
+.woodpecker
+compose.prod.yaml
+docker-compose.yml
+docker-compose.override.yml
+docker
