@@ -1,0 +1,207 @@
+import { useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { Link, useOutletContext, useParams, useRevalidator } from 'react-router';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createEvent, updateEvent } from '@constancia/api-client/endpoints/events/events';
+import type {
+  CreateEventBody,
+  ListEvents200DataItem,
+  UpdateEventBody,
+} from '@constancia/api-client/model';
+import { ManagementWorkspace } from '@/components/layout/management-workspace';
+import { EventSetupForm } from '@/components/setup/event-setup-form';
+import { SetupNotice } from '@/components/setup/setup-notice';
+import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
+import {
+  BLOCK_TYPES,
+  EVENT_TYPES,
+  eventFormSchema,
+  getDefaultPipelineForEventType,
+  normalizeEventFormValues,
+  type EventFormValues,
+  type PipelineBlock,
+} from '@/lib/event-schema';
+import type { WarRoomContext } from '@/lib/war-room-data';
+
+function getSetupBase(warRoom: WarRoomContext) {
+  return warRoom.demoMode ? '/demo/setup' : '/setup';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isEventType(value: string): value is EventFormValues['type'] {
+  return EVENT_TYPES.includes(value as EventFormValues['type']);
+}
+
+function isPipelineBlockType(value: string): value is PipelineBlock['blockType'] {
+  return BLOCK_TYPES.includes(value as PipelineBlock['blockType']);
+}
+
+function normalizeEventPipeline(event: ListEvents200DataItem): PipelineBlock[] {
+  const type = isEventType(event.type) ? event.type : 'narration';
+  if (!Array.isArray(event.pipeline)) {
+    return getDefaultPipelineForEventType(type);
+  }
+
+  const pipeline = event.pipeline.flatMap((block): PipelineBlock[] => {
+    if (!isRecord(block) || typeof block.blockType !== 'string') {
+      return [];
+    }
+
+    if (!isPipelineBlockType(block.blockType)) {
+      return [];
+    }
+
+    return [
+      {
+        blockType: block.blockType,
+        config: isRecord(block.config) ? block.config : {},
+      },
+    ];
+  });
+
+  return pipeline.length > 0 ? pipeline : getDefaultPipelineForEventType(type);
+}
+
+function eventToFormValues(event: ListEvents200DataItem): EventFormValues {
+  const type = isEventType(event.type) ? event.type : 'narration';
+
+  return {
+    name: event.name,
+    type,
+    channelId: event.channelId,
+    shortCircuit: event.shortCircuit,
+    pipeline: normalizeEventPipeline(event),
+  };
+}
+
+function emptyEventValues(): EventFormValues {
+  return {
+    name: '',
+    type: 'narration',
+    channelId: '',
+    shortCircuit: false,
+    pipeline: getDefaultPipelineForEventType('narration'),
+  };
+}
+
+export default function SetupEventRoute() {
+  const warRoom = useOutletContext<WarRoomContext>();
+  const { eventId } = useParams();
+  const revalidator = useRevalidator();
+  const setupBase = getSetupBase(warRoom);
+  const isDemoCampaign = warRoom.campaign.id.startsWith('demo-');
+  const editingEvent = useMemo(
+    () => warRoom.events.find((event) => event.id === eventId) ?? null,
+    [eventId, warRoom.events],
+  );
+  const isEditing = Boolean(eventId);
+  const [savedEvent, setSavedEvent] = useState<EventFormValues | null>(null);
+  const [eventError, setEventError] = useState<string | null>(null);
+
+  const eventMethods = useForm<EventFormValues>({
+    resolver: zodResolver(eventFormSchema),
+    defaultValues: editingEvent ? eventToFormValues(editingEvent) : emptyEventValues(),
+  });
+
+  const onSubmitEvent = async (values: EventFormValues) => {
+    try {
+      setEventError(null);
+      eventMethods.clearErrors('root');
+      const normalizedValues = normalizeEventFormValues(values);
+
+      if (!isDemoCampaign) {
+        if (isEditing && eventId) {
+          const response = await updateEvent(
+            { id: warRoom.campaign.id, eventId },
+            normalizedValues as UpdateEventBody,
+            { credentials: 'include' },
+          );
+          assertApiOk(response, 'The event dossier did not update cleanly. Try again in a moment.');
+        } else {
+          const response = await createEvent(
+            { id: warRoom.campaign.id },
+            normalizedValues as CreateEventBody,
+            { credentials: 'include' },
+          );
+          assertApiOk(response, 'The event dossier did not stage cleanly. Try again in a moment.');
+        }
+        revalidator.revalidate();
+      }
+
+      setSavedEvent(normalizedValues);
+      if (!isEditing) {
+        eventMethods.reset(emptyEventValues());
+      }
+    } catch (err) {
+      console.error('Save event error:', err);
+      const fallbackMessage = isEditing
+        ? 'The event dossier did not update cleanly. Try again in a moment.'
+        : 'The event dossier did not stage cleanly. Try again in a moment.';
+      const message = getApiErrorMessage(err, fallbackMessage);
+      eventMethods.setError('root.serverError', { type: 'manual', message });
+      setEventError(message);
+    }
+  };
+
+  return (
+    <ManagementWorkspace
+      eyebrow="Setup / Events"
+      title={isEditing ? 'Revise a staged move' : 'Queue the next move'}
+      description={
+        isEditing
+          ? 'Edit the event through its URL, then return to Play when the move is ready.'
+          : 'Build a focused event without loading the live control board with editor state.'
+      }
+      meta={
+        <div className="setup-hero-note">
+          <p className="detail-label">{isEditing ? 'Editing' : 'New event'}</p>
+          <p>{editingEvent ? editingEvent.name : 'Draft the trigger now; fire it from Play.'}</p>
+        </div>
+      }
+    >
+      <div className="setup-back-row">
+        <Link className="setup-inline-link" to={setupBase}>
+          Back to setup
+        </Link>
+        <Link className="setup-inline-link" to={warRoom.demoMode ? '/demo' : '/'}>
+          Open play board
+        </Link>
+      </div>
+
+      {isEditing && !editingEvent ? (
+        <SetupNotice label="Event not found" tone="error">
+          <span>This event is not present in the current campaign payload.</span>
+        </SetupNotice>
+      ) : null}
+
+      {savedEvent ? (
+        <SetupNotice label={isEditing ? 'Event updated' : 'Event staged'}>
+          <strong>{savedEvent.name}</strong>
+          <span>
+            {savedEvent.pipeline.length} action{savedEvent.pipeline.length !== 1 ? 's' : ''} ready.
+          </span>
+        </SetupNotice>
+      ) : null}
+
+      {eventError ? (
+        <SetupNotice label="Event staging failed" tone="error">
+          <span>{eventError}</span>
+        </SetupNotice>
+      ) : null}
+
+      {!isEditing || editingEvent ? (
+        <section className="setup-panel">
+          <EventSetupForm
+            methods={eventMethods}
+            channels={warRoom.channels}
+            onSubmit={onSubmitEvent}
+            submitLabel={isEditing ? 'Update Event' : 'Save Event'}
+          />
+        </section>
+      ) : null}
+    </ManagementWorkspace>
+  );
+}

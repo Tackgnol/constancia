@@ -87,7 +87,7 @@ export default function WarRoomLayout() {
 
   const liveEvents = events.status === 'ok' ? events.data : [];
   const liveQuests = quests.status === 'ok' ? quests.data : [];
-  const showQuickBar = location.pathname === '/';
+  const isPlayRoute = location.pathname === '/';
   const tagEventCounts = new Map<string, number>();
   for (const event of liveEvents) {
     tagEventCounts.set(event.channelId, (tagEventCounts.get(event.channelId) ?? 0) + 1);
@@ -127,7 +127,7 @@ export default function WarRoomLayout() {
   };
 
   return (
-    <div className="war-room-shell">
+    <div className={`war-room-shell ${isPlayRoute ? 'is-live-play' : 'is-management'}`}>
       <div className="design-label">A - War Room</div>
 
       <header className="topbar">
@@ -181,80 +181,84 @@ export default function WarRoomLayout() {
       </nav>
 
       <div className="war-room-grid">
-        <aside className="filter-panel">
-          <div className="panel-title">Scene Filter</div>
-          <div className="filter-tag-list">
-            <button
-              className={`filter-tag${activeTag === null ? ' is-active' : ''}`}
-              onClick={() => setActiveTag(null)}
-              type="button"
-            >
-              All Scenes
-            </button>
-            {outletContext.tags.map((tag) => {
-              const count = tagEventCounts.get(tag.id) ?? 0;
-              return (
-                <button
-                  key={tag.id}
-                  className={`filter-tag${activeTag === tag.id ? ' is-active' : ''}`}
-                  disabled={count === 0}
-                  onClick={() => setActiveTag(activeTag === tag.id ? null : tag.id)}
-                  type="button"
-                >
-                  {tag.label}
-                  {count > 0 && <span className="filter-tag-count">{count}</span>}
-                </button>
-              );
-            })}
-          </div>
+        {isPlayRoute ? (
+          <aside className="filter-panel">
+            <div className="panel-title">Scene Filter</div>
+            <div className="filter-tag-list">
+              <button
+                className={`filter-tag${activeTag === null ? ' is-active' : ''}`}
+                onClick={() => setActiveTag(null)}
+                type="button"
+              >
+                All Scenes
+              </button>
+              {outletContext.tags.map((tag) => {
+                const count = tagEventCounts.get(tag.id) ?? 0;
+                return (
+                  <button
+                    key={tag.id}
+                    className={`filter-tag${activeTag === tag.id ? ' is-active' : ''}`}
+                    disabled={count === 0}
+                    onClick={() => setActiveTag(activeTag === tag.id ? null : tag.id)}
+                    type="button"
+                  >
+                    {tag.label}
+                    {count > 0 && <span className="filter-tag-count">{count}</span>}
+                  </button>
+                );
+              })}
+            </div>
 
-          <SceneRailExtras
-            tags={outletContext.tags}
-            activeTag={activeTag}
-            eventCount={Array.from(tagEventCounts.values()).reduce((a, b) => a + b, 0)}
-            activeEventCount={activeTag ? (tagEventCounts.get(activeTag) ?? 0) : 0}
-          />
-        </aside>
+            <SceneRailExtras
+              tags={outletContext.tags}
+              activeTag={activeTag}
+              eventCount={Array.from(tagEventCounts.values()).reduce((a, b) => a + b, 0)}
+              activeEventCount={activeTag ? (tagEventCounts.get(activeTag) ?? 0) : 0}
+            />
+          </aside>
+        ) : null}
 
         <main className="route-panel">
           <Outlet context={outletContext} />
         </main>
 
-        <aside className="players-panel">
-          <div className="panel-title">Players</div>
+        {isPlayRoute ? (
+          <aside className="players-panel">
+            <div className="panel-title">Players</div>
 
-          <div className="player-list">
-            {outletContext.players.map((player) => (
-              <button key={player.id} className="player-row" type="button">
-                <span className="player-avatar" aria-hidden="true">
-                  {player.name.charAt(0)}
-                </span>
-                <span className="player-copy">
-                  <span className="player-name">{player.name}</span>
-                  <span className="player-meta">
-                    {player.character} · {player.player}
+            <div className="player-list">
+              {outletContext.players.map((player) => (
+                <button key={player.id} className="player-row" type="button">
+                  <span className="player-avatar" aria-hidden="true">
+                    {player.name.charAt(0)}
                   </span>
-                </span>
-                <span className={`player-status ${player.status}`} aria-label={player.status} />
-              </button>
-            ))}
-          </div>
+                  <span className="player-copy">
+                    <span className="player-name">{player.name}</span>
+                    <span className="player-meta">
+                      {player.character} · {player.player}
+                    </span>
+                  </span>
+                  <span className={`player-status ${player.status}`} aria-label={player.status} />
+                </button>
+              ))}
+            </div>
 
-          <PlayerWhisperForm warRoom={outletContext} />
+            <PlayerWhisperForm warRoom={outletContext} />
 
-          <div className="panel-title panel-title-secondary">Recent Activity</div>
-          <div className="activity-feed">
-            {outletContext.activity.map((entry) => (
-              <p key={entry.id}>
-                <span>{entry.time}</span>
-                {entry.label}
-              </p>
-            ))}
-          </div>
-        </aside>
+            <div className="panel-title panel-title-secondary">Recent Activity</div>
+            <div className="activity-feed">
+              {outletContext.activity.map((entry) => (
+                <p key={entry.id}>
+                  <span>{entry.time}</span>
+                  {entry.label}
+                </p>
+              ))}
+            </div>
+          </aside>
+        ) : null}
       </div>
 
-      {showQuickBar ? (
+      {isPlayRoute ? (
         <footer className="quick-bar">
           <input
             aria-label="Quick narration"

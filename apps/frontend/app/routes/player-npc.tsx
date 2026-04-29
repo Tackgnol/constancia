@@ -2,13 +2,24 @@ import type { LoaderFunctionArgs } from 'react-router';
 import { useLoaderData } from 'react-router';
 import { getVisibleNpcForCurrentPlayer } from '@constancia/api-client/endpoints/npcs/npcs';
 import { NpcPortraitFallback } from '@/components/npcs/npc-portrait-fallback';
+import { getDemoPlayerNpc } from '@/lib/demo-player-data';
 
 export async function loader({ params, request: _request }: LoaderFunctionArgs) {
-  const campaignId = params.campaignId;
+  const campaignId = params.campaignId ?? 'demo-crimson-dynasty';
   const npcId = params.npcId;
 
-  if (!campaignId || !npcId) {
+  if (!npcId) {
     throw new Response('NPC dossier link is incomplete.', { status: 400 });
+  }
+
+  if (campaignId.startsWith('demo-')) {
+    const demoNpc = getDemoPlayerNpc(npcId);
+
+    if (!demoNpc) {
+      throw new Response('NPC dossier not found.', { status: 404 });
+    }
+
+    return demoNpc;
   }
 
   try {

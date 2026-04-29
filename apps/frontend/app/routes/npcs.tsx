@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router';
+import { Link, useOutletContext } from 'react-router';
 import { listNpcs, revealNpcFacts } from '@constancia/api-client/endpoints/npcs/npcs';
 import type { ListNpcs200DataItem, RevealNpcFacts200Data } from '@constancia/api-client/model';
-import { AppendFactForm } from '@/components/npcs/append-fact-form';
+import { ManagementWorkspace } from '@/components/layout/management-workspace';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import {
   normalizeNpc,
@@ -14,9 +14,9 @@ import {
 } from '@/components/npcs/block-registry';
 import { KnownToPicker } from '@/components/npcs/known-to-picker';
 import { NpcPortraitFallback } from '@/components/npcs/npc-portrait-fallback';
-import { NpcEditForm } from '@/components/npcs/npc-edit-form';
 import { SystemBlockRenderer } from '@/components/npcs/system-block-renderer';
 import { buildRecipientOptions, type WarRoomContext } from '@/lib/war-room-data';
+import { demoNpcs } from '@/lib/demo-npcs';
 
 type ApiNpc = ListNpcs200DataItem | RevealNpcFacts200Data;
 
@@ -35,97 +35,9 @@ type ApiNpcFact = {
   knownTo?: ApiKnownPlayer[];
 };
 
-const demoNpcs: CampaignNpc[] = [
-  {
-    id: 'demo-prince-adrian-voss',
-    name: 'Prince Adrian Voss',
-    imageUrl: null,
-    description:
-      'Keeps the city stable through debt, spectacle, and the quiet certainty that everybody already owes him twice.',
-    systemBlocks: [
-      { systemId: 'vtm-v5', blockType: 'clan', label: 'Clan', value: 'Ventrue' },
-      { systemId: 'vtm-v5', blockType: 'title', label: 'Title', value: 'Prince' },
-      {
-        systemId: 'vtm-v5',
-        blockType: 'demeanor',
-        label: 'Demeanor',
-        value: 'Measured, aristocratic, and incapable of sounding hurried even when furious.',
-      },
-    ],
-    campaignId: 'demo-crimson-dynasty',
-    facts: [
-      {
-        id: 'demo-prince-fact-1',
-        content: 'He keeps a private ledger of every boon traded in Elysium.',
-        sortOrder: 0,
-        npcId: 'demo-prince-adrian-voss',
-        knownTo: [
-          {
-            characterId: 'demo-char-aleksei',
-            discordUserId: 'aleksei',
-            displayName: 'Aleksei Volkov',
-            secondaryLabel: 'Marcin · aleksei',
-          },
-          {
-            characterId: 'demo-char-vivienne',
-            discordUserId: 'vivienne',
-            displayName: 'Vivienne Lacroix',
-            secondaryLabel: 'Kasia · vivienne',
-          },
-        ],
-      },
-      {
-        id: 'demo-prince-fact-2',
-        content: 'The Prince still answers to a mortal accountant who never learned the truth.',
-        sortOrder: 1,
-        npcId: 'demo-prince-adrian-voss',
-        knownTo: [],
-      },
-    ],
-  },
-  {
-    id: 'demo-mara-the-veiled',
-    name: 'Mara the Veiled',
-    imageUrl: null,
-    description:
-      'Information broker, court whisperer, and the first person to know when a secret starts to rot.',
-    systemBlocks: [
-      { systemId: 'vtm-v5', blockType: 'clan', label: 'Clan', value: 'Nosferatu' },
-      { systemId: 'vtm-v5', blockType: 'network', label: 'Network', value: 'Sewer couriers' },
-    ],
-    campaignId: 'demo-crimson-dynasty',
-    facts: [
-      {
-        id: 'demo-mara-fact-1',
-        content: 'She trades in rumors only after hearing them from three different mouths.',
-        sortOrder: 0,
-        npcId: 'demo-mara-the-veiled',
-        knownTo: [
-          {
-            characterId: 'demo-char-marcus',
-            discordUserId: 'marcus',
-            displayName: 'Marcus Webb',
-            secondaryLabel: 'Piotr · marcus',
-          },
-        ],
-      },
-      {
-        id: 'demo-mara-fact-2',
-        content: 'She maintains a dead-drop under the third pew in Saint Brigid’s chapel.',
-        sortOrder: 1,
-        npcId: 'demo-mara-the-veiled',
-        knownTo: [
-          {
-            characterId: 'demo-char-vivienne',
-            discordUserId: 'vivienne',
-            displayName: 'Vivienne Lacroix',
-            secondaryLabel: 'Kasia · vivienne',
-          },
-        ],
-      },
-    ],
-  },
-];
+function getSetupBase(warRoom: WarRoomContext) {
+  return warRoom.demoMode ? '/demo/setup' : '/setup';
+}
 
 function normalizeKnownTo(input: ApiKnownPlayer[] | undefined): KnownPlayerRef[] {
   return (input ?? []).map((entry) => ({
@@ -170,9 +82,9 @@ export default function NpcsRoute() {
   const [loading, setLoading] = useState(!isDemoCampaign);
   const [error, setError] = useState<string | null>(null);
   const [assigningFactId, setAssigningFactId] = useState<string | null>(null);
-  const [isEditingNpc, setIsEditingNpc] = useState(false);
   const [activeDossierTab, setActiveDossierTab] = useState<'bio' | 'stats' | 'facts'>('bio');
   const [copiedLinkRecipientId, setCopiedLinkRecipientId] = useState<string | null>(null);
+  const setupBase = getSetupBase(warRoom);
 
   const recipientOptions = useMemo(
     () => buildRecipientOptions(warRoom.rawCharacters, isDemoCampaign ? warRoom.players : []),
@@ -230,7 +142,6 @@ export default function NpcsRoute() {
   }, [npcs, selectedNpcId]);
 
   useEffect(() => {
-    setIsEditingNpc(false);
     setActiveDossierTab('bio');
     setCopiedLinkRecipientId(null);
   }, [selectedNpcId]);
@@ -356,29 +267,24 @@ export default function NpcsRoute() {
 
   if (loading && npcs.length === 0) {
     return (
-      <div className="mode-route">
-        <section className="hero-strip hero-strip-compact">
-          <div>
-            <p className="eyebrow">NPCs</p>
-            <h1>Pressure points</h1>
-            <p className="hero-copy">Pulling the dossiers out of the archive…</p>
-          </div>
+      <ManagementWorkspace
+        eyebrow="NPCs"
+        title="Pressure points"
+        description="Pulling the dossiers out of the archive..."
+      >
+        <section className="detail-card npc-empty-state">
+          <p className="form-hint">Loading dossiers.</p>
         </section>
-      </div>
+      </ManagementWorkspace>
     );
   }
 
   return (
-    <div className="mode-route">
-      <section className="hero-strip hero-strip-compact npc-hero">
-        <div>
-          <p className="eyebrow">NPCs</p>
-          <h1>Pressure points, leverage, witnesses.</h1>
-          <p className="hero-copy">
-            Track the court exactly as the GM needs it: who they are, what matters about them, and
-            which players have seen the edge beneath the mask.
-          </p>
-        </div>
+    <ManagementWorkspace
+      eyebrow="NPCs"
+      title="Pressure points, leverage, witnesses"
+      description="Track who matters, what they know, and which players have seen the edge beneath the mask."
+      meta={
         <div className="npc-hero-meta">
           <p className="detail-label">Board state</p>
           <strong>{npcs.length} dossiers active</strong>
@@ -387,8 +293,8 @@ export default function NpcsRoute() {
             {npcs.reduce((total, npc) => total + npc.facts.length, 0) === 1 ? '' : 's'} on file
           </span>
         </div>
-      </section>
-
+      }
+    >
       {error ? (
         <SetupNotice label="NPC board warning" tone="error">
           <span>{error}</span>
@@ -403,6 +309,9 @@ export default function NpcsRoute() {
             Add an NPC from the setup panel, shape it through system blocks, and come back here to
             edit the dossier and decide which players learn what.
           </p>
+          <Link className="ghost-action ghost-action-inline" to={`${setupBase}/npcs/new`}>
+            Add dossier
+          </Link>
         </section>
       ) : selectedNpc ? (
         <div className="npc-workbench">
@@ -466,13 +375,12 @@ export default function NpcsRoute() {
                       </p>
                       <h2>{selectedNpc.name}</h2>
                     </div>
-                    <button
+                    <Link
                       className="ghost-action ghost-action-inline"
-                      type="button"
-                      onClick={() => setIsEditingNpc((current) => !current)}
+                      to={`${setupBase}/npcs/${selectedNpc.id}`}
                     >
-                      {isEditingNpc ? 'Close editor' : 'Edit dossier'}
-                    </button>
+                      Edit in setup
+                    </Link>
                   </div>
 
                   <div className="npc-identity-grid">
@@ -497,25 +405,6 @@ export default function NpcsRoute() {
                   <p>{selectedNpc.description || 'No narrative summary has been written yet.'}</p>
                 </div>
               </div>
-
-              {isEditingNpc ? (
-                <NpcEditForm
-                  campaignId={warRoom.campaign.id}
-                  systemId={warRoom.system.id}
-                  npc={selectedNpc}
-                  isDemoCampaign={isDemoCampaign}
-                  onCancel={() => setIsEditingNpc(false)}
-                  onError={setError}
-                  onSaved={(updatedNpc) => {
-                    setNpcs((current) =>
-                      current.map((entry) =>
-                        entry.id === updatedNpc.id ? normalizeNpc(updatedNpc) : entry,
-                      ),
-                    );
-                    setIsEditingNpc(false);
-                  }}
-                />
-              ) : null}
 
               <div className="npc-tab-row" role="tablist" aria-label="NPC dossier panels">
                 {[
@@ -577,22 +466,31 @@ export default function NpcsRoute() {
                               {recipient.knownFacts} known fact
                               {recipient.knownFacts === 1 ? '' : 's'}
                             </span>
-                            <button
-                              className="ghost-action ghost-action-inline"
-                              type="button"
-                              disabled={isDemoCampaign || recipient.knownFacts === 0}
-                              onClick={() => {
-                                void copyPlayerDossierLink(recipient.discordUserId);
-                              }}
-                            >
-                              {isDemoCampaign
-                                ? 'Demo only'
-                                : recipient.knownFacts === 0
-                                  ? 'No dossier yet'
-                                  : copiedLinkRecipientId === recipient.discordUserId
-                                    ? 'Copied'
-                                    : 'Copy link'}
-                            </button>
+                            {isDemoCampaign && recipient.knownFacts > 0 ? (
+                              <Link
+                                className="ghost-action ghost-action-inline"
+                                to={`/demo/player/npcs/${selectedNpc.id}`}
+                              >
+                                View demo
+                              </Link>
+                            ) : (
+                              <button
+                                className="ghost-action ghost-action-inline"
+                                type="button"
+                                disabled={isDemoCampaign || recipient.knownFacts === 0}
+                                onClick={() => {
+                                  void copyPlayerDossierLink(recipient.discordUserId);
+                                }}
+                              >
+                                {isDemoCampaign
+                                  ? 'No demo dossier'
+                                  : recipient.knownFacts === 0
+                                    ? 'No dossier yet'
+                                    : copiedLinkRecipientId === recipient.discordUserId
+                                      ? 'Copied'
+                                      : 'Copy link'}
+                              </button>
+                            )}
                           </article>
                         ))}
                       </div>
@@ -647,24 +545,13 @@ export default function NpcsRoute() {
                           remembers.
                         </p>
                       </div>
+                      <Link
+                        className="ghost-action ghost-action-inline"
+                        to={`${setupBase}/npcs/${selectedNpc.id}`}
+                      >
+                        Add or edit facts
+                      </Link>
                     </div>
-
-                    <AppendFactForm
-                      campaignId={warRoom.campaign.id}
-                      npcId={selectedNpc.id}
-                      nextSortOrder={selectedNpc.facts.length}
-                      isDemoCampaign={isDemoCampaign}
-                      onError={setError}
-                      onAppended={(fact) => {
-                        setNpcs((current) =>
-                          current.map((entry) =>
-                            entry.id === selectedNpc.id
-                              ? normalizeNpc({ ...entry, facts: [...entry.facts, fact] })
-                              : entry,
-                          ),
-                        );
-                      }}
-                    />
 
                     <div className="npc-facts-grid">
                       {selectedNpc.facts.map((fact, index) => {
@@ -717,6 +604,6 @@ export default function NpcsRoute() {
           </section>
         </div>
       ) : null}
-    </div>
+    </ManagementWorkspace>
   );
 }

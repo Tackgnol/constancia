@@ -41,7 +41,7 @@ export function PipelineBuilder({ eventType }: { eventType?: EventType }) {
   return (
     <div className="pipeline-builder">
       <div className="form-section-header">
-        <span className="form-label">Pipeline</span>
+        <span className="form-label">Event Actions</span>
         {errors.pipeline?.root && (
           <span className="form-error">{errors.pipeline.root.message}</span>
         )}
@@ -52,7 +52,7 @@ export function PipelineBuilder({ eventType }: { eventType?: EventType }) {
 
       {fields.length === 0 && (
         <div className="pipeline-empty">
-          No blocks yet — add one to define what happens when this event fires.
+          No actions yet. Add one to define what happens when this event fires.
         </div>
       )}
 
@@ -71,7 +71,7 @@ export function PipelineBuilder({ eventType }: { eventType?: EventType }) {
                   onValueChange={(v) => handleBlockTypeChange(index, v as BlockType)}
                 >
                   <SelectTrigger className="pipeline-block-type flex-1 h-[2rem] text-[0.78rem] rounded-none border-0 bg-transparent shadow-none focus:ring-0 px-3 py-1.5">
-                    <SelectValue placeholder="Select block type…" />
+                    <SelectValue placeholder="Select action..." />
                   </SelectTrigger>
                   <SelectContent>
                     {addableBlockTypes.map((type) => (
@@ -89,7 +89,7 @@ export function PipelineBuilder({ eventType }: { eventType?: EventType }) {
                   className="pipeline-block-remove"
                   onClick={() => remove(index)}
                   type="button"
-                  aria-label={`Remove block ${index + 1}`}
+                  aria-label={`Remove action ${index + 1}`}
                 >
                   ×
                 </button>
@@ -107,7 +107,7 @@ export function PipelineBuilder({ eventType }: { eventType?: EventType }) {
 
       <Select onValueChange={addBlock} value="">
         <SelectTrigger className="pipeline-add-trigger">
-          <SelectValue placeholder="+ Add Block" />
+          <SelectValue placeholder="+ Add Action" />
         </SelectTrigger>
         <SelectContent>
           {addableBlockTypes.map((type) => (

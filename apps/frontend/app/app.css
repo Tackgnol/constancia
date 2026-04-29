@@ -46,7 +46,7 @@
     --secondary:           #1f2329;
     --secondary-foreground:#cac4c0;
     --muted:               #121317;
-    --muted-foreground:    #857e7b;
+    --muted-foreground:    #948d89;
     --accent:              #252930;
     --accent-foreground:   #e2e2e6;
     --destructive:         #7f1d1d;
@@ -72,7 +72,7 @@
   /* Text */
   --text:             #e2e2e6; /* on_surface — never pure white */
   --text-secondary:   #cac4c0; /* on_surface_variant */
-  --muted:            #857e7b;
+  --muted:            #948d89;
   --muted-strong:     #a09a97;
 
   /* Brand — Oxblood + Candle Glow */
@@ -167,8 +167,8 @@ h1, h2, h3 {
 
 .system-badge {
   padding: 0.24rem 0.55rem;
-  background: rgba(255, 255, 255, 0.02);
-  color: var(--muted-strong);
+  background: var(--surface-high);
+  color: var(--text-secondary);
   outline: 1px dashed var(--outline-variant);
 }
 
@@ -212,8 +212,9 @@ h1, h2, h3 {
 
 .mode-tab {
   position: relative;
+  min-height: 2.75rem;
   padding: 0.95rem 1rem 0.9rem;
-  color: #576171;
+  color: var(--muted-strong);
   text-decoration: none;
   font: 600 0.72rem/1 'IBM Plex Mono', monospace;
   letter-spacing: 0.16em;
@@ -304,6 +305,7 @@ h1, h2, h3 {
   display: flex;
   align-items: center;
   width: 100%;
+  min-height: 2.75rem;
   padding: 0.7rem 0.8rem;
   background: var(--surface);
   color: var(--muted-strong);
@@ -416,10 +418,67 @@ h1, h2, h3 {
   padding: 1.35rem 1.35rem 7rem;
 }
 
+.war-room-shell.is-management .war-room-grid {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(1160px, calc(100vw - 2rem));
+  min-height: auto;
+  margin: 0 auto;
+}
+
+.war-room-shell.is-management .route-panel {
+  padding: clamp(1rem, 2vw, 1.5rem) 0 4rem;
+}
+
 .play-route,
 .mode-route {
   display: grid;
   gap: 1rem;
+}
+
+.management-workspace {
+  display: grid;
+  gap: 1rem;
+}
+
+.management-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.36fr);
+  gap: 1rem;
+  align-items: start;
+  padding: 1.25rem;
+  background: var(--surface);
+  border-radius: 0.125rem;
+  box-shadow: var(--shadow);
+}
+
+.management-hero h1 {
+  max-width: 18ch;
+  margin: 0;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: clamp(1.55rem, 1.7vw, 2.25rem);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.management-hero .hero-copy {
+  max-width: 64ch;
+  margin-bottom: 0;
+}
+
+.management-hero-meta {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.95rem 1rem;
+  background: color-mix(in oklch, var(--surface-low) 88%, var(--primary) 12%);
+}
+
+.management-hero-meta > .setup-hero-note,
+.management-hero-meta > .npc-hero-meta,
+.management-hero-meta > .log-hero-meta {
+  padding: 0;
+  background: transparent;
 }
 
 .board-empty-state {
@@ -929,6 +988,7 @@ h1, h2, h3 {
 .ghost-action {
   width: 100%;
   margin-top: 0.95rem;
+  min-height: 2.75rem;
   padding: 0.8rem;
   outline: 1px dashed var(--outline-variant);
   background: transparent;
@@ -1101,6 +1161,7 @@ h1, h2, h3 {
 
 .quick-input {
   width: 100%;
+  min-height: 2.75rem;
   padding: 0.9rem 1rem;
   border: none;
   background: var(--surface-high);
@@ -1117,6 +1178,7 @@ h1, h2, h3 {
 }
 
 .quick-send {
+  min-height: 2.75rem;
   padding: 0.9rem 1.05rem;
   background: var(--primary);
   color: var(--primary-glow);
@@ -1196,6 +1258,7 @@ h1, h2, h3 {
   align-items: center;
   gap: 0.75rem;
   flex: 1;
+  min-height: 2.75rem;
   padding: 0.85rem 1rem;
   background: var(--surface-low);
   color: var(--muted-strong);
@@ -1314,6 +1377,67 @@ h1, h2, h3 {
   font: 600 1rem/1.25 'IBM Plex Sans', sans-serif;
 }
 
+.setup-command-grid,
+.setup-directory-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.setup-command-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.setup-command-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.95rem;
+  min-height: 10rem;
+  padding: 1rem;
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.setup-command-card:hover,
+.setup-command-card:focus-visible {
+  background: var(--surface-high);
+}
+
+.setup-command-card h2,
+.setup-command-card p {
+  margin: 0;
+}
+
+.setup-command-card h2 {
+  margin-top: 0.25rem;
+  font-family: 'Newsreader', serif;
+  font-size: clamp(1.35rem, 2vw, 1.9rem);
+  line-height: 1;
+}
+
+.setup-command-card p:not(.detail-label) {
+  margin-top: 0.65rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.setup-directory-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.setup-directory-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.setup-back-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
 .event-edit-list {
   display: grid;
   gap: 0.55rem;
@@ -1324,10 +1448,12 @@ h1, h2, h3 {
   grid-template-columns: 5.5rem minmax(0, 1fr) minmax(8rem, auto);
   gap: 0.75rem;
   align-items: center;
+  min-height: 2.75rem;
   padding: 0.72rem 0.85rem;
   border: 0;
   background: rgba(12, 14, 17, 0.24);
   color: var(--text-secondary);
+  text-decoration: none;
   text-align: left;
   cursor: pointer;
   outline: 1px solid var(--outline-variant);
@@ -1832,6 +1958,7 @@ h1, h2, h3 {
 
 .npc-tab {
   min-width: 7rem;
+  min-height: 2.75rem;
   padding: 0.75rem 0.95rem;
   border: none;
   background: var(--surface-high);
@@ -1987,7 +2114,7 @@ h1, h2, h3 {
 }
 
 .sheet-stat-grid {
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
 }
 
 .sheet-stat-cell {
@@ -2002,7 +2129,8 @@ h1, h2, h3 {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.4rem 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.3rem;
   background: var(--surface-low);
   cursor: pointer;
   user-select: none;
@@ -2038,8 +2166,8 @@ h1, h2, h3 {
 }
 
 .stat-pip {
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 2.75rem;
+  height: 2.75rem;
   padding: 0;
   background: var(--surface-high);
   border: 0;
@@ -2203,6 +2331,44 @@ h1, h2, h3 {
   border-left: 3px solid color-mix(in oklch, var(--primary-glow) 70%, transparent);
 }
 
+.quest-summary-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: start;
+}
+
+.quest-summary-copy {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.quest-summary-copy h2 {
+  margin: 0;
+  font-family: 'Newsreader', serif;
+  font-size: clamp(1.35rem, 1.7vw, 1.8rem);
+  font-weight: 600;
+  line-height: 1.05;
+}
+
+.quest-summary-copy p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.quest-summary-actions,
+.quest-entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.quest-summary-actions .ghost-action {
+  margin-top: 0;
+}
+
 .quest-card-completed {
   border-left-color: color-mix(in oklch, var(--secondary) 78%, transparent);
 }
@@ -2239,7 +2405,7 @@ h1, h2, h3 {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  min-height: 2.25rem;
+  min-height: 2.75rem;
   padding: 0.75rem 0.85rem;
   background: var(--surface-high);
   color: var(--muted-strong);
@@ -2274,11 +2440,42 @@ h1, h2, h3 {
 
 .quest-entry-row {
   display: grid;
-  grid-template-columns: 2.6rem minmax(0, 1fr) minmax(120px, 0.22fr) auto auto;
+  grid-template-columns: 2.6rem minmax(0, 1fr) minmax(120px, 0.22fr) repeat(3, auto);
   align-items: end;
   gap: 0.65rem;
   padding: 0.75rem;
   background: var(--surface);
+}
+
+.quest-entry-summary-row {
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--surface);
+}
+
+.quest-entry-summary-copy {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.quest-entry-summary-copy p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.quest-entry-summary-copy span {
+  color: var(--muted-strong);
+  font: 700 0.64rem/1 'IBM Plex Mono', monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.quest-entry-summary-row .ghost-action {
+  margin-top: 0;
 }
 
 .quest-entry-led {
@@ -2457,9 +2654,12 @@ h1, h2, h3 {
   }
 
   .setup-grid,
+  .setup-command-grid,
+  .setup-directory-grid,
   .npc-workbench,
   .setup-hero,
   .npc-hero,
+  .management-hero,
   .npc-focus-header,
   .player-dossier-hero,
   .npc-identity-grid {
@@ -2511,8 +2711,10 @@ h1, h2, h3 {
   .npc-fact-actions,
   .npc-dossier-strip,
   .player-dossier-strip,
+  .quest-summary-header,
   .quest-card-header,
   .quest-entry-create-main,
+  .quest-entry-summary-row,
   .quest-entry-row {
     grid-template-columns: minmax(0, 1fr);
     flex-direction: column;
@@ -2662,6 +2864,7 @@ h1, h2, h3 {
 }
 
 .form-submit {
+  min-height: 2.75rem;
   padding: 0.9rem 1.5rem;
   background: var(--primary);
   color: var(--primary-glow);
@@ -2783,8 +2986,8 @@ h1, h2, h3 {
 
 .pipeline-block-remove {
   flex-shrink: 0;
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 2.75rem;
+  height: 2.75rem;
   display: grid;
   place-items: center;
   background: transparent;
@@ -2806,6 +3009,7 @@ h1, h2, h3 {
 .pipeline-add-trigger {
   width: fit-content;
   min-width: 12rem;
+  min-height: 2.75rem;
   margin-top: 0.25rem;
   background: var(--surface-high);
   border: none;

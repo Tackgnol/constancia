@@ -26,6 +26,7 @@ const tabs = [
   { to: '/demo', label: 'Play', end: true },
   { to: '/demo/npcs', label: 'NPCs' },
   { to: '/demo/log', label: 'Quests' },
+  { to: '/demo/player/sheet', label: 'Player' },
 ];
 
 const quickNarrationSchema = z.object({
@@ -65,7 +66,7 @@ export default function DemoLayout() {
   useLoaderData<typeof loader>();
 
   const location = useLocation();
-  const showQuickBar = location.pathname === '/demo';
+  const isPlayRoute = location.pathname === '/demo';
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [activity, setActivity] = useState(demoContext.activity);
   const [firedEventIds, setFiredEventIds] = useState<string[]>([]);
@@ -144,7 +145,7 @@ export default function DemoLayout() {
   });
 
   return (
-    <div className="war-room-shell">
+    <div className={`war-room-shell ${isPlayRoute ? 'is-live-play' : 'is-management'}`}>
       <div className="demo-banner" role="status">
         Demo Mode — no auth required, all data is local
       </div>
@@ -180,94 +181,98 @@ export default function DemoLayout() {
       </nav>
 
       <div className="war-room-grid">
-        <aside className="filter-panel">
-          <div className="panel-title">Scene Filter</div>
-          <div className="filter-tag-list">
-            <button
-              className={`filter-tag${activeTag === null ? ' is-active' : ''}`}
-              onClick={() => setActiveTag(null)}
-              type="button"
-            >
-              All Scenes
-            </button>
-            {outletContext.tags.map((tag) => {
-              const count = tagEventCounts.get(tag.id) ?? 0;
-              return (
-                <button
-                  key={tag.id}
-                  className={`filter-tag${activeTag === tag.id ? ' is-active' : ''}`}
-                  disabled={count === 0}
-                  onClick={() => setActiveTag(activeTag === tag.id ? null : tag.id)}
-                  type="button"
-                >
-                  {tag.label}
-                  {count > 0 && <span className="filter-tag-count">{count}</span>}
-                </button>
-              );
-            })}
-          </div>
+        {isPlayRoute ? (
+          <aside className="filter-panel">
+            <div className="panel-title">Scene Filter</div>
+            <div className="filter-tag-list">
+              <button
+                className={`filter-tag${activeTag === null ? ' is-active' : ''}`}
+                onClick={() => setActiveTag(null)}
+                type="button"
+              >
+                All Scenes
+              </button>
+              {outletContext.tags.map((tag) => {
+                const count = tagEventCounts.get(tag.id) ?? 0;
+                return (
+                  <button
+                    key={tag.id}
+                    className={`filter-tag${activeTag === tag.id ? ' is-active' : ''}`}
+                    disabled={count === 0}
+                    onClick={() => setActiveTag(activeTag === tag.id ? null : tag.id)}
+                    type="button"
+                  >
+                    {tag.label}
+                    {count > 0 && <span className="filter-tag-count">{count}</span>}
+                  </button>
+                );
+              })}
+            </div>
 
-          <SceneRailExtras
-            tags={outletContext.tags}
-            activeTag={activeTag}
-            eventCount={Array.from(tagEventCounts.values()).reduce((a, b) => a + b, 0)}
-            activeEventCount={activeTag ? (tagEventCounts.get(activeTag) ?? 0) : 0}
-          />
-        </aside>
+            <SceneRailExtras
+              tags={outletContext.tags}
+              activeTag={activeTag}
+              eventCount={Array.from(tagEventCounts.values()).reduce((a, b) => a + b, 0)}
+              activeEventCount={activeTag ? (tagEventCounts.get(activeTag) ?? 0) : 0}
+            />
+          </aside>
+        ) : null}
 
         <main className="route-panel">
           <Outlet context={outletContext} />
         </main>
 
-        <aside className="players-panel">
-          <div className="panel-title">Players</div>
+        {isPlayRoute ? (
+          <aside className="players-panel">
+            <div className="panel-title">Players</div>
 
-          <div className="player-list">
-            {outletContext.players.map((player) => (
-              <button
-                key={player.id}
-                className="player-row"
-                data-clan={getClanTone(player.character)}
-                type="button"
-              >
-                <span className="player-avatar" aria-hidden="true">
-                  {player.name.charAt(0)}
-                </span>
-                <span className="player-copy">
-                  <span className="player-name">{player.name}</span>
-                  <span className="player-meta">
-                    {player.character} · {player.player}
+            <div className="player-list">
+              {outletContext.players.map((player) => (
+                <button
+                  key={player.id}
+                  className="player-row"
+                  data-clan={getClanTone(player.character)}
+                  type="button"
+                >
+                  <span className="player-avatar" aria-hidden="true">
+                    {player.name.charAt(0)}
                   </span>
-                </span>
-                <span className={`player-status ${player.status}`} aria-label={player.status} />
-              </button>
-            ))}
-          </div>
-
-          <PlayerWhisperForm warRoom={outletContext} />
-
-          <div className="panel-title panel-title-secondary">Pulse</div>
-          <p className="panel-copy">
-            Three fresh beats only. The rail clears itself when the room moves on.
-          </p>
-          {pulseEntries.length > 0 ? (
-            <div className="activity-feed">
-              {pulseEntries.map((entry) => (
-                <p key={entry.id}>
-                  <span>{entry.time}</span>
-                  {entry.label}
-                </p>
+                  <span className="player-copy">
+                    <span className="player-name">{player.name}</span>
+                    <span className="player-meta">
+                      {player.character} · {player.player}
+                    </span>
+                  </span>
+                  <span className={`player-status ${player.status}`} aria-label={player.status} />
+                </button>
               ))}
             </div>
-          ) : (
-            <p className="panel-empty">
-              No fresh pulses on this route. The full timeline lives in Log.
+
+            <PlayerWhisperForm warRoom={outletContext} />
+
+            <div className="panel-title panel-title-secondary">Pulse</div>
+            <p className="panel-copy">
+              Three fresh beats only. The rail clears itself when the room moves on.
             </p>
-          )}
-        </aside>
+            {pulseEntries.length > 0 ? (
+              <div className="activity-feed">
+                {pulseEntries.map((entry) => (
+                  <p key={entry.id}>
+                    <span>{entry.time}</span>
+                    {entry.label}
+                  </p>
+                ))}
+              </div>
+            ) : (
+              <p className="panel-empty">
+                No fresh pulses on this route. The full timeline lives in Log.
+              </p>
+            )}
+          </aside>
+        ) : null}
       </div>
 
-      {showQuickBar ? (
+      {isPlayRoute ? (
         <footer className="quick-bar">
           <form className="quick-form" onSubmit={onSubmitQuickBar} noValidate>
             <div className="quick-form-row">

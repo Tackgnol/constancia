@@ -142,7 +142,7 @@ export function EventSetupForm({
             </div>
 
             <div className="form-field form-field-toggle">
-              <Label className={formFieldLabelClassName}>Short Circuit</Label>
+              <Label className={formFieldLabelClassName}>Stop After Match</Label>
               <div className="toggle-row">
                 <Controller
                   control={control}
@@ -156,7 +156,7 @@ export function EventSetupForm({
                   )}
                 />
                 <label htmlFor="event-sc" className="form-hint cursor-pointer select-none">
-                  Single-pass evaluation
+                  Stop once an action resolves the event.
                 </label>
               </div>
             </div>

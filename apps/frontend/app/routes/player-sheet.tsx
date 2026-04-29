@@ -8,12 +8,13 @@ import {
   type CharacterSheetData,
   type CharacterSheetPatchBody,
 } from '@/lib/character-sheet';
+import { demoPlayerSheet } from '@/lib/demo-player-data';
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
-  const campaignId = params.campaignId;
+  const campaignId = params.campaignId ?? 'demo-crimson-dynasty';
 
-  if (!campaignId) {
-    throw new Response('Player sheet link is incomplete.', { status: 400 });
+  if (campaignId.startsWith('demo-')) {
+    return demoPlayerSheet;
   }
 
   try {
@@ -44,6 +45,22 @@ export default function PlayerSheetRoute() {
   const [sheet, setSheet] = useState<CharacterSheetData>(loaderSheet);
 
   const handleSave = async (payload: CharacterSheetPatchBody) => {
+    if (sheet.campaign.id.startsWith('demo-')) {
+      const updated: CharacterSheetData = {
+        ...sheet,
+        character: {
+          ...sheet.character,
+          gameName: payload.gameName,
+          backstory: payload.backstory,
+          notes: payload.notes,
+        },
+        stats: payload.stats,
+      };
+
+      setSheet(updated);
+      return updated;
+    }
+
     const updated = await updatePlayerCharacterSheet(sheet.campaign.id, payload, {
       credentials: 'include',
     });
