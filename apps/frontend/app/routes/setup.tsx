@@ -11,6 +11,7 @@ import type {
 import { EventSetupForm } from '@/components/setup/event-setup-form';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import { SetupNpcForm } from '@/components/npcs/setup-npc-form';
+import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import {
   BLOCK_TYPES,
   EVENT_TYPES,
@@ -130,15 +131,21 @@ export default function SetupRoute() {
 
       if (!isDemoCampaign) {
         if (isEditing) {
-          await updateEvent(
+          const response = await updateEvent(
             { id: warRoom.campaign.id, eventId: editingEventId },
             normalizedValues as UpdateEventBody,
             { credentials: 'include' },
           );
+          assertApiOk(response, 'The event dossier did not update cleanly. Try again in a moment.');
         } else {
-          await createEvent({ id: warRoom.campaign.id }, normalizedValues as CreateEventBody, {
-            credentials: 'include',
-          });
+          const response = await createEvent(
+            { id: warRoom.campaign.id },
+            normalizedValues as CreateEventBody,
+            {
+              credentials: 'include',
+            },
+          );
+          assertApiOk(response, 'The event dossier did not stage cleanly. Try again in a moment.');
         }
         revalidator.revalidate();
       }
@@ -155,9 +162,10 @@ export default function SetupRoute() {
       });
     } catch (err) {
       console.error('Save event error:', err);
-      const message = editingEventId
+      const fallbackMessage = editingEventId
         ? 'The event dossier did not update cleanly. Try again in a moment.'
         : 'The event dossier did not stage cleanly. Try again in a moment.';
+      const message = getApiErrorMessage(err, fallbackMessage);
       eventMethods.setError('root.serverError', { type: 'manual', message });
       setEventError(message);
     }

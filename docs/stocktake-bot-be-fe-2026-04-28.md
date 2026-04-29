@@ -7,8 +7,8 @@ Legend:
 ## Test Events
 - [x] Create test event  
   FE setup form can create `test` events, BE persists them, and the pipeline editor supports test blocks.
-- [ ] Update test event  
-  BE has `PATCH /campaigns/:id/events/:eventId`, but there is no FE event editor and no bot-side editing flow.
+- [x] Update test event
+  FE setup can load an existing event into the pipeline editor and save it through `PATCH /campaigns/:id/events/:eventId`; backend moderation/upload cleanup still runs on update.
 - [x] Fire a test event  
   FE play board fires the event, BE builds a test-instance payload, and bot posts the interactive test card into Discord.
 - [x] Receive player input  
@@ -21,8 +21,8 @@ Legend:
 ## Insight Events
 - [x] Create Insight event  
   FE setup form supports `insight` events and BE stores them.
-- [ ] Update Insight event  
-  BE patch route exists, but there is no FE editor or bot edit workflow.
+- [x] Update Insight event
+  FE setup can revise existing insight events through the shared event editor and backend patch route.
 - [x] Fire an Insight event  
   FE can fire it; BE resolves insight scores per character and sends resulting messages through the bot.
 - [x] Send messages to players meeting criteria  
@@ -33,8 +33,8 @@ Legend:
 ## Narration Events
 - [x] Create Narration event  
   FE setup supports `narration` events.
-- [ ] Update Narration event  
-  BE patch exists, but no FE/bot editor exists.
+- [x] Update Narration event
+  FE setup can revise existing narration events through the shared event editor and backend patch route.
 - [x] Fire a Narration event  
   FE play board can fire narration events.
 - [x] It sends the event to the channel  
@@ -114,7 +114,7 @@ These are the next implementation steps needed to close the remaining unchecked 
 - [x] **Step 6: Remove dead bot indirection**
   Delete empty bot wrapper modules and point imports at the owning modules. This keeps the bot API-client layer small before adding more bot-facing features.
 
-- [ ] **Step 7: Add an event editor for test, insight, and narration events**
+- [x] **Step 7: Add an event editor for test, insight, and narration events**
   Build a FE edit flow around the existing BE `PATCH /campaigns/:id/events/:eventId` route. Reuse the current pipeline editor, preserve uploaded `imageUrl` values, surface moderation errors, and verify create/edit/fire still works for all three event types.
   Closes: update test event, update insight event, update narration event.
 
