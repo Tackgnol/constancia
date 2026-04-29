@@ -151,6 +151,16 @@ export const demoPlayerJournal: GetJournalForCurrentPlayer200Data = {
     },
   ],
   npcs: demoPlayerNpcs,
+  lore: [
+    {
+      id: 'demo-lore-bells',
+      title: 'The Elysium bells',
+      content:
+        'Three chimes mean a formal boon has been called. Four chimes mean the Keeper found blood on protected ground.',
+      campaignId: 'demo-crimson-dynasty',
+      sortOrder: 0,
+    },
+  ],
 };
 
 export function getDemoPlayerNpc(npcId: string): GetVisibleNpcForCurrentPlayer200Data | null {

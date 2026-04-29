@@ -51,6 +51,33 @@ export const demoContext: WarRoomContext = {
   players,
   activity: activityFeed,
   apiOnline: true,
+  lore: [
+    {
+      id: 'lore-elysium-bells',
+      title: 'The Elysium bells',
+      content:
+        'Three chimes mean a formal boon has been called. Four chimes mean the Keeper has found blood on protected ground.',
+      campaignId: 'demo-crimson-dynasty',
+      sortOrder: 0,
+      knownTo: [
+        {
+          characterId: 'aleksei',
+          discordUserId: 'aleksei',
+          displayName: 'Aleksei Volkov',
+          secondaryLabel: 'Brujah · Marcin',
+        },
+      ],
+    },
+    {
+      id: 'lore-harpy-ledger',
+      title: 'The Harpy ledger',
+      content:
+        'The missing ledger tracks boons in red ink and punishments in black. A blank line beside a name is worse than a debt.',
+      campaignId: 'demo-crimson-dynasty',
+      sortOrder: 1,
+      knownTo: [],
+    },
+  ],
   quests: [
     {
       id: 'quest-blood-ledger',

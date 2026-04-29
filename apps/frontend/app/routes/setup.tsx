@@ -49,9 +49,18 @@ export default function SetupRoute() {
             <p>Prepare player-visible objectives and hidden GM threads in one focused screen.</p>
           </div>
         </Link>
+
+        <Link className="setup-command-card" to={`${setupBase}/lore/new`}>
+          <span className="setup-step-index">04</span>
+          <div>
+            <p className="detail-label">Lore</p>
+            <h2>File world knowledge</h2>
+            <p>Write hidden truths and reveal them to specific players when they learn them.</p>
+          </div>
+        </Link>
       </section>
 
-      {warRoom.events.length > 0 || warRoom.quests.length > 0 ? (
+      {warRoom.events.length > 0 || warRoom.quests.length > 0 || warRoom.lore.length > 0 ? (
         <section className="setup-panel">
           <div className="setup-panel-header">
             <div>
@@ -94,6 +103,26 @@ export default function SetupRoute() {
                     <span className="event-edit-name">{quest.name}</span>
                     <span className="event-edit-meta">
                       {quest.visible ? 'player visible' : 'gm hidden'}
+                    </span>
+                  </Link>
+                ))}
+              </section>
+            ) : null}
+
+            {warRoom.lore.length > 0 ? (
+              <section className="setup-directory-list">
+                <p className="detail-label">Lore</p>
+                {warRoom.lore.map((loreEntry) => (
+                  <Link
+                    className="event-edit-row"
+                    key={loreEntry.id}
+                    to={`${setupBase}/lore/${loreEntry.id}`}
+                  >
+                    <span className="event-edit-kind">lore</span>
+                    <span className="event-edit-name">{loreEntry.title}</span>
+                    <span className="event-edit-meta">
+                      {loreEntry.knownTo.length} player
+                      {loreEntry.knownTo.length === 1 ? '' : 's'}
                     </span>
                   </Link>
                 ))}

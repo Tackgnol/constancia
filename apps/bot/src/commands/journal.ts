@@ -14,8 +14,6 @@ import {
 } from '@constancia/api-client/endpoints/bot/bot';
 import type {
   GetBotJournalForPlayer200Data,
-  GetBotJournalForPlayer200DataNpcsItem,
-  GetBotJournalForPlayer200DataQuestsItem,
   GetBotJournalForPlayer200DataQuestsItemEntriesItem,
 } from '@constancia/api-client/model';
 import { requestPlayerJournalMagicLink } from '../auth/request-player-journal-magic-link.js';
@@ -29,6 +27,9 @@ const JOURNAL_BACK_PREFIX = `${JOURNAL_COMPONENT_PREFIX}back:`;
 const MAX_DETAIL_BUTTONS = 20;
 
 type JournalCategory = 'quests' | 'npcs' | 'lore';
+type JournalQuest = GetBotJournalForPlayer200Data['quests'][number];
+type JournalNpc = GetBotJournalForPlayer200Data['npcs'][number];
+type JournalLoreEntry = GetBotJournalForPlayer200Data['lore'][number];
 
 interface JournalContext {
   guildId: string;
@@ -70,7 +71,7 @@ async function loadJournalContext(guildId: string, discordUserId: string): Promi
 }
 
 function createBaseEmbed(context: JournalContext): EmbedBuilder {
-  const { quests, summaries, npcs } = context.journal;
+  const { quests, summaries, npcs, lore } = context.journal;
 
   return new EmbedBuilder()
     .setTitle('Player Journal')
@@ -89,7 +90,7 @@ function createBaseEmbed(context: JournalContext): EmbedBuilder {
       },
       {
         name: 'Lore',
-        value: 'Pending',
+        value: `${lore.length} known`,
         inline: true,
       },
       {
@@ -147,7 +148,8 @@ function buildHomeComponents(context: JournalContext): ActionRowBuilder<ButtonBu
       new ButtonBuilder()
         .setCustomId(`${JOURNAL_CATEGORY_PREFIX}${encodeCustomIdPart(context.guildId)}:lore`)
         .setLabel('Lore')
-        .setStyle(ButtonStyle.Secondary),
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(context.journal.lore.length === 0),
       createWebJournalButton(context.journalUrl),
     ),
   ];
@@ -180,7 +182,9 @@ function buildCategoryEmbed(context: JournalContext, category: JournalCategory):
     .setTitle('Journal - Lore')
     .setColor(0x3fb950)
     .setDescription(
-      'Lore entries are not wired yet. Open the web journal for the full player view once lore lands.',
+      context.journal.lore.length > 0
+        ? 'Choose a lore entry to inspect what your character has learned.'
+        : 'No lore has been revealed to you yet.',
     );
 }
 
@@ -207,7 +211,14 @@ function buildCategoryComponents(
               .setLabel(npc.name.slice(0, 80))
               .setStyle(ButtonStyle.Secondary),
           )
-        : [];
+        : context.journal.lore.slice(0, MAX_DETAIL_BUTTONS).map((loreEntry) =>
+            new ButtonBuilder()
+              .setCustomId(
+                `${JOURNAL_DETAIL_PREFIX}${encodeCustomIdPart(context.guildId)}:lore:${encodeCustomIdPart(loreEntry.id)}`,
+              )
+              .setLabel(loreEntry.title.slice(0, 80))
+              .setStyle(ButtonStyle.Secondary),
+          );
 
   return [
     ...chunkButtons(buttons, 5),
@@ -232,7 +243,7 @@ function formatQuestEntries(
     .slice(0, 1_000);
 }
 
-function buildQuestDetailEmbed(quest: GetBotJournalForPlayer200DataQuestsItem): EmbedBuilder {
+function buildQuestDetailEmbed(quest: JournalQuest): EmbedBuilder {
   const embed = new EmbedBuilder()
     .setTitle(quest.name)
     .setColor(0x58a6ff)
@@ -248,7 +259,7 @@ function buildQuestDetailEmbed(quest: GetBotJournalForPlayer200DataQuestsItem): 
   return embed;
 }
 
-function buildNpcDetailEmbed(npc: GetBotJournalForPlayer200DataNpcsItem): EmbedBuilder {
+function buildNpcDetailEmbed(npc: JournalNpc): EmbedBuilder {
   return new EmbedBuilder()
     .setTitle(npc.name)
     .setColor(0xd2a8ff)
@@ -262,6 +273,13 @@ function buildNpcDetailEmbed(npc: GetBotJournalForPlayer200DataNpcsItem): EmbedB
     );
 }
 
+function buildLoreDetailEmbed(loreEntry: JournalLoreEntry): EmbedBuilder {
+  return new EmbedBuilder()
+    .setTitle(loreEntry.title)
+    .setColor(0x3fb950)
+    .setDescription(loreEntry.content.slice(0, 2_000));
+}
+
 function buildDetailComponents(
   context: JournalContext,
   category: JournalCategory,
@@ -270,25 +288,32 @@ function buildDetailComponents(
     new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setCustomId(`${JOURNAL_CATEGORY_PREFIX}${encodeCustomIdPart(context.guildId)}:${category}`)
-        .setLabel(category === 'quests' ? 'Back to quests' : 'Back to NPCs')
+        .setLabel(
+          category === 'quests'
+            ? 'Back to quests'
+            : category === 'npcs'
+              ? 'Back to NPCs'
+              : 'Back to lore',
+        )
         .setStyle(ButtonStyle.Secondary),
       createWebJournalButton(context.journalUrl),
     ),
   ];
 }
 
-function findQuest(
-  journal: GetBotJournalForPlayer200Data,
-  questId: string,
-): GetBotJournalForPlayer200DataQuestsItem | null {
+function findQuest(journal: GetBotJournalForPlayer200Data, questId: string): JournalQuest | null {
   return journal.quests.find((quest) => quest.id === questId) ?? null;
 }
 
-function findNpc(
-  journal: GetBotJournalForPlayer200Data,
-  npcId: string,
-): GetBotJournalForPlayer200DataNpcsItem | null {
+function findNpc(journal: GetBotJournalForPlayer200Data, npcId: string): JournalNpc | null {
   return journal.npcs.find((npc) => npc.id === npcId) ?? null;
+}
+
+function findLoreEntry(
+  journal: GetBotJournalForPlayer200Data,
+  loreId: string,
+): JournalLoreEntry | null {
+  return journal.lore.find((loreEntry) => loreEntry.id === loreId) ?? null;
 }
 
 function parseCategoryCustomId(
@@ -310,7 +335,7 @@ function parseCategoryCustomId(
 
 function parseDetailCustomId(
   customId: string,
-): { guildId: string; category: Exclude<JournalCategory, 'lore'>; id: string } | null {
+): { guildId: string; category: JournalCategory; id: string } | null {
   if (!customId.startsWith(JOURNAL_DETAIL_PREFIX)) {
     return null;
   }
@@ -318,12 +343,7 @@ function parseDetailCustomId(
   const [guildIdPart, category, idPart, ...rest] = customId
     .slice(JOURNAL_DETAIL_PREFIX.length)
     .split(':');
-  if (
-    !guildIdPart ||
-    !idPart ||
-    rest.length > 0 ||
-    (category !== 'quests' && category !== 'npcs')
-  ) {
+  if (!guildIdPart || !idPart || rest.length > 0 || !isJournalCategory(category)) {
     return null;
   }
 
@@ -399,30 +419,43 @@ async function handleJournalButton(interaction: ButtonInteraction): Promise<void
   const detailTarget = parseDetailCustomId(interaction.customId);
   if (detailTarget) {
     const context = await loadJournalContext(detailTarget.guildId, interaction.user.id);
-    const target =
-      detailTarget.category === 'quests'
-        ? findQuest(context.journal, detailTarget.id)
-        : findNpc(context.journal, detailTarget.id);
 
-    if (!target) {
+    if (detailTarget.category === 'quests') {
+      const quest = findQuest(context.journal, detailTarget.id);
+      if (!quest) {
+        await showUnavailableEntry(interaction, context, detailTarget.category);
+        return;
+      }
+
       await interaction.editReply({
-        embeds: [
-          new EmbedBuilder()
-            .setTitle('Journal entry unavailable')
-            .setColor(0xf0883e)
-            .setDescription('That entry is no longer visible in your journal.'),
-        ],
-        components: buildCategoryComponents(context, detailTarget.category),
+        embeds: [buildQuestDetailEmbed(quest)],
+        components: buildDetailComponents(context, detailTarget.category),
       });
       return;
     }
 
+    if (detailTarget.category === 'npcs') {
+      const npc = findNpc(context.journal, detailTarget.id);
+      if (!npc) {
+        await showUnavailableEntry(interaction, context, detailTarget.category);
+        return;
+      }
+
+      await interaction.editReply({
+        embeds: [buildNpcDetailEmbed(npc)],
+        components: buildDetailComponents(context, detailTarget.category),
+      });
+      return;
+    }
+
+    const loreEntry = findLoreEntry(context.journal, detailTarget.id);
+    if (!loreEntry) {
+      await showUnavailableEntry(interaction, context, detailTarget.category);
+      return;
+    }
+
     await interaction.editReply({
-      embeds: [
-        detailTarget.category === 'quests'
-          ? buildQuestDetailEmbed(target as GetBotJournalForPlayer200DataQuestsItem)
-          : buildNpcDetailEmbed(target as GetBotJournalForPlayer200DataNpcsItem),
-      ],
+      embeds: [buildLoreDetailEmbed(loreEntry)],
       components: buildDetailComponents(context, detailTarget.category),
     });
     return;
@@ -436,4 +469,20 @@ async function handleJournalButton(interaction: ButtonInteraction): Promise<void
       components: buildHomeComponents(context),
     });
   }
+}
+
+async function showUnavailableEntry(
+  interaction: ButtonInteraction,
+  context: JournalContext,
+  category: JournalCategory,
+): Promise<void> {
+  await interaction.editReply({
+    embeds: [
+      new EmbedBuilder()
+        .setTitle('Journal entry unavailable')
+        .setColor(0xf0883e)
+        .setDescription('That entry is no longer visible in your journal.'),
+    ],
+    components: buildCategoryComponents(context, category),
+  });
 }
