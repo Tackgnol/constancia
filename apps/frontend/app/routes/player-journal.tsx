@@ -2,6 +2,7 @@ import type { LoaderFunctionArgs } from 'react-router';
 import { Link, useLoaderData, useParams } from 'react-router';
 import { getJournalForCurrentPlayer } from '@constancia/api-client/endpoints/journal/journal';
 import type {
+  GetJournalForCurrentPlayer200DataLoreItem,
   GetJournalForCurrentPlayer200DataNpcsItem,
   GetJournalForCurrentPlayer200DataQuestsItem,
   GetJournalForCurrentPlayer200DataQuestsItemEntriesItem,
@@ -85,7 +86,8 @@ export default function PlayerJournalRoute() {
   const playerBasePath = campaignId.startsWith('demo-')
     ? '/demo/player'
     : `/player/campaigns/${campaignId}`;
-  const visibleItems = journal.quests.length + journal.summaries.length + journal.npcs.length;
+  const visibleItems =
+    journal.quests.length + journal.summaries.length + journal.npcs.length + journal.lore.length;
 
   return (
     <main className="player-dossier-shell">
@@ -94,6 +96,7 @@ export default function PlayerJournalRoute() {
           <span>PLAYER JOURNAL</span>
           <span>{journal.quests.length} QUESTS</span>
           <span>{journal.npcs.length} DOSSIERS</span>
+          <span>{journal.lore.length} LORE</span>
         </div>
 
         <div className="player-journal-nav">
@@ -107,7 +110,7 @@ export default function PlayerJournalRoute() {
           <h1>Known leads</h1>
           <p>
             This view only shows material already opened to your character: visible quest threads,
-            session summaries, and confirmed NPC facts.
+            session summaries, confirmed NPC facts, and revealed lore.
           </p>
         </section>
 
@@ -152,6 +155,24 @@ export default function PlayerJournalRoute() {
                 </div>
               ) : (
                 <p className="quest-empty">No session summaries released.</p>
+              )}
+            </section>
+
+            <section className="player-dossier-facts">
+              <div className="setup-subsection-header">
+                <div>
+                  <p className="detail-label">Known lore</p>
+                  <p className="form-hint">World knowledge revealed to your character.</p>
+                </div>
+              </div>
+              {journal.lore.length > 0 ? (
+                <div className="npc-facts-grid">
+                  {journal.lore.map((loreEntry) => (
+                    <PlayerLoreCard key={loreEntry.id} loreEntry={loreEntry} />
+                  ))}
+                </div>
+              ) : (
+                <p className="quest-empty">No lore revealed yet.</p>
               )}
             </section>
 
@@ -244,6 +265,19 @@ function PlayerSummaryCard({
       </div>
       <h2>{summary.title}</h2>
       <p className="npc-fact-copy">{summary.content}</p>
+    </article>
+  );
+}
+
+function PlayerLoreCard({ loreEntry }: { loreEntry: GetJournalForCurrentPlayer200DataLoreItem }) {
+  return (
+    <article className="npc-fact-card player-summary-card player-lore-card">
+      <div className="npc-fact-card-header">
+        <span className="npc-fact-number">{String(loreEntry.sortOrder + 1).padStart(2, '0')}</span>
+        <p className="detail-label">Lore</p>
+      </div>
+      <h2>{loreEntry.title}</h2>
+      <p className="npc-fact-copy">{loreEntry.content}</p>
     </article>
   );
 }

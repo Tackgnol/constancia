@@ -3,6 +3,7 @@ import { listChannels } from '@constancia/api-client/endpoints/channels/channels
 import { listCharacters } from '@constancia/api-client/endpoints/characters/characters';
 import { listEvents } from '@constancia/api-client/endpoints/events/events';
 import { listQuests } from '@constancia/api-client/endpoints/journal/journal';
+import { listLoreEntries } from '@constancia/api-client/endpoints/lore/lore';
 import { getServiceHealth } from '@constancia/api-client/endpoints/meta/meta';
 import { listGameSystems } from '@constancia/api-client/endpoints/systems/systems';
 import { PlayerWhisperForm } from '@/components/war-room/player-whisper-form';
@@ -41,27 +42,30 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   const campaignId = campaigns.data[0]?.id;
-  const [channels, events, characters, quests] = campaignId
+  const [channels, events, characters, quests, lore] = campaignId
     ? await Promise.all([
         listChannels({ id: campaignId }, fetchOpts),
         listEvents({ id: campaignId }, fetchOpts),
         listCharacters({ id: campaignId }, fetchOpts),
         listQuests({ id: campaignId }, fetchOpts),
+        listLoreEntries({ id: campaignId }, fetchOpts),
       ])
     : [
         { status: 'error', data: [] },
         { status: 'error', data: [] },
         { status: 'error', data: [] },
         { status: 'error', data: [] },
+        { status: 'error', data: [] },
       ];
 
-  return { health, campaigns, systems, channels, events, characters, quests };
+  return { health, campaigns, systems, channels, events, characters, quests, lore };
 }
 
 const tabs = [
   { to: '/setup', label: 'Setup' },
   { to: '/', label: 'Play', end: true },
   { to: '/npcs', label: 'NPCs' },
+  { to: '/lore', label: 'Lore' },
   { to: '/participants', label: 'Participants' },
   { to: '/log', label: 'Quests' },
 ];
@@ -69,7 +73,7 @@ const tabs = [
 export default function WarRoomLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { health, campaigns, systems, channels, events, characters, quests } =
+  const { health, campaigns, systems, channels, events, characters, quests, lore } =
     useLoaderData<typeof loader>();
   const session = authClient.useSession();
 
@@ -87,6 +91,7 @@ export default function WarRoomLayout() {
 
   const liveEvents = events.status === 'ok' ? events.data : [];
   const liveQuests = quests.status === 'ok' ? quests.data : [];
+  const liveLore = lore.status === 'ok' ? lore.data : [];
   const isPlayRoute = location.pathname === '/';
   const tagEventCounts = new Map<string, number>();
   for (const event of liveEvents) {
@@ -124,6 +129,7 @@ export default function WarRoomLayout() {
     apiOnline: health.status === 'ok',
     events: liveEvents,
     quests: liveQuests,
+    lore: liveLore,
   };
 
   return (

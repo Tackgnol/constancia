@@ -111,6 +111,7 @@ model Campaign {
   events     Event[]
   quests     Quest[]
   summaries  SessionSummary[]
+  loreEntries LoreEntry[]
 
   @@map("campaigns")
 }
@@ -151,6 +152,7 @@ model Character {
 
   campaign     Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   npcKnowledge NpcKnowledge[]
+  loreKnowledge LoreKnowledge[]
 
   @@unique([discordUserId, campaignId])
   @@map("characters")
@@ -193,6 +195,34 @@ model NpcKnowledge {
 
   @@id([characterId, npcFactId])
   @@map("npc_knowledge")
+}
+
+model LoreEntry {
+  id         String   @id @default(cuid())
+  title      String
+  content    String
+  campaignId String
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  campaign  Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  knowledge LoreKnowledge[]
+
+  @@index([campaignId, sortOrder])
+  @@map("lore_entries")
+}
+
+model LoreKnowledge {
+  characterId String
+  loreEntryId String
+  revealedAt  DateTime @default(now())
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  loreEntry LoreEntry @relation(fields: [loreEntryId], references: [id], onDelete: Cascade)
+
+  @@id([characterId, loreEntryId])
+  @@map("lore_knowledge")
 }
 
 model Event {

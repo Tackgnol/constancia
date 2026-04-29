@@ -25,6 +25,7 @@ const tabs = [
   { to: '/demo/setup', label: 'Setup' },
   { to: '/demo', label: 'Play', end: true },
   { to: '/demo/npcs', label: 'NPCs' },
+  { to: '/demo/lore', label: 'Lore' },
   { to: '/demo/log', label: 'Quests' },
   { to: '/demo/player/sheet', label: 'Player' },
 ];

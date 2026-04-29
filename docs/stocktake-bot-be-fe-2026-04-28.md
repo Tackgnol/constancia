@@ -73,14 +73,14 @@ Legend:
   Quest name, description, status, visibility, step content, step status, and step deletion are surfaced in the GM UI. Current visibility is campaign-wide, not per-player.
 
 ## Journal
-- [ ] A place that summarizes Quests, NPCs, and Lore  
-  Partial: BE journal now returns visible quests, session summaries, and revealed NPC knowledge through one shared player shape. Bot `/journal` and the FE player journal consume that shape. Lore does not exist yet, so the full Quest/NPC/Lore journal remains blocked by the lore domain step.
+- [x] A place that summarizes Quests, NPCs, and Lore
+  BE journal returns visible quests, session summaries, revealed NPC knowledge, and revealed lore through one shared player shape. Bot `/journal` and the FE player journal consume that shape, including Lore category navigation and detail cards.
 
 ## Lore
-- [ ] Lore tidbits about the world  
-  No lore model, routes, bot command, or FE UI currently exists.
-- [ ] Like facts they can be known to certain players and not to others  
-  No lore visibility system currently exists.
+- [x] Lore tidbits about the world
+  Lore is now a first-class campaign domain with Prisma models, backend CRUD routes, OpenAPI/Orval contracts, a GM Lore board, and focused Setup create/edit routes.
+- [x] Like facts they can be known to certain players and not to others
+  Lore visibility uses per-character knowledge rows, following the NPC fact reveal pattern. The GM Lore board reveals entries to selected players, and player journal/bot views only show revealed lore.
 
 ## Moderation and Uploads
 - [x] Moderate text before persistence / delivery
@@ -126,13 +126,13 @@ These are the next implementation steps needed to close the remaining unchecked 
   Add the data relationship and API shape for NPC-to-quest links, then expose it in the NPC edit flow. Finish fact editing/deletion/visibility management and fix the FE player dossier copy-link route mismatch noted above.
   Closes: link NPCs to quests, edit all NPC dossier/fact data.
 
-- [ ] **Step 10: Add lore as a first-class campaign domain**
+- [x] **Step 10: Add lore as a first-class campaign domain**
   Introduce lore entries with per-player visibility, using the NPC fact reveal model as the closest existing pattern. Add BE routes, FE management/read views, and a bot read path or journal integration without moving game logic into the bot.
   Closes: lore tidbits, lore known to certain players and hidden from others.
 
-- [ ] **Step 11: Replace the static FE log with a real player journal surface**
+- [x] **Step 11: Replace the static FE log with a real player journal surface**
   Build a frontend journal/log view backed by BE data that summarizes quests, revealed NPC knowledge, lore, and session summaries. Align the bot `/journal` output with that same backend shape so players see consistent information across Discord and web.
-  Status: mostly complete for quests, revealed NPC knowledge, and session summaries. Lore remains pending until Step 10 introduces a lore model and visibility system.
+  Status: complete for the player-facing route and bot `/journal`. The GM Log tab remains the dense Quest control surface from the UX cleanup.
 
 - [ ] **Step 12: Add event pipeline write-back blocks**
   Add backend-executed pipeline blocks for writing NPC facts, lore reveals, quest updates, and journal/session-summary entries from fired events. Treat every editable pipeline block as a mirrored backend/frontend contract: update core/system block definitions, backend registration/OpenAPI, frontend block schemas/default configs/edit fields, Orval output, and `check:block-drift` together.
@@ -150,5 +150,5 @@ These are the next implementation steps needed to close the remaining unchecked 
 - Best-developed content management area today: **NPC dossiers + facts + per-player fact reveal**, with moderation/upload plumbing now behind the backend.
 - Present in backend but not truly surfaced yet: **admin upload controls**.
 - Newly surfaced: **player journal** for visible quests, session summaries, and revealed NPC facts in both web and bot.
-- Not implemented yet: **lore**, **NPC↔quest links**, and **automatic event-driven writes into journal/NPC/lore systems**.
+- Not implemented yet: **NPC↔quest links** and **automatic event-driven writes into journal/NPC/lore systems**.
 

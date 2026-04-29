@@ -92,6 +92,16 @@ export const questEntryParamsSchema = {
   required: ['id', 'questId', 'entryId'],
 } as const;
 
+export const loreParamsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    loreId: { type: 'string' },
+  },
+  required: ['id', 'loreId'],
+} as const;
+
 export const summaryParamsSchema = {
   type: 'object',
   additionalProperties: false,
@@ -443,6 +453,40 @@ export const questEntryBodySchema = {
   required: ['content'],
 } as const;
 
+export const loreBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    title: { type: 'string', minLength: 1 },
+    content: { type: 'string', minLength: 1 },
+    sortOrder: { type: 'integer' },
+  },
+  required: ['title', 'content'],
+} as const;
+
+export const lorePatchBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    title: { type: 'string', minLength: 1 },
+    content: { type: 'string', minLength: 1 },
+    sortOrder: { type: 'integer' },
+  },
+} as const;
+
+export const loreRevealBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    discordUserIds: {
+      type: 'array',
+      items: { type: 'string' },
+      minItems: 1,
+    },
+  },
+  required: ['discordUserIds'],
+} as const;
+
 export const summaryBodySchema = {
   type: 'object',
   additionalProperties: false,
@@ -699,6 +743,36 @@ export const questSchema = {
   required: ['id', 'name', 'description', 'campaignId', 'status', 'sortOrder', 'visible'],
 } as const;
 
+export const loreEntrySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    title: { type: 'string' },
+    content: { type: 'string' },
+    campaignId: { type: 'string' },
+    sortOrder: { type: 'integer' },
+  },
+  required: ['id', 'title', 'content', 'campaignId', 'sortOrder'],
+} as const;
+
+export const loreEntryWithKnowledgeSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    title: { type: 'string' },
+    content: { type: 'string' },
+    campaignId: { type: 'string' },
+    sortOrder: { type: 'integer' },
+    knownTo: {
+      type: 'array',
+      items: knownPlayerSchema,
+    },
+  },
+  required: ['id', 'title', 'content', 'campaignId', 'sortOrder', 'knownTo'],
+} as const;
+
 export const sessionSummarySchema = {
   type: 'object',
   additionalProperties: false,
@@ -745,8 +819,9 @@ export const journalForPlayerSchema = {
     quests: { type: 'array', items: questSchema },
     summaries: { type: 'array', items: sessionSummarySchema },
     npcs: { type: 'array', items: playerVisibleNpcSchema },
+    lore: { type: 'array', items: loreEntrySchema },
   },
-  required: ['quests', 'summaries', 'npcs'],
+  required: ['quests', 'summaries', 'npcs', 'lore'],
 } as const;
 
 export const blockMessagePlayerSchema = {

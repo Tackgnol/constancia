@@ -32,6 +32,14 @@ export const summarySelect = {
   channelId: true,
 } satisfies Prisma.SessionSummarySelect;
 
+export const loreEntrySelect = {
+  id: true,
+  title: true,
+  content: true,
+  campaignId: true,
+  sortOrder: true,
+} satisfies Prisma.LoreEntrySelect;
+
 export async function getPlayerJournal(
   prisma: PrismaClient,
   campaignId: string,
@@ -43,10 +51,10 @@ export async function getPlayerJournal(
   });
 
   if (character === null) {
-    return { quests: [], summaries: [], npcs: [] };
+    return { quests: [], summaries: [], npcs: [], lore: [] };
   }
 
-  const [quests, summaries, npcs] = await Promise.all([
+  const [quests, summaries, npcs, lore] = await Promise.all([
     prisma.quest.findMany({
       where: { campaignId, visible: true },
       select: { ...questSelect, entries: { select: questEntrySelect } },
@@ -58,11 +66,22 @@ export async function getPlayerJournal(
       orderBy: { sessionDate: 'desc' },
     }),
     listVisibleNpcRecordsForPlayer(prisma, campaignId, discordUserId),
+    prisma.loreEntry.findMany({
+      where: {
+        campaignId,
+        knowledge: {
+          some: { characterId: character.id },
+        },
+      },
+      select: loreEntrySelect,
+      orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
+    }),
   ]);
 
   return {
     quests,
     summaries,
     npcs: npcs.map(mapPlayerVisibleNpc),
+    lore,
   };
 }
