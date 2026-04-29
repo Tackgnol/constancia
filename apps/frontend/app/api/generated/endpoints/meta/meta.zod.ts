@@ -32,4 +32,3 @@ export const getServiceHealthResponse = zod.object({
   "service": zod.string(),
   "environment": zod.string()
 }).describe('Health status')
-

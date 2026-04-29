@@ -23,7 +23,7 @@ export const listEventsResponse = zod.object({
   "type": zod.string(),
   "channelId": zod.string(),
   "campaignId": zod.string(),
-  "status": zod.string(),
+  "status": zod.enum(['draft', 'ready', 'fired', 'archived']),
   "shortCircuit": zod.boolean(),
   "pipeline": zod.array(zod.union([zod.object({
   "blockType": zod.enum(['outcome-map']),
@@ -184,7 +184,7 @@ export const getEventResponse = zod.object({
   "type": zod.string(),
   "channelId": zod.string(),
   "campaignId": zod.string(),
-  "status": zod.string(),
+  "status": zod.enum(['draft', 'ready', 'fired', 'archived']),
   "shortCircuit": zod.boolean(),
   "pipeline": zod.array(zod.union([zod.object({
   "blockType": zod.enum(['outcome-map']),
@@ -264,7 +264,7 @@ export const updateEventBody = zod.object({
   "name": zod.string().optional(),
   "type": zod.string().optional(),
   "channelId": zod.string().optional(),
-  "status": zod.string().optional(),
+  "status": zod.enum(['draft', 'ready', 'fired', 'archived']).optional(),
   "shortCircuit": zod.boolean().optional(),
   "pipeline": zod.array(zod.union([zod.object({
   "blockType": zod.enum(['outcome-map']),
@@ -339,7 +339,7 @@ export const updateEventResponse = zod.object({
   "type": zod.string(),
   "channelId": zod.string(),
   "campaignId": zod.string(),
-  "status": zod.string(),
+  "status": zod.enum(['draft', 'ready', 'fired', 'archived']),
   "shortCircuit": zod.boolean(),
   "pipeline": zod.array(zod.union([zod.object({
   "blockType": zod.enum(['outcome-map']),
@@ -450,4 +450,3 @@ export const fireEventResponse = zod.object({
   "halted": zod.boolean()
 })
 })
-

@@ -75,4 +75,3 @@ export const deleteChannelResponse = zod.object({
   "status": zod.string(),
   "deleted": zod.boolean()
 })
-

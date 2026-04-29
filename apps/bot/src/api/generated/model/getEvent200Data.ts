@@ -5,6 +5,7 @@
  * Backend API contract for the Constancia frontend and Discord bot.
  * OpenAPI spec version: 0.1.0
  */
+import type { GetEvent200DataStatus } from './getEvent200DataStatus.js';
 import type { GetEvent200DataPipelineItem } from './getEvent200DataPipelineItem.js';
 
 export type GetEvent200Data = {
@@ -13,7 +14,7 @@ export type GetEvent200Data = {
   type: string;
   channelId: string;
   campaignId: string;
-  status: string;
+  status: GetEvent200DataStatus;
   shortCircuit: boolean;
   pipeline: GetEvent200DataPipelineItem[];
 };

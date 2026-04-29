@@ -35,24 +35,24 @@ import type {
 export const getListCharactersUrl = ({ id }: ListCharactersPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/characters/`
 }
 
 export const listCharacters = async ({ id }: ListCharactersPathParameters, options?: RequestInit): Promise<ListCharacters200> => {
-  
+
   const res = await fetch(getListCharactersUrl({ id }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: ListCharacters200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -64,16 +64,16 @@ export const listCharacters = async ({ id }: ListCharactersPathParameters, optio
 export const getCreateCharacterUrl = ({ id }: CreateCharacterPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/characters/`
 }
 
 export const createCharacter = async ({ id }: CreateCharacterPathParameters,
     createCharacterBody: CreateCharacterBody, options?: RequestInit): Promise<CreateCharacter201> => {
-  
+
   const res = await fetch(getCreateCharacterUrl({ id }),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -83,7 +83,7 @@ export const createCharacter = async ({ id }: CreateCharacterPathParameters,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: CreateCharacter201 = body ? JSON.parse(body) : {}
   return data
 }
@@ -95,24 +95,24 @@ export const createCharacter = async ({ id }: CreateCharacterPathParameters,
 export const getGetCharacterUrl = ({ id, charId }: GetCharacterPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/characters/${charId}`
 }
 
 export const getCharacter = async ({ id, charId }: GetCharacterPathParameters, options?: RequestInit): Promise<GetCharacter200> => {
-  
+
   const res = await fetch(getGetCharacterUrl({ id, charId }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: GetCharacter200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -124,16 +124,16 @@ export const getCharacter = async ({ id, charId }: GetCharacterPathParameters, o
 export const getUpdateCharacterUrl = ({ id, charId }: UpdateCharacterPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/characters/${charId}`
 }
 
 export const updateCharacter = async ({ id, charId }: UpdateCharacterPathParameters,
     updateCharacterBody: UpdateCharacterBody, options?: RequestInit): Promise<UpdateCharacter200> => {
-  
+
   const res = await fetch(getUpdateCharacterUrl({ id, charId }),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -143,7 +143,7 @@ export const updateCharacter = async ({ id, charId }: UpdateCharacterPathParamet
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: UpdateCharacter200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -155,24 +155,24 @@ export const updateCharacter = async ({ id, charId }: UpdateCharacterPathParamet
 export const getGetCharacterSheetUrl = ({ id, charId }: GetCharacterSheetPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/characters/${charId}/sheet`
 }
 
 export const getCharacterSheet = async ({ id, charId }: GetCharacterSheetPathParameters, options?: RequestInit): Promise<GetCharacterSheet200> => {
-  
+
   const res = await fetch(getGetCharacterSheetUrl({ id, charId }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: GetCharacterSheet200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -184,16 +184,16 @@ export const getCharacterSheet = async ({ id, charId }: GetCharacterSheetPathPar
 export const getUpdateCharacterSheetUrl = ({ id, charId }: UpdateCharacterSheetPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/characters/${charId}/sheet`
 }
 
 export const updateCharacterSheet = async ({ id, charId }: UpdateCharacterSheetPathParameters,
     updateCharacterSheetBody: UpdateCharacterSheetBody, options?: RequestInit): Promise<UpdateCharacterSheet200> => {
-  
+
   const res = await fetch(getUpdateCharacterSheetUrl({ id, charId }),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -203,7 +203,7 @@ export const updateCharacterSheet = async ({ id, charId }: UpdateCharacterSheetP
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: UpdateCharacterSheet200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -215,24 +215,24 @@ export const updateCharacterSheet = async ({ id, charId }: UpdateCharacterSheetP
 export const getGetPlayerCharacterSheetUrl = ({ id }: GetPlayerCharacterSheetPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/player-character/sheet`
 }
 
 export const getPlayerCharacterSheet = async ({ id }: GetPlayerCharacterSheetPathParameters, options?: RequestInit): Promise<GetPlayerCharacterSheet200> => {
-  
+
   const res = await fetch(getGetPlayerCharacterSheetUrl({ id }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: GetPlayerCharacterSheet200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -244,16 +244,16 @@ export const getPlayerCharacterSheet = async ({ id }: GetPlayerCharacterSheetPat
 export const getUpdatePlayerCharacterSheetUrl = ({ id }: UpdatePlayerCharacterSheetPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/player-character/sheet`
 }
 
 export const updatePlayerCharacterSheet = async ({ id }: UpdatePlayerCharacterSheetPathParameters,
     updatePlayerCharacterSheetBody: UpdatePlayerCharacterSheetBody, options?: RequestInit): Promise<UpdatePlayerCharacterSheet200> => {
-  
+
   const res = await fetch(getUpdatePlayerCharacterSheetUrl({ id }),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -263,9 +263,7 @@ export const updatePlayerCharacterSheet = async ({ id }: UpdatePlayerCharacterSh
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: UpdatePlayerCharacterSheet200 = body ? JSON.parse(body) : {}
   return data
 }
-
-

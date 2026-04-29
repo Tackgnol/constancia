@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { getPrismaClient } from '../auth/prisma.js';
+import { ok, sendError, sendNotFound } from '../http-responses.js';
 import {
   standardResponseSchema,
   singleResponseSchema,
@@ -26,7 +27,7 @@ const userSettingsRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrismaClient();
       const userId = request.access.kind === 'session' ? request.access.userId : null;
       if (!userId) {
-        return reply.code(403).send({ status: 'error', data: { message: 'Session required' } });
+        return sendError(reply, 403, 'Session required');
       }
 
       const user = await prisma.user.findUnique({
@@ -35,12 +36,12 @@ const userSettingsRoutes: FastifyPluginAsync = async (app) => {
       });
 
       if (user === null) {
-        return reply.code(404).send({ status: 'error', data: { message: 'User not found' } });
+        return sendNotFound(reply, 'User not found');
       }
 
       const quota = await getUserUploadQuota(prisma, userId, app.config.uploadQuotaWarningPercent);
 
-      return { status: 'ok', data: { ...user, quota } };
+      return ok({ ...user, quota });
     },
   );
 };

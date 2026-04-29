@@ -2492,7 +2492,8 @@
                             "type": "string"
                           },
                           "status": {
-                            "type": "string"
+                            "type": "string",
+                            "enum": ["draft", "ready", "fired", "archived"]
                           },
                           "shortCircuit": {
                             "type": "boolean"
@@ -3117,7 +3118,8 @@
                           "type": "string"
                         },
                         "status": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": ["draft", "ready", "fired", "archived"]
                         },
                         "shortCircuit": {
                           "type": "boolean"
@@ -3461,7 +3463,8 @@
                           "type": "string"
                         },
                         "status": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": ["draft", "ready", "fired", "archived"]
                         },
                         "shortCircuit": {
                           "type": "boolean"
@@ -3772,7 +3775,8 @@
                     "type": "string"
                   },
                   "status": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": ["draft", "ready", "fired", "archived"]
                   },
                   "shortCircuit": {
                     "type": "boolean"
@@ -4095,7 +4099,8 @@
                           "type": "string"
                         },
                         "status": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": ["draft", "ready", "fired", "archived"]
                         },
                         "shortCircuit": {
                           "type": "boolean"
@@ -6192,7 +6197,8 @@
                             "type": "string"
                           },
                           "status": {
-                            "type": "string"
+                            "type": "string",
+                            "enum": ["draft", "ready", "fired", "archived"]
                           },
                           "shortCircuit": {
                             "type": "boolean"

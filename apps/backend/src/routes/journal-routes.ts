@@ -19,6 +19,7 @@ import {
   summaryParamsSchema,
 } from '../schemas.js';
 import { getPrismaClient } from '../auth/prisma.js';
+import { deleted, isPrismaNotFoundError, ok, sendNotFound } from '../http-responses.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
 
 interface CampaignParams {
@@ -123,7 +124,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         select: { ...questSelect, entries: { select: questEntrySelect } },
         orderBy: { sortOrder: 'asc' },
       });
-      return { status: 'ok', data: quests };
+      return ok(quests);
     },
   );
 
@@ -151,7 +152,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         data: { name, description: description ?? '', campaignId: id, visible: visible ?? false },
         select: questSelect,
       });
-      return { status: 'ok', data: { ...quest, entries: [] } };
+      return ok({ ...quest, entries: [] });
     },
   );
 
@@ -185,15 +186,10 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
           data,
           select: { ...questSelect, entries: { select: questEntrySelect } },
         });
-        return { status: 'ok', data: quest };
+        return ok(quest);
       } catch (err) {
-        if (
-          typeof err === 'object' &&
-          err !== null &&
-          'code' in err &&
-          (err as { code: unknown }).code === 'P2025'
-        ) {
-          return reply.code(404).send({ status: 'error', data: { message: 'Not found' } });
+        if (isPrismaNotFoundError(err)) {
+          return sendNotFound(reply, 'Not found');
         }
         throw err;
       }
@@ -229,7 +225,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         },
         select: questEntrySelect,
       });
-      return { status: 'ok', data: entry };
+      return ok(entry);
     },
   );
 
@@ -262,15 +258,10 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
           data,
           select: questEntrySelect,
         });
-        return { status: 'ok', data: entry };
+        return ok(entry);
       } catch (err) {
-        if (
-          typeof err === 'object' &&
-          err !== null &&
-          'code' in err &&
-          (err as { code: unknown }).code === 'P2025'
-        ) {
-          return reply.code(404).send({ status: 'error', data: { message: 'Not found' } });
+        if (isPrismaNotFoundError(err)) {
+          return sendNotFound(reply, 'Not found');
         }
         throw err;
       }
@@ -295,15 +286,10 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrismaClient();
       try {
         await prisma.questEntry.delete({ where: { id: params.entryId } });
-        return { status: 'ok', deleted: true };
+        return deleted(true);
       } catch (err) {
-        if (
-          typeof err === 'object' &&
-          err !== null &&
-          'code' in err &&
-          (err as { code: unknown }).code === 'P2025'
-        ) {
-          return { status: 'ok', deleted: false };
+        if (isPrismaNotFoundError(err)) {
+          return deleted(false);
         }
         throw err;
       }
@@ -331,7 +317,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         select: summarySelect,
         orderBy: { sessionDate: 'desc' },
       });
-      return { status: 'ok', data: summaries };
+      return ok(summaries);
     },
   );
 
@@ -366,7 +352,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         },
         select: summarySelect,
       });
-      return { status: 'ok', data: summary };
+      return ok(summary);
     },
   );
 
@@ -401,15 +387,10 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
           data,
           select: summarySelect,
         });
-        return { status: 'ok', data: summary };
+        return ok(summary);
       } catch (err) {
-        if (
-          typeof err === 'object' &&
-          err !== null &&
-          'code' in err &&
-          (err as { code: unknown }).code === 'P2025'
-        ) {
-          return reply.code(404).send({ status: 'error', data: { message: 'Not found' } });
+        if (isPrismaNotFoundError(err)) {
+          return sendNotFound(reply, 'Not found');
         }
         throw err;
       }
@@ -437,7 +418,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         select: { id: true },
       });
       if (!character) {
-        return { status: 'ok', data: { quests: [], summaries: [] } };
+        return ok({ quests: [], summaries: [] });
       }
       const [quests, summaries] = await Promise.all([
         prisma.quest.findMany({
@@ -451,7 +432,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
           orderBy: { sessionDate: 'desc' },
         }),
       ]);
-      return { status: 'ok', data: { quests, summaries } };
+      return ok({ quests, summaries });
     },
   );
 };

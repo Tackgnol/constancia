@@ -35,4 +35,3 @@ export const getGameSystemResponse = zod.object({
   "version": zod.string()
 })
 })
-

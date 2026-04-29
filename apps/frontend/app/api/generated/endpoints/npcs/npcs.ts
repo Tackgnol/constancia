@@ -33,24 +33,24 @@ import type {
 export const getListNpcsUrl = ({ id }: ListNpcsPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/npcs/`
 }
 
 export const listNpcs = async ({ id }: ListNpcsPathParameters, options?: RequestInit): Promise<ListNpcs200> => {
-  
+
   const res = await fetch(getListNpcsUrl({ id }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: ListNpcs200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -62,16 +62,16 @@ export const listNpcs = async ({ id }: ListNpcsPathParameters, options?: Request
 export const getCreateNpcUrl = ({ id }: CreateNpcPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/npcs/`
 }
 
 export const createNpc = async ({ id }: CreateNpcPathParameters,
     createNpcBody: CreateNpcBody, options?: RequestInit): Promise<CreateNpc201> => {
-  
+
   const res = await fetch(getCreateNpcUrl({ id }),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -81,7 +81,7 @@ export const createNpc = async ({ id }: CreateNpcPathParameters,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: CreateNpc201 = body ? JSON.parse(body) : {}
   return data
 }
@@ -93,16 +93,16 @@ export const createNpc = async ({ id }: CreateNpcPathParameters,
 export const getUpdateNpcUrl = ({ id, npcId }: UpdateNpcPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/npcs/${npcId}`
 }
 
 export const updateNpc = async ({ id, npcId }: UpdateNpcPathParameters,
     updateNpcBody: UpdateNpcBody, options?: RequestInit): Promise<UpdateNpc200> => {
-  
+
   const res = await fetch(getUpdateNpcUrl({ id, npcId }),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -112,7 +112,7 @@ export const updateNpc = async ({ id, npcId }: UpdateNpcPathParameters,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: UpdateNpc200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -124,16 +124,16 @@ export const updateNpc = async ({ id, npcId }: UpdateNpcPathParameters,
 export const getCreateNpcFactUrl = ({ id, npcId }: CreateNpcFactPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/npcs/${npcId}/facts`
 }
 
 export const createNpcFact = async ({ id, npcId }: CreateNpcFactPathParameters,
     createNpcFactBody: CreateNpcFactBody, options?: RequestInit): Promise<CreateNpcFact201> => {
-  
+
   const res = await fetch(getCreateNpcFactUrl({ id, npcId }),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -143,7 +143,7 @@ export const createNpcFact = async ({ id, npcId }: CreateNpcFactPathParameters,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: CreateNpcFact201 = body ? JSON.parse(body) : {}
   return data
 }
@@ -155,16 +155,16 @@ export const createNpcFact = async ({ id, npcId }: CreateNpcFactPathParameters,
 export const getRevealNpcFactsUrl = ({ id, npcId }: RevealNpcFactsPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/npcs/${npcId}/reveal`
 }
 
 export const revealNpcFacts = async ({ id, npcId }: RevealNpcFactsPathParameters,
     revealNpcFactsBody: RevealNpcFactsBody, options?: RequestInit): Promise<RevealNpcFacts200> => {
-  
+
   const res = await fetch(getRevealNpcFactsUrl({ id, npcId }),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -174,7 +174,7 @@ export const revealNpcFacts = async ({ id, npcId }: RevealNpcFactsPathParameters
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: RevealNpcFacts200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -186,24 +186,24 @@ export const revealNpcFacts = async ({ id, npcId }: RevealNpcFactsPathParameters
 export const getListVisibleNpcsForCurrentPlayerUrl = ({ id }: ListVisibleNpcsForCurrentPlayerPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/player-npcs/`
 }
 
 export const listVisibleNpcsForCurrentPlayer = async ({ id }: ListVisibleNpcsForCurrentPlayerPathParameters, options?: RequestInit): Promise<ListVisibleNpcsForCurrentPlayer200> => {
-  
+
   const res = await fetch(getListVisibleNpcsForCurrentPlayerUrl({ id }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: ListVisibleNpcsForCurrentPlayer200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -215,26 +215,24 @@ export const listVisibleNpcsForCurrentPlayer = async ({ id }: ListVisibleNpcsFor
 export const getGetVisibleNpcForCurrentPlayerUrl = ({ id, npcId }: GetVisibleNpcForCurrentPlayerPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/player-npcs/${npcId}`
 }
 
 export const getVisibleNpcForCurrentPlayer = async ({ id, npcId }: GetVisibleNpcForCurrentPlayerPathParameters, options?: RequestInit): Promise<GetVisibleNpcForCurrentPlayer200> => {
-  
+
   const res = await fetch(getGetVisibleNpcForCurrentPlayerUrl({ id, npcId }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: GetVisibleNpcForCurrentPlayer200 = body ? JSON.parse(body) : {}
   return data
 }
-
-

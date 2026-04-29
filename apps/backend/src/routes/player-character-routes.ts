@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { getPrismaClient } from '../auth/prisma.js';
+import { ok, sendError, sendNotFound } from '../http-responses.js';
 import {
   campaignParamsSchema,
   characterSheetPatchBodySchema,
@@ -39,9 +40,7 @@ const playerCharacterRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const discordUserId = request.access.kind === 'session' ? request.access.discordUserId : null;
       if (!discordUserId) {
-        return reply
-          .code(403)
-          .send({ status: 'error', data: { message: 'Discord identity required' } });
+        return sendError(reply, 403, 'Discord identity required');
       }
 
       await moderatePayloadText(app.config, request.body);
@@ -50,12 +49,10 @@ const playerCharacterRoutes: FastifyPluginAsync = async (app) => {
       const sheet = await getPlayerCharacterSheet(prisma, id, discordUserId);
 
       if (sheet === null) {
-        return reply
-          .code(404)
-          .send({ status: 'error', data: { message: 'Player sheet not found' } });
+        return sendNotFound(reply, 'Player sheet not found');
       }
 
-      return { status: 'ok', data: sheet };
+      return ok(sheet);
     },
   );
 
@@ -76,9 +73,7 @@ const playerCharacterRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const discordUserId = request.access.kind === 'session' ? request.access.discordUserId : null;
       if (!discordUserId) {
-        return reply
-          .code(403)
-          .send({ status: 'error', data: { message: 'Discord identity required' } });
+        return sendError(reply, 403, 'Discord identity required');
       }
 
       const prisma = getPrismaClient();
@@ -86,12 +81,10 @@ const playerCharacterRoutes: FastifyPluginAsync = async (app) => {
       const sheet = await updatePlayerCharacterSheet(prisma, id, discordUserId, request.body);
 
       if (sheet === null) {
-        return reply
-          .code(404)
-          .send({ status: 'error', data: { message: 'Player sheet not found' } });
+        return sendNotFound(reply, 'Player sheet not found');
       }
 
-      return { status: 'ok', data: sheet };
+      return ok(sheet);
     },
   );
 };

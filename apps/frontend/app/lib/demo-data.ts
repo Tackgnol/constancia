@@ -58,7 +58,7 @@ export const demoContext: WarRoomContext = {
       type: 'test',
       channelId: 'ch-3',
       campaignId: 'demo-crimson-dynasty',
-      status: 'idle',
+      status: 'ready',
       shortCircuit: false,
       pipeline: [
         {
@@ -82,7 +82,7 @@ export const demoContext: WarRoomContext = {
       type: 'test',
       channelId: 'ch-2',
       campaignId: 'demo-crimson-dynasty',
-      status: 'idle',
+      status: 'ready',
       shortCircuit: false,
       pipeline: [
         {
@@ -97,7 +97,7 @@ export const demoContext: WarRoomContext = {
       type: 'narration',
       channelId: 'ch-1',
       campaignId: 'demo-crimson-dynasty',
-      status: 'idle',
+      status: 'ready',
       shortCircuit: false,
       pipeline: [
         {
@@ -121,7 +121,7 @@ export const demoContext: WarRoomContext = {
       type: 'narration',
       channelId: 'ch-2',
       campaignId: 'demo-crimson-dynasty',
-      status: 'idle',
+      status: 'ready',
       shortCircuit: false,
       pipeline: [
         {
@@ -145,7 +145,7 @@ export const demoContext: WarRoomContext = {
       type: 'message',
       channelId: 'ch-2',
       campaignId: 'demo-crimson-dynasty',
-      status: 'idle',
+      status: 'ready',
       shortCircuit: false,
       pipeline: [
         {
@@ -163,7 +163,7 @@ export const demoContext: WarRoomContext = {
       type: 'message',
       channelId: 'ch-1',
       campaignId: 'demo-crimson-dynasty',
-      status: 'idle',
+      status: 'ready',
       shortCircuit: false,
       pipeline: [
         {
@@ -181,7 +181,7 @@ export const demoContext: WarRoomContext = {
       type: 'insight',
       channelId: 'ch-2',
       campaignId: 'demo-crimson-dynasty',
-      status: 'idle',
+      status: 'ready',
       shortCircuit: false,
       pipeline: [
         {
@@ -202,7 +202,7 @@ export const demoContext: WarRoomContext = {
       type: 'insight',
       channelId: 'ch-3',
       campaignId: 'demo-crimson-dynasty',
-      status: 'idle',
+      status: 'ready',
       shortCircuit: false,
       pipeline: [
         {

@@ -18,16 +18,16 @@ import type {
 export const getSendPlayerMessageUrl = ({ id }: SendPlayerMessagePathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/messages/players`
 }
 
 export const sendPlayerMessage = async ({ id }: SendPlayerMessagePathParameters,
     sendPlayerMessageBody: SendPlayerMessageBody, options?: RequestInit): Promise<SendPlayerMessage200> => {
-  
+
   const res = await fetch(getSendPlayerMessageUrl({ id }),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -37,9 +37,7 @@ export const sendPlayerMessage = async ({ id }: SendPlayerMessagePathParameters,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: SendPlayerMessage200 = body ? JSON.parse(body) : {}
   return data
 }
-
-

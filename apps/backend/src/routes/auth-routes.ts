@@ -12,6 +12,7 @@ import {
   tokenQuerySchema,
 } from '../schemas.js';
 import { getPrismaClient } from '../auth/prisma.js';
+import { sendNotFound } from '../http-responses.js';
 
 interface MagicLinkBody {
   discordUserId: string;
@@ -211,9 +212,7 @@ export const authBotRoutes: FastifyPluginAsync = async (app) => {
       });
 
       if (campaign === null) {
-        return reply
-          .code(404)
-          .send({ status: 'error', data: { message: 'Campaign not found for this guild' } });
+        return sendNotFound(reply, 'Campaign not found for this guild');
       }
 
       const requestId = randomUUID();

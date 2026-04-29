@@ -60,4 +60,3 @@ export const createPlayerSheetMagicLinkBody = zod.object({
   "discordUserId": zod.string(),
   "guildId": zod.string()
 })
-

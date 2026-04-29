@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { ChannelType } from '@constancia/db';
 import { getPrismaClient } from '../auth/prisma.js';
+import { deleted, isPrismaNotFoundError, ok, sendNotFound } from '../http-responses.js';
 import {
   campaignChannelParamsSchema,
   campaignParamsSchema,
@@ -60,7 +61,7 @@ const channelRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrismaClient();
       const { id } = request.params;
       const channels = await prisma.channel.findMany({ where: { campaignId: id }, select });
-      return { status: 'ok', data: channels };
+      return ok(channels);
     },
   );
 
@@ -88,7 +89,7 @@ const channelRoutes: FastifyPluginAsync = async (app) => {
         select,
       });
       reply.code(201);
-      return { status: 'ok', data: channel };
+      return ok(channel);
     },
   );
 
@@ -116,15 +117,10 @@ const channelRoutes: FastifyPluginAsync = async (app) => {
       if (type !== undefined) data.type = type;
       try {
         const channel = await prisma.channel.update({ where: { id: chanId }, data, select });
-        return { status: 'ok', data: channel };
+        return ok(channel);
       } catch (err) {
-        if (
-          typeof err === 'object' &&
-          err !== null &&
-          'code' in err &&
-          (err as { code: unknown }).code === 'P2025'
-        ) {
-          return reply.code(404).send({ status: 'error', data: { message: 'Channel not found' } });
+        if (isPrismaNotFoundError(err)) {
+          return sendNotFound(reply, 'Channel not found');
         }
         throw err;
       }
@@ -156,15 +152,10 @@ const channelRoutes: FastifyPluginAsync = async (app) => {
           await deleteEventUploadAssets(app.config, prisma, event.id);
         }
         await prisma.channel.delete({ where: { id: chanId } });
-        return { status: 'ok', deleted: true };
+        return deleted(true);
       } catch (err) {
-        if (
-          typeof err === 'object' &&
-          err !== null &&
-          'code' in err &&
-          (err as { code: unknown }).code === 'P2025'
-        ) {
-          return { status: 'ok', deleted: false };
+        if (isPrismaNotFoundError(err)) {
+          return deleted(false);
         }
         throw err;
       }

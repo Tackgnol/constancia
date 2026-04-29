@@ -1,9 +1,9 @@
 import type { BlockInstance } from '@constancia/contracts';
 import { PipelineRunner } from '@constancia/core';
-import type { EventStatus } from '@constancia/db';
 import type { FastifyPluginAsync } from 'fastify';
 import { getPrismaClient } from '../auth/prisma.js';
 import { buildBlockRegistry } from '../blocks.js';
+import { deleted, isPrismaNotFoundError, ok, sendNotFound } from '../http-responses.js';
 import {
   botTestResultBodySchema,
   botTestResultResponseSchema,
@@ -92,7 +92,7 @@ const botRoutes: FastifyPluginAsync = async (app) => {
         select: { id: true, type: true, pipeline: true, channelId: true, campaignId: true },
       });
       if (!event) {
-        return reply.code(404).send({ status: 'error', data: { message: 'Event not found' } });
+        return sendNotFound(reply, 'Event not found');
       }
 
       const character = await prisma.character.findUnique({
@@ -114,10 +114,7 @@ const botRoutes: FastifyPluginAsync = async (app) => {
         characterData: (character?.systemData ?? {}) as Record<string, unknown>,
       });
 
-      return {
-        status: 'ok',
-        data: { eventId, campaignId, messages: result.messages, halted: result.halted },
-      };
+      return ok({ eventId, campaignId, messages: result.messages, halted: result.halted });
     },
   );
 
@@ -143,10 +140,10 @@ const botRoutes: FastifyPluginAsync = async (app) => {
         select: { id: true, name: true, discordGuildId: true, gameSystemId: true },
       });
       if (!campaign) {
-        return reply.code(404).send({ status: 'error', data: { message: 'Campaign not found' } });
+        return sendNotFound(reply, 'Campaign not found');
       }
 
-      return { status: 'ok', data: campaign };
+      return ok(campaign);
     },
   );
 
@@ -168,7 +165,7 @@ const botRoutes: FastifyPluginAsync = async (app) => {
       const { id, discordUserId } = request.params;
       const npcs = await listVisibleNpcRecordsForPlayer(prisma, id, discordUserId);
 
-      return { status: 'ok', data: npcs.map(mapPlayerVisibleNpc) };
+      return ok(npcs.map(mapPlayerVisibleNpc));
     },
   );
 
@@ -192,7 +189,7 @@ const botRoutes: FastifyPluginAsync = async (app) => {
       const events = await prisma.event.findMany({
         where: {
           channel: { discordChannelId: channelId },
-          status: 'ready' as EventStatus,
+          status: 'ready',
         },
         select: {
           id: true,
@@ -206,7 +203,7 @@ const botRoutes: FastifyPluginAsync = async (app) => {
         },
       });
 
-      return { status: 'ok', data: events };
+      return ok(events);
     },
   );
 
@@ -252,17 +249,14 @@ const botRoutes: FastifyPluginAsync = async (app) => {
         select: { id: true, name: true, discordChannelId: true, campaignId: true, type: true },
       });
 
-      return {
-        status: 'ok',
-        data: {
-          campaign,
-          channel,
-          created: {
-            campaign: existingCampaign === null,
-            channel: existingChannel === null,
-          },
+      return ok({
+        campaign,
+        channel,
+        created: {
+          campaign: existingCampaign === null,
+          channel: existingChannel === null,
         },
-      };
+      });
     },
   );
 
@@ -289,9 +283,7 @@ const botRoutes: FastifyPluginAsync = async (app) => {
         select: { id: true },
       });
       if (!campaign) {
-        return reply
-          .code(404)
-          .send({ status: 'error', data: { message: 'Campaign not found. Run /setup first.' } });
+        return sendNotFound(reply, 'Campaign not found. Run /setup first.');
       }
 
       await prisma.$transaction(
@@ -319,7 +311,7 @@ const botRoutes: FastifyPluginAsync = async (app) => {
         ),
       );
 
-      return { status: 'ok', data: { campaignId: campaign.id, upserted: participants.length } };
+      return ok({ campaignId: campaign.id, upserted: participants.length });
     },
   );
 
@@ -345,24 +337,17 @@ const botRoutes: FastifyPluginAsync = async (app) => {
         select: { id: true },
       });
       if (!campaign) {
-        return reply.code(404).send({ status: 'error', data: { message: 'Campaign not found.' } });
+        return sendNotFound(reply, 'Campaign not found.');
       }
 
       try {
         await prisma.character.delete({
           where: { discordUserId_campaignId: { discordUserId, campaignId: campaign.id } },
         });
-        return { status: 'ok', deleted: true };
+        return deleted(true);
       } catch (err) {
-        if (
-          typeof err === 'object' &&
-          err !== null &&
-          'code' in err &&
-          (err as { code: unknown }).code === 'P2025'
-        ) {
-          return reply
-            .code(404)
-            .send({ status: 'error', data: { message: 'Participant not found.' } });
+        if (isPrismaNotFoundError(err)) {
+          return sendNotFound(reply, 'Participant not found.');
         }
         throw err;
       }

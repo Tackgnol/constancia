@@ -1,4 +1,17 @@
 import { registeredBlockSchemas } from './blocks.js';
+import type { EventStatus } from '@constancia/contracts';
+
+export const eventStatusValues = [
+  'draft',
+  'ready',
+  'fired',
+  'archived',
+] as const satisfies readonly EventStatus[];
+
+export const eventStatusSchema = {
+  type: 'string',
+  enum: eventStatusValues,
+} as const;
 
 export const identifierParamsSchema = {
   type: 'object',
@@ -368,7 +381,7 @@ export const eventPatchBodySchema = {
     name: { type: 'string' },
     type: { type: 'string' },
     channelId: { type: 'string' },
-    status: { type: 'string' },
+    status: eventStatusSchema,
     shortCircuit: { type: 'boolean' },
     pipeline: {
       type: 'array',
@@ -646,7 +659,7 @@ export const gameEventSchema = {
     type: { type: 'string' },
     channelId: { type: 'string' },
     campaignId: { type: 'string' },
-    status: { type: 'string' },
+    status: eventStatusSchema,
     shortCircuit: { type: 'boolean' },
     pipeline: { type: 'array', items: blockInstanceSchema },
   },

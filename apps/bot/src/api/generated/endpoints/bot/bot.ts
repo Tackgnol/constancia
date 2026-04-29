@@ -29,15 +29,15 @@ import type {
 export const getSubmitBotTestResultUrl = () => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/test-result`
 }
 
 export const submitBotTestResult = async (submitBotTestResultBody: SubmitBotTestResultBody, options?: RequestInit): Promise<SubmitBotTestResult200> => {
-  
+
   const res = await fetch(getSubmitBotTestResultUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -47,7 +47,7 @@ export const submitBotTestResult = async (submitBotTestResultBody: SubmitBotTest
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: SubmitBotTestResult200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -59,24 +59,24 @@ export const submitBotTestResult = async (submitBotTestResultBody: SubmitBotTest
 export const getGetCampaignByGuildUrl = ({ guildId }: GetCampaignByGuildPathParameters,) => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/campaign-by-guild/${guildId}`
 }
 
 export const getCampaignByGuild = async ({ guildId }: GetCampaignByGuildPathParameters, options?: RequestInit): Promise<GetCampaignByGuild200> => {
-  
+
   const res = await fetch(getGetCampaignByGuildUrl({ guildId }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: GetCampaignByGuild200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -88,24 +88,24 @@ export const getCampaignByGuild = async ({ guildId }: GetCampaignByGuildPathPara
 export const getListBotVisibleNpcsForPlayerUrl = ({ id, discordUserId }: ListBotVisibleNpcsForPlayerPathParameters,) => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/campaigns/${id}/visible-npcs/${discordUserId}`
 }
 
 export const listBotVisibleNpcsForPlayer = async ({ id, discordUserId }: ListBotVisibleNpcsForPlayerPathParameters, options?: RequestInit): Promise<ListBotVisibleNpcsForPlayer200> => {
-  
+
   const res = await fetch(getListBotVisibleNpcsForPlayerUrl({ id, discordUserId }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: ListBotVisibleNpcsForPlayer200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -117,24 +117,24 @@ export const listBotVisibleNpcsForPlayer = async ({ id, discordUserId }: ListBot
 export const getGetChannelEventsUrl = ({ channelId }: GetChannelEventsPathParameters,) => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/channel-events/${channelId}`
 }
 
 export const getChannelEvents = async ({ channelId }: GetChannelEventsPathParameters, options?: RequestInit): Promise<GetChannelEvents200> => {
-  
+
   const res = await fetch(getGetChannelEventsUrl({ channelId }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: GetChannelEvents200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -146,15 +146,15 @@ export const getChannelEvents = async ({ channelId }: GetChannelEventsPathParame
 export const getSetupChannelUrl = () => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/setup-channel`
 }
 
 export const setupChannel = async (setupChannelBody: SetupChannelBody, options?: RequestInit): Promise<SetupChannel200> => {
-  
+
   const res = await fetch(getSetupChannelUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -164,7 +164,7 @@ export const setupChannel = async (setupChannelBody: SetupChannelBody, options?:
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: SetupChannel200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -176,15 +176,15 @@ export const setupChannel = async (setupChannelBody: SetupChannelBody, options?:
 export const getSyncParticipantsUrl = () => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/sync-participants`
 }
 
 export const syncParticipants = async (syncParticipantsBody: SyncParticipantsBody, options?: RequestInit): Promise<SyncParticipants200> => {
-  
+
   const res = await fetch(getSyncParticipantsUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -194,7 +194,7 @@ export const syncParticipants = async (syncParticipantsBody: SyncParticipantsBod
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: SyncParticipants200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -206,26 +206,24 @@ export const syncParticipants = async (syncParticipantsBody: SyncParticipantsBod
 export const getRemoveParticipantUrl = ({ guildId, discordUserId }: RemoveParticipantPathParameters,) => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/bot/participant/${guildId}/${discordUserId}`
 }
 
 export const removeParticipant = async ({ guildId, discordUserId }: RemoveParticipantPathParameters, options?: RequestInit): Promise<RemoveParticipant200> => {
-  
+
   const res = await fetch(getRemoveParticipantUrl({ guildId, discordUserId }),
-  {      
+  {
     ...options,
     method: 'DELETE'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: RemoveParticipant200 = body ? JSON.parse(body) : {}
   return data
 }
-
-

@@ -6,6 +6,7 @@ import {
   singleResponseSchema,
 } from '../schemas.js';
 import { getGameSystemSummary, listSupportedGameSystems } from '@constancia/systems';
+import { ok, sendNotFound } from '../http-responses.js';
 
 interface SystemParams {
   id: string;
@@ -24,10 +25,7 @@ const systemRoutes: FastifyPluginAsync = async (app) => {
         },
       },
     },
-    async () => ({
-      status: 'ok',
-      data: listSupportedGameSystems(),
-    }),
+    async () => ok(listSupportedGameSystems()),
   );
 
   app.get<{ Params: SystemParams }>(
@@ -47,11 +45,9 @@ const systemRoutes: FastifyPluginAsync = async (app) => {
       const params = request.params;
       const system = getGameSystemSummary(params.id);
       if (!system) {
-        return reply
-          .code(404)
-          .send({ status: 'error', data: { message: 'Game system not found' } });
+        return sendNotFound(reply, 'Game system not found');
       }
-      return { status: 'ok', data: system };
+      return ok(system);
     },
   );
 };

@@ -41,24 +41,24 @@ import type {
 export const getListQuestsUrl = ({ id }: ListQuestsPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/quests`
 }
 
 export const listQuests = async ({ id }: ListQuestsPathParameters, options?: RequestInit): Promise<ListQuests200> => {
-  
+
   const res = await fetch(getListQuestsUrl({ id }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: ListQuests200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -70,16 +70,16 @@ export const listQuests = async ({ id }: ListQuestsPathParameters, options?: Req
 export const getCreateQuestUrl = ({ id }: CreateQuestPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/quests`
 }
 
 export const createQuest = async ({ id }: CreateQuestPathParameters,
     createQuestBody: CreateQuestBody, options?: RequestInit): Promise<CreateQuest201> => {
-  
+
   const res = await fetch(getCreateQuestUrl({ id }),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -89,7 +89,7 @@ export const createQuest = async ({ id }: CreateQuestPathParameters,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: CreateQuest201 = body ? JSON.parse(body) : {}
   return data
 }
@@ -101,16 +101,16 @@ export const createQuest = async ({ id }: CreateQuestPathParameters,
 export const getUpdateQuestUrl = ({ id, questId }: UpdateQuestPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/quests/${questId}`
 }
 
 export const updateQuest = async ({ id, questId }: UpdateQuestPathParameters,
     updateQuestBody: UpdateQuestBody, options?: RequestInit): Promise<UpdateQuest200> => {
-  
+
   const res = await fetch(getUpdateQuestUrl({ id, questId }),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -120,7 +120,7 @@ export const updateQuest = async ({ id, questId }: UpdateQuestPathParameters,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: UpdateQuest200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -132,16 +132,16 @@ export const updateQuest = async ({ id, questId }: UpdateQuestPathParameters,
 export const getCreateQuestEntryUrl = ({ id, questId }: CreateQuestEntryPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/quests/${questId}/entries`
 }
 
 export const createQuestEntry = async ({ id, questId }: CreateQuestEntryPathParameters,
     createQuestEntryBody: CreateQuestEntryBody, options?: RequestInit): Promise<CreateQuestEntry201> => {
-  
+
   const res = await fetch(getCreateQuestEntryUrl({ id, questId }),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -151,7 +151,7 @@ export const createQuestEntry = async ({ id, questId }: CreateQuestEntryPathPara
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: CreateQuestEntry201 = body ? JSON.parse(body) : {}
   return data
 }
@@ -163,16 +163,16 @@ export const createQuestEntry = async ({ id, questId }: CreateQuestEntryPathPara
 export const getUpdateQuestEntryUrl = ({ id, questId, entryId }: UpdateQuestEntryPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/quests/${questId}/entries/${entryId}`
 }
 
 export const updateQuestEntry = async ({ id, questId, entryId }: UpdateQuestEntryPathParameters,
     updateQuestEntryBody: UpdateQuestEntryBody, options?: RequestInit): Promise<UpdateQuestEntry200> => {
-  
+
   const res = await fetch(getUpdateQuestEntryUrl({ id, questId, entryId }),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -182,7 +182,7 @@ export const updateQuestEntry = async ({ id, questId, entryId }: UpdateQuestEntr
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: UpdateQuestEntry200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -194,24 +194,24 @@ export const updateQuestEntry = async ({ id, questId, entryId }: UpdateQuestEntr
 export const getDeleteQuestEntryUrl = ({ id, questId, entryId }: DeleteQuestEntryPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/quests/${questId}/entries/${entryId}`
 }
 
 export const deleteQuestEntry = async ({ id, questId, entryId }: DeleteQuestEntryPathParameters, options?: RequestInit): Promise<DeleteQuestEntry200> => {
-  
+
   const res = await fetch(getDeleteQuestEntryUrl({ id, questId, entryId }),
-  {      
+  {
     ...options,
     method: 'DELETE'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: DeleteQuestEntry200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -223,24 +223,24 @@ export const deleteQuestEntry = async ({ id, questId, entryId }: DeleteQuestEntr
 export const getListSessionSummariesUrl = ({ id }: ListSessionSummariesPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/summaries`
 }
 
 export const listSessionSummaries = async ({ id }: ListSessionSummariesPathParameters, options?: RequestInit): Promise<ListSessionSummaries200> => {
-  
+
   const res = await fetch(getListSessionSummariesUrl({ id }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: ListSessionSummaries200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -252,16 +252,16 @@ export const listSessionSummaries = async ({ id }: ListSessionSummariesPathParam
 export const getCreateSessionSummaryUrl = ({ id }: CreateSessionSummaryPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/summaries`
 }
 
 export const createSessionSummary = async ({ id }: CreateSessionSummaryPathParameters,
     createSessionSummaryBody: CreateSessionSummaryBody, options?: RequestInit): Promise<CreateSessionSummary201> => {
-  
+
   const res = await fetch(getCreateSessionSummaryUrl({ id }),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -271,7 +271,7 @@ export const createSessionSummary = async ({ id }: CreateSessionSummaryPathParam
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: CreateSessionSummary201 = body ? JSON.parse(body) : {}
   return data
 }
@@ -283,16 +283,16 @@ export const createSessionSummary = async ({ id }: CreateSessionSummaryPathParam
 export const getUpdateSessionSummaryUrl = ({ id, sumId }: UpdateSessionSummaryPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/summaries/${sumId}`
 }
 
 export const updateSessionSummary = async ({ id, sumId }: UpdateSessionSummaryPathParameters,
     updateSessionSummaryBody: UpdateSessionSummaryBody, options?: RequestInit): Promise<UpdateSessionSummary200> => {
-  
+
   const res = await fetch(getUpdateSessionSummaryUrl({ id, sumId }),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -302,7 +302,7 @@ export const updateSessionSummary = async ({ id, sumId }: UpdateSessionSummaryPa
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: UpdateSessionSummary200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -314,26 +314,24 @@ export const updateSessionSummary = async ({ id, sumId }: UpdateSessionSummaryPa
 export const getGetJournalForPlayerUrl = ({ id, discordId }: GetJournalForPlayerPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/campaigns/${id}/journal/for/${discordId}`
 }
 
 export const getJournalForPlayer = async ({ id, discordId }: GetJournalForPlayerPathParameters, options?: RequestInit): Promise<GetJournalForPlayer200> => {
-  
+
   const res = await fetch(getGetJournalForPlayerUrl({ id, discordId }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: GetJournalForPlayer200 = body ? JSON.parse(body) : {}
   return data
 }
-
-

@@ -99,7 +99,7 @@ export const getChannelEventsResponse = zod.object({
   "type": zod.string(),
   "channelId": zod.string(),
   "campaignId": zod.string(),
-  "status": zod.string(),
+  "status": zod.enum(['draft', 'ready', 'fired', 'archived']),
   "shortCircuit": zod.boolean(),
   "pipeline": zod.array(zod.union([zod.object({
   "blockType": zod.enum(['outcome-map']),
@@ -236,4 +236,3 @@ export const removeParticipantResponse = zod.object({
   "status": zod.string(),
   "deleted": zod.boolean()
 })
-

@@ -1,4 +1,4 @@
-# Bot ↔ Backend ↔ Frontend stocktake — 2026-04-28
+# Bot ↔ Backend ↔ Frontend stocktake — 2026-04-29
 
 Legend:
 - `[x]` = working end-to-end across the current surfaces
@@ -43,10 +43,10 @@ Legend:
   No automatic write-back exists.
 
 ## Player messages
-- [ ] Select players on FE (even one is the minimum)  
-  Partial: the event pipeline builder supports selecting one or more recipients for `message-player` / `message-group`, but the players rail `+ Whisper a player` control is only a placeholder.
-- [ ] Send message to the selected players  
-  Partial: this works through staged `message` events that are later fired, but there is no dedicated ad-hoc FE whisper/send flow.
+- [x] Select players on FE (even one is the minimum)
+  The war room whisper panel can select a campaign player/character, and event pipeline blocks still support one or more configured recipients.
+- [x] Send message to the selected players
+  Dedicated FE whispers call `POST /campaigns/:id/messages/players`; backend moderation runs before delivery, and event-based direct messages remain available through pipelines.
 
 ## NPCs
 - [x] Create NPCs  
@@ -82,9 +82,33 @@ Legend:
 - [ ] Like facts they can be known to certain players and not to others  
   No lore visibility system currently exists.
 
+## Moderation and Uploads
+- [x] Moderate text before persistence / delivery
+  Backend text moderation is centralized across write surfaces and is configurable through environment settings.
+- [x] Upload image assets through backend
+  Backend multipart image uploads now run validation, image moderation/compression, quota checks, and storage through the storage abstraction.
+- [x] Gate uploads per user
+  User upload settings expose `uploadsEnabled`, allowance, used bytes, remaining bytes, and near-limit state.
+- [x] Track upload allowance per user
+  Default allowance is 50 MB and usage is calculated from stored asset metadata.
+- [x] Link uploaded images to events for cleanup
+  Event create/update links uploaded asset URLs from pipeline configs; event/channel deletion clears linked storage assets.
+- [ ] Admin panel for upload allowance / upload enablement
+  Backend settings and quota exist, but there is no admin management surface yet.
+
+## Technical Cleanup / Safety
+- [x] Validate persisted pipeline block configs before execution
+  `PipelineRunner` validates each persisted block config against the registered JSON schema before executing it.
+- [x] Preserve player-target pipeline messages
+  Player-message blocks without an explicit `targetId` now default to the invoking player context, and system resolver output uses the shared block message contract.
+- [x] Normalize backend response helpers and EventStatus schema
+  Backend routes now share response/not-found helpers, and event status is explicit in OpenAPI/Orval instead of drifting through loose strings.
+- [ ] Reduce committed generated client churn
+  Step 5 target: frontend and bot Orval clients are still committed as two large generated trees and produce noisy diffs.
+
 ## Short version
-- Strongest working loop today: **event creation in FE → event firing in FE → backend execution → Discord delivery by bot**, especially for **test**, **insight**, **narration**, and **event-based direct messages**.
-- Best-developed content management area today: **NPC dossiers + facts + per-player fact reveal**.
-- Present in backend but not truly surfaced yet: **quests** and **session-summary journal APIs**.
-- Not implemented yet: **lore**, **NPC↔quest links**, and **automatic event-driven writes into journal/NPC/lore systems**.
+- Strongest working loop today: **event creation in FE → event firing in FE → backend execution → Discord delivery by bot**, plus **ad-hoc player whispers**.
+- Best-developed content management area today: **NPC dossiers + facts + per-player fact reveal**, with moderation/upload plumbing now behind the backend.
+- Present in backend but not truly surfaced yet: **quests**, **session-summary journal APIs**, and **admin upload controls**.
+- Not implemented yet: **lore**, **NPC↔quest links**, **automatic event-driven writes into journal/NPC/lore systems**, and a cleaner generated-client strategy.
 

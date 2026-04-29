@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { FastifyPluginAsync } from 'fastify';
 import { getPrismaClient } from '../auth/prisma.js';
+import { ok, sendNotFound } from '../http-responses.js';
 import {
   standardResponseSchema,
   singleResponseSchema,
@@ -35,7 +36,7 @@ const uploadPublicRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const { assetId } = request.params;
       if (!isValidUploadAssetId(assetId)) {
-        return reply.code(404).send({ status: 'error', data: { message: 'Upload not found' } });
+        return sendNotFound(reply, 'Upload not found');
       }
 
       const prisma = getPrismaClient();
@@ -44,7 +45,7 @@ const uploadPublicRoutes: FastifyPluginAsync = async (app) => {
         select: { storageProvider: true, storageKey: true, bucket: true },
       });
       if (asset === null) {
-        return reply.code(404).send({ status: 'error', data: { message: 'Upload not found' } });
+        return sendNotFound(reply, 'Upload not found');
       }
 
       try {
@@ -53,7 +54,7 @@ const uploadPublicRoutes: FastifyPluginAsync = async (app) => {
         reply.header('cache-control', 'public, max-age=31536000, immutable');
         return reply.send(payload);
       } catch {
-        return reply.code(404).send({ status: 'error', data: { message: 'Upload not found' } });
+        return sendNotFound(reply, 'Upload not found');
       }
     },
   );
@@ -91,7 +92,7 @@ const uploadProtectedRoutes: FastifyPluginAsync = async (app) => {
         select: { uploadsEnabled: true },
       });
       if (user === null) {
-        return reply.code(404).send({ status: 'error', data: { message: 'User not found' } });
+        return sendNotFound(reply, 'User not found');
       }
       if (!user.uploadsEnabled) {
         throw new UploadPermissionError();
@@ -172,16 +173,13 @@ const uploadProtectedRoutes: FastifyPluginAsync = async (app) => {
       });
 
       reply.code(201);
-      return {
-        status: 'ok',
-        data: {
-          assetId: asset.id,
-          url: stored.url,
-          mimeType: asset.mimeType,
-          sizeBytes: asset.sizeBytes,
-          quota,
-        },
-      };
+      return ok({
+        assetId: asset.id,
+        url: stored.url,
+        mimeType: asset.mimeType,
+        sizeBytes: asset.sizeBytes,
+        quota,
+      });
     },
   );
 };

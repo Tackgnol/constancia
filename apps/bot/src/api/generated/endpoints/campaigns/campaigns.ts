@@ -23,24 +23,24 @@ import type {
 export const getListCampaignsUrl = () => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/`
 }
 
 export const listCampaigns = async ( options?: RequestInit): Promise<ListCampaigns200> => {
-  
+
   const res = await fetch(getListCampaignsUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: ListCampaigns200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -52,15 +52,15 @@ export const listCampaigns = async ( options?: RequestInit): Promise<ListCampaig
 export const getCreateCampaignUrl = () => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/`
 }
 
 export const createCampaign = async (createCampaignBody: CreateCampaignBody, options?: RequestInit): Promise<CreateCampaign201> => {
-  
+
   const res = await fetch(getCreateCampaignUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -70,7 +70,7 @@ export const createCampaign = async (createCampaignBody: CreateCampaignBody, opt
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: CreateCampaign201 = body ? JSON.parse(body) : {}
   return data
 }
@@ -82,24 +82,24 @@ export const createCampaign = async (createCampaignBody: CreateCampaignBody, opt
 export const getGetCampaignUrl = ({ id }: GetCampaignPathParameters,) => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}`
 }
 
 export const getCampaign = async ({ id }: GetCampaignPathParameters, options?: RequestInit): Promise<GetCampaign200> => {
-  
+
   const res = await fetch(getGetCampaignUrl({ id }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: GetCampaign200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -111,16 +111,16 @@ export const getCampaign = async ({ id }: GetCampaignPathParameters, options?: R
 export const getUpdateCampaignUrl = ({ id }: UpdateCampaignPathParameters,) => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}`
 }
 
 export const updateCampaign = async ({ id }: UpdateCampaignPathParameters,
     updateCampaignBody: UpdateCampaignBody, options?: RequestInit): Promise<UpdateCampaign200> => {
-  
+
   const res = await fetch(getUpdateCampaignUrl({ id }),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -130,9 +130,7 @@ export const updateCampaign = async ({ id }: UpdateCampaignPathParameters,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: UpdateCampaign200 = body ? JSON.parse(body) : {}
   return data
 }
-
-

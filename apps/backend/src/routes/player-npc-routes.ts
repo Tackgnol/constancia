@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { getPrismaClient } from '../auth/prisma.js';
+import { ok, sendError, sendNotFound } from '../http-responses.js';
 import {
   campaignParamsSchema,
   listResponseSchema,
@@ -39,16 +40,14 @@ const playerNpcRoutes: FastifyPluginAsync = async (app) => {
       const discordUserId = request.access.kind === 'session' ? request.access.discordUserId : null;
 
       if (!discordUserId) {
-        return reply
-          .code(403)
-          .send({ status: 'error', data: { message: 'Discord identity required' } });
+        return sendError(reply, 403, 'Discord identity required');
       }
 
       const prisma = getPrismaClient();
       const { id } = request.params;
       const npcs = await listVisibleNpcRecordsForPlayer(prisma, id, discordUserId);
 
-      return { status: 'ok', data: npcs.map(mapPlayerVisibleNpc) };
+      return ok(npcs.map(mapPlayerVisibleNpc));
     },
   );
 
@@ -69,9 +68,7 @@ const playerNpcRoutes: FastifyPluginAsync = async (app) => {
       const discordUserId = request.access.kind === 'session' ? request.access.discordUserId : null;
 
       if (!discordUserId) {
-        return reply
-          .code(403)
-          .send({ status: 'error', data: { message: 'Discord identity required' } });
+        return sendError(reply, 403, 'Discord identity required');
       }
 
       const prisma = getPrismaClient();
@@ -80,12 +77,10 @@ const playerNpcRoutes: FastifyPluginAsync = async (app) => {
       const npc = npcs.find((entry) => entry.id === npcId);
 
       if (npc === undefined) {
-        return reply
-          .code(404)
-          .send({ status: 'error', data: { message: 'NPC dossier not found' } });
+        return sendNotFound(reply, 'NPC dossier not found');
       }
 
-      return { status: 'ok', data: mapPlayerVisibleNpc(npc) };
+      return ok(mapPlayerVisibleNpc(npc));
     },
   );
 };

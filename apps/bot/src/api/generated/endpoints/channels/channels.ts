@@ -25,24 +25,24 @@ import type {
 export const getListChannelsUrl = ({ id }: ListChannelsPathParameters,) => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/channels/`
 }
 
 export const listChannels = async ({ id }: ListChannelsPathParameters, options?: RequestInit): Promise<ListChannels200> => {
-  
+
   const res = await fetch(getListChannelsUrl({ id }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: ListChannels200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -54,16 +54,16 @@ export const listChannels = async ({ id }: ListChannelsPathParameters, options?:
 export const getCreateChannelUrl = ({ id }: CreateChannelPathParameters,) => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/channels/`
 }
 
 export const createChannel = async ({ id }: CreateChannelPathParameters,
     createChannelBody: CreateChannelBody, options?: RequestInit): Promise<CreateChannel201> => {
-  
+
   const res = await fetch(getCreateChannelUrl({ id }),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -73,7 +73,7 @@ export const createChannel = async ({ id }: CreateChannelPathParameters,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: CreateChannel201 = body ? JSON.parse(body) : {}
   return data
 }
@@ -85,16 +85,16 @@ export const createChannel = async ({ id }: CreateChannelPathParameters,
 export const getUpdateChannelUrl = ({ id, chanId }: UpdateChannelPathParameters,) => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/channels/${chanId}`
 }
 
 export const updateChannel = async ({ id, chanId }: UpdateChannelPathParameters,
     updateChannelBody: UpdateChannelBody, options?: RequestInit): Promise<UpdateChannel200> => {
-  
+
   const res = await fetch(getUpdateChannelUrl({ id, chanId }),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -104,7 +104,7 @@ export const updateChannel = async ({ id, chanId }: UpdateChannelPathParameters,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: UpdateChannel200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -116,26 +116,24 @@ export const updateChannel = async ({ id, chanId }: UpdateChannelPathParameters,
 export const getDeleteChannelUrl = ({ id, chanId }: DeleteChannelPathParameters,) => {
 
 
-  
+
 
   return `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/campaigns/${id}/channels/${chanId}`
 }
 
 export const deleteChannel = async ({ id, chanId }: DeleteChannelPathParameters, options?: RequestInit): Promise<DeleteChannel200> => {
-  
+
   const res = await fetch(getDeleteChannelUrl({ id, chanId }),
-  {      
+  {
     ...options,
     method: 'DELETE'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: DeleteChannel200 = body ? JSON.parse(body) : {}
   return data
 }
-
-

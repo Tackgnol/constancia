@@ -34,4 +34,3 @@ export const sendPlayerMessageResponse = zod.object({
   "deliveredTo": zod.array(zod.string())
 })
 })
-

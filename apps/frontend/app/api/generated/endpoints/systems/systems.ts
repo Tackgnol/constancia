@@ -18,24 +18,24 @@ import type {
 export const getListGameSystemsUrl = () => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/systems/`
 }
 
 export const listGameSystems = async ( options?: RequestInit): Promise<ListGameSystems200> => {
-  
+
   const res = await fetch(getListGameSystemsUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: ListGameSystems200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -47,26 +47,24 @@ export const listGameSystems = async ( options?: RequestInit): Promise<ListGameS
 export const getGetGameSystemUrl = ({ id }: GetGameSystemPathParameters,) => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/api/v1/systems/${id}`
 }
 
 export const getGameSystem = async ({ id }: GetGameSystemPathParameters, options?: RequestInit): Promise<GetGameSystem200> => {
-  
+
   const res = await fetch(getGetGameSystemUrl({ id }),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: GetGameSystem200 = body ? JSON.parse(body) : {}
   return data
 }
-
-

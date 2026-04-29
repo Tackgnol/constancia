@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { FastifyPluginAsync } from 'fastify';
 import type { BlockMessage } from '@constancia/contracts';
 import { getPrismaClient } from '../auth/prisma.js';
+import { ok, sendError, sendNotFound } from '../http-responses.js';
 import { sendMessagesToBotAsync } from '../services/bot-client.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
 import {
@@ -52,9 +53,7 @@ const messageRoutes: FastifyPluginAsync = async (app) => {
       const discordUserIds = uniqueTrimmedIds(request.body.discordUserIds);
 
       if (discordUserIds.length === 0) {
-        return reply
-          .code(400)
-          .send({ status: 'error', data: { message: 'At least one player is required' } });
+        return sendError(reply, 400, 'At least one player is required');
       }
 
       const channel = await prisma.channel.findFirst({
@@ -63,7 +62,7 @@ const messageRoutes: FastifyPluginAsync = async (app) => {
       });
 
       if (channel === null) {
-        return reply.code(404).send({ status: 'error', data: { message: 'Channel not found' } });
+        return sendNotFound(reply, 'Channel not found');
       }
 
       const message: BlockMessage =
@@ -88,14 +87,11 @@ const messageRoutes: FastifyPluginAsync = async (app) => {
         messages: [message],
       });
 
-      return {
-        status: 'ok',
-        data: {
-          campaignId,
-          channelId,
-          deliveredTo: discordUserIds,
-        },
-      };
+      return ok({
+        campaignId,
+        channelId,
+        deliveredTo: discordUserIds,
+      });
     },
   );
 };

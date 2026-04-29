@@ -15,6 +15,7 @@ import {
   singleResponseSchema,
 } from '../schemas.js';
 import { getPrismaClient } from '../auth/prisma.js';
+import { isPrismaNotFoundError, ok, sendNotFound } from '../http-responses.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
 
 interface CampaignParams {
@@ -280,7 +281,7 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
         select: npcWithKnowledgeSelect,
       });
 
-      return { status: 'ok', data: npcs.map(mapNpcWithKnowledge) };
+      return ok(npcs.map(mapNpcWithKnowledge));
     },
   );
 
@@ -333,7 +334,7 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
       });
 
       reply.code(201);
-      return { status: 'ok', data: mapNpcWithFacts(npc) };
+      return ok(mapNpcWithFacts(npc));
     },
   );
 
@@ -374,22 +375,14 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
           data,
           select: npcBaseSelect,
         });
-        return {
-          status: 'ok',
-          data: {
-            ...npc,
-            imageUrl: npc.imageUrl ?? undefined,
-            systemBlocks: normalizeNpcSystemBlocks(npc.systemBlocks),
-          },
-        };
+        return ok({
+          ...npc,
+          imageUrl: npc.imageUrl ?? undefined,
+          systemBlocks: normalizeNpcSystemBlocks(npc.systemBlocks),
+        });
       } catch (err) {
-        if (
-          typeof err === 'object' &&
-          err !== null &&
-          'code' in err &&
-          (err as { code: unknown }).code === 'P2025'
-        ) {
-          return reply.code(404).send({ status: 'error', data: { message: 'NPC not found' } });
+        if (isPrismaNotFoundError(err)) {
+          return sendNotFound(reply, 'NPC not found');
         }
         throw err;
       }
@@ -420,7 +413,7 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
         select: npcFactSelect,
       });
       reply.code(201);
-      return { status: 'ok', data: fact };
+      return ok(fact);
     },
   );
 
@@ -461,10 +454,10 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
       });
 
       if (npc === null) {
-        return reply.code(404).send({ status: 'error', data: { message: 'NPC not found' } });
+        return sendNotFound(reply, 'NPC not found');
       }
 
-      return { status: 'ok', data: mapNpcWithKnowledge(npc) };
+      return ok(mapNpcWithKnowledge(npc));
     },
   );
 };

@@ -12,6 +12,7 @@ import {
 } from '../schemas.js';
 import type { Prisma } from '@constancia/db';
 import { getPrismaClient } from '../auth/prisma.js';
+import { isPrismaNotFoundError, ok, sendError, sendNotFound } from '../http-responses.js';
 import {
   getCharacterSheetForActor,
   updateCharacterSheetForActor,
@@ -80,7 +81,7 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrismaClient();
       const { id } = request.params;
       const characters = await prisma.character.findMany({ where: { campaignId: id }, select });
-      return { status: 'ok', data: characters };
+      return ok(characters);
     },
   );
 
@@ -115,7 +116,7 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
         select,
       });
       reply.code(201);
-      return { status: 'ok', data: character };
+      return ok(character);
     },
   );
 
@@ -138,9 +139,9 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
       const { charId } = request.params;
       const character = await prisma.character.findUnique({ where: { id: charId }, select });
       if (character === null) {
-        return reply.code(404).send({ status: 'error', data: { message: 'Character not found' } });
+        return sendNotFound(reply, 'Character not found');
       }
-      return { status: 'ok', data: character };
+      return ok(character);
     },
   );
 
@@ -176,17 +177,10 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
       if (systemData !== undefined) data.systemData = systemData as Prisma.InputJsonValue;
       try {
         const character = await prisma.character.update({ where: { id: charId }, data, select });
-        return { status: 'ok', data: character };
+        return ok(character);
       } catch (err) {
-        if (
-          typeof err === 'object' &&
-          err !== null &&
-          'code' in err &&
-          (err as { code: unknown }).code === 'P2025'
-        ) {
-          return reply
-            .code(404)
-            .send({ status: 'error', data: { message: 'Character not found' } });
+        if (isPrismaNotFoundError(err)) {
+          return sendNotFound(reply, 'Character not found');
         }
         throw err;
       }
@@ -210,9 +204,7 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
       const discordUserId = request.access.kind === 'session' ? request.access.discordUserId : null;
 
       if (!discordUserId) {
-        return reply
-          .code(403)
-          .send({ status: 'error', data: { message: 'Discord identity required' } });
+        return sendError(reply, 403, 'Discord identity required');
       }
 
       await moderatePayloadText(app.config, request.body);
@@ -220,12 +212,10 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
       const { id, charId } = request.params;
       const sheet = await getCharacterSheetForActor(prisma, id, charId, discordUserId);
       if (sheet === null) {
-        return reply
-          .code(404)
-          .send({ status: 'error', data: { message: 'Character sheet not found' } });
+        return sendNotFound(reply, 'Character sheet not found');
       }
 
-      return { status: 'ok', data: sheet };
+      return ok(sheet);
     },
   );
 
@@ -247,9 +237,7 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
       const discordUserId = request.access.kind === 'session' ? request.access.discordUserId : null;
 
       if (!discordUserId) {
-        return reply
-          .code(403)
-          .send({ status: 'error', data: { message: 'Discord identity required' } });
+        return sendError(reply, 403, 'Discord identity required');
       }
 
       const prisma = getPrismaClient();
@@ -262,12 +250,10 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
         request.body,
       );
       if (sheet === null) {
-        return reply
-          .code(404)
-          .send({ status: 'error', data: { message: 'Character sheet not found' } });
+        return sendNotFound(reply, 'Character sheet not found');
       }
 
-      return { status: 'ok', data: sheet };
+      return ok(sheet);
     },
   );
 };

@@ -18,24 +18,24 @@ import type {
 export const getGetOpenApiDocumentUrl = () => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/openapi.json`
 }
 
 export const getOpenApiDocument = async ( options?: RequestInit): Promise<GetOpenApiDocument200> => {
-  
+
   const res = await fetch(getGetOpenApiDocumentUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: GetOpenApiDocument200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -47,23 +47,23 @@ export const getOpenApiDocument = async ( options?: RequestInit): Promise<GetOpe
 export const getGetServiceMetadataUrl = () => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/`;}
 
 export const getServiceMetadata = async ( options?: RequestInit): Promise<GetServiceMetadata200> => {
-  
+
   const res = await fetch(getGetServiceMetadataUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: GetServiceMetadata200 = body ? JSON.parse(body) : {}
   return data
 }
@@ -75,26 +75,24 @@ export const getServiceMetadata = async ( options?: RequestInit): Promise<GetSer
 export const getGetServiceHealthUrl = () => {
 
 
-  
+
 
   return `${import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')}/health`
 }
 
 export const getServiceHealth = async ( options?: RequestInit): Promise<GetServiceHealth200> => {
-  
+
   const res = await fetch(getGetServiceHealthUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: GetServiceHealth200 = body ? JSON.parse(body) : {}
   return data
 }
-
-

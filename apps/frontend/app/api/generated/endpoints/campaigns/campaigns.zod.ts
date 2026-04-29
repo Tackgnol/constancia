@@ -68,4 +68,3 @@ export const updateCampaignResponse = zod.object({
   "gameSystemId": zod.string()
 })
 })
-

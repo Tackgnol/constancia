@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { getPrismaClient } from '../auth/prisma.js';
+import { isPrismaNotFoundError, ok, sendNotFound } from '../http-responses.js';
 import {
   campaignBodySchema,
   campaignParamsSchema,
@@ -46,7 +47,7 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
         select,
         orderBy: { updatedAt: 'desc' },
       });
-      return { status: 'ok', data: campaigns };
+      return ok(campaigns);
     },
   );
 
@@ -72,7 +73,7 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
         select,
       });
       reply.code(201);
-      return { status: 'ok', data: campaign };
+      return ok(campaign);
     },
   );
 
@@ -95,9 +96,9 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
       const { id } = request.params;
       const campaign = await prisma.campaign.findUnique({ where: { id }, select });
       if (campaign === null) {
-        return reply.code(404).send({ status: 'error', data: { message: 'Campaign not found' } });
+        return sendNotFound(reply, 'Campaign not found');
       }
-      return { status: 'ok', data: campaign };
+      return ok(campaign);
     },
   );
 
@@ -124,15 +125,10 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
       if (gameSystemId !== undefined) data.gameSystemId = gameSystemId;
       try {
         const campaign = await prisma.campaign.update({ where: { id }, data, select });
-        return { status: 'ok', data: campaign };
+        return ok(campaign);
       } catch (err) {
-        if (
-          typeof err === 'object' &&
-          err !== null &&
-          'code' in err &&
-          (err as { code: unknown }).code === 'P2025'
-        ) {
-          return reply.code(404).send({ status: 'error', data: { message: 'Campaign not found' } });
+        if (isPrismaNotFoundError(err)) {
+          return sendNotFound(reply, 'Campaign not found');
         }
         throw err;
       }

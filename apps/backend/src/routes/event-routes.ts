@@ -1,9 +1,10 @@
 import type { FastifyPluginAsync } from 'fastify';
-import type { Prisma, EventStatus } from '@constancia/db';
-import type { BlockInstance, BlockMessage } from '@constancia/contracts';
+import type { Prisma } from '@constancia/db';
+import type { BlockInstance, BlockMessage, EventStatus } from '@constancia/contracts';
 import { PipelineRunner } from '@constancia/core';
 import { getPrismaClient } from '../auth/prisma.js';
 import { buildBlockRegistry } from '../blocks.js';
+import { deleted, isPrismaNotFoundError, ok, sendNotFound } from '../http-responses.js';
 import { sendMessagesToBotAsync } from '../services/bot-client.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
 import { filterInsightResolutionPipeline, resolveInsightScore } from '../services/insight-event.js';
@@ -53,7 +54,7 @@ interface EventPatchBody {
   name?: string;
   type?: string;
   channelId?: string;
-  status?: string;
+  status?: EventStatus;
   shortCircuit?: boolean;
   pipeline?: EventBlockInput[];
 }
@@ -90,7 +91,7 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
         where: { campaignId: id },
         select: eventSelect,
       });
-      return { status: 'ok', data: events };
+      return ok(events);
     },
   );
 
@@ -130,7 +131,7 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
       });
       await linkPipelineUploadAssets(prisma, { assetIds, userId, eventId: event.id });
       reply.code(201);
-      return { status: 'ok', data: event };
+      return ok(event);
     },
   );
 
@@ -153,9 +154,9 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
       const { eventId } = request.params;
       const event = await prisma.event.findUnique({ where: { id: eventId }, select: eventSelect });
       if (event === null) {
-        return reply.code(404).send({ status: 'error', data: { message: 'Event not found' } });
+        return sendNotFound(reply, 'Event not found');
       }
-      return { status: 'ok', data: event };
+      return ok(event);
     },
   );
 
@@ -188,7 +189,7 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
       if (name !== undefined) data.name = name;
       if (type !== undefined) data.type = type;
       if (channelId !== undefined) data.channel = { connect: { id: channelId } };
-      if (status !== undefined) data.status = status as EventStatus;
+      if (status !== undefined) data.status = status;
       if (shortCircuit !== undefined) data.shortCircuit = shortCircuit;
       if (pipeline !== undefined) data.pipeline = pipeline as unknown as Prisma.InputJsonValue;
       try {
@@ -204,15 +205,10 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
             retainedAssetIds: assetIds,
           });
         }
-        return { status: 'ok', data: event };
+        return ok(event);
       } catch (err) {
-        if (
-          typeof err === 'object' &&
-          err !== null &&
-          'code' in err &&
-          (err as { code: unknown }).code === 'P2025'
-        ) {
-          return reply.code(404).send({ status: 'error', data: { message: 'Event not found' } });
+        if (isPrismaNotFoundError(err)) {
+          return sendNotFound(reply, 'Event not found');
         }
         throw err;
       }
@@ -240,12 +236,12 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
         select: { id: true },
       });
       if (event === null) {
-        return { status: 'ok', deleted: false };
+        return deleted(false);
       }
 
       await deleteEventUploadAssets(app.config, prisma, eventId);
       await prisma.event.delete({ where: { id: eventId } });
-      return { status: 'ok', deleted: true };
+      return deleted(true);
     },
   );
 
@@ -267,7 +263,7 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
       const { eventId } = request.params;
       const event = await prisma.event.findUnique({ where: { id: eventId }, select: eventSelect });
       if (event === null) {
-        return reply.code(404).send({ status: 'error', data: { message: 'Event not found' } });
+        return sendNotFound(reply, 'Event not found');
       }
 
       const channel = await prisma.channel.findUnique({
@@ -310,14 +306,11 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
             { eventId },
             'Skipping insight delivery: no supported insight resolver found',
           );
-          return {
-            status: 'ok',
-            data: {
-              eventId,
-              messages: [],
-              halted: false,
-            },
-          };
+          return ok({
+            eventId,
+            messages: [],
+            halted: false,
+          });
         }
 
         for (const character of characters) {
@@ -349,14 +342,11 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
           });
         }
 
-        return {
-          status: 'ok',
-          data: {
-            eventId,
-            messages: insightMessages,
-            halted: false,
-          },
-        };
+        return ok({
+          eventId,
+          messages: insightMessages,
+          halted: false,
+        });
       } else {
         const registry = buildBlockRegistry();
         const runner = new PipelineRunner(registry);
@@ -377,24 +367,18 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
           });
         }
 
-        return {
-          status: 'ok',
-          data: {
-            eventId,
-            messages: result.messages,
-            halted: result.halted,
-          },
-        };
+        return ok({
+          eventId,
+          messages: result.messages,
+          halted: result.halted,
+        });
       }
 
-      return {
-        status: 'ok',
-        data: {
-          eventId,
-          messages: [],
-          halted: false,
-        },
-      };
+      return ok({
+        eventId,
+        messages: [],
+        halted: false,
+      });
     },
   );
 };
