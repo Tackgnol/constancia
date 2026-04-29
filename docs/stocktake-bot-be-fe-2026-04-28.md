@@ -105,6 +105,45 @@ Legend:
   Backend routes now share response/not-found helpers, and event status is explicit in OpenAPI/Orval instead of drifting through loose strings.
 - [x] Reduce committed generated client churn
   Frontend and bot now consume one generated `@constancia/api-client` workspace package; generated source is ignored and rebuilt from OpenAPI instead of committed twice.
+- [x] Remove empty bot wrapper modules
+  Bot command/auth code now imports request options from `apps/bot/src/config.ts` directly, and the stale one-line delivery/API wrapper files are gone.
+
+## Implementation Roadmap
+These are the next implementation steps needed to close the remaining unchecked stocktake items. Step 6 is included for continuity with the current branch sequence.
+
+- [x] **Step 6: Remove dead bot indirection**
+  Delete empty bot wrapper modules and point imports at the owning modules. This keeps the bot API-client layer small before adding more bot-facing features.
+
+- [ ] **Step 7: Add an event editor for test, insight, and narration events**
+  Build a FE edit flow around the existing BE `PATCH /campaigns/:id/events/:eventId` route. Reuse the current pipeline editor, preserve uploaded `imageUrl` values, surface moderation errors, and verify create/edit/fire still works for all three event types.
+  Closes: update test event, update insight event, update narration event.
+
+- [ ] **Step 8: Surface quest management in the GM UI**
+  Add a dense quest/task management surface for creating quests, adding steps, editing status, toggling visibility, and attaching completion notes. Keep BE as source of truth, regenerate the shared API client if route contracts change, and keep bot `/journal` reading the same data.
+  Closes: add tasks for players, add steps to those tasks, reveal/hide tasks, mark tasks completed, edit quests.
+
+- [ ] **Step 9: Link NPCs to quests and complete NPC editing**
+  Add the data relationship and API shape for NPC-to-quest links, then expose it in the NPC edit flow. Finish fact editing/deletion/visibility management and fix the FE player dossier copy-link route mismatch noted above.
+  Closes: link NPCs to quests, edit all NPC dossier/fact data.
+
+- [ ] **Step 10: Add lore as a first-class campaign domain**
+  Introduce lore entries with per-player visibility, using the NPC fact reveal model as the closest existing pattern. Add BE routes, FE management/read views, and a bot read path or journal integration without moving game logic into the bot.
+  Closes: lore tidbits, lore known to certain players and hidden from others.
+
+- [ ] **Step 11: Replace the static FE log with a real player journal surface**
+  Build a frontend journal/log view backed by BE data that summarizes quests, revealed NPC knowledge, lore, and session summaries. Align the bot `/journal` output with that same backend shape so players see consistent information across Discord and web.
+  Closes: a place that summarizes quests, NPCs, and lore.
+
+- [ ] **Step 12: Add event pipeline write-back blocks**
+  Add backend-executed pipeline blocks for writing NPC facts, lore reveals, quest updates, and journal/session-summary entries from fired events. Treat every editable pipeline block as a mirrored backend/frontend contract: update core/system block definitions, backend registration/OpenAPI, frontend block schemas/default configs/edit fields, Orval output, and `check:block-drift` together.
+  Closes: automatic event-driven NPC fact, lore, quest, and journal writes.
+
+- [ ] **Step 13: Add admin upload controls**
+  Build the admin panel controls for toggling user uploads and changing per-user storage allowance. Show used/remaining storage and near-limit/exceeded states from the existing backend settings/quota data.
+  Closes: admin panel for upload allowance / upload enablement.
+
+- [ ] **Step 14: Run end-to-end hardening across the loop**
+  Add or update tests for event editing, quest visibility, NPC quest links, lore visibility, event write-back blocks, upload quota admin changes, OpenAPI/Orval generation, and block drift. Finish with full `lint`, `typecheck`, `test`, and `check:block-drift`.
 
 ## Short version
 - Strongest working loop today: **event creation in FE → event firing in FE → backend execution → Discord delivery by bot**, plus **ad-hoc player whispers**.
