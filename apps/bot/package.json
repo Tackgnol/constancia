@@ -13,6 +13,7 @@
     "test:watch": "vitest watch"
   },
   "dependencies": {
+    "@constancia/api-client": "*",
     "@constancia/contracts": "*",
     "discord.js": "^14.0.0",
     "fastify": "^5.3.3"

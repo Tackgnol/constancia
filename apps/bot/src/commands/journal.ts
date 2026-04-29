@@ -1,6 +1,6 @@
 import type { ChatInputCommandInteraction } from 'discord.js';
-import { getCampaignByGuild } from '../api/generated/endpoints/bot/bot.js';
-import { getJournalForPlayer } from '../api/generated/endpoints/journal/journal.js';
+import { getCampaignByGuild } from '@constancia/api-client/endpoints/bot/bot';
+import { getJournalForPlayer } from '@constancia/api-client/endpoints/journal/journal';
 import { botRequestOptions } from '../api/bot-headers.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
@@ -57,4 +57,3 @@ export const journalCommand: BotChatCommand = {
   },
   execute: handleJournal,
 };
-

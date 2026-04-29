@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router';
-import { listNpcs, revealNpcFacts } from '@/api/generated/endpoints/npcs/npcs';
-import type { ListNpcs200DataItem, RevealNpcFacts200Data } from '@/api/generated/model';
+import { listNpcs, revealNpcFacts } from '@constancia/api-client/endpoints/npcs/npcs';
+import type { ListNpcs200DataItem, RevealNpcFacts200Data } from '@constancia/api-client/model';
 import { AppendFactForm } from '@/components/npcs/append-fact-form';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import {

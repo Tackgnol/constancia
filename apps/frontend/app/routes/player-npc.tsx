@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs } from 'react-router';
 import { useLoaderData } from 'react-router';
-import { getVisibleNpcForCurrentPlayer } from '@/api/generated/endpoints/npcs/npcs';
+import { getVisibleNpcForCurrentPlayer } from '@constancia/api-client/endpoints/npcs/npcs';
 import { NpcPortraitFallback } from '@/components/npcs/npc-portrait-fallback';
 
 export async function loader({ params, request: _request }: LoaderFunctionArgs) {

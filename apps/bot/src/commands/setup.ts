@@ -7,9 +7,8 @@ import {
   type InteractionDeferReplyOptions,
 } from 'discord.js';
 import { botRequestOptions } from '../config.js';
-import { listGameSystems } from '../api/generated/endpoints/systems/systems.js';
-import { setupChannel } from '../api/generated/endpoints/bot/bot.js';
-import { syncParticipants } from '../api/participants.js';
+import { setupChannel, syncParticipants } from '@constancia/api-client/endpoints/bot/bot';
+import { listGameSystems } from '@constancia/api-client/endpoints/systems/systems';
 import type { BotChatCommand } from '../discord/command-types.js';
 
 const DEFAULT_GAME_SYSTEM_ID = 'vtm-v5';
@@ -23,7 +22,9 @@ export async function autocompleteSetup(interaction: AutocompleteInteraction): P
   }
 
   const systems = await listGameSystems(botRequestOptions());
-  const query = String(focused.value ?? '').trim().toLowerCase();
+  const query = String(focused.value ?? '')
+    .trim()
+    .toLowerCase();
   const choices = systems.data
     .filter((system) => {
       if (!query) {
@@ -129,4 +130,3 @@ export const setupCommand: BotChatCommand = {
   execute: handleSetup,
   autocomplete: autocompleteSetup,
 };
-

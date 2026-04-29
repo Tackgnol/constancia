@@ -1,9 +1,9 @@
-import { listCampaigns } from '@/api/generated/endpoints/campaigns/campaigns';
-import { listChannels } from '@/api/generated/endpoints/channels/channels';
-import { listCharacters } from '@/api/generated/endpoints/characters/characters';
-import { listEvents } from '@/api/generated/endpoints/events/events';
-import { getServiceHealth } from '@/api/generated/endpoints/meta/meta';
-import { listGameSystems } from '@/api/generated/endpoints/systems/systems';
+import { listCampaigns } from '@constancia/api-client/endpoints/campaigns/campaigns';
+import { listChannels } from '@constancia/api-client/endpoints/channels/channels';
+import { listCharacters } from '@constancia/api-client/endpoints/characters/characters';
+import { listEvents } from '@constancia/api-client/endpoints/events/events';
+import { getServiceHealth } from '@constancia/api-client/endpoints/meta/meta';
+import { listGameSystems } from '@constancia/api-client/endpoints/systems/systems';
 import { PlayerWhisperForm } from '@/components/war-room/player-whisper-form';
 import { SceneRailExtras } from '@/components/war-room/scene-rail-extras';
 import { authClient } from '@/lib/auth-client';

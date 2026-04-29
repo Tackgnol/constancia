@@ -2,7 +2,7 @@ import type {
   GetServiceHealth200,
   ListCampaigns200,
   ListGameSystems200,
-} from '@/api/generated/model';
+} from '@constancia/api-client/model';
 import { activityFeed, players, sessionTags } from './war-room-data.js';
 import type { WarRoomContext } from './war-room-data.js';
 

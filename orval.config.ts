@@ -1,65 +1,40 @@
 import { defineConfig } from 'orval';
 
 const openApiTarget = './apps/backend/openapi/openapi.json';
+const apiClientGeneratedRoot = './packages/api-client/src/generated';
+
+const fetchClientConfig = {
+  includeHttpResponseReturnType: false,
+} as const;
 
 export default defineConfig({
-  frontendApi: {
+  apiClient: {
     input: {
       target: openApiTarget,
     },
     output: {
-      target: './apps/frontend/app/api/generated/endpoints',
-      schemas: './apps/frontend/app/api/generated/model',
+      target: `${apiClientGeneratedRoot}/endpoints`,
+      schemas: `${apiClientGeneratedRoot}/model`,
       client: 'fetch',
       mode: 'tags-split',
       clean: true,
       override: {
-        fetch: {
-          includeHttpResponseReturnType: false,
-        },
+        fetch: fetchClientConfig,
         useNamedParameters: true,
       },
       urlEncodeParameters: true,
-      baseUrl: {
-        getBaseUrlFromSpecification: false,
-        runtime:
-          "import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')",
-      },
     },
   },
-  frontendZod: {
+  apiClientZod: {
     input: {
       target: openApiTarget,
     },
     output: {
-      target: './apps/frontend/app/api/generated/endpoints',
+      target: `${apiClientGeneratedRoot}/endpoints`,
       client: 'zod',
       mode: 'tags-split',
       clean: false,
       fileExtension: '.zod.ts',
-    },
-  },
-  botApi: {
-    input: {
-      target: openApiTarget,
-    },
-    output: {
-      target: './apps/bot/src/api/generated/endpoints',
-      schemas: './apps/bot/src/api/generated/model',
-      client: 'fetch',
-      mode: 'tags-split',
-      clean: true,
-      override: {
-        fetch: {
-          includeHttpResponseReturnType: false,
-        },
-        useNamedParameters: true,
-      },
-      urlEncodeParameters: true,
-      baseUrl: {
-        getBaseUrlFromSpecification: false,
-        runtime: "process.env.BACKEND_URL ?? 'http://localhost:3000'",
-      },
     },
   },
 });

@@ -103,12 +103,12 @@ Legend:
   Player-message blocks without an explicit `targetId` now default to the invoking player context, and system resolver output uses the shared block message contract.
 - [x] Normalize backend response helpers and EventStatus schema
   Backend routes now share response/not-found helpers, and event status is explicit in OpenAPI/Orval instead of drifting through loose strings.
-- [ ] Reduce committed generated client churn
-  Step 5 target: frontend and bot Orval clients are still committed as two large generated trees and produce noisy diffs.
+- [x] Reduce committed generated client churn
+  Frontend and bot now consume one generated `@constancia/api-client` workspace package; generated source is ignored and rebuilt from OpenAPI instead of committed twice.
 
 ## Short version
 - Strongest working loop today: **event creation in FE → event firing in FE → backend execution → Discord delivery by bot**, plus **ad-hoc player whispers**.
 - Best-developed content management area today: **NPC dossiers + facts + per-player fact reveal**, with moderation/upload plumbing now behind the backend.
 - Present in backend but not truly surfaced yet: **quests**, **session-summary journal APIs**, and **admin upload controls**.
-- Not implemented yet: **lore**, **NPC↔quest links**, **automatic event-driven writes into journal/NPC/lore systems**, and a cleaner generated-client strategy.
+- Not implemented yet: **lore**, **NPC↔quest links**, and **automatic event-driven writes into journal/NPC/lore systems**.
 

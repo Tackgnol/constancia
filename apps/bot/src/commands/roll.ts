@@ -1,5 +1,5 @@
 import type { ChatInputCommandInteraction } from 'discord.js';
-import { getChannelEvents, submitBotTestResult } from '../api/generated/endpoints/bot/bot.js';
+import { getChannelEvents, submitBotTestResult } from '@constancia/api-client/endpoints/bot/bot';
 import { botRequestOptions } from '../api/bot-headers.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 

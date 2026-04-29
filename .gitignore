@@ -11,6 +11,9 @@ build/
 coverage/
 .prisma/
 .react-router/
+apps/bot/src/api/generated/
+apps/frontend/app/api/generated/
+packages/api-client/src/generated/
 *.tsbuildinfo
 npm-debug.log*
 *.log

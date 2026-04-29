@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { createNpcFact } from '@/api/generated/endpoints/npcs/npcs';
+import { createNpcFact } from '@constancia/api-client/endpoints/npcs/npcs';
 import type { CampaignNpcFact } from './block-registry';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -89,4 +89,3 @@ export function AppendFactForm({
     </form>
   );
 }
-

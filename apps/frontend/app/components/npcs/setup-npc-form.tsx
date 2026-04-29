@@ -1,8 +1,8 @@
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { createNpc } from '@/api/generated/endpoints/npcs/npcs';
-import type { CreateNpcBody } from '@/api/generated/model';
+import { createNpc } from '@constancia/api-client/endpoints/npcs/npcs';
+import type { CreateNpcBody } from '@constancia/api-client/model';
 import { formFieldLabelClassName } from '@/components/forms/field-label';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

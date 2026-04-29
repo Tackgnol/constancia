@@ -3,7 +3,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useFetcher, useOutletContext } from 'react-router';
 import { z } from 'zod';
-import { updateCharacter } from '@/api/generated/endpoints/characters/characters';
+import { updateCharacter } from '@constancia/api-client/endpoints/characters/characters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,7 +17,7 @@ import {
 import { VTM_CLANS, MB_CLASSES } from '@constancia/systems';
 import type { WarRoomContext } from '@/lib/war-room-data';
 import type { ActionFunctionArgs } from 'react-router';
-import type { ListCharacters200DataItem } from '@/api/generated/model';
+import type { ListCharacters200DataItem } from '@constancia/api-client/model';
 
 const participantFormSchema = z.object({
   gameName: z.string().trim().max(80, 'Keep the in-game name concise.'),

@@ -6,9 +6,12 @@ import {
   type InteractionDeferReplyOptions,
 } from 'discord.js';
 import { botRequestOptions } from '../config.js';
-import { getCampaignByGuild } from '../api/generated/endpoints/bot/bot.js';
-import { syncParticipants, removeParticipant } from '../api/participants.js';
-import { listCharacters } from '../api/generated/endpoints/characters/characters.js';
+import {
+  getCampaignByGuild,
+  removeParticipant,
+  syncParticipants,
+} from '@constancia/api-client/endpoints/bot/bot';
+import { listCharacters } from '@constancia/api-client/endpoints/characters/characters';
 import type { BotChatCommand } from '../discord/command-types.js';
 
 export async function handleParticipants(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -129,4 +132,3 @@ export const participantsCommand: BotChatCommand = {
   },
   execute: handleParticipants,
 };
-

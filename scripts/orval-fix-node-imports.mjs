@@ -1,20 +1,12 @@
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join, extname } from 'node:path';
 
-const botGeneratedRoot = join(process.cwd(), 'apps', 'bot', 'src', 'api', 'generated');
-const frontendGeneratedRoot = join(process.cwd(), 'apps', 'frontend', 'app', 'api', 'generated');
-const frontendEndpointsRoot = join(frontendGeneratedRoot, 'endpoints');
-const botEndpointsRoot = join(botGeneratedRoot, 'endpoints');
+const generatedRoot = join(process.cwd(), 'packages', 'api-client', 'src', 'generated');
+const endpointsRoot = join(generatedRoot, 'endpoints');
 
-await walk(botGeneratedRoot);
-await walk(frontendGeneratedRoot);
-await rewriteRuntimeBase(
-  frontendEndpointsRoot,
-  "import.meta.env.SSR ? (process.env.BACKEND_URL ?? 'http://backend:3000') : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001')",
-);
-await rewriteRuntimeBase(botEndpointsRoot, "process.env.BACKEND_URL ?? 'http://localhost:3000'");
-await ensureBotModelBridge();
-await ensureFrontendModelBridge();
+await walk(generatedRoot);
+await rewriteRuntimeBase(endpointsRoot);
+await ensureModelBridge();
 
 async function walk(directory) {
   let entries;
@@ -50,7 +42,7 @@ async function walk(directory) {
   }
 }
 
-async function rewriteRuntimeBase(directory, runtimeExpression) {
+async function rewriteRuntimeBase(directory) {
   let entries;
 
   try {
@@ -64,7 +56,7 @@ async function rewriteRuntimeBase(directory, runtimeExpression) {
     const entryStat = await stat(fullPath);
 
     if (entryStat.isDirectory()) {
-      await rewriteRuntimeBase(fullPath, runtimeExpression);
+      await rewriteRuntimeBase(fullPath);
       continue;
     }
 
@@ -73,13 +65,19 @@ async function rewriteRuntimeBase(directory, runtimeExpression) {
     }
 
     const original = await readFile(fullPath, 'utf8');
-    const updated = original
+    let updated = original
       .replaceAll(
-        /import\.meta\.env\.VITE_API_URL\s\?\?\s'http:\/\/localhost:\d+'/g,
-        runtimeExpression,
+        /`\/([^`]+)`/g,
+        (_match, urlPath) => `\`\${getConstanciaApiBaseUrl()}/${urlPath}\``,
       )
-      .replaceAll(/`\/([^`]+)`/g, (_match, urlPath) => `\`\${${runtimeExpression}}/${urlPath}\``)
-      .replace(/return\s+`\/`\s*;?/g, `return \`\${${runtimeExpression}}/\`;`);
+      .replace(/return\s+`\/`\s*;?/g, 'return `${getConstanciaApiBaseUrl()}/`;');
+
+    if (updated !== original && !updated.includes("from '../../../runtime/api-base-url.js'")) {
+      updated = updated.replace(
+        /(\*\/\r?\n)/,
+        "$1import { getConstanciaApiBaseUrl } from '../../../runtime/api-base-url.js';\n",
+      );
+    }
 
     if (updated !== original) {
       await writeFile(fullPath, updated, 'utf8');
@@ -87,14 +85,7 @@ async function rewriteRuntimeBase(directory, runtimeExpression) {
   }
 }
 
-async function ensureBotModelBridge() {
-  const generatedRoot = join(process.cwd(), 'apps', 'bot', 'src', 'api', 'generated');
-  await mkdir(generatedRoot, { recursive: true });
-  await writeFile(join(generatedRoot, 'model.ts'), "export * from './model/index.js';\n", 'utf8');
-}
-
-async function ensureFrontendModelBridge() {
-  const generatedRoot = join(process.cwd(), 'apps', 'frontend', 'app', 'api', 'generated');
+async function ensureModelBridge() {
   await mkdir(generatedRoot, { recursive: true });
   await writeFile(join(generatedRoot, 'model.ts'), "export * from './model/index.js';\n", 'utf8');
 }

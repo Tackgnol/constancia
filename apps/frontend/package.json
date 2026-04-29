@@ -11,6 +11,7 @@
     "lint": "eslint app/"
   },
   "dependencies": {
+    "@constancia/api-client": "*",
     "@constancia/contracts": "*",
     "@constancia/systems": "*",
     "@hookform/resolvers": "^5.2.2",

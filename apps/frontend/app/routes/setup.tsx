@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useOutletContext, useRevalidator } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createEvent, updateEvent } from '@/api/generated/endpoints/events/events';
+import { createEvent, updateEvent } from '@constancia/api-client/endpoints/events/events';
 import type {
   CreateEventBody,
   ListEvents200DataItem,
   UpdateEventBody,
-} from '@/api/generated/model';
+} from '@constancia/api-client/model';
 import { EventSetupForm } from '@/components/setup/event-setup-form';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import { SetupNpcForm } from '@/components/npcs/setup-npc-form';

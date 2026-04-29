@@ -1,4 +1,4 @@
-import { createMagicLink } from '../api/generated/endpoints/auth/auth.js';
+import { createMagicLink } from '@constancia/api-client/endpoints/auth/auth';
 import { botRequestOptions } from '../api/bot-headers.js';
 
 export interface MagicLinkRequestInput {

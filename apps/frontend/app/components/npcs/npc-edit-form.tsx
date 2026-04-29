@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { updateNpc } from '@/api/generated/endpoints/npcs/npcs';
-import type { UpdateNpcBody } from '@/api/generated/model';
+import { updateNpc } from '@constancia/api-client/endpoints/npcs/npcs';
+import type { UpdateNpcBody } from '@constancia/api-client/model';
 import { formFieldLabelClassName } from '@/components/forms/field-label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -101,11 +101,9 @@ export function NpcEditForm({
         return;
       }
 
-      const response = await updateNpc(
-        { id: campaignId, npcId: npc.id },
-        payload,
-        { credentials: 'include' },
-      );
+      const response = await updateNpc({ id: campaignId, npcId: npc.id }, payload, {
+        credentials: 'include',
+      });
 
       onSaved({
         ...npc,
@@ -145,7 +143,9 @@ export function NpcEditForm({
             Description
           </Label>
           <Textarea id={`npc-edit-description-${npc.id}`} {...register('description')} />
-          {errors.description ? <span className="form-error">{errors.description.message}</span> : null}
+          {errors.description ? (
+            <span className="form-error">{errors.description.message}</span>
+          ) : null}
         </div>
 
         <div className="grid gap-1.5">
@@ -179,4 +179,3 @@ export function NpcEditForm({
     </form>
   );
 }
-

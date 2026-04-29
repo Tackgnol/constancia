@@ -2,7 +2,7 @@ import { ApplicationCommandOptionType, type ChatInputCommandInteraction } from '
 import {
   getCampaignByGuild,
   listBotVisibleNpcsForPlayer,
-} from '../api/generated/endpoints/bot/bot.js';
+} from '@constancia/api-client/endpoints/bot/bot';
 import { botRequestOptions } from '../api/bot-headers.js';
 import { loadBotConfig } from '../config.js';
 import type { BotChatCommand } from '../discord/command-types.js';

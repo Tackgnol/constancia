@@ -1,4 +1,7 @@
-import type { ListEvents200DataItem, ListCharacters200DataItem } from '@/api/generated/model';
+import type {
+  ListEvents200DataItem,
+  ListCharacters200DataItem,
+} from '@constancia/api-client/model';
 
 export type TriggerKind = 'test' | 'narration' | 'insight' | 'message';
 export type Presence = 'online' | 'offline';

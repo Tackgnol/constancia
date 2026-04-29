@@ -1,8 +1,8 @@
 import { startTransition, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router';
 
-import { fireEvent } from '@/api/generated/endpoints/events/events';
-import type { ListEvents200DataItem } from '@/api/generated/model';
+import { fireEvent } from '@constancia/api-client/endpoints/events/events';
+import type { ListEvents200DataItem } from '@constancia/api-client/model';
 import type { TriggerKind, WarRoomContext } from '@/lib/war-room-data';
 
 const HOLD_DURATION_MS = 1800;
