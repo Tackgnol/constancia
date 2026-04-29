@@ -441,6 +441,7 @@ describe('backend app', () => {
       docsPrefix: '/documentation',
       openApiPath: '/openapi.json',
       frontendUrl: 'http://localhost:3000',
+      authCookieDomain: undefined,
       betterAuthSecret: 'constancia-development-secret-change-me-12345',
       betterAuthUrl: 'http://localhost:3001',
       betterAuthPath: '/api/auth',
@@ -468,6 +469,15 @@ describe('backend app', () => {
       r2SecretAccessKey: undefined,
       r2Bucket: undefined,
     });
+  });
+
+  it('derives a shared auth cookie domain for frontend and auth subdomains', () => {
+    const config = loadConfig({
+      FRONTEND_URL: 'https://gm.constancia.example.com',
+      BETTER_AUTH_URL: 'https://api.constancia.example.com',
+    });
+
+    expect(config.authCookieDomain).toBe('constancia.example.com');
   });
 
   it('creates and verifies a Better Auth magic link through the design-doc wrapper routes', async () => {

@@ -46,6 +46,16 @@ export const auth = betterAuth({
   basePath: config.betterAuthPath,
   secret: config.betterAuthSecret,
   trustedOrigins: [config.frontendUrl, config.betterAuthUrl],
+  ...(config.authCookieDomain
+    ? {
+        advanced: {
+          crossSubDomainCookies: {
+            enabled: true,
+            domain: config.authCookieDomain,
+          },
+        },
+      }
+    : {}),
   ...(socialProviders ? { socialProviders } : {}),
   account: {
     accountLinking: {

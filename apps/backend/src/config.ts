@@ -8,6 +8,7 @@ export interface BackendConfig {
   docsPrefix: string;
   openApiPath: string;
   frontendUrl: string;
+  authCookieDomain?: string;
   betterAuthSecret: string;
   betterAuthUrl: string;
   betterAuthPath: string;
@@ -61,6 +62,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
   const isProduction = nodeEnv === 'production';
   const port = parsePort(env.PORT);
   const contentModerationEnabled = parseBoolean(env.CONTENT_MODERATION_ENABLED, false);
+  const frontendUrl = env.FRONTEND_URL ?? DEFAULT_FRONTEND_URL;
+  const betterAuthUrl = env.BETTER_AUTH_URL ?? DEFAULT_BETTER_AUTH_URL;
 
   if (isProduction && !env.BETTER_AUTH_SECRET) {
     throw new Error('BETTER_AUTH_SECRET must be set in production');
@@ -94,9 +97,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     apiPrefix: env.API_PREFIX ?? DEFAULT_API_PREFIX,
     docsPrefix: env.DOCS_PREFIX ?? DEFAULT_DOCS_PREFIX,
     openApiPath: env.OPENAPI_PATH ?? DEFAULT_OPENAPI_PATH,
-    frontendUrl: env.FRONTEND_URL ?? DEFAULT_FRONTEND_URL,
+    frontendUrl,
+    authCookieDomain: resolveAuthCookieDomain(env.AUTH_COOKIE_DOMAIN, frontendUrl, betterAuthUrl),
     betterAuthSecret: env.BETTER_AUTH_SECRET ?? DEFAULT_BETTER_AUTH_SECRET,
-    betterAuthUrl: env.BETTER_AUTH_URL ?? DEFAULT_BETTER_AUTH_URL,
+    betterAuthUrl,
     betterAuthPath: env.BETTER_AUTH_PATH ?? DEFAULT_BETTER_AUTH_PATH,
     discordClientId: env.DISCORD_CLIENT_ID,
     discordClientSecret: env.DISCORD_CLIENT_SECRET,
@@ -146,6 +150,79 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     r2SecretAccessKey: env.R2_SECRET_ACCESS_KEY,
     r2Bucket: env.R2_BUCKET,
   };
+}
+
+function resolveAuthCookieDomain(
+  configuredDomain: string | undefined,
+  frontendUrl: string,
+  betterAuthUrl: string,
+): string | undefined {
+  if (configuredDomain && configuredDomain.trim().length > 0) {
+    return configuredDomain.trim();
+  }
+
+  const frontendHost = extractHostname(frontendUrl);
+  const betterAuthHost = extractHostname(betterAuthUrl);
+
+  if (!frontendHost || !betterAuthHost || frontendHost === betterAuthHost) {
+    return undefined;
+  }
+
+  if (isLocalOnlyHost(frontendHost) || isLocalOnlyHost(betterAuthHost)) {
+    return undefined;
+  }
+
+  const sharedSuffix = getSharedHostnameSuffix(frontendHost, betterAuthHost);
+  if (!sharedSuffix) {
+    return undefined;
+  }
+
+  return sharedSuffix;
+}
+
+function extractHostname(value: string): string | undefined {
+  try {
+    return new URL(value).hostname;
+  } catch {
+    return undefined;
+  }
+}
+
+function isLocalOnlyHost(hostname: string): boolean {
+  if (hostname === 'localhost') {
+    return true;
+  }
+
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)) {
+    return true;
+  }
+
+  return hostname.includes(':');
+}
+
+function getSharedHostnameSuffix(leftHostname: string, rightHostname: string): string | undefined {
+  const leftLabels = leftHostname.split('.');
+  const rightLabels = rightHostname.split('.');
+  const shared: string[] = [];
+
+  while (leftLabels.length > 0 && rightLabels.length > 0) {
+    const leftLabel = leftLabels[leftLabels.length - 1];
+    const rightLabel = rightLabels[rightLabels.length - 1];
+
+    if (leftLabel !== rightLabel) {
+      break;
+    }
+
+    shared.unshift(leftLabel);
+    leftLabels.pop();
+    rightLabels.pop();
+  }
+
+  if (shared.length < 2) {
+    return undefined;
+  }
+
+  return shared.join('.');
 }
 
 function parsePort(value: string | undefined): number {

@@ -2,9 +2,17 @@ import { fromNodeHeaders } from 'better-auth/node';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { auth } from '../auth.js';
 
-function resolveOrigin(request: FastifyRequest) {
-  if (request.headers.host) {
-    return `http://${request.headers.host}`;
+function readForwardedHeader(value: string | string[] | undefined): string | undefined {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  return rawValue?.split(',')[0]?.trim() || undefined;
+}
+
+export function resolveOrigin(request: FastifyRequest) {
+  const host = readForwardedHeader(request.headers['x-forwarded-host']) ?? request.headers.host;
+  const protocol = readForwardedHeader(request.headers['x-forwarded-proto']) ?? 'http';
+
+  if (host) {
+    return `${protocol}://${host}`;
   }
 
   return process.env.BETTER_AUTH_URL ?? 'http://localhost:3001';
