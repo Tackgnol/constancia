@@ -11,6 +11,7 @@ interface VerifyMagicLinkData {
 
 interface VerifyMagicLinkResponse {
   status?: 'ok' | 'error';
+  message?: string;
   data?: VerifyMagicLinkData;
 }
 
@@ -59,7 +60,11 @@ async function verifyMagicLink(request: Request, token: string) {
   const payload = (await response.json()) as VerifyMagicLinkResponse;
 
   if (!response.ok || payload.status !== 'ok' || payload.data?.verified !== true) {
-    throw new Error(payload.data?.error || `Magic link verification failed (${response.status}).`);
+    throw new Error(
+      payload.data?.error ||
+        payload.message ||
+        `Magic link verification failed (${response.status}).`,
+    );
   }
 
   return response;

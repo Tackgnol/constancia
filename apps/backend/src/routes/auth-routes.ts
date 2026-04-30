@@ -29,9 +29,14 @@ interface VerifyQuery {
 interface VerifyPayload {
   session?: unknown;
   user?: unknown;
+  message?: string;
   error?: {
     message?: string;
   };
+}
+
+function readBetterAuthError(payload: VerifyPayload) {
+  return payload.error?.message ?? payload.message ?? null;
 }
 
 // Public auth endpoints — safe to expose without bot or session auth.
@@ -74,7 +79,7 @@ export const authPublicRoutes: FastifyPluginAsync = async (app) => {
           token: query.token,
           session: payload.session ?? null,
           user: payload.user ?? null,
-          error: payload.error?.message ?? null,
+          error: readBetterAuthError(payload),
         },
       };
     },
