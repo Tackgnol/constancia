@@ -35,8 +35,49 @@ interface VerifyPayload {
   };
 }
 
+function getSetCookieHeaders(headers: Headers) {
+  const maybeHeaders = headers as Headers & { getSetCookie?: () => string[] };
+  const setCookieHeaders = maybeHeaders.getSetCookie?.();
+
+  if (setCookieHeaders && setCookieHeaders.length > 0) {
+    return setCookieHeaders;
+  }
+
+  const setCookie = headers.get('set-cookie');
+  return setCookie ? [setCookie] : [];
+}
+
+function forwardBetterAuthHeaders(response: Response, reply: FastifyReply) {
+  response.headers.forEach((value, key) => {
+    if (key.toLowerCase() !== 'set-cookie') {
+      reply.header(key, value);
+    }
+  });
+
+  const setCookieHeaders = getSetCookieHeaders(response.headers);
+  if (setCookieHeaders.length > 0) {
+    reply.header('set-cookie', setCookieHeaders);
+  }
+}
+
+function isSuccessfulVerifyResponse(response: Response) {
+  return response.status >= 200 && response.status < 400;
+}
+
 function readBetterAuthError(payload: VerifyPayload) {
   return payload.error?.message ?? payload.message ?? null;
+}
+
+function readVerifyPayload(rawPayload: string) {
+  if (rawPayload.length === 0) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(rawPayload) as VerifyPayload;
+  } catch {
+    return {};
+  }
 }
 
 // Public auth endpoints — safe to expose without bot or session auth.
@@ -64,22 +105,23 @@ export const authPublicRoutes: FastifyPluginAsync = async (app) => {
         { method: 'GET' },
       );
 
-      response.headers.forEach((value, key) => {
-        reply.header(key, value);
-      });
+      forwardBetterAuthHeaders(response, reply);
 
       const rawPayload = await response.text();
-      const payload = rawPayload.length > 0 ? (JSON.parse(rawPayload) as VerifyPayload) : {};
+      const payload = readVerifyPayload(rawPayload);
+      const verified = isSuccessfulVerifyResponse(response);
 
       reply.code(200);
       return {
-        status: response.ok ? 'ok' : 'error',
+        status: verified ? 'ok' : 'error',
         data: {
-          verified: response.ok,
+          verified,
           token: query.token,
           session: payload.session ?? null,
           user: payload.user ?? null,
-          error: readBetterAuthError(payload),
+          error:
+            readBetterAuthError(payload) ??
+            (verified ? null : `Better Auth returned ${response.status}`),
         },
       };
     },
@@ -102,9 +144,7 @@ export const authPublicRoutes: FastifyPluginAsync = async (app) => {
         method: 'POST',
       });
 
-      response.headers.forEach((value, key) => {
-        reply.header(key, value);
-      });
+      forwardBetterAuthHeaders(response, reply);
 
       return {
         status: response.ok ? 'ok' : 'error',
