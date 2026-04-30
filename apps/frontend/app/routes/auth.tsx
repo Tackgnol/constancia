@@ -59,15 +59,19 @@ export default function AuthRoute() {
       `/api/v1/auth/verify?token=${encodeURIComponent(loaderData.token!)}&next=${encodeURIComponent(loaderData.next!)}`,
       { method: 'GET', credentials: 'include' },
     )
-      .then((res) => {
-        if (res.ok) {
+      .then(async (res) => {
+        const payload = (await res.json().catch(() => null)) as {
+          status?: string;
+          data?: { error?: string };
+          message?: string;
+        } | null;
+        const verified = res.ok && payload?.status === 'ok';
+        if (verified) {
           window.location.href = loaderData.next!;
-        } else {
-          return res.json().then((data: { message?: string }) => {
-            setMode('error');
-            setMessage(data?.message || 'Magic link verification failed.');
-          });
+          return;
         }
+        setMode('error');
+        setMessage(payload?.data?.error || payload?.message || 'Magic link verification failed.');
       })
       .catch(() => {
         setMode('error');
