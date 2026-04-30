@@ -1,7 +1,23 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useOutletContext, useParams } from 'react-router';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
+import {
+  Link,
+  useLoaderData,
+  useLocation,
+  useNavigate,
+  useOutletContext,
+  useParams,
+  useRevalidator,
+} from 'react-router';
 import { listNpcs } from '@constancia/api-client/endpoints/npcs/npcs';
-import type { ListNpcs200DataItem } from '@constancia/api-client/model';
+import { createNpc, createNpcFact, updateNpc } from '@constancia/api-client/endpoints/npcs/npcs';
+import type {
+  CreateNpcBody,
+  CreateNpcFactBody,
+  ListNpcs200DataItem,
+  UpdateNpcBody,
+} from '@constancia/api-client/model';
+import { buildServerApiOptions, resolveCurrentCampaignId } from '@/lib/api-proxy.server';
 import { ManagementWorkspace } from '@/components/layout/management-workspace';
 import { AppendFactForm } from '@/components/npcs/append-fact-form';
 import {
@@ -12,6 +28,7 @@ import {
 import { NpcEditForm } from '@/components/npcs/npc-edit-form';
 import { SetupNpcForm } from '@/components/npcs/setup-npc-form';
 import { SetupNotice } from '@/components/setup/setup-notice';
+import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import { demoNpcs } from '@/lib/demo-npcs';
 import type { WarRoomContext } from '@/lib/war-room-data';
 
@@ -70,58 +87,166 @@ function normalizeApiNpc(input: ListNpcs200DataItem): CampaignNpc {
   });
 }
 
+function parsePayload<T>(input: FormDataEntryValue | null): T | null {
+  if (typeof input !== 'string' || input.length === 0) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(input) as unknown;
+    return typeof parsed === 'object' && parsed !== null ? (parsed as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function loader({ request, params }: LoaderFunctionArgs) {
+  const npcId = params.npcId;
+  if (!npcId) {
+    return null;
+  }
+
+  const pathname = new URL(request.url).pathname;
+  if (pathname.startsWith('/demo/')) {
+    return demoNpcs.find((entry) => entry.id === npcId) ?? null;
+  }
+
+  const campaignId = await resolveCurrentCampaignId(request);
+  if (!campaignId) {
+    return null;
+  }
+
+  const response = await listNpcs({ id: campaignId }, buildServerApiOptions(request));
+  if (response.status !== 'ok') {
+    return null;
+  }
+
+  const found = (response.data ?? []).find((entry) => entry.id === npcId);
+  return found ? normalizeApiNpc(found) : null;
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const intent = formData.get('intent');
+  const campaignId = formData.get('campaignId');
+  const npcId = formData.get('npcId');
+  const apiOptions = buildServerApiOptions(request);
+
+  if (typeof campaignId !== 'string' || campaignId.length === 0) {
+    return Response.json(
+      { status: 'error', message: 'Campaign context is missing.' },
+      { status: 400 },
+    );
+  }
+
+  try {
+    if (intent === 'create-npc') {
+      const payload = parsePayload<CreateNpcBody>(formData.get('payload'));
+      if (!payload) {
+        return Response.json(
+          { status: 'error', message: 'NPC payload is missing.' },
+          { status: 400 },
+        );
+      }
+
+      const response = await createNpc({ id: campaignId }, payload, apiOptions);
+      assertApiOk(response, 'The dossier did not bind cleanly. Check the fields and try again.');
+      return Response.json({
+        status: 'success',
+        data: {
+          name: payload.name,
+          factCount: payload.facts?.length ?? 0,
+        },
+      });
+    }
+
+    if (intent === 'update-npc') {
+      const payload = parsePayload<UpdateNpcBody>(formData.get('payload'));
+      if (typeof npcId !== 'string' || npcId.length === 0 || !payload) {
+        return Response.json(
+          { status: 'error', message: 'NPC update is incomplete.' },
+          { status: 400 },
+        );
+      }
+
+      const response = await updateNpc({ id: campaignId, npcId }, payload, apiOptions);
+      assertApiOk(response, 'The dossier update did not hold. Check the fields and try again.');
+      return Response.json({ status: 'success', data: response.data });
+    }
+
+    if (intent === 'create-npc-fact') {
+      const payload = parsePayload<CreateNpcFactBody>(formData.get('payload'));
+      if (typeof npcId !== 'string' || npcId.length === 0 || !payload) {
+        return Response.json(
+          { status: 'error', message: 'NPC fact payload is incomplete.' },
+          { status: 400 },
+        );
+      }
+
+      const response = await createNpcFact({ id: campaignId, npcId }, payload, apiOptions);
+      assertApiOk(response, 'The new fact would not file cleanly. Try again.');
+      return Response.json({ status: 'success', data: { ...response.data, knownTo: [] } });
+    }
+
+    return Response.json({ status: 'error', message: 'Unsupported NPC action.' }, { status: 400 });
+  } catch (caught) {
+    const fallbackMessage =
+      intent === 'update-npc'
+        ? 'The dossier update did not hold. Check the fields and try again.'
+        : intent === 'create-npc-fact'
+          ? 'The new fact would not file cleanly. Try again.'
+          : 'The dossier did not bind cleanly. Check the fields and try again.';
+
+    return Response.json(
+      { status: 'error', message: getApiErrorMessage(caught, fallbackMessage) },
+      { status: 500 },
+    );
+  }
+}
+
 export default function SetupNpcRoute() {
+  const loadedNpc = useLoaderData<typeof loader>();
   const warRoom = useOutletContext<WarRoomContext>();
   const { npcId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
+  const revalidator = useRevalidator();
   const setupBase = getSetupBase(warRoom);
   const npcBoardPath = getNpcBoardPath(warRoom);
   const isDemoCampaign = warRoom.campaign.id.startsWith('demo-');
   const isEditing = Boolean(npcId);
-  const [npc, setNpc] = useState<CampaignNpc | null>(() =>
-    isDemoCampaign && npcId ? (demoNpcs.find((entry) => entry.id === npcId) ?? null) : null,
-  );
+  const actionPath = location.pathname;
+  const [npc, setNpc] = useState<CampaignNpc | null>(() => {
+    if (isDemoCampaign && npcId) {
+      return demoNpcs.find((entry) => entry.id === npcId) ?? null;
+    }
+
+    return loadedNpc;
+  });
   const [savedNpc, setSavedNpc] = useState<{ name: string; factCount: number } | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(isEditing && !isDemoCampaign);
 
   useEffect(() => {
-    if (!isEditing || !npcId || isDemoCampaign) {
+    if (!isEditing) {
+      setNpc(null);
+      setError(null);
       return;
     }
 
-    let cancelled = false;
-
-    async function loadNpc() {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await listNpcs({ id: warRoom.campaign.id }, { credentials: 'include' });
-        if (cancelled) return;
-
-        const found = (response.data ?? []).find((entry) => entry.id === npcId);
-        setNpc(found ? normalizeApiNpc(found) : null);
-      } catch (caught) {
-        console.error('Load NPC editor error:', caught);
-        if (!cancelled) {
-          setError(
-            'The dossier editor could not load this NPC. Return to the board and try again.',
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+    if (isDemoCampaign && npcId) {
+      setNpc(demoNpcs.find((entry) => entry.id === npcId) ?? null);
+      setError(null);
+      return;
     }
 
-    void loadNpc();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isDemoCampaign, isEditing, npcId, warRoom.campaign.id]);
+    setNpc(loadedNpc);
+    if (!loadedNpc) {
+      setError('The dossier editor could not load this NPC. Return to the board and try again.');
+    } else {
+      setError(null);
+    }
+  }, [isDemoCampaign, isEditing, loadedNpc, npcId]);
 
   return (
     <ManagementWorkspace
@@ -172,15 +297,10 @@ export default function SetupNpcRoute() {
         </SetupNotice>
       ) : null}
 
-      {loading ? (
-        <section className="detail-card npc-empty-state">
-          <p className="form-hint">Loading dossier editor.</p>
-        </section>
-      ) : null}
-
       {!isEditing ? (
         <section className="setup-panel">
           <SetupNpcForm
+            actionPath={actionPath}
             campaignId={warRoom.campaign.id}
             systemId={warRoom.system.id}
             isDemoCampaign={isDemoCampaign}
@@ -190,7 +310,7 @@ export default function SetupNpcRoute() {
         </section>
       ) : null}
 
-      {isEditing && !loading && !npc ? (
+      {isEditing && !npc ? (
         <SetupNotice label="NPC not found" tone="error">
           <span>This dossier is not present in the current campaign payload.</span>
         </SetupNotice>
@@ -199,6 +319,7 @@ export default function SetupNpcRoute() {
       {isEditing && npc ? (
         <section className="setup-panel">
           <NpcEditForm
+            actionPath={actionPath}
             campaignId={warRoom.campaign.id}
             systemId={warRoom.system.id}
             npc={npc}
@@ -208,6 +329,9 @@ export default function SetupNpcRoute() {
             onSaved={(updatedNpc) => {
               setNpc(normalizeNpc(updatedNpc));
               setStatus(`${updatedNpc.name} is ready on the NPC board.`);
+              if (!isDemoCampaign) {
+                revalidator.revalidate();
+              }
             }}
           />
 
@@ -221,6 +345,7 @@ export default function SetupNpcRoute() {
               </div>
             </div>
             <AppendFactForm
+              actionPath={actionPath}
               campaignId={warRoom.campaign.id}
               npcId={npc.id}
               nextSortOrder={npc.facts.length}
@@ -231,6 +356,9 @@ export default function SetupNpcRoute() {
                   current ? normalizeNpc({ ...current, facts: [...current.facts, fact] }) : current,
                 );
                 setStatus(`Fact added to ${npc.name}.`);
+                if (!isDemoCampaign) {
+                  revalidator.revalidate();
+                }
               }}
             />
           </section>

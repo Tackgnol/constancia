@@ -3,9 +3,8 @@ import { Controller, useForm } from 'react-hook-form';
 import { MessageSquare, Send, X } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { sendPlayerMessage } from '@constancia/api-client/endpoints/messages/messages';
-import type { SendPlayerMessageBody } from '@constancia/api-client/model';
 import { formFieldLabelClassName } from '@/components/forms/field-label';
+import { postRouteAction } from '@/lib/route-action-client';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,6 +57,7 @@ export function PlayerWhisperForm({ warRoom }: PlayerWhisperFormProps) {
     [warRoom.rawCharacters, warRoom.players],
   );
   const isDemoMode = warRoom.demoMode ?? warRoom.campaign.id.startsWith('demo-');
+  const actionPath = isDemoMode ? '/demo?index' : '/?index';
 
   const {
     control,
@@ -79,18 +79,22 @@ export function PlayerWhisperForm({ warRoom }: PlayerWhisperFormProps) {
 
   const onSubmit = handleSubmit(async (values) => {
     const imageUrl = values.imageUrl?.trim();
-    const payload: SendPlayerMessageBody = {
-      channelId: values.channelId,
-      discordUserIds: values.playerIds,
-      content: values.content.trim(),
-      ...(imageUrl ? { imageUrl } : {}),
-    };
-
     try {
       clearErrors('root');
 
       if (!isDemoMode) {
-        await sendPlayerMessage({ id: warRoom.campaign.id }, payload, { credentials: 'include' });
+        const result = await postRouteAction(actionPath, {
+          intent: 'send-player-message',
+          campaignId: warRoom.campaign.id,
+          channelId: values.channelId,
+          playerIds: JSON.stringify(values.playerIds),
+          content: values.content.trim(),
+          imageUrl: imageUrl || '',
+        });
+
+        if (result.status !== 'success') {
+          throw new Error(result.message);
+        }
       }
 
       const sentLabel = sentPlayerLabel(values.playerIds.length);

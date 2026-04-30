@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Link, useOutletContext, useParams, useRevalidator } from 'react-router';
+import type { ActionFunctionArgs } from 'react-router';
+import { Link, useLocation, useOutletContext, useParams, useRevalidator } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -20,6 +21,8 @@ import type {
 } from '@constancia/api-client/model';
 import { Button } from '@/components/ui/button';
 import { ManagementWorkspace } from '@/components/layout/management-workspace';
+import { buildServerApiOptions } from '@/lib/api-proxy.server';
+import { postRouteAction } from '@/lib/route-action-client';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -98,9 +101,146 @@ function defaultQuestValues(quest: ListQuests200DataItem | null): QuestEditValue
   };
 }
 
+function parseQuestPayload<T>(input: FormDataEntryValue | null): T | null {
+  if (typeof input !== 'string' || input.length === 0) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(input) as unknown;
+    return typeof parsed === 'object' && parsed !== null ? (parsed as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const intent = formData.get('intent');
+  const campaignId = formData.get('campaignId');
+  const questId = formData.get('questId');
+  const entryId = formData.get('entryId');
+  const apiOptions = buildServerApiOptions(request);
+
+  if (typeof campaignId !== 'string' || campaignId.length === 0) {
+    return Response.json(
+      { status: 'error', message: 'Campaign context is missing.' },
+      { status: 400 },
+    );
+  }
+
+  try {
+    if (intent === 'save-quest') {
+      const payload = parseQuestPayload<CreateQuestBody | UpdateQuestBody>(formData.get('payload'));
+      if (!payload) {
+        return Response.json(
+          { status: 'error', message: 'Quest payload is missing.' },
+          { status: 400 },
+        );
+      }
+
+      if (typeof questId === 'string' && questId.length > 0) {
+        const response = await updateQuest(
+          { id: campaignId, questId },
+          payload as UpdateQuestBody,
+          apiOptions,
+        );
+        assertApiOk(response, 'The quest update did not clear. Try again.');
+      } else {
+        const response = await createQuest(
+          { id: campaignId },
+          payload as CreateQuestBody,
+          apiOptions,
+        );
+        assertApiOk(response, 'The quest did not bind cleanly. Try again.');
+      }
+
+      return Response.json({ status: 'success' });
+    }
+
+    if (intent === 'create-quest-entry') {
+      const payload = parseQuestPayload<CreateQuestEntryBody>(formData.get('payload'));
+      if (typeof questId !== 'string' || questId.length === 0 || !payload) {
+        return Response.json(
+          { status: 'error', message: 'Quest step payload is incomplete.' },
+          { status: 400 },
+        );
+      }
+
+      const response = await createQuestEntry({ id: campaignId, questId }, payload, apiOptions);
+      assertApiOk(response, 'The quest step did not file cleanly. Try again.');
+      return Response.json({ status: 'success' });
+    }
+
+    if (intent === 'update-quest-entry') {
+      const payload = parseQuestPayload<UpdateQuestEntryBody>(formData.get('payload'));
+      if (
+        typeof questId !== 'string' ||
+        questId.length === 0 ||
+        typeof entryId !== 'string' ||
+        entryId.length === 0 ||
+        !payload
+      ) {
+        return Response.json(
+          { status: 'error', message: 'Quest step update is incomplete.' },
+          { status: 400 },
+        );
+      }
+
+      const response = await updateQuestEntry(
+        { id: campaignId, questId, entryId },
+        payload,
+        apiOptions,
+      );
+      assertApiOk(response, 'The quest step update did not clear. Try again.');
+      return Response.json({ status: 'success' });
+    }
+
+    if (intent === 'delete-quest-entry') {
+      if (
+        typeof questId !== 'string' ||
+        questId.length === 0 ||
+        typeof entryId !== 'string' ||
+        entryId.length === 0
+      ) {
+        return Response.json(
+          { status: 'error', message: 'Quest step delete is incomplete.' },
+          { status: 400 },
+        );
+      }
+
+      const response = await deleteQuestEntry({ id: campaignId, questId, entryId }, apiOptions);
+      assertApiOk(response, 'The quest step did not delete cleanly. Try again.');
+      return Response.json({ status: 'success' });
+    }
+
+    return Response.json(
+      { status: 'error', message: 'Unsupported quest action.' },
+      { status: 400 },
+    );
+  } catch (caught) {
+    const fallbackMessage =
+      intent === 'create-quest-entry'
+        ? 'The quest step did not file cleanly. Try again.'
+        : intent === 'update-quest-entry'
+          ? 'The quest step update did not clear. Try again.'
+          : intent === 'delete-quest-entry'
+            ? 'The quest step did not delete cleanly. Try again.'
+            : typeof questId === 'string' && questId.length > 0
+              ? 'The quest update did not clear. Try again.'
+              : 'The quest did not bind cleanly. Try again.';
+
+    return Response.json(
+      { status: 'error', message: getApiErrorMessage(caught, fallbackMessage) },
+      { status: 500 },
+    );
+  }
+}
+
 export default function SetupQuestRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
   const { questId } = useParams();
+  const location = useLocation();
   const revalidator = useRevalidator();
   const setupBase = getSetupBase(warRoom);
   const questBoardPath = getQuestBoardPath(warRoom);
@@ -171,25 +311,22 @@ export default function SetupQuestRoute() {
           ]);
           reset(defaultQuestValues(null));
         }
-      } else if (isEditing && questId) {
-        const response = await updateQuest(
-          { id: warRoom.campaign.id, questId },
-          payload as UpdateQuestBody,
-          { credentials: 'include' },
-        );
-        assertApiOk(response, 'The quest update did not clear. Try again.');
-        revalidator.revalidate();
       } else {
-        const response = await createQuest(
-          { id: warRoom.campaign.id },
-          payload as CreateQuestBody,
-          {
-            credentials: 'include',
-          },
-        );
-        assertApiOk(response, 'The quest did not bind cleanly. Try again.');
+        const response = await postRouteAction(location.pathname, {
+          intent: 'save-quest',
+          campaignId: warRoom.campaign.id,
+          questId: questId ?? '',
+          payload: JSON.stringify(payload),
+        });
+
+        if (response.status !== 'success') {
+          throw new Error(response.message);
+        }
+
         revalidator.revalidate();
-        reset(defaultQuestValues(null));
+        if (!isEditing) {
+          reset(defaultQuestValues(null));
+        }
       }
 
       const message = `${isEditing ? 'Quest updated' : 'Quest added'}: ${payload.name}`;
@@ -239,12 +376,17 @@ export default function SetupQuestRoute() {
           ),
         );
       } else {
-        const response = await createQuestEntry(
-          { id: warRoom.campaign.id, questId: targetQuest.id },
-          payload,
-          { credentials: 'include' },
-        );
-        assertApiOk(response, 'The quest step did not file cleanly. Try again.');
+        const response = await postRouteAction(location.pathname, {
+          intent: 'create-quest-entry',
+          campaignId: warRoom.campaign.id,
+          questId: targetQuest.id,
+          payload: JSON.stringify(payload),
+        });
+
+        if (response.status !== 'success') {
+          throw new Error(response.message);
+        }
+
         revalidator.revalidate();
       }
 
@@ -288,12 +430,18 @@ export default function SetupQuestRoute() {
           ),
         );
       } else {
-        const response = await updateQuestEntry(
-          { id: warRoom.campaign.id, questId: targetQuest.id, entryId: entry.id },
-          payload,
-          { credentials: 'include' },
-        );
-        assertApiOk(response, 'The quest step update did not clear. Try again.');
+        const response = await postRouteAction(location.pathname, {
+          intent: 'update-quest-entry',
+          campaignId: warRoom.campaign.id,
+          questId: targetQuest.id,
+          entryId: entry.id,
+          payload: JSON.stringify(payload),
+        });
+
+        if (response.status !== 'success') {
+          throw new Error(response.message);
+        }
+
         revalidator.revalidate();
       }
 
@@ -329,11 +477,17 @@ export default function SetupQuestRoute() {
           ),
         );
       } else {
-        const response = await deleteQuestEntry(
-          { id: warRoom.campaign.id, questId: targetQuest.id, entryId: entry.id },
-          { credentials: 'include' },
-        );
-        assertApiOk(response, 'The quest step did not delete cleanly. Try again.');
+        const response = await postRouteAction(location.pathname, {
+          intent: 'delete-quest-entry',
+          campaignId: warRoom.campaign.id,
+          questId: targetQuest.id,
+          entryId: entry.id,
+        });
+
+        if (response.status !== 'success') {
+          throw new Error(response.message);
+        }
+
         revalidator.revalidate();
       }
 

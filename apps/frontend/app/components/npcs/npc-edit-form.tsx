@@ -2,9 +2,9 @@ import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { updateNpc } from '@constancia/api-client/endpoints/npcs/npcs';
 import type { UpdateNpcBody } from '@constancia/api-client/model';
 import { formFieldLabelClassName } from '@/components/forms/field-label';
+import { postRouteAction } from '@/lib/route-action-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,6 +42,7 @@ function asNpcSystemBlocks(input: unknown): CampaignNpc['systemBlocks'] {
 }
 
 export function NpcEditForm({
+  actionPath,
   campaignId,
   systemId,
   npc,
@@ -50,6 +51,7 @@ export function NpcEditForm({
   onSaved,
   onError,
 }: {
+  actionPath: string;
   campaignId: string;
   systemId: string;
   npc: CampaignNpc;
@@ -101,9 +103,21 @@ export function NpcEditForm({
         return;
       }
 
-      const response = await updateNpc({ id: campaignId, npcId: npc.id }, payload, {
-        credentials: 'include',
+      const response = await postRouteAction<{
+        name?: string;
+        description?: string;
+        imageUrl?: string | null;
+        systemBlocks?: unknown;
+      }>(actionPath, {
+        intent: 'update-npc',
+        campaignId,
+        npcId: npc.id,
+        payload: JSON.stringify(payload),
       });
+
+      if (response.status !== 'success' || !response.data) {
+        throw new Error(response.message);
+      }
 
       onSaved({
         ...npc,

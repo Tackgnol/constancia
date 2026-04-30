@@ -79,7 +79,7 @@ When adding new files or functionalities, strictly adhere to the following bound
 
 - `apps/backend/`: Fastify API server. Source of truth. Contains all game logic, handles event pipeline execution.
 - `apps/bot/`: Discord.js bot. **Pure API client.** The bot must never contain game logic. It only translates Discord events to backend API calls and renders responses.
-- `apps/frontend/`: React Router 7 + ShadCN for GM management.
+- `apps/frontend/`: React Router 7 + ShadCN for GM management. **Browser code must never value-import `@constancia/api-client`; route all live reads/writes through route `loader`s/`action`s or server-only helpers.**
 - `packages/contracts/`: Dependency root. Defines all interfaces (`GameSystem`, `Block`, etc). Nothing else depends on implementations.
 - `packages/core/`: Common blocks and platform-level primitives (`MessagePlayer`, `ConditionalGate`).
 - `packages/systems/`: Game system specific logic. Each module (e.g., `vtm`, `mork-borg`) implements the `GameSystem` contract and provides system-specific blocks.
@@ -110,7 +110,10 @@ When adding new files or functionalities, strictly adhere to the following bound
 - **Browser code must not call the backend directly.** Production networking only permits trusted hops: browser → frontend, frontend server → backend, bot → backend.
 - **Do not introduce `VITE_*` backend API URLs.** Vite env values are build-time browser constants and will bypass the frontend server boundary.
 - Put backend reads in React Router `loader`s and writes/sign-out/auth mutations in React Router `action`s, then forward cookies from the incoming request to `BACKEND_URL`.
-- Browser-only helpers must not import or call `@constancia/api-client`; that package is for the bot and frontend server-side route modules.
+- Only route modules, `loader`s, `action`s, and server-only helpers (for example `*.server.ts` helpers such as `app/lib/api-proxy.server.ts`) may value-import `@constancia/api-client`.
+- Browser-only helpers, route components, and reusable UI components must not import or call `@constancia/api-client`; use same-origin route actions/loaders and browser-safe helpers instead (for example `app/lib/route-action-client.ts`).
+- Treat `app/components/**` and non-server `app/lib/**` as browser-bound by default unless a file is clearly server-only.
+- Before finishing frontend work, search `apps/frontend/app` for `@constancia/api-client` and confirm every remaining value import lives in a server-executed route module or server-only helper.
 
 ### Frontend Aesthetics ("War Room")
 

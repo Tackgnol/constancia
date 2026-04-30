@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate, useOutletContext, useParams, useRevalidator } from 'react-router';
+import type { ActionFunctionArgs } from 'react-router';
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useOutletContext,
+  useParams,
+  useRevalidator,
+} from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -14,11 +22,13 @@ import type {
   UpdateLoreEntryBody,
 } from '@constancia/api-client/model';
 import { ManagementWorkspace } from '@/components/layout/management-workspace';
+import { buildServerApiOptions } from '@/lib/api-proxy.server';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
+import { postRouteAction } from '@/lib/route-action-client';
 import type { WarRoomContext } from '@/lib/war-room-data';
 
 const loreEditSchema = z.object({
@@ -58,9 +68,96 @@ function defaultLoreValues(
   };
 }
 
+function parseLorePayload(
+  input: FormDataEntryValue | null,
+): CreateLoreEntryBody | UpdateLoreEntryBody | null {
+  if (typeof input !== 'string' || input.length === 0) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(input) as unknown;
+    return typeof parsed === 'object' && parsed !== null
+      ? (parsed as CreateLoreEntryBody | UpdateLoreEntryBody)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const intent = formData.get('intent');
+  const campaignId = formData.get('campaignId');
+  const loreId = formData.get('loreId');
+  const payload = parseLorePayload(formData.get('payload'));
+  const apiOptions = buildServerApiOptions(request);
+
+  if (typeof campaignId !== 'string' || campaignId.length === 0) {
+    return Response.json(
+      { status: 'error', message: 'Campaign context is missing.' },
+      { status: 400 },
+    );
+  }
+
+  try {
+    if (intent === 'save-lore') {
+      if (!payload) {
+        return Response.json(
+          { status: 'error', message: 'Lore payload is missing.' },
+          { status: 400 },
+        );
+      }
+
+      if (typeof loreId === 'string' && loreId.length > 0) {
+        const response = await updateLoreEntry(
+          { id: campaignId, loreId },
+          payload as UpdateLoreEntryBody,
+          apiOptions,
+        );
+        assertApiOk(response, 'The lore entry update did not clear. Try again.');
+      } else {
+        const response = await createLoreEntry(
+          { id: campaignId },
+          payload as CreateLoreEntryBody,
+          apiOptions,
+        );
+        assertApiOk(response, 'The lore entry did not file cleanly. Try again.');
+      }
+
+      return Response.json({ status: 'success' });
+    }
+
+    if (intent === 'delete-lore') {
+      if (typeof loreId !== 'string' || loreId.length === 0) {
+        return Response.json({ status: 'error', message: 'Lore id is missing.' }, { status: 400 });
+      }
+
+      const response = await deleteLoreEntry({ id: campaignId, loreId }, apiOptions);
+      assertApiOk(response, 'The lore entry did not delete cleanly. Try again.');
+      return Response.json({ status: 'success' });
+    }
+
+    return Response.json({ status: 'error', message: 'Unsupported lore action.' }, { status: 400 });
+  } catch (caught) {
+    const fallbackMessage =
+      intent === 'delete-lore'
+        ? 'The lore entry did not delete cleanly. Try again.'
+        : typeof loreId === 'string' && loreId.length > 0
+          ? 'The lore entry update did not clear. Try again.'
+          : 'The lore entry did not file cleanly. Try again.';
+
+    return Response.json(
+      { status: 'error', message: getApiErrorMessage(caught, fallbackMessage) },
+      { status: 500 },
+    );
+  }
+}
+
 export default function SetupLoreRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
   const { loreId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const revalidator = useRevalidator();
   const setupBase = getSetupBase(warRoom);
@@ -127,23 +224,22 @@ export default function SetupLoreRoute() {
           ]);
           reset(defaultLoreValues(null, loreEntries));
         }
-      } else if (isEditing && loreId) {
-        const response = await updateLoreEntry(
-          { id: warRoom.campaign.id, loreId },
-          payload as UpdateLoreEntryBody,
-          { credentials: 'include' },
-        );
-        assertApiOk(response, 'The lore entry update did not clear. Try again.');
-        revalidator.revalidate();
       } else {
-        const response = await createLoreEntry(
-          { id: warRoom.campaign.id },
-          payload as CreateLoreEntryBody,
-          { credentials: 'include' },
-        );
-        assertApiOk(response, 'The lore entry did not file cleanly. Try again.');
+        const response = await postRouteAction(location.pathname, {
+          intent: 'save-lore',
+          campaignId: warRoom.campaign.id,
+          loreId: loreId ?? '',
+          payload: JSON.stringify(payload),
+        });
+
+        if (response.status !== 'success') {
+          throw new Error(response.message);
+        }
+
         revalidator.revalidate();
-        reset(defaultLoreValues(null, loreEntries));
+        if (!isEditing) {
+          reset(defaultLoreValues(null, loreEntries));
+        }
       }
 
       const message = `${isEditing ? 'Lore updated' : 'Lore filed'}: ${payload.title}`;
@@ -174,11 +270,16 @@ export default function SetupLoreRoute() {
         setLocalLore((current) => current.filter((entry) => entry.id !== loreId));
         navigate(loreBoardPath);
       } else {
-        const response = await deleteLoreEntry(
-          { id: warRoom.campaign.id, loreId },
-          { credentials: 'include' },
-        );
-        assertApiOk(response, 'The lore entry did not delete cleanly. Try again.');
+        const response = await postRouteAction(location.pathname, {
+          intent: 'delete-lore',
+          campaignId: warRoom.campaign.id,
+          loreId,
+        });
+
+        if (response.status !== 'success') {
+          throw new Error(response.message);
+        }
+
         revalidator.revalidate();
         navigate(loreBoardPath);
       }

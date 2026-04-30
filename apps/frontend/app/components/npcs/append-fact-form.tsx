@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { createNpcFact } from '@constancia/api-client/endpoints/npcs/npcs';
+import { postRouteAction } from '@/lib/route-action-client';
 import type { CampaignNpcFact } from './block-registry';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,6 +13,7 @@ const appendFactSchema = z.object({
 type AppendFactFormValues = z.infer<typeof appendFactSchema>;
 
 export function AppendFactForm({
+  actionPath,
   campaignId,
   npcId,
   nextSortOrder,
@@ -20,6 +21,7 @@ export function AppendFactForm({
   onAppended,
   onError,
 }: {
+  actionPath: string;
   campaignId: string;
   npcId: string;
   nextSortOrder: number;
@@ -58,13 +60,18 @@ export function AppendFactForm({
         return;
       }
 
-      const response = await createNpcFact(
-        { id: campaignId, npcId },
-        { content, sortOrder: nextSortOrder },
-        { credentials: 'include' },
-      );
+      const response = await postRouteAction<CampaignNpcFact>(actionPath, {
+        intent: 'create-npc-fact',
+        campaignId,
+        npcId,
+        payload: JSON.stringify({ content, sortOrder: nextSortOrder }),
+      });
 
-      onAppended({ ...response.data, knownTo: [] });
+      if (response.status !== 'success' || !response.data) {
+        throw new Error(response.message);
+      }
+
+      onAppended(response.data);
       reset();
     } catch (error) {
       console.error('Create NPC fact error:', error);

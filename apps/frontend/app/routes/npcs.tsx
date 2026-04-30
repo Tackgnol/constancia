@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useOutletContext } from 'react-router';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
+import { Link, useLoaderData, useOutletContext } from 'react-router';
 import { listNpcs, revealNpcFacts } from '@constancia/api-client/endpoints/npcs/npcs';
-import type { ListNpcs200DataItem, RevealNpcFacts200Data } from '@constancia/api-client/model';
+import type { ListNpcs200DataItem } from '@constancia/api-client/model';
+import { buildServerApiOptions, resolveCurrentCampaignId } from '@/lib/api-proxy.server';
 import { ManagementWorkspace } from '@/components/layout/management-workspace';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import {
@@ -12,13 +14,12 @@ import {
   type CampaignNpcFact,
   type KnownPlayerRef,
 } from '@/components/npcs/block-registry';
+import { postRouteAction } from '@/lib/route-action-client';
 import { KnownToPicker } from '@/components/npcs/known-to-picker';
 import { NpcPortraitFallback } from '@/components/npcs/npc-portrait-fallback';
 import { SystemBlockRenderer } from '@/components/npcs/system-block-renderer';
 import { buildRecipientOptions, type WarRoomContext } from '@/lib/war-room-data';
 import { demoNpcs } from '@/lib/demo-npcs';
-
-type ApiNpc = ListNpcs200DataItem | RevealNpcFacts200Data;
 
 type ApiKnownPlayer = {
   characterId: string;
@@ -71,15 +72,91 @@ function normalizeApiNpc(input: ApiNpc): CampaignNpc {
   });
 }
 
+type ApiNpc = ListNpcs200DataItem;
+
+function asStringArray(input: FormDataEntryValue | null): string[] {
+  if (typeof input !== 'string' || input.length === 0) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(input) as unknown;
+    return Array.isArray(parsed)
+      ? parsed.filter((entry): entry is string => typeof entry === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const pathname = new URL(request.url).pathname;
+
+  if (pathname.startsWith('/demo/')) {
+    return demoNpcs.map(normalizeNpc);
+  }
+
+  const campaignId = await resolveCurrentCampaignId(request);
+  if (!campaignId) {
+    return [] satisfies CampaignNpc[];
+  }
+
+  const response = await listNpcs({ id: campaignId }, buildServerApiOptions(request));
+  return response.status === 'ok' ? (response.data ?? []).map(normalizeApiNpc) : [];
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const campaignId = formData.get('campaignId');
+  const npcId = formData.get('npcId');
+  const npcFactIds = asStringArray(formData.get('npcFactIds'));
+  const discordUserIds = asStringArray(formData.get('discordUserIds'));
+
+  if (
+    typeof campaignId !== 'string' ||
+    campaignId.length === 0 ||
+    typeof npcId !== 'string' ||
+    npcId.length === 0 ||
+    npcFactIds.length === 0 ||
+    discordUserIds.length === 0
+  ) {
+    return Response.json(
+      { status: 'error', message: 'NPC reveal payload is incomplete.' },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const response = await revealNpcFacts(
+      { id: campaignId, npcId },
+      { npcFactIds, discordUserIds },
+      buildServerApiOptions(request),
+    );
+
+    if (response.status !== 'ok' || !response.data) {
+      return Response.json(
+        { status: 'error', message: 'Knowledge assignment failed. Try the reveal again.' },
+        { status: 502 },
+      );
+    }
+
+    return Response.json({ status: 'success', data: normalizeApiNpc(response.data) });
+  } catch {
+    return Response.json(
+      { status: 'error', message: 'Knowledge assignment failed. Try the reveal again.' },
+      { status: 500 },
+    );
+  }
+}
+
 export default function NpcsRoute() {
+  const initialNpcs = useLoaderData<typeof loader>();
   const warRoom = useOutletContext<WarRoomContext>();
   const isDemoCampaign = warRoom.campaign.id.startsWith('demo-');
-  const [npcs, setNpcs] = useState<CampaignNpc[]>(() => (isDemoCampaign ? demoNpcs : []));
-  const [selectedNpcId, setSelectedNpcId] = useState<string | null>(
-    isDemoCampaign ? (demoNpcs[0]?.id ?? null) : null,
-  );
+  const actionPath = warRoom.demoMode ? '/demo/npcs' : '/npcs';
+  const [npcs, setNpcs] = useState<CampaignNpc[]>(() => initialNpcs);
+  const [selectedNpcId, setSelectedNpcId] = useState<string | null>(initialNpcs[0]?.id ?? null);
   const [pendingAssignments, setPendingAssignments] = useState<Record<string, string[]>>({});
-  const [loading, setLoading] = useState(!isDemoCampaign);
   const [error, setError] = useState<string | null>(null);
   const [assigningFactId, setAssigningFactId] = useState<string | null>(null);
   const [activeDossierTab, setActiveDossierTab] = useState<'bio' | 'stats' | 'facts'>('bio');
@@ -92,46 +169,10 @@ export default function NpcsRoute() {
   );
 
   useEffect(() => {
-    if (isDemoCampaign) {
-      setNpcs(demoNpcs.map(normalizeNpc));
-      setSelectedNpcId((current) => current ?? demoNpcs[0]?.id ?? null);
-      setLoading(false);
-      setError(null);
-      return;
-    }
-
-    let cancelled = false;
-
-    async function loadNpcDossiers() {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await listNpcs({ id: warRoom.campaign.id }, { credentials: 'include' });
-        if (cancelled) {
-          return;
-        }
-
-        const next = (response.data ?? []).map(normalizeApiNpc);
-        setNpcs(next);
-        setSelectedNpcId((current) => current ?? next[0]?.id ?? null);
-      } catch (loadError) {
-        console.error('List NPCs error:', loadError);
-        if (!cancelled) {
-          setError('The dossier board is not responding. Reload the page and try again.');
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadNpcDossiers();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isDemoCampaign, warRoom.campaign.id]);
+    setNpcs(initialNpcs);
+    setSelectedNpcId((current) => current ?? initialNpcs[0]?.id ?? null);
+    setError(null);
+  }, [initialNpcs]);
 
   useEffect(() => {
     if (selectedNpcId && npcs.some((npc) => npc.id === selectedNpcId)) {
@@ -223,12 +264,18 @@ export default function NpcsRoute() {
           }),
         );
       } else {
-        const response = await revealNpcFacts(
-          { id: warRoom.campaign.id, npcId: npc.id },
-          { npcFactIds: [fact.id], discordUserIds },
-          { credentials: 'include' },
-        );
-        const refreshedNpc = normalizeApiNpc(response.data);
+        const response = await postRouteAction<CampaignNpc>(actionPath, {
+          campaignId: warRoom.campaign.id,
+          npcId: npc.id,
+          npcFactIds: JSON.stringify([fact.id]),
+          discordUserIds: JSON.stringify(discordUserIds),
+        });
+
+        if (response.status !== 'success' || !response.data) {
+          throw new Error(response.message);
+        }
+
+        const refreshedNpc = response.data;
         setNpcs((current) =>
           current.map((entry) => (entry.id === refreshedNpc.id ? refreshedNpc : entry)),
         );
@@ -264,20 +311,6 @@ export default function NpcsRoute() {
       setError('Clipboard access failed. Copy the link again after granting browser permissions.');
     }
   };
-
-  if (loading && npcs.length === 0) {
-    return (
-      <ManagementWorkspace
-        eyebrow="NPCs"
-        title="Pressure points"
-        description="Pulling the dossiers out of the archive..."
-      >
-        <section className="detail-card npc-empty-state">
-          <p className="form-hint">Loading dossiers.</p>
-        </section>
-      </ManagementWorkspace>
-    );
-  }
 
   return (
     <ManagementWorkspace

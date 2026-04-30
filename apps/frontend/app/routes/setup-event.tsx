@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, useOutletContext, useParams, useRevalidator } from 'react-router';
+import type { ActionFunctionArgs } from 'react-router';
+import { Link, useLocation, useOutletContext, useParams, useRevalidator } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createEvent, updateEvent } from '@constancia/api-client/endpoints/events/events';
 import type {
@@ -10,6 +11,8 @@ import type {
 } from '@constancia/api-client/model';
 import { ManagementWorkspace } from '@/components/layout/management-workspace';
 import { EventSetupForm } from '@/components/setup/event-setup-form';
+import { buildServerApiOptions } from '@/lib/api-proxy.server';
+import { postRouteAction } from '@/lib/route-action-client';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import {
@@ -87,9 +90,74 @@ function emptyEventValues(): EventFormValues {
   };
 }
 
+function parseEventPayload(
+  input: FormDataEntryValue | null,
+): CreateEventBody | UpdateEventBody | null {
+  if (typeof input !== 'string' || input.length === 0) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(input) as unknown;
+    return typeof parsed === 'object' && parsed !== null
+      ? (parsed as CreateEventBody | UpdateEventBody)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const campaignId = formData.get('campaignId');
+  const eventId = formData.get('eventId');
+  const payload = parseEventPayload(formData.get('payload'));
+
+  if (typeof campaignId !== 'string' || campaignId.length === 0 || !payload) {
+    return Response.json(
+      { status: 'error', message: 'Event payload is incomplete.' },
+      { status: 400 },
+    );
+  }
+
+  try {
+    if (typeof eventId === 'string' && eventId.length > 0) {
+      const response = await updateEvent(
+        { id: campaignId, eventId },
+        payload as UpdateEventBody,
+        buildServerApiOptions(request),
+      );
+      assertApiOk(response, 'The event dossier did not update cleanly. Try again in a moment.');
+    } else {
+      const response = await createEvent(
+        { id: campaignId },
+        payload as CreateEventBody,
+        buildServerApiOptions(request),
+      );
+      assertApiOk(response, 'The event dossier did not stage cleanly. Try again in a moment.');
+    }
+
+    return Response.json({ status: 'success' });
+  } catch (caught) {
+    return Response.json(
+      {
+        status: 'error',
+        message: getApiErrorMessage(
+          caught,
+          typeof eventId === 'string' && eventId.length > 0
+            ? 'The event dossier did not update cleanly. Try again in a moment.'
+            : 'The event dossier did not stage cleanly. Try again in a moment.',
+        ),
+      },
+      { status: 500 },
+    );
+  }
+}
+
 export default function SetupEventRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
   const { eventId } = useParams();
+  const location = useLocation();
   const revalidator = useRevalidator();
   const setupBase = getSetupBase(warRoom);
   const isDemoCampaign = warRoom.campaign.id.startsWith('demo-');
@@ -113,21 +181,16 @@ export default function SetupEventRoute() {
       const normalizedValues = normalizeEventFormValues(values);
 
       if (!isDemoCampaign) {
-        if (isEditing && eventId) {
-          const response = await updateEvent(
-            { id: warRoom.campaign.id, eventId },
-            normalizedValues as UpdateEventBody,
-            { credentials: 'include' },
-          );
-          assertApiOk(response, 'The event dossier did not update cleanly. Try again in a moment.');
-        } else {
-          const response = await createEvent(
-            { id: warRoom.campaign.id },
-            normalizedValues as CreateEventBody,
-            { credentials: 'include' },
-          );
-          assertApiOk(response, 'The event dossier did not stage cleanly. Try again in a moment.');
+        const response = await postRouteAction(location.pathname, {
+          campaignId: warRoom.campaign.id,
+          eventId: eventId ?? '',
+          payload: JSON.stringify(normalizedValues),
+        });
+
+        if (response.status !== 'success') {
+          throw new Error(response.message);
         }
+
         revalidator.revalidate();
       }
 

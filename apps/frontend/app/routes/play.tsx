@@ -1,8 +1,13 @@
 import { startTransition, useEffect, useEffectEvent, useRef, useState } from 'react';
+import type { ActionFunctionArgs } from 'react-router';
 import { useOutletContext } from 'react-router';
 
 import { fireEvent } from '@constancia/api-client/endpoints/events/events';
+import { sendPlayerMessage } from '@constancia/api-client/endpoints/messages/messages';
 import type { ListEvents200DataItem } from '@constancia/api-client/model';
+import { buildServerApiOptions } from '@/lib/api-proxy.server';
+import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
+import { postRouteAction } from '@/lib/route-action-client';
 import type { TriggerKind, WarRoomContext } from '@/lib/war-room-data';
 
 const HOLD_DURATION_MS = 1800;
@@ -27,6 +32,93 @@ type PendingUndo = {
   target: string | null;
   expiresAt: number;
 };
+
+function asStringArray(input: FormDataEntryValue | null): string[] {
+  if (typeof input !== 'string' || input.length === 0) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(input) as unknown;
+    return Array.isArray(parsed)
+      ? parsed.filter((entry): entry is string => typeof entry === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const intent = formData.get('intent');
+  const campaignId = formData.get('campaignId');
+  const apiOptions = buildServerApiOptions(request);
+
+  if (typeof campaignId !== 'string' || campaignId.length === 0) {
+    return Response.json(
+      { status: 'error', message: 'Campaign context is missing.' },
+      { status: 400 },
+    );
+  }
+
+  try {
+    if (intent === 'fire-event') {
+      const eventId = formData.get('eventId');
+
+      if (typeof eventId !== 'string' || eventId.length === 0) {
+        return Response.json({ status: 'error', message: 'Event id is missing.' }, { status: 400 });
+      }
+
+      const response = await fireEvent({ id: campaignId, eventId }, apiOptions);
+      assertApiOk(response, 'The live trigger did not fire cleanly. Try again.');
+      return Response.json({ status: 'success' });
+    }
+
+    if (intent === 'send-player-message') {
+      const channelId = formData.get('channelId');
+      const content = formData.get('content');
+      const imageUrl = formData.get('imageUrl');
+      const discordUserIds = asStringArray(formData.get('playerIds'));
+
+      if (
+        typeof channelId !== 'string' ||
+        channelId.length === 0 ||
+        typeof content !== 'string' ||
+        content.length === 0 ||
+        discordUserIds.length === 0
+      ) {
+        return Response.json(
+          { status: 'error', message: 'Whisper payload is incomplete.' },
+          { status: 400 },
+        );
+      }
+
+      const response = await sendPlayerMessage(
+        { id: campaignId },
+        {
+          channelId,
+          content,
+          discordUserIds,
+          ...(typeof imageUrl === 'string' && imageUrl.length > 0 ? { imageUrl } : {}),
+        },
+        apiOptions,
+      );
+      assertApiOk(response, 'The whisper did not leave the board. Try again.');
+
+      return Response.json({ status: 'success' });
+    }
+
+    return Response.json({ status: 'error', message: 'Unsupported play action.' }, { status: 400 });
+  } catch (caught) {
+    return Response.json(
+      {
+        status: 'error',
+        message: getApiErrorMessage(caught, 'The live play action failed. Try again.'),
+      },
+      { status: 500 },
+    );
+  }
+}
 
 function truncate(text: string, limit = PREVIEW_MAX) {
   const trimmed = text.trim().replace(/\s+/g, ' ');
@@ -140,6 +232,7 @@ export default function PlayRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
   const liveEvents = warRoom.events;
   const isDemoMode = warRoom.demoMode ?? warRoom.campaign.id.startsWith('demo-');
+  const actionPath = isDemoMode ? '/demo?index' : '/?index';
 
   const [lastAction, setLastAction] = useState<string | null>(null);
   const [armedItemId, setArmedItemId] = useState<string | null>(null);
@@ -260,7 +353,15 @@ export default function PlayRoute() {
 
     try {
       if (!isDemoMode) {
-        await fireEvent({ id: warRoom.campaign.id, eventId: itemId }, { credentials: 'include' });
+        const result = await postRouteAction(actionPath, {
+          intent: 'fire-event',
+          campaignId: warRoom.campaign.id,
+          eventId: itemId,
+        });
+
+        if (result.status !== 'success') {
+          throw new Error(result.message);
+        }
       }
 
       warRoom.setEventFiredState?.(itemId, true);

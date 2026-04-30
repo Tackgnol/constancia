@@ -1,9 +1,9 @@
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { createNpc } from '@constancia/api-client/endpoints/npcs/npcs';
 import type { CreateNpcBody } from '@constancia/api-client/model';
 import { formFieldLabelClassName } from '@/components/forms/field-label';
+import { postRouteAction } from '@/lib/route-action-client';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -42,12 +42,14 @@ const createDefaultValues = (): SetupNpcFormValues => ({
 });
 
 export function SetupNpcForm({
+  actionPath,
   campaignId,
   systemId,
   isDemoCampaign,
   onSuccess,
   onError,
 }: {
+  actionPath: string;
   campaignId: string;
   systemId: string;
   isDemoCampaign: boolean;
@@ -96,7 +98,19 @@ export function SetupNpcForm({
       }
 
       if (!isDemoCampaign) {
-        await createNpc({ id: campaignId }, payload, { credentials: 'include' });
+        const result = await postRouteAction<{ name: string; factCount: number }>(actionPath, {
+          intent: 'create-npc',
+          campaignId,
+          payload: JSON.stringify(payload),
+        });
+
+        if (result.status !== 'success' || !result.data) {
+          throw new Error(result.message);
+        }
+
+        onSuccess(result.data);
+        reset(createDefaultValues());
+        return;
       }
 
       onSuccess({ name: payload.name, factCount: values.facts.length });

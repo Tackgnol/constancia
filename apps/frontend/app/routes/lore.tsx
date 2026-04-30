@@ -1,13 +1,16 @@
 import { useMemo, useState } from 'react';
+import type { ActionFunctionArgs } from 'react-router';
 import { Link, useOutletContext } from 'react-router';
 import { revealLoreEntry } from '@constancia/api-client/endpoints/lore/lore';
 import type {
   ListLoreEntries200DataItem,
   RevealLoreEntry200Data,
 } from '@constancia/api-client/model';
+import { buildServerApiOptions } from '@/lib/api-proxy.server';
 import { ManagementWorkspace } from '@/components/layout/management-workspace';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
+import { postRouteAction } from '@/lib/route-action-client';
 import {
   buildRecipientOptions,
   players,
@@ -53,10 +56,65 @@ function knownPlayerFromOption(option: RecipientOption): KnownPlayer {
   };
 }
 
+function asStringArray(input: FormDataEntryValue | null): string[] {
+  if (typeof input !== 'string' || input.length === 0) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(input) as unknown;
+    return Array.isArray(parsed)
+      ? parsed.filter((entry): entry is string => typeof entry === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const campaignId = formData.get('campaignId');
+  const loreId = formData.get('loreId');
+  const discordUserIds = asStringArray(formData.get('discordUserIds'));
+
+  if (
+    typeof campaignId !== 'string' ||
+    campaignId.length === 0 ||
+    typeof loreId !== 'string' ||
+    loreId.length === 0 ||
+    discordUserIds.length === 0
+  ) {
+    return Response.json(
+      { status: 'error', message: 'Lore reveal payload is incomplete.' },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const response = await revealLoreEntry(
+      { id: campaignId, loreId },
+      { discordUserIds },
+      buildServerApiOptions(request),
+    );
+
+    assertApiOk(response, 'Lore reveal failed. Try the assignment again.');
+    return Response.json({ status: 'success', data: normalizeLoreEntry(response.data) });
+  } catch (caught) {
+    return Response.json(
+      {
+        status: 'error',
+        message: getApiErrorMessage(caught, 'Lore reveal failed. Try the assignment again.'),
+      },
+      { status: 500 },
+    );
+  }
+}
+
 export default function LoreRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
   const setupBase = getSetupBase(warRoom);
   const isDemoMode = warRoom.demoMode === true;
+  const actionPath = isDemoMode ? '/demo/lore' : '/lore';
   const [loreEntries, setLoreEntries] = useState<LoreEntry[]>(() =>
     sortLoreEntries(warRoom.lore.map(normalizeLoreEntry)),
   );
@@ -112,13 +170,17 @@ export default function LoreRoute() {
           ),
         );
       } else {
-        const response = await revealLoreEntry(
-          { id: warRoom.campaign.id, loreId: loreEntry.id },
-          { discordUserIds },
-          { credentials: 'include' },
-        );
-        assertApiOk(response, 'Lore reveal failed. Try the assignment again.');
-        const refreshedLore = normalizeLoreEntry(response.data);
+        const response = await postRouteAction<LoreEntry>(actionPath, {
+          campaignId: warRoom.campaign.id,
+          loreId: loreEntry.id,
+          discordUserIds: JSON.stringify(discordUserIds),
+        });
+
+        if (response.status !== 'success' || !response.data) {
+          throw new Error(response.message);
+        }
+
+        const refreshedLore = response.data;
         setLoreEntries((current) =>
           sortLoreEntries(
             current.map((entry) => (entry.id === refreshedLore.id ? refreshedLore : entry)),
