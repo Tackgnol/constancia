@@ -1,24 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
-import { redirect, useLoaderData } from 'react-router';
+import { useLoaderData } from 'react-router';
 import { authClient } from '@/lib/auth-client';
-import { rewriteAuthSetCookieHeaders } from '@/lib/auth-cookies.server';
-import { getApiBaseUrl, getPublicApiBaseUrl } from '@/lib/api-url';
-
-interface VerifyMagicLinkData {
-  verified?: boolean;
-  error?: string | null;
-}
-
-interface VerifyMagicLinkResponse {
-  status?: 'ok' | 'error';
-  message?: string;
-  data?: VerifyMagicLinkData;
-}
 
 interface AuthLoaderData {
-  mode: 'idle' | 'error';
+  mode: 'idle' | 'error' | 'verifying';
   message: string;
+  token?: string;
+  next?: string;
 }
 
 function normalizeNext(next: string | null) {
@@ -27,40 +16,6 @@ function normalizeNext(next: string | null) {
 
 function formatAuthError(error: string) {
   return `Magic link verification failed: ${error}.`;
-}
-
-function getPublicRequestHeaders(request: Request) {
-  const publicApiUrl = new URL(getPublicApiBaseUrl());
-  const frontendUrl = new URL(request.url);
-
-  return {
-    cookie: request.headers.get('Cookie') || '',
-    origin: frontendUrl.origin,
-    'x-forwarded-host': publicApiUrl.host,
-    'x-forwarded-proto': publicApiUrl.protocol.replace(':', ''),
-  };
-}
-
-async function verifyMagicLink(request: Request, token: string) {
-  const response = await fetch(
-    `${getApiBaseUrl()}/api/v1/auth/verify?token=${encodeURIComponent(token)}`,
-    {
-      method: 'GET',
-      headers: getPublicRequestHeaders(request),
-    },
-  );
-
-  const payload = (await response.json()) as VerifyMagicLinkResponse;
-
-  if (!response.ok || payload.status !== 'ok' || payload.data?.verified !== true) {
-    throw new Error(
-      payload.data?.error ||
-        payload.message ||
-        `Magic link verification failed (${response.status}).`,
-    );
-  }
-
-  return response;
 }
 
 export async function loader({ request }: LoaderFunctionArgs): Promise<AuthLoaderData | Response> {
@@ -83,29 +38,42 @@ export async function loader({ request }: LoaderFunctionArgs): Promise<AuthLoade
     };
   }
 
-  try {
-    const response = await verifyMagicLink(request, token);
-    const headers = new Headers();
-
-    for (const setCookie of rewriteAuthSetCookieHeaders(response.headers, request.url)) {
-      headers.append('Set-Cookie', setCookie);
-    }
-
-    return redirect(next, { headers });
-  } catch (error) {
-    return {
-      mode: 'error',
-      message: error instanceof Error ? error.message : 'Magic link verification failed.',
-    };
-  }
+  return {
+    mode: 'verifying',
+    message: 'Verifying magic link...',
+    token,
+    next,
+  };
 }
 
 export default function AuthRoute() {
   const loaderData = useLoaderData<typeof loader>() as AuthLoaderData;
   const discordOauthEnabled = import.meta.env.VITE_DISCORD_AUTH_ENABLED === 'true';
-  const [mode, setMode] = useState<'idle' | 'error'>(loaderData.mode);
+  const [mode, setMode] = useState<'idle' | 'error' | 'verifying'>(loaderData.mode);
   const [message, setMessage] = useState(loaderData.message);
   const [discordAuthPending, setDiscordAuthPending] = useState(false);
+
+  useEffect(() => {
+    if (loaderData.mode !== 'verifying') return;
+    fetch(
+      `/api/v1/auth/verify?token=${encodeURIComponent(loaderData.token!)}&next=${encodeURIComponent(loaderData.next!)}`,
+      { method: 'GET', credentials: 'include' },
+    )
+      .then((res) => {
+        if (res.ok) {
+          window.location.href = loaderData.next!;
+        } else {
+          return res.json().then((data: { message?: string }) => {
+            setMode('error');
+            setMessage(data?.message || 'Magic link verification failed.');
+          });
+        }
+      })
+      .catch(() => {
+        setMode('error');
+        setMessage('Magic link verification failed.');
+      });
+  }, []);
 
   async function handleDiscordSignIn() {
     setDiscordAuthPending(true);
