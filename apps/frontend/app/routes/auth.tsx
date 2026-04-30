@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { redirect, useLoaderData } from 'react-router';
 import { authClient } from '@/lib/auth-client';
+import { rewriteAuthSetCookieHeaders } from '@/lib/auth-cookies.server';
 import { getApiBaseUrl, getPublicApiBaseUrl } from '@/lib/api-url';
 
 interface VerifyMagicLinkData {
@@ -26,26 +27,6 @@ function normalizeNext(next: string | null) {
 
 function formatAuthError(error: string) {
   return `Magic link verification failed: ${error}.`;
-}
-
-function getSetCookieHeaders(headers: Headers) {
-  const maybeHeaders = headers as Headers & { getSetCookie?: () => string[] };
-  const setCookieHeaders = maybeHeaders.getSetCookie?.();
-
-  if (setCookieHeaders && setCookieHeaders.length > 0) {
-    return setCookieHeaders;
-  }
-
-  const setCookie = headers.get('set-cookie');
-  return setCookie ? [setCookie] : [];
-}
-
-function makeFrontendCookie(setCookie: string) {
-  return setCookie
-    .split(';')
-    .map((part) => part.trim())
-    .filter((part) => !part.toLowerCase().startsWith('domain='))
-    .join('; ');
 }
 
 function getPublicRequestHeaders(request: Request) {
@@ -106,8 +87,8 @@ export async function loader({ request }: LoaderFunctionArgs): Promise<AuthLoade
     const response = await verifyMagicLink(request, token);
     const headers = new Headers();
 
-    for (const setCookie of getSetCookieHeaders(response.headers)) {
-      headers.append('Set-Cookie', makeFrontendCookie(setCookie));
+    for (const setCookie of rewriteAuthSetCookieHeaders(response.headers, request.url)) {
+      headers.append('Set-Cookie', setCookie);
     }
 
     return redirect(next, { headers });

@@ -1,66 +1,9 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { redirect } from 'react-router';
+import { rewriteAuthSetCookieHeaders } from '@/lib/auth-cookies.server';
 import { getApiBaseUrl, getPublicApiBaseUrl } from '@/lib/api-url';
 
-const SESSION_COOKIE_NAME = 'better-auth.session_token';
-const SECURE_SESSION_COOKIE_NAME = `__Secure-${SESSION_COOKIE_NAME}`;
-const HOST_SESSION_COOKIE_NAME = `__Host-${SESSION_COOKIE_NAME}`;
-
-function getSetCookieHeaders(headers: Headers) {
-  const maybeHeaders = headers as Headers & { getSetCookie?: () => string[] };
-  const setCookieHeaders = maybeHeaders.getSetCookie?.();
-
-  if (setCookieHeaders && setCookieHeaders.length > 0) {
-    return setCookieHeaders;
-  }
-
-  const setCookie = headers.get('set-cookie');
-  return setCookie ? [setCookie] : [];
-}
-
-function isSessionSetCookie(setCookie: string) {
-  const [nameValue] = setCookie.split(';');
-  const [name] = (nameValue ?? '').split('=');
-
-  return (
-    name === SESSION_COOKIE_NAME ||
-    name === SECURE_SESSION_COOKIE_NAME ||
-    name === HOST_SESSION_COOKIE_NAME
-  );
-}
-
-function makeFrontendSessionCookie(setCookie: string) {
-  const [nameValue = '', ...attributes] = setCookie.split(';').map((part) => part.trim());
-  const [, ...valueParts] = nameValue.split('=');
-  const value = valueParts.join('=');
-  const preservedLifetimeAttributes = attributes.filter((attribute) => {
-    const lowerAttribute = attribute.toLowerCase();
-    return lowerAttribute.startsWith('max-age=') || lowerAttribute.startsWith('expires=');
-  });
-
-  return [
-    `${SESSION_COOKIE_NAME}=${value}`,
-    ...preservedLifetimeAttributes,
-    'Path=/',
-    'HttpOnly',
-    'Secure',
-    'SameSite=Lax',
-  ].join('; ');
-}
-
-function makeFrontendCookie(setCookie: string) {
-  if (isSessionSetCookie(setCookie)) {
-    return makeFrontendSessionCookie(setCookie);
-  }
-
-  return setCookie
-    .split(';')
-    .map((part) => part.trim())
-    .filter((part) => !part.toLowerCase().startsWith('domain='))
-    .join('; ');
-}
-
-function makeRedirectHeaders(response: Response) {
+function makeRedirectHeaders(response: Response, requestUrl: string) {
   const headers = new Headers();
   const location = response.headers.get('location');
 
@@ -70,14 +13,14 @@ function makeRedirectHeaders(response: Response) {
 
   headers.set('Cache-Control', 'no-store');
 
-  for (const setCookie of getSetCookieHeaders(response.headers)) {
-    headers.append('Set-Cookie', makeFrontendCookie(setCookie));
+  for (const setCookie of rewriteAuthSetCookieHeaders(response.headers, requestUrl)) {
+    headers.append('Set-Cookie', setCookie);
   }
 
   return headers;
 }
 
-function makeBodyHeaders(response: Response) {
+function makeBodyHeaders(response: Response, requestUrl: string) {
   const headers = new Headers(response.headers);
   headers.delete('connection');
   headers.delete('content-encoding');
@@ -86,8 +29,8 @@ function makeBodyHeaders(response: Response) {
   headers.delete('set-cookie');
   headers.delete('transfer-encoding');
 
-  for (const setCookie of getSetCookieHeaders(response.headers)) {
-    headers.append('Set-Cookie', makeFrontendCookie(setCookie));
+  for (const setCookie of rewriteAuthSetCookieHeaders(response.headers, requestUrl)) {
+    headers.append('Set-Cookie', setCookie);
   }
 
   return headers;
@@ -107,19 +50,19 @@ function makeBackendHeaders(request: Request) {
   return requestHeaders;
 }
 
-function makeFrontendResponse(response: Response) {
+function makeFrontendResponse(response: Response, requestUrl: string) {
   const location = response.headers.get('location');
   if (response.status >= 300 && response.status < 400 && location) {
     return redirect(location, {
       status: response.status,
-      headers: makeRedirectHeaders(response),
+      headers: makeRedirectHeaders(response, requestUrl),
     });
   }
 
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
-    headers: makeBodyHeaders(response),
+    headers: makeBodyHeaders(response, requestUrl),
   });
 }
 
@@ -136,7 +79,7 @@ async function proxyBetterAuth(request: Request) {
     redirect: 'manual',
   });
 
-  return makeFrontendResponse(response);
+  return makeFrontendResponse(response, request.url);
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
