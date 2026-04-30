@@ -2,6 +2,8 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { getApiBaseUrl, getPublicApiBaseUrl } from '@/lib/api-url';
 
 const SESSION_COOKIE_NAME = 'better-auth.session_token';
+const SECURE_SESSION_COOKIE_NAME = `__Secure-${SESSION_COOKIE_NAME}`;
+const HOST_SESSION_COOKIE_NAME = `__Host-${SESSION_COOKIE_NAME}`;
 
 function getSetCookieHeaders(headers: Headers) {
   const maybeHeaders = headers as Headers & { getSetCookie?: () => string[] };
@@ -15,7 +17,41 @@ function getSetCookieHeaders(headers: Headers) {
   return setCookie ? [setCookie] : [];
 }
 
+function isSessionSetCookie(setCookie: string) {
+  const [nameValue] = setCookie.split(';');
+  const [name] = (nameValue ?? '').split('=');
+
+  return (
+    name === SESSION_COOKIE_NAME ||
+    name === SECURE_SESSION_COOKIE_NAME ||
+    name === HOST_SESSION_COOKIE_NAME
+  );
+}
+
+function makeFrontendSessionCookie(setCookie: string) {
+  const [nameValue = '', ...attributes] = setCookie.split(';').map((part) => part.trim());
+  const [, ...valueParts] = nameValue.split('=');
+  const value = valueParts.join('=');
+  const preservedLifetimeAttributes = attributes.filter((attribute) => {
+    const lowerAttribute = attribute.toLowerCase();
+    return lowerAttribute.startsWith('max-age=') || lowerAttribute.startsWith('expires=');
+  });
+
+  return [
+    `${SESSION_COOKIE_NAME}=${value}`,
+    ...preservedLifetimeAttributes,
+    'Path=/',
+    'HttpOnly',
+    'Secure',
+    'SameSite=Lax',
+  ].join('; ');
+}
+
 function makeFrontendCookie(setCookie: string) {
+  if (isSessionSetCookie(setCookie)) {
+    return makeFrontendSessionCookie(setCookie);
+  }
+
   return setCookie
     .split(';')
     .map((part) => part.trim())
