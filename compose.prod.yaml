@@ -102,7 +102,7 @@ services:
       - bot-be
       - egress
     ports:
-      - '127.0.0.1:${BACKEND_PORT:-3001}:3000'
+      - '127.0.0.1:${BACKEND_PORT:?BACKEND_PORT is required}:3000'
     healthcheck:
       test:
         - CMD
@@ -154,7 +154,7 @@ services:
     networks:
       - fe-be
     ports:
-      - '127.0.0.1:${FRONTEND_PORT:-3000}:3000'
+      - '127.0.0.1:${FRONTEND_PORT:?FRONTEND_PORT is required}:3000'
     healthcheck:
       test:
         - CMD
