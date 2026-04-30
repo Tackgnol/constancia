@@ -83,16 +83,32 @@ steps:
     commands:
       - |
         set -e
-        trap 'docker compose -f compose.prod.yaml logs --no-color --tail=200 backend frontend bot postgres || true' ERR
+
+        require_env() {
+          if [ -z "$(printenv "$1")" ]; then
+            echo "Missing required deployment environment variable: $1" >&2
+            exit 1
+          fi
+        }
+
+        if [ "$CONTENT_MODERATION_ENABLED" = "true" ]; then
+          require_env OPENAI_API_KEY
+        fi
+
+        if [ "$UPLOAD_STORAGE_DRIVER" = "r2" ]; then
+          require_env R2_ENDPOINT
+          require_env R2_ACCESS_KEY_ID
+          require_env R2_SECRET_ACCESS_KEY
+          require_env R2_BUCKET
+        fi
 
         docker compose -f compose.prod.yaml config > /dev/null
         docker compose -f compose.prod.yaml config --format json | grep -q '"published": "3010"'
         docker compose -f compose.prod.yaml config --format json | grep -q '"published": "3011"'
 
         docker compose -f compose.prod.yaml build backend frontend bot migrate
-        docker compose -f compose.prod.yaml run --rm backend sh -lc 'test -n "$OPENAI_API_KEY" && test "$UPLOAD_STORAGE_DRIVER" = "r2" && test -n "$R2_ENDPOINT" && test -n "$R2_ACCESS_KEY_ID" && test -n "$R2_SECRET_ACCESS_KEY" && test -n "$R2_BUCKET"'
-        docker compose -f compose.prod.yaml up -d postgres
-        docker compose -f compose.prod.yaml run --rm migrate
+        docker compose -f compose.prod.yaml up -d --wait postgres
+        docker compose -f compose.prod.yaml run --rm --no-deps migrate
         docker compose -f compose.prod.yaml up -d --wait --force-recreate backend frontend
         docker compose -f compose.prod.yaml up -d bot
         docker compose -f compose.prod.yaml ps
