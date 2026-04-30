@@ -42,6 +42,47 @@ function getSetCookieHeaders(headers: Headers) {
   return setCookie ? [setCookie] : [];
 }
 
+export interface SetCookieSummary {
+  name: string;
+  domain?: string;
+  path?: string;
+  sameSite?: string;
+  secure: boolean;
+  httpOnly: boolean;
+}
+
+export function summarizeSetCookieHeaders(headers: Headers): SetCookieSummary[] {
+  return getSetCookieHeaders(headers).map((setCookie) => {
+    const [nameValue = '', ...attributes] = setCookie.split(';').map((part) => part.trim());
+    const [name = ''] = nameValue.split('=');
+    const summary: SetCookieSummary = {
+      name,
+      secure: false,
+      httpOnly: false,
+    };
+
+    for (const attribute of attributes) {
+      const [rawKey = '', ...rawValueParts] = attribute.split('=');
+      const key = rawKey.toLowerCase();
+      const value = rawValueParts.join('=');
+
+      if (key === 'domain' && value) {
+        summary.domain = value;
+      } else if (key === 'path' && value) {
+        summary.path = value;
+      } else if (key === 'samesite' && value) {
+        summary.sameSite = value;
+      } else if (key === 'secure') {
+        summary.secure = true;
+      } else if (key === 'httponly') {
+        summary.httpOnly = true;
+      }
+    }
+
+    return summary;
+  });
+}
+
 function shouldSkipForwardedHeader(key: string) {
   const lowerKey = key.toLowerCase();
 

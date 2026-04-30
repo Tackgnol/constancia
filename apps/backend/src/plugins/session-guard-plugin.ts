@@ -8,6 +8,17 @@ function hasSessionCookie(cookieHeader: string | undefined) {
   return Boolean(cookieHeader?.includes('better-auth.session_token'));
 }
 
+function listCookieNames(cookieHeader: string | undefined) {
+  if (!cookieHeader) {
+    return [];
+  }
+
+  return cookieHeader
+    .split(';')
+    .map((cookie) => cookie.trim().split('=')[0])
+    .filter((name) => name.length > 0);
+}
+
 const sessionGuardPlugin: FastifyPluginAsync = async (app) => {
   app.addHook('onRequest', async (request, reply) => {
     // OPTIONS requests are used for CORS preflight and don't carry cookies.
@@ -23,6 +34,7 @@ const sessionGuardPlugin: FastifyPluginAsync = async (app) => {
         {
           hasCookieHeader: typeof request.headers.cookie === 'string',
           hasSessionCookie: hasSessionCookie(request.headers.cookie),
+          cookieNames: listCookieNames(request.headers.cookie),
         },
         'session guard rejected request',
       );
