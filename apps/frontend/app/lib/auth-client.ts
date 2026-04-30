@@ -1,9 +1,7 @@
 import { createAuthClient } from 'better-auth/react';
 import { magicLinkClient } from 'better-auth/client/plugins';
-import { getApiBaseUrl } from './api-url';
 
 const authClientOptions = {
-  baseURL: getApiBaseUrl(),
   basePath: '/api/auth',
   fetchOptions: {
     credentials: 'include' as const,

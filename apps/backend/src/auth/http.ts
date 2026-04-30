@@ -30,6 +30,31 @@ function buildRequestBody(body: unknown) {
   return JSON.stringify(body);
 }
 
+function getSetCookieHeaders(headers: Headers) {
+  const maybeHeaders = headers as Headers & { getSetCookie?: () => string[] };
+  const setCookieHeaders = maybeHeaders.getSetCookie?.();
+
+  if (setCookieHeaders && setCookieHeaders.length > 0) {
+    return setCookieHeaders;
+  }
+
+  const setCookie = headers.get('set-cookie');
+  return setCookie ? [setCookie] : [];
+}
+
+function applyResponseHeaders(response: Response, reply: FastifyReply) {
+  response.headers.forEach((value, key) => {
+    if (key.toLowerCase() !== 'set-cookie') {
+      reply.header(key, value);
+    }
+  });
+
+  const setCookieHeaders = getSetCookieHeaders(response.headers);
+  if (setCookieHeaders.length > 0) {
+    reply.header('set-cookie', setCookieHeaders);
+  }
+}
+
 export async function forwardToBetterAuth(
   request: FastifyRequest,
   path: string,
@@ -57,10 +82,7 @@ export async function forwardToBetterAuth(
 
 export async function applyBetterAuthResponse(response: Response, reply: FastifyReply) {
   reply.status(response.status);
-
-  response.headers.forEach((value, key) => {
-    reply.header(key, value);
-  });
+  applyResponseHeaders(response, reply);
 
   const body = await response.text();
   reply.send(body.length > 0 ? body : null);

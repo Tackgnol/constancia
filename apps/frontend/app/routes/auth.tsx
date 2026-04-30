@@ -24,6 +24,10 @@ function normalizeNext(next: string | null) {
   return next && next.startsWith('/') ? next : '/';
 }
 
+function formatAuthError(error: string) {
+  return `Magic link verification failed: ${error}.`;
+}
+
 function getSetCookieHeaders(headers: Headers) {
   const maybeHeaders = headers as Headers & { getSetCookie?: () => string[] };
   const setCookieHeaders = maybeHeaders.getSetCookie?.();
@@ -81,7 +85,15 @@ async function verifyMagicLink(request: Request, token: string) {
 export async function loader({ request }: LoaderFunctionArgs): Promise<AuthLoaderData | Response> {
   const url = new URL(request.url);
   const token = url.searchParams.get('token');
+  const error = url.searchParams.get('error');
   const next = normalizeNext(url.searchParams.get('next'));
+
+  if (error) {
+    return {
+      mode: 'error',
+      message: formatAuthError(error),
+    };
+  }
 
   if (!token) {
     return {

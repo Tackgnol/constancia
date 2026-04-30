@@ -1,6 +1,7 @@
 import { index, layout, route, type RouteConfig } from '@react-router/dev/routes';
 
 export default [
+  route('api/auth/*', './routes/api-auth-proxy.ts'),
   route('auth', './routes/auth.tsx'),
   route('logout', './routes/logout.tsx'),
   route('player/campaigns/:campaignId/sheet', './routes/player-sheet.tsx'),

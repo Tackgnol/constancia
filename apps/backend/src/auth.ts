@@ -16,12 +16,14 @@ const memoryDb: Record<string, Array<Record<string, unknown>>> = {
 };
 
 function createFrontendMagicLink(token: string, callbackURL?: string) {
-  const url = new URL(config.magicLinkFrontendPath, config.frontendUrl);
+  const url = new URL(`${config.betterAuthPath}/magic-link/verify`, config.frontendUrl);
   url.searchParams.set('token', token);
 
-  if (callbackURL) {
-    url.searchParams.set('next', callbackURL);
-  }
+  const frontendCallbackUrl = new URL(callbackURL ?? '/', config.frontendUrl);
+  const errorCallbackUrl = new URL(config.magicLinkFrontendPath, config.frontendUrl);
+
+  url.searchParams.set('callbackURL', frontendCallbackUrl.toString());
+  url.searchParams.set('errorCallbackURL', errorCallbackUrl.toString());
 
   return url.toString();
 }
