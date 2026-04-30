@@ -22,7 +22,7 @@ export async function handleLogin(interaction: ChatInputCommandInteraction): Pro
     });
 
     await interaction.editReply({
-      content: `Use this link to log in to the Constancia web dashboard: ${result.url}\n\n*Note: This link is unique to you and should not be shared.*`,
+      content: `Use this link to log in to the Constancia web dashboard: <${result.url}>\n\n*Note: This link is unique to you and should not be shared.*`,
     });
   } catch (error) {
     console.error('Login command error:', error);
@@ -37,4 +37,3 @@ export const loginCommand: BotChatCommand = {
   },
   execute: handleLogin,
 };
-

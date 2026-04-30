@@ -23,7 +23,7 @@ export async function handleSheet(interaction: ChatInputCommandInteraction): Pro
 
     await interaction.editReply({
       content:
-        `Open your campaign sheet here: ${result.url}\n\n` +
+        `Open your campaign sheet here: <${result.url}>\n\n` +
         '*This link signs you into your player sheet. It is unique to your Discord account and should not be shared.*',
     });
   } catch (error) {
