@@ -21,6 +21,11 @@ function isRouteActionResult<T>(value: unknown): value is RouteActionResult<T> {
   );
 }
 
+function toDataUrl(actionUrl: string): string {
+  const [path, search = ''] = actionUrl.split('?');
+  return `${path}.data${search ? `?${search}` : ''}`;
+}
+
 export async function postRouteAction<T>(
   actionUrl: string,
   values: Record<string, FormDataEntryValue | null | undefined>,
@@ -33,7 +38,8 @@ export async function postRouteAction<T>(
     }
   }
 
-  const response = await fetch(actionUrl, {
+  const dataUrl = toDataUrl(actionUrl);
+  const response = await fetch(dataUrl, {
     method: 'post',
     body: formData,
     credentials: 'same-origin',
