@@ -1,10 +1,6 @@
 import fp from 'fastify-plugin';
 import type { FastifyPluginAsync } from 'fastify';
-import {
-  applyBetterAuthResponse,
-  forwardToBetterAuth,
-  summarizeSetCookieHeaders,
-} from '../auth/http.js';
+import { applyBetterAuthResponse, forwardToBetterAuth } from '../auth/http.js';
 
 const betterAuthPlugin: FastifyPluginAsync = async (app) => {
   app.route({
@@ -16,16 +12,6 @@ const betterAuthPlugin: FastifyPluginAsync = async (app) => {
         method: request.method as 'GET' | 'POST',
         body: request.body,
       });
-
-      if (response.status >= 300 && response.status < 400) {
-        request.log.info(
-          {
-            location: response.headers.get('location'),
-            setCookies: summarizeSetCookieHeaders(response.headers),
-          },
-          'better auth redirect response',
-        );
-      }
 
       await applyBetterAuthResponse(response, reply);
     },

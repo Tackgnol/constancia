@@ -93,19 +93,6 @@ function makeBodyHeaders(response: Response) {
   return headers;
 }
 
-function logAuthProxyResponse(response: Response) {
-  if (response.status !== 302) {
-    return;
-  }
-
-  const setCookieHeaders = getSetCookieHeaders(response.headers);
-  console.info('auth proxy redirect', {
-    location: response.headers.get('location'),
-    setCookieCount: setCookieHeaders.length,
-    hasSessionCookie: setCookieHeaders.some((header) => header.includes(SESSION_COOKIE_NAME)),
-  });
-}
-
 function makeBackendHeaders(request: Request) {
   const requestHeaders = new Headers(request.headers);
   const publicApiUrl = new URL(getPublicApiBaseUrl());
@@ -121,8 +108,6 @@ function makeBackendHeaders(request: Request) {
 }
 
 function makeFrontendResponse(response: Response) {
-  logAuthProxyResponse(response);
-
   const location = response.headers.get('location');
   if (response.status >= 300 && response.status < 400 && location) {
     return redirect(location, {
