@@ -83,12 +83,50 @@ steps:
       - |
         set -e
 
+        print_diagnostics() {
+          exit_code=$?
+          if [ "$exit_code" -eq 0 ]; then
+            return
+          fi
+
+          echo "Deployment failed with exit code $exit_code" >&2
+          echo "=== docker compose ps ===" >&2
+          docker compose -f compose.prod.yaml ps >&2 || true
+          echo "=== backend health ===" >&2
+          docker inspect constancia-backend-1 --format '{{json .State.Health}}' >&2 || true
+          echo "=== backend logs ===" >&2
+          docker compose -f compose.prod.yaml logs --no-color --tail=200 backend >&2 || true
+          echo "=== frontend logs ===" >&2
+          docker compose -f compose.prod.yaml logs --no-color --tail=120 frontend >&2 || true
+        }
+
+        trap print_diagnostics EXIT
+
         require_env() {
           if [ -z "$(printenv "$1")" ]; then
             echo "Missing required deployment environment variable: $1" >&2
             exit 1
           fi
         }
+
+        require_url() {
+          require_env "$1"
+          case "$(printenv "$1")" in
+            http://*|https://*) ;;
+            *)
+              echo "$1 must be a full URL including http:// or https://" >&2
+              exit 1
+              ;;
+          esac
+        }
+
+        require_url FRONTEND_URL
+        require_url BETTER_AUTH_URL
+        require_url BACKEND_PUBLIC_URL
+
+        if [ -n "$UPLOAD_PUBLIC_BASE_URL" ]; then
+          require_url UPLOAD_PUBLIC_BASE_URL
+        fi
 
         if [ "$CONTENT_MODERATION_ENABLED" = "true" ]; then
           require_env OPENAI_API_KEY
