@@ -29,8 +29,8 @@
 #   BACKEND_PORT=3011                 # host loopback port; Caddy → localhost:3011
 #   AUTH_COOKIE_DOMAIN=constancia.rpgtools.eu.org
 #   VITE_DISCORD_AUTH_ENABLED=false
-#   CONTENT_MODERATION_ENABLED=false
-#   UPLOAD_STORAGE_DRIVER=local
+#   CONTENT_MODERATION_ENABLED=true
+#   UPLOAD_STORAGE_DRIVER=r2
 
 when:
   - event: push
@@ -86,11 +86,14 @@ steps:
         trap 'docker compose -f compose.prod.yaml logs --no-color --tail=200 backend frontend bot postgres || true' ERR
 
         docker compose -f compose.prod.yaml config > /dev/null
+        docker compose -f compose.prod.yaml config --format json | grep -q '"published": "3010"'
+        docker compose -f compose.prod.yaml config --format json | grep -q '"published": "3011"'
+
         docker compose -f compose.prod.yaml build backend frontend bot migrate
         docker compose -f compose.prod.yaml run --rm backend sh -lc 'test -n "$OPENAI_API_KEY" && test "$UPLOAD_STORAGE_DRIVER" = "r2" && test -n "$R2_ENDPOINT" && test -n "$R2_ACCESS_KEY_ID" && test -n "$R2_SECRET_ACCESS_KEY" && test -n "$R2_BUCKET"'
         docker compose -f compose.prod.yaml up -d postgres
         docker compose -f compose.prod.yaml run --rm migrate
-        docker compose -f compose.prod.yaml up -d --wait backend frontend
+        docker compose -f compose.prod.yaml up -d --wait --force-recreate backend frontend
         docker compose -f compose.prod.yaml up -d bot
         docker compose -f compose.prod.yaml ps
         docker image prune -f
