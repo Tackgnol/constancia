@@ -6,6 +6,7 @@ name: constancia
 #   db      [internal]  postgres ⇄ backend, migrate
 #   fe-be   [internal]  backend  ⇄ frontend
 #   bot-be  [internal]  backend  ⇄ bot
+#   edge    [bridge]    Caddy host loopback ports ⇄ backend, frontend
 #   egress  [bridge]    backend, bot  → internet (OpenAI, R2, Discord)
 #
 # Postgres is unreachable except from backend/migrate. Frontend cannot reach
@@ -100,6 +101,7 @@ services:
       - db
       - fe-be
       - bot-be
+      - edge
       - egress
     ports:
       - '127.0.0.1:${BACKEND_PORT:?BACKEND_PORT is required}:3000'
@@ -153,6 +155,7 @@ services:
       VITE_DISCORD_AUTH_ENABLED: ${VITE_DISCORD_AUTH_ENABLED:-false}
     networks:
       - fe-be
+      - edge
     ports:
       - '127.0.0.1:${FRONTEND_PORT:?FRONTEND_PORT is required}:3000'
     healthcheck:
@@ -177,5 +180,7 @@ networks:
     internal: true
   bot-be:
     internal: true
+  edge:
+    driver: bridge
   egress:
     driver: bridge

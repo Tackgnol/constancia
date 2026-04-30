@@ -110,6 +110,8 @@ steps:
         docker compose -f compose.prod.yaml up -d --wait postgres
         docker compose -f compose.prod.yaml run --rm --no-deps migrate
         docker compose -f compose.prod.yaml up -d --wait --force-recreate backend frontend
+        docker compose -f compose.prod.yaml port frontend 3000 | grep -q '127.0.0.1:3010'
+        docker compose -f compose.prod.yaml port backend 3000 | grep -q '127.0.0.1:3011'
         docker compose -f compose.prod.yaml up -d bot
         docker compose -f compose.prod.yaml ps
         docker image prune -f
