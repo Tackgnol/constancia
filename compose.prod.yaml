@@ -151,7 +151,7 @@ services:
       HOST: 0.0.0.0
       PORT: 3000
       BACKEND_URL: http://backend:3000
-      VITE_API_URL: ${VITE_API_URL:?VITE_API_URL is required}
+      BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:?BACKEND_PUBLIC_URL is required}
       VITE_DISCORD_AUTH_ENABLED: ${VITE_DISCORD_AUTH_ENABLED:-false}
     networks:
       - fe-be

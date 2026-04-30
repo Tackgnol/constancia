@@ -1,6 +1,5 @@
 type ViteEnv = {
   readonly SSR?: boolean | string;
-  readonly VITE_API_URL?: string;
 };
 
 type ImportMetaWithEnv = ImportMeta & {
@@ -18,7 +17,6 @@ type GlobalWithProcess = typeof globalThis & {
 };
 
 const BOT_DEFAULT_API_URL = 'http://localhost:3000';
-const BROWSER_DEFAULT_API_URL = 'http://localhost:3001';
 const SSR_DEFAULT_API_URL = 'http://backend:3000';
 
 const getProcessEnv = (): ProcessEnv | undefined => {
@@ -41,5 +39,7 @@ export const getConstanciaApiBaseUrl = (): string => {
     return processEnv?.BACKEND_URL ?? SSR_DEFAULT_API_URL;
   }
 
-  return viteEnv.VITE_API_URL ?? BROWSER_DEFAULT_API_URL;
+  throw new Error(
+    '@constancia/api-client cannot be used from browser code. Route API calls through React Router loaders/actions so they run from the frontend server.',
+  );
 };

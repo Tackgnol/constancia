@@ -1,7 +1,8 @@
-import { startTransition, useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useState } from 'react';
+import type { LoaderFunctionArgs } from 'react-router';
+import { redirect, useLoaderData } from 'react-router';
 import { authClient } from '@/lib/auth-client';
-import { getApiBaseUrl } from '@/lib/api-url';
+import { getApiBaseUrl, getPublicApiBaseUrl } from '@/lib/api-url';
 
 interface VerifyMagicLinkData {
   verified?: boolean;
@@ -13,16 +14,45 @@ interface VerifyMagicLinkResponse {
   data?: VerifyMagicLinkData;
 }
 
+interface AuthLoaderData {
+  mode: 'idle' | 'error';
+  message: string;
+}
+
 function normalizeNext(next: string | null) {
   return next && next.startsWith('/') ? next : '/';
 }
 
-async function verifyMagicLink(token: string) {
+function getSetCookieHeaders(headers: Headers) {
+  const maybeHeaders = headers as Headers & { getSetCookie?: () => string[] };
+  const setCookieHeaders = maybeHeaders.getSetCookie?.();
+
+  if (setCookieHeaders && setCookieHeaders.length > 0) {
+    return setCookieHeaders;
+  }
+
+  const setCookie = headers.get('set-cookie');
+  return setCookie ? [setCookie] : [];
+}
+
+function getPublicRequestHeaders(request: Request) {
+  const publicApiUrl = new URL(getPublicApiBaseUrl());
+  const frontendUrl = new URL(request.url);
+
+  return {
+    cookie: request.headers.get('Cookie') || '',
+    origin: frontendUrl.origin,
+    'x-forwarded-host': publicApiUrl.host,
+    'x-forwarded-proto': publicApiUrl.protocol.replace(':', ''),
+  };
+}
+
+async function verifyMagicLink(request: Request, token: string) {
   const response = await fetch(
     `${getApiBaseUrl()}/api/v1/auth/verify?token=${encodeURIComponent(token)}`,
     {
       method: 'GET',
-      credentials: 'include',
+      headers: getPublicRequestHeaders(request),
     },
   );
 
@@ -31,17 +61,44 @@ async function verifyMagicLink(token: string) {
   if (!response.ok || payload.status !== 'ok' || payload.data?.verified !== true) {
     throw new Error(payload.data?.error || `Magic link verification failed (${response.status}).`);
   }
+
+  return response;
+}
+
+export async function loader({ request }: LoaderFunctionArgs): Promise<AuthLoaderData | Response> {
+  const url = new URL(request.url);
+  const token = url.searchParams.get('token');
+  const next = normalizeNext(url.searchParams.get('next'));
+
+  if (!token) {
+    return {
+      mode: 'idle',
+      message: 'Waiting for a Discord-delivered magic link.',
+    };
+  }
+
+  try {
+    const response = await verifyMagicLink(request, token);
+    const headers = new Headers();
+
+    for (const setCookie of getSetCookieHeaders(response.headers)) {
+      headers.append('Set-Cookie', setCookie);
+    }
+
+    return redirect(next, { headers });
+  } catch (error) {
+    return {
+      mode: 'error',
+      message: error instanceof Error ? error.message : 'Magic link verification failed.',
+    };
+  }
 }
 
 export default function AuthRoute() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
-  const next = normalizeNext(searchParams.get('next'));
+  const loaderData = useLoaderData<typeof loader>() as AuthLoaderData;
   const discordOauthEnabled = import.meta.env.VITE_DISCORD_AUTH_ENABLED === 'true';
-  const session = authClient.useSession();
-  const [mode, setMode] = useState<'idle' | 'verifying' | 'error'>(token ? 'verifying' : 'idle');
-  const [message, setMessage] = useState('Waiting for a Discord-delivered magic link.');
+  const [mode, setMode] = useState<'idle' | 'error'>(loaderData.mode);
+  const [message, setMessage] = useState(loaderData.message);
   const [discordAuthPending, setDiscordAuthPending] = useState(false);
 
   async function handleDiscordSignIn() {
@@ -60,48 +117,6 @@ export default function AuthRoute() {
     }
   }
 
-  useEffect(() => {
-    if (session.data) {
-      navigate(next, { replace: true });
-    }
-  }, [navigate, next, session.data]);
-
-  useEffect(() => {
-    if (!token || session.data) {
-      return;
-    }
-
-    let active = true;
-
-    setMode('verifying');
-    setMessage('Verifying your magic link and establishing the GM session...');
-
-    void verifyMagicLink(token)
-      .then(async () => {
-        await session.refetch();
-
-        if (!active) {
-          return;
-        }
-
-        startTransition(() => {
-          navigate(next, { replace: true });
-        });
-      })
-      .catch((error: unknown) => {
-        if (!active) {
-          return;
-        }
-
-        setMode('error');
-        setMessage(error instanceof Error ? error.message : 'Magic link verification failed.');
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [navigate, next, session, session.data, token]);
-
   return (
     <main className="auth-shell">
       <section className="auth-panel">
@@ -118,7 +133,7 @@ export default function AuthRoute() {
             type="button"
             className="primary-button"
             onClick={() => void handleDiscordSignIn()}
-            disabled={discordAuthPending || mode === 'verifying'}
+            disabled={discordAuthPending}
           >
             {discordAuthPending ? 'Redirecting to Discord…' : 'Continue with Discord'}
           </button>
@@ -129,7 +144,7 @@ export default function AuthRoute() {
         )}
 
         <div className={`auth-status auth-status-${mode}`}>
-          <strong>{mode === 'verifying' ? 'Verifying link' : 'Auth status'}</strong>
+          <strong>Auth status</strong>
           <p>{message}</p>
         </div>
 

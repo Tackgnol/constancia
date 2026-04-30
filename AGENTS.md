@@ -105,6 +105,13 @@ When adding new files or functionalities, strictly adhere to the following bound
 - Prefer **Zod schemas with `zodResolver`** for frontend form validation whenever the form has validation rules or structured payloads.
 - For custom UI controls (for example Radix/ShadCN selects, checkboxes, or repeatable block editors), wire them through `react-hook-form` using `Controller`, `useFieldArray`, or form context helpers instead of maintaining parallel state.
 
+### Frontend Backend Communication
+
+- **Browser code must not call the backend directly.** Production networking only permits trusted hops: browser → frontend, frontend server → backend, bot → backend.
+- **Do not introduce `VITE_*` backend API URLs.** Vite env values are build-time browser constants and will bypass the frontend server boundary.
+- Put backend reads in React Router `loader`s and writes/sign-out/auth mutations in React Router `action`s, then forward cookies from the incoming request to `BACKEND_URL`.
+- Browser-only helpers must not import or call `@constancia/api-client`; that package is for the bot and frontend server-side route modules.
+
 ### Frontend Aesthetics ("War Room")
 
 - **Vibe**: Dense, utilitarian, information-first.

@@ -6,10 +6,6 @@ function isLocalHostname(hostname: string) {
 }
 
 function getBrowserApiBaseUrl() {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-
   if (typeof window === 'undefined') {
     return DEFAULT_LOCAL_API_URL;
   }
@@ -28,5 +24,11 @@ function getBrowserApiBaseUrl() {
 export function getApiBaseUrl() {
   return import.meta.env.SSR
     ? (process.env.BACKEND_URL ?? DEFAULT_INTERNAL_API_URL)
+    : getBrowserApiBaseUrl();
+}
+
+export function getPublicApiBaseUrl() {
+  return import.meta.env.SSR
+    ? (process.env.BACKEND_PUBLIC_URL ?? process.env.BACKEND_URL ?? DEFAULT_INTERNAL_API_URL)
     : getBrowserApiBaseUrl();
 }

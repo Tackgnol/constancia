@@ -8,7 +8,6 @@ import { getServiceHealth } from '@constancia/api-client/endpoints/meta/meta';
 import { listGameSystems } from '@constancia/api-client/endpoints/systems/systems';
 import { PlayerWhisperForm } from '@/components/war-room/player-whisper-form';
 import { SceneRailExtras } from '@/components/war-room/scene-rail-extras';
-import { authClient } from '@/lib/auth-client';
 import type { PlayerPresence } from '@/lib/war-room-data';
 import {
   activityFeed,
@@ -21,7 +20,7 @@ import {
 } from '@/lib/war-room-data';
 import { useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
-import { NavLink, Outlet, redirect, useLoaderData, useLocation, useNavigate } from 'react-router';
+import { Form, NavLink, Outlet, redirect, useLoaderData, useLocation } from 'react-router';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const fetchOpts: RequestInit = {
@@ -71,11 +70,9 @@ const tabs = [
 ];
 
 export default function WarRoomLayout() {
-  const navigate = useNavigate();
   const location = useLocation();
   const { health, campaigns, systems, channels, events, characters, quests, lore } =
     useLoaderData<typeof loader>();
-  const session = authClient.useSession();
 
   const [activeTag, setActiveTag] = useState<string | null>(null);
 
@@ -141,7 +138,7 @@ export default function WarRoomLayout() {
           <span className="campaign-name">{outletContext.campaign.name}</span>
           <span className="system-badge">{outletContext.system.name}</span>
           <span className="channel-name">{outletContext.campaign.channel}</span>
-          <span className="channel-name">GM: {session.data?.user.name ?? '—'}</span>
+          <span className="channel-name">GM: authenticated</span>
         </div>
 
         <div className="topbar-group topbar-status">
@@ -155,21 +152,11 @@ export default function WarRoomLayout() {
           <span className="status-meta">
             {outletContext.campaign.connectedPlayers} players connected
           </span>
-          <button
-            className="signout-button"
-            onClick={() => {
-              void authClient.signOut({
-                fetchOptions: {
-                  onSuccess: () => {
-                    navigate('/auth', { replace: true });
-                  },
-                },
-              });
-            }}
-            type="button"
-          >
-            Sign Out
-          </button>
+          <Form action="/logout" method="post">
+            <button className="signout-button" type="submit">
+              Sign Out
+            </button>
+          </Form>
         </div>
       </header>
 

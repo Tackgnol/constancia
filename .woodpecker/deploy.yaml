@@ -9,7 +9,6 @@
 #   backend_public_url
 #   discord_token
 #   discord_client_id
-#   vite_api_url
 #
 # Optional (only when enabling the corresponding feature):
 #   discord_client_secret      # Better Auth Discord OAuth in the backend/frontend
@@ -68,8 +67,6 @@ steps:
         from_secret: discord_token
       DISCORD_CLIENT_ID:
         from_secret: discord_client_id
-      VITE_API_URL:
-        from_secret: vite_api_url
       OPENAI_API_KEY:
         from_secret: openai_api_key
       R2_ENDPOINT:

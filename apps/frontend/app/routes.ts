@@ -2,6 +2,7 @@ import { index, layout, route, type RouteConfig } from '@react-router/dev/routes
 
 export default [
   route('auth', './routes/auth.tsx'),
+  route('logout', './routes/logout.tsx'),
   route('player/campaigns/:campaignId/sheet', './routes/player-sheet.tsx'),
   route('player/campaigns/:campaignId/journal', './routes/player-journal.tsx'),
   route('player/campaigns/:campaignId/npcs/:npcId', './routes/player-npc.tsx'),

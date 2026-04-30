@@ -31,7 +31,6 @@ steps:
       BACKEND_PUBLIC_URL: https://api.example.test
       DISCORD_TOKEN: ci-discord-token
       DISCORD_CLIENT_ID: ci-discord-client-id
-      VITE_API_URL: https://api.example.test
       VITE_DISCORD_AUTH_ENABLED: 'false'
     commands:
       - |
