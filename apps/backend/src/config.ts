@@ -98,7 +98,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     docsPrefix: env.DOCS_PREFIX ?? DEFAULT_DOCS_PREFIX,
     openApiPath: env.OPENAPI_PATH ?? DEFAULT_OPENAPI_PATH,
     frontendUrl,
-    authCookieDomain: resolveAuthCookieDomain(env.AUTH_COOKIE_DOMAIN, frontendUrl, betterAuthUrl),
+    authCookieDomain: resolveAuthCookieDomain(env.AUTH_COOKIE_DOMAIN),
     betterAuthSecret: env.BETTER_AUTH_SECRET ?? DEFAULT_BETTER_AUTH_SECRET,
     betterAuthUrl,
     betterAuthPath: env.BETTER_AUTH_PATH ?? DEFAULT_BETTER_AUTH_PATH,
@@ -152,77 +152,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
   };
 }
 
-function resolveAuthCookieDomain(
-  configuredDomain: string | undefined,
-  frontendUrl: string,
-  betterAuthUrl: string,
-): string | undefined {
+function resolveAuthCookieDomain(configuredDomain: string | undefined): string | undefined {
   if (configuredDomain && configuredDomain.trim().length > 0) {
     return configuredDomain.trim();
   }
 
-  const frontendHost = extractHostname(frontendUrl);
-  const betterAuthHost = extractHostname(betterAuthUrl);
-
-  if (!frontendHost || !betterAuthHost || frontendHost === betterAuthHost) {
-    return undefined;
-  }
-
-  if (isLocalOnlyHost(frontendHost) || isLocalOnlyHost(betterAuthHost)) {
-    return undefined;
-  }
-
-  const sharedSuffix = getSharedHostnameSuffix(frontendHost, betterAuthHost);
-  if (!sharedSuffix) {
-    return undefined;
-  }
-
-  return sharedSuffix;
-}
-
-function extractHostname(value: string): string | undefined {
-  try {
-    return new URL(value).hostname;
-  } catch {
-    return undefined;
-  }
-}
-
-function isLocalOnlyHost(hostname: string): boolean {
-  if (hostname === 'localhost') {
-    return true;
-  }
-
-  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)) {
-    return true;
-  }
-
-  return hostname.includes(':');
-}
-
-function getSharedHostnameSuffix(leftHostname: string, rightHostname: string): string | undefined {
-  const leftLabels = leftHostname.split('.');
-  const rightLabels = rightHostname.split('.');
-  const shared: string[] = [];
-
-  while (leftLabels.length > 0 && rightLabels.length > 0) {
-    const leftLabel = leftLabels[leftLabels.length - 1];
-    const rightLabel = rightLabels[rightLabels.length - 1];
-
-    if (leftLabel !== rightLabel) {
-      break;
-    }
-
-    shared.unshift(leftLabel);
-    leftLabels.pop();
-    rightLabels.pop();
-  }
-
-  if (shared.length < 2) {
-    return undefined;
-  }
-
-  return shared.join('.');
+  return undefined;
 }
 
 function parsePort(value: string | undefined): number {

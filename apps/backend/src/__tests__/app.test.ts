@@ -471,10 +471,20 @@ describe('backend app', () => {
     });
   });
 
-  it('derives a shared auth cookie domain for frontend and auth subdomains', () => {
+  it('uses host-only auth cookies unless a cookie domain is explicitly configured', () => {
     const config = loadConfig({
       FRONTEND_URL: 'https://gm.constancia.example.com',
       BETTER_AUTH_URL: 'https://api.constancia.example.com',
+    });
+
+    expect(config.authCookieDomain).toBeUndefined();
+  });
+
+  it('uses an explicit auth cookie domain when configured', () => {
+    const config = loadConfig({
+      FRONTEND_URL: 'https://gm.constancia.example.com',
+      BETTER_AUTH_URL: 'https://api.constancia.example.com',
+      AUTH_COOKIE_DOMAIN: 'constancia.example.com',
     });
 
     expect(config.authCookieDomain).toBe('constancia.example.com');
