@@ -36,6 +36,14 @@ function getSetCookieHeaders(headers: Headers) {
   return setCookie ? [setCookie] : [];
 }
 
+function makeFrontendCookie(setCookie: string) {
+  return setCookie
+    .split(';')
+    .map((part) => part.trim())
+    .filter((part) => !part.toLowerCase().startsWith('domain='))
+    .join('; ');
+}
+
 function getPublicRequestHeaders(request: Request) {
   const publicApiUrl = new URL(getPublicApiBaseUrl());
   const frontendUrl = new URL(request.url);
@@ -87,7 +95,7 @@ export async function loader({ request }: LoaderFunctionArgs): Promise<AuthLoade
     const headers = new Headers();
 
     for (const setCookie of getSetCookieHeaders(response.headers)) {
-      headers.append('Set-Cookie', setCookie);
+      headers.append('Set-Cookie', makeFrontendCookie(setCookie));
     }
 
     return redirect(next, { headers });

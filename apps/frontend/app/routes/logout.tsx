@@ -14,6 +14,14 @@ function getSetCookieHeaders(headers: Headers) {
   return setCookie ? [setCookie] : [];
 }
 
+function makeFrontendCookie(setCookie: string) {
+  return setCookie
+    .split(';')
+    .map((part) => part.trim())
+    .filter((part) => !part.toLowerCase().startsWith('domain='))
+    .join('; ');
+}
+
 export async function loader() {
   return redirect('/auth');
 }
@@ -28,7 +36,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const headers = new Headers();
 
   for (const setCookie of getSetCookieHeaders(response.headers)) {
-    headers.append('Set-Cookie', setCookie);
+    headers.append('Set-Cookie', makeFrontendCookie(setCookie));
   }
 
   return redirect('/auth', { headers });
