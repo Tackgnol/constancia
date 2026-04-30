@@ -77,6 +77,8 @@ steps:
         from_secret: r2_secret_access_key
       R2_BUCKET:
         from_secret: r2_bucket
+      UPLOAD_PUBLIC_BASE_URL:
+        from_secret: upload_public_base_url
     commands:
       - |
         set -e
