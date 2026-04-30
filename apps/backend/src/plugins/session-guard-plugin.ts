@@ -4,6 +4,10 @@ import { fromNodeHeaders } from 'better-auth/node';
 import { createSessionAccessContext } from '../auth/access-context.js';
 import { auth } from '../auth.js';
 
+function hasSessionCookie(cookieHeader: string | undefined) {
+  return Boolean(cookieHeader?.includes('better-auth.session_token'));
+}
+
 const sessionGuardPlugin: FastifyPluginAsync = async (app) => {
   app.addHook('onRequest', async (request, reply) => {
     // OPTIONS requests are used for CORS preflight and don't carry cookies.
@@ -15,6 +19,13 @@ const sessionGuardPlugin: FastifyPluginAsync = async (app) => {
     const session = await auth.api.getSession({ headers: fromNodeHeaders(request.headers) });
 
     if (session === null) {
+      request.log.warn(
+        {
+          hasCookieHeader: typeof request.headers.cookie === 'string',
+          hasSessionCookie: hasSessionCookie(request.headers.cookie),
+        },
+        'session guard rejected request',
+      );
       await reply.code(401).send({ status: 'error', data: { message: 'Unauthorized' } });
       return;
     }

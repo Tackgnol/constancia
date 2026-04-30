@@ -1,6 +1,8 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { getApiBaseUrl, getPublicApiBaseUrl } from '@/lib/api-url';
 
+const SESSION_COOKIE_NAME = 'better-auth.session_token';
+
 function getSetCookieHeaders(headers: Headers) {
   const maybeHeaders = headers as Headers & { getSetCookie?: () => string[] };
   const setCookieHeaders = maybeHeaders.getSetCookie?.();
@@ -21,6 +23,19 @@ function makeFrontendCookie(setCookie: string) {
     .join('; ');
 }
 
+function logAuthProxyResponse(response: Response) {
+  if (response.status !== 302) {
+    return;
+  }
+
+  const setCookieHeaders = getSetCookieHeaders(response.headers);
+  console.info('auth proxy redirect', {
+    location: response.headers.get('location'),
+    setCookieCount: setCookieHeaders.length,
+    hasSessionCookie: setCookieHeaders.some((header) => header.includes(SESSION_COOKIE_NAME)),
+  });
+}
+
 function makeBackendHeaders(request: Request) {
   const requestHeaders = new Headers(request.headers);
   const publicApiUrl = new URL(getPublicApiBaseUrl());
@@ -36,6 +51,8 @@ function makeBackendHeaders(request: Request) {
 }
 
 function makeFrontendResponse(response: Response) {
+  logAuthProxyResponse(response);
+
   const headers = new Headers(response.headers);
   headers.delete('set-cookie');
 
