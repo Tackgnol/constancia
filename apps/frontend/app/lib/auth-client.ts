@@ -1,12 +1,9 @@
 import { createAuthClient } from 'better-auth/react';
 import { magicLinkClient } from 'better-auth/client/plugins';
-
-const authBaseUrl = import.meta.env.SSR
-  ? (process.env.BACKEND_URL ?? 'http://backend:3000')
-  : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001');
+import { getApiBaseUrl } from './api-url';
 
 const authClientOptions = {
-  baseURL: authBaseUrl,
+  baseURL: getApiBaseUrl(),
   basePath: '/api/auth',
   fetchOptions: {
     credentials: 'include' as const,

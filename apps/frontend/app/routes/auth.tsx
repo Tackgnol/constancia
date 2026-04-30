@@ -1,9 +1,36 @@
 import { startTransition, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { authClient } from '@/lib/auth-client';
+import { getApiBaseUrl } from '@/lib/api-url';
+
+interface VerifyMagicLinkData {
+  verified?: boolean;
+  error?: string | null;
+}
+
+interface VerifyMagicLinkResponse {
+  status?: 'ok' | 'error';
+  data?: VerifyMagicLinkData;
+}
 
 function normalizeNext(next: string | null) {
   return next && next.startsWith('/') ? next : '/';
+}
+
+async function verifyMagicLink(token: string) {
+  const response = await fetch(
+    `${getApiBaseUrl()}/api/v1/auth/verify?token=${encodeURIComponent(token)}`,
+    {
+      method: 'GET',
+      credentials: 'include',
+    },
+  );
+
+  const payload = (await response.json()) as VerifyMagicLinkResponse;
+
+  if (!response.ok || payload.status !== 'ok' || payload.data?.verified !== true) {
+    throw new Error(payload.data?.error || `Magic link verification failed (${response.status}).`);
+  }
 }
 
 export default function AuthRoute() {
@@ -49,34 +76,26 @@ export default function AuthRoute() {
     setMode('verifying');
     setMessage('Verifying your magic link and establishing the GM session...');
 
-    void authClient.magicLink.verify(
-      {
-        query: {
-          token,
-        },
-      },
-      {
-        onSuccess: async () => {
-          await session.refetch();
+    void verifyMagicLink(token)
+      .then(async () => {
+        await session.refetch();
 
-          if (!active) {
-            return;
-          }
+        if (!active) {
+          return;
+        }
 
-          startTransition(() => {
-            navigate(next, { replace: true });
-          });
-        },
-        onError: (context) => {
-          if (!active) {
-            return;
-          }
+        startTransition(() => {
+          navigate(next, { replace: true });
+        });
+      })
+      .catch((error: unknown) => {
+        if (!active) {
+          return;
+        }
 
-          setMode('error');
-          setMessage(context.error.message || 'Magic link verification failed.');
-        },
-      },
-    );
+        setMode('error');
+        setMessage(error instanceof Error ? error.message : 'Magic link verification failed.');
+      });
 
     return () => {
       active = false;

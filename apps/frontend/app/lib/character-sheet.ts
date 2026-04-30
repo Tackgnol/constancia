@@ -1,4 +1,5 @@
 import type { StatSchema } from '@constancia/contracts';
+import { getApiBaseUrl } from './api-url';
 
 export interface CharacterSheetData {
   character: {
@@ -36,12 +37,6 @@ export interface CharacterSheetPatchBody {
   backstory: string;
   notes: string;
   stats: Record<string, string | number | boolean>;
-}
-
-function getApiBaseUrl() {
-  return import.meta.env.SSR
-    ? (process.env.BACKEND_URL ?? 'http://backend:3000')
-    : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001');
 }
 
 async function readSheetResponse(response: Response): Promise<CharacterSheetData> {
