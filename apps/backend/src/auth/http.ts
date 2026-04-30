@@ -42,9 +42,22 @@ function getSetCookieHeaders(headers: Headers) {
   return setCookie ? [setCookie] : [];
 }
 
+function shouldSkipForwardedHeader(key: string) {
+  const lowerKey = key.toLowerCase();
+
+  return (
+    lowerKey === 'connection' ||
+    lowerKey === 'content-encoding' ||
+    lowerKey === 'content-length' ||
+    lowerKey === 'keep-alive' ||
+    lowerKey === 'set-cookie' ||
+    lowerKey === 'transfer-encoding'
+  );
+}
+
 function applyResponseHeaders(response: Response, reply: FastifyReply) {
   response.headers.forEach((value, key) => {
-    if (key.toLowerCase() !== 'set-cookie') {
+    if (!shouldSkipForwardedHeader(key)) {
       reply.header(key, value);
     }
   });
@@ -83,6 +96,10 @@ export async function forwardToBetterAuth(
 export async function applyBetterAuthResponse(response: Response, reply: FastifyReply) {
   reply.status(response.status);
   applyResponseHeaders(response, reply);
+
+  if (response.status >= 300 && response.status < 400 && response.headers.has('location')) {
+    return reply.send();
+  }
 
   const body = await response.text();
   reply.send(body.length > 0 ? body : null);
