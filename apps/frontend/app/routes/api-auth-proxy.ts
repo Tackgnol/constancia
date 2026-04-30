@@ -60,6 +60,39 @@ function makeFrontendCookie(setCookie: string) {
     .join('; ');
 }
 
+function makeRedirectHeaders(response: Response) {
+  const headers = new Headers();
+  const location = response.headers.get('location');
+
+  if (location) {
+    headers.set('Location', location);
+  }
+
+  headers.set('Cache-Control', 'no-store');
+
+  for (const setCookie of getSetCookieHeaders(response.headers)) {
+    headers.append('Set-Cookie', makeFrontendCookie(setCookie));
+  }
+
+  return headers;
+}
+
+function makeBodyHeaders(response: Response) {
+  const headers = new Headers(response.headers);
+  headers.delete('connection');
+  headers.delete('content-encoding');
+  headers.delete('content-length');
+  headers.delete('keep-alive');
+  headers.delete('set-cookie');
+  headers.delete('transfer-encoding');
+
+  for (const setCookie of getSetCookieHeaders(response.headers)) {
+    headers.append('Set-Cookie', makeFrontendCookie(setCookie));
+  }
+
+  return headers;
+}
+
 function logAuthProxyResponse(response: Response) {
   if (response.status !== 302) {
     return;
@@ -90,25 +123,18 @@ function makeBackendHeaders(request: Request) {
 function makeFrontendResponse(response: Response) {
   logAuthProxyResponse(response);
 
-  const headers = new Headers(response.headers);
-  headers.delete('set-cookie');
-
-  for (const setCookie of getSetCookieHeaders(response.headers)) {
-    headers.append('Set-Cookie', makeFrontendCookie(setCookie));
-  }
-
-  const location = headers.get('location');
+  const location = response.headers.get('location');
   if (response.status >= 300 && response.status < 400 && location) {
     return redirect(location, {
       status: response.status,
-      headers,
+      headers: makeRedirectHeaders(response),
     });
   }
 
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
-    headers,
+    headers: makeBodyHeaders(response),
   });
 }
 
