@@ -2,6 +2,9 @@ import { fromNodeHeaders } from 'better-auth/node';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { auth } from '../auth.js';
 
+const AUTH_PROBE_COOKIE =
+  'constancia.auth_probe=1; Path=/; Max-Age=60; HttpOnly; Secure; SameSite=Lax';
+
 function readForwardedHeader(value: string | string[] | undefined): string | undefined {
   const rawValue = Array.isArray(value) ? value[0] : value;
   return rawValue?.split(',')[0]?.trim() || undefined;
@@ -109,6 +112,21 @@ function applyResponseHeaders(response: Response, reply: FastifyReply) {
   }
 }
 
+function addAuthProbeCookie(response: Response, reply: FastifyReply) {
+  if (
+    response.status < 300 ||
+    response.status >= 400 ||
+    !response.headers.has('location') ||
+    !getSetCookieHeaders(response.headers).some((setCookie) =>
+      setCookie.includes('better-auth.session_token'),
+    )
+  ) {
+    return;
+  }
+
+  reply.header('set-cookie', [...getSetCookieHeaders(response.headers), AUTH_PROBE_COOKIE]);
+}
+
 export async function forwardToBetterAuth(
   request: FastifyRequest,
   path: string,
@@ -137,6 +155,7 @@ export async function forwardToBetterAuth(
 export async function applyBetterAuthResponse(response: Response, reply: FastifyReply) {
   reply.status(response.status);
   applyResponseHeaders(response, reply);
+  addAuthProbeCookie(response, reply);
 
   if (response.status >= 300 && response.status < 400 && response.headers.has('location')) {
     return reply.send();
