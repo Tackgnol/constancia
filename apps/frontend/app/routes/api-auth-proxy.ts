@@ -1,4 +1,5 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
+import { redirect } from 'react-router';
 import { getApiBaseUrl, getPublicApiBaseUrl } from '@/lib/api-url';
 
 const SESSION_COOKIE_NAME = 'better-auth.session_token';
@@ -94,6 +95,14 @@ function makeFrontendResponse(response: Response) {
 
   for (const setCookie of getSetCookieHeaders(response.headers)) {
     headers.append('Set-Cookie', makeFrontendCookie(setCookie));
+  }
+
+  const location = headers.get('location');
+  if (response.status >= 300 && response.status < 400 && location) {
+    return redirect(location, {
+      status: response.status,
+      headers,
+    });
   }
 
   return new Response(response.body, {
