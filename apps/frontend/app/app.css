@@ -874,20 +874,17 @@ h1, h2, h3 {
   color: rgba(210, 130, 100, 0.95);
 }
 
-/* Candle-glow progress ring on armed card */
+/* Left-to-right progress bar on armed card */
 .trigger-progress {
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: calc(var(--progress, 0) * 100%);
+  border-radius: 0 0 inherit inherit;
+  background: var(--primary-glow);
+  opacity: 0.8;
   pointer-events: none;
-  background: conic-gradient(
-    from 270deg,
-    var(--primary-glow) calc(var(--progress, 0) * 100%),
-    transparent 0
-  );
-  opacity: 0.55;
-  mask-image: radial-gradient(circle at center, transparent 62%, black 64%);
-  -webkit-mask-image: radial-gradient(circle at center, transparent 62%, black 64%);
 }
 
 .trigger-flag {
