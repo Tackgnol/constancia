@@ -1,8 +1,7 @@
 import type { BlockContext, BlockDefinition, BlockMessage } from '@constancia/contracts';
 
 interface Outcome {
-  minScore: number;
-  maxScore: number;
+  threshold: number;
   text: string;
 }
 
@@ -24,11 +23,10 @@ export const outcomeMapBlock: BlockDefinition<OutcomeMapConfig> = {
           type: 'object',
           additionalProperties: false,
           properties: {
-            minScore: { type: 'number' },
-            maxScore: { type: 'number' },
+            threshold: { type: 'number' },
             text: { type: 'string' },
           },
-          required: ['minScore', 'maxScore', 'text'],
+          required: ['threshold', 'text'],
         },
       },
       shortCircuit: { type: 'boolean' },
@@ -43,12 +41,11 @@ export const outcomeMapBlock: BlockDefinition<OutcomeMapConfig> = {
       ctx.playerId !== 'system'
         ? ctx.playerId
         : undefined;
+    const matched = config.outcomes
+      .filter((outcome) => score > outcome.threshold)
+      .sort((left, right) => right.threshold - left.threshold);
     const selectedOutcomes =
-      config.shortCircuit === false
-        ? config.outcomes.filter((outcome: Outcome) => score >= outcome.minScore)
-        : config.outcomes.filter(
-            (outcome: Outcome) => score >= outcome.minScore && score <= outcome.maxScore,
-          );
+      config.shortCircuit === false ? matched.reverse() : matched.slice(0, 1);
 
     const messages: BlockMessage[] = selectedOutcomes.map((outcome: Outcome) => ({
       target: 'player',

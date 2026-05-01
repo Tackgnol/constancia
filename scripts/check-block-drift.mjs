@@ -108,6 +108,12 @@ function getObjectKeys(objectNode) {
     .filter((value) => typeof value === 'string');
 }
 
+function getStringArrayElements(arrayNode) {
+  return arrayNode.elements
+    .map((element) => getStringLiteralText(element))
+    .filter((value) => typeof value === 'string');
+}
+
 function resolveModuleFile(fromFile, moduleSpecifier) {
   if (!moduleSpecifier.startsWith('.')) {
     throw new Error(`Cannot resolve non-relative module specifier: ${moduleSpecifier}`);
@@ -225,6 +231,7 @@ function extractBlockDefinition(blockSourceFilePath, symbolName) {
       }
 
       let configKeys = [];
+      let requiredConfigKeys = [];
       if (ts.isObjectLiteralExpression(configSchemaProperty.initializer)) {
         const propertiesProperty = getObjectProperty(
           configSchemaProperty.initializer,
@@ -237,6 +244,15 @@ function extractBlockDefinition(blockSourceFilePath, symbolName) {
         ) {
           configKeys = getObjectKeys(propertiesProperty.initializer);
         }
+
+        const requiredProperty = getObjectProperty(configSchemaProperty.initializer, 'required');
+        if (
+          requiredProperty &&
+          ts.isPropertyAssignment(requiredProperty) &&
+          ts.isArrayLiteralExpression(requiredProperty.initializer)
+        ) {
+          requiredConfigKeys = getStringArrayElements(requiredProperty.initializer);
+        }
       }
 
       return {
@@ -245,6 +261,7 @@ function extractBlockDefinition(blockSourceFilePath, symbolName) {
         type,
         label,
         configKeys,
+        requiredConfigKeys,
       };
     }
   }
@@ -571,12 +588,15 @@ function main() {
     }
 
     const frontendConfigKeys = frontendFacts.defaultConfigKeysByType[backendBlock.type] ?? [];
-    const missingFrontendConfigKeys = difference(backendBlock.configKeys, frontendConfigKeys);
+    const missingFrontendConfigKeys = difference(
+      backendBlock.requiredConfigKeys,
+      frontendConfigKeys,
+    );
     const extraFrontendConfigKeys = difference(frontendConfigKeys, backendBlock.configKeys);
 
     if (missingFrontendConfigKeys.length > 0) {
       issues.push(
-        `\`defaultBlockConfigs\` for \`${backendBlock.type}\` is missing backend config keys: ${formatList(missingFrontendConfigKeys)}`,
+        `\`defaultBlockConfigs\` for \`${backendBlock.type}\` is missing required backend config keys: ${formatList(missingFrontendConfigKeys)}`,
       );
     }
 

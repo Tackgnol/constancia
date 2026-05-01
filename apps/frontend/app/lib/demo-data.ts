@@ -136,14 +136,14 @@ export const demoContext: WarRoomContext = {
       pipeline: [
         {
           blockType: 'vtm-pool-resolver',
-          config: { attribute: 'Dexterity', skill: 'Stealth', difficulty: 2 },
+          config: { attribute: 'Dexterity', skill: 'Stealth' },
         },
         {
           blockType: 'outcome-map',
           config: {
             outcomes: [
-              { minScore: 0, maxScore: 1, text: 'You stumble over a bucket and alert the guard!' },
-              { minScore: 2, maxScore: 10, text: 'You move silently through the shadows.' },
+              { threshold: 0, text: 'You stumble over a bucket and alert the guard!' },
+              { threshold: 1, text: 'You move silently through the shadows.' },
             ],
           },
         },
@@ -160,7 +160,7 @@ export const demoContext: WarRoomContext = {
       pipeline: [
         {
           blockType: 'vtm-pool-resolver',
-          config: { attribute: 'Manipulation', skill: 'Persuasion', difficulty: 4 },
+          config: { attribute: 'Manipulation', skill: 'Persuasion' },
         },
       ],
     },

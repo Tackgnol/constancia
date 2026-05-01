@@ -11,12 +11,12 @@ const ctx: BlockContext = {
 };
 
 describe('OutcomeMap block', () => {
-  it('returns the matching outcome for exact score', async () => {
+  it('returns the highest threshold outcome below the score by default', async () => {
     const config = {
       outcomes: [
-        { minScore: 0, maxScore: 0, text: 'Critical failure' },
-        { minScore: 1, maxScore: 2, text: 'Partial success' },
-        { minScore: 3, maxScore: 5, text: 'Full success' },
+        { threshold: 0, text: 'Critical failure' },
+        { threshold: 1, text: 'Partial success' },
+        { threshold: 2, text: 'Full success' },
       ],
     };
 
@@ -29,19 +29,19 @@ describe('OutcomeMap block', () => {
 
   it('returns no messages when no outcome matches', async () => {
     const config = {
-      outcomes: [{ minScore: 5, maxScore: 10, text: 'Very high' }],
+      outcomes: [{ threshold: 5, text: 'Very high' }],
     };
 
     const result = await outcomeMapBlock.execute(config, ctx);
     expect(result.messages).toHaveLength(0);
   });
 
-  it('short-circuits: returns only the closest matching outcome', async () => {
+  it('short-circuits: returns only the highest matching threshold', async () => {
     const config = {
       outcomes: [
-        { minScore: 0, maxScore: 1, text: 'Fail' },
-        { minScore: 2, maxScore: 3, text: 'Partial' },
-        { minScore: 4, maxScore: 6, text: 'Full' },
+        { threshold: 0, text: 'Fail' },
+        { threshold: 1, text: 'Partial' },
+        { threshold: 4, text: 'Full' },
       ],
       shortCircuit: true,
     };
@@ -55,9 +55,9 @@ describe('OutcomeMap block', () => {
   it('non-short-circuit: returns all outcomes up to score', async () => {
     const config = {
       outcomes: [
-        { minScore: 0, maxScore: 1, text: 'Fail' },
-        { minScore: 2, maxScore: 3, text: 'Partial' },
-        { minScore: 4, maxScore: 6, text: 'Full' },
+        { threshold: 0, text: 'Fail' },
+        { threshold: 2, text: 'Partial' },
+        { threshold: 4, text: 'Full' },
       ],
       shortCircuit: false,
     };
@@ -65,5 +65,6 @@ describe('OutcomeMap block', () => {
     const ctxWith5 = { ...ctx, playerScore: 5 };
     const result = await outcomeMapBlock.execute(config, ctxWith5);
     expect(result.messages).toHaveLength(3);
+    expect(result.messages?.map((message) => message.content)).toEqual(['Fail', 'Partial', 'Full']);
   });
 });

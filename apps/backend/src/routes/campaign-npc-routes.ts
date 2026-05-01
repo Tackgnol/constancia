@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { Prisma } from '@constancia/db';
 import {
   campaignParamsSchema,
+  deleteResponseSchema,
   listResponseSchema,
   npcBodySchema,
   npcFactBodySchema,
@@ -15,7 +16,7 @@ import {
   singleResponseSchema,
 } from '../schemas.js';
 import { getPrismaClient } from '../auth/prisma.js';
-import { isPrismaNotFoundError, ok, sendNotFound } from '../http-responses.js';
+import { isPrismaNotFoundError, ok, sendNotFound, deleted } from '../http-responses.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
 
 interface CampaignParams {
@@ -458,6 +459,34 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
       }
 
       return ok(mapNpcWithKnowledge(npc));
+    },
+  );
+
+  app.delete<{ Params: NpcParams }>(
+    '/:npcId',
+    {
+      schema: {
+        tags: ['npcs'],
+        summary: 'Delete an NPC',
+        operationId: 'deleteNpc',
+        params: npcParamsSchema,
+        response: {
+          200: deleteResponseSchema,
+        },
+      },
+    },
+    async (request) => {
+      const prisma = getPrismaClient();
+      const { npcId } = request.params;
+      try {
+        await prisma.npc.delete({ where: { id: npcId } });
+        return deleted(true);
+      } catch (err) {
+        if (isPrismaNotFoundError(err)) {
+          return deleted(false);
+        }
+        throw err;
+      }
     },
   );
 };

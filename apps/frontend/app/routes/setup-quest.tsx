@@ -1,12 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import type { ActionFunctionArgs } from 'react-router';
-import { Link, useLocation, useOutletContext, useParams, useRevalidator } from 'react-router';
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useOutletContext,
+  useParams,
+  useRevalidator,
+} from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   createQuest,
   createQuestEntry,
+  deleteQuest,
   deleteQuestEntry,
   updateQuest,
   updateQuestEntry,
@@ -214,21 +222,33 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ status: 'success' });
     }
 
+    if (intent === 'delete-quest') {
+      if (typeof questId !== 'string' || questId.length === 0) {
+        return Response.json({ status: 'error', message: 'Quest id is missing.' }, { status: 400 });
+      }
+
+      const response = await deleteQuest({ id: campaignId, questId }, apiOptions);
+      assertApiOk(response, 'The quest did not delete cleanly. Try again.');
+      return Response.json({ status: 'success' });
+    }
+
     return Response.json(
       { status: 'error', message: 'Unsupported quest action.' },
       { status: 400 },
     );
   } catch (caught) {
     const fallbackMessage =
-      intent === 'create-quest-entry'
-        ? 'The quest step did not file cleanly. Try again.'
-        : intent === 'update-quest-entry'
-          ? 'The quest step update did not clear. Try again.'
-          : intent === 'delete-quest-entry'
-            ? 'The quest step did not delete cleanly. Try again.'
-            : typeof questId === 'string' && questId.length > 0
-              ? 'The quest update did not clear. Try again.'
-              : 'The quest did not bind cleanly. Try again.';
+      intent === 'delete-quest'
+        ? 'The quest did not delete cleanly. Try again.'
+        : intent === 'create-quest-entry'
+          ? 'The quest step did not file cleanly. Try again.'
+          : intent === 'update-quest-entry'
+            ? 'The quest step update did not clear. Try again.'
+            : intent === 'delete-quest-entry'
+              ? 'The quest step did not delete cleanly. Try again.'
+              : typeof questId === 'string' && questId.length > 0
+                ? 'The quest update did not clear. Try again.'
+                : 'The quest did not bind cleanly. Try again.';
 
     return Response.json(
       { status: 'error', message: getApiErrorMessage(caught, fallbackMessage) },
@@ -241,6 +261,7 @@ export default function SetupQuestRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
   const { questId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const revalidator = useRevalidator();
   const setupBase = getSetupBase(warRoom);
   const questBoardPath = getQuestBoardPath(warRoom);
@@ -502,6 +523,41 @@ export default function SetupQuestRoute() {
     }
   };
 
+  const removeQuest = async () => {
+    if (!isEditing || !questId) {
+      return;
+    }
+
+    try {
+      setError(null);
+      if (isDemoMode) {
+        setLocalQuests((current) => current.filter((entry) => entry.id !== questId));
+        navigate(questBoardPath);
+      } else {
+        const response = await postRouteAction(location.pathname, {
+          intent: 'delete-quest',
+          campaignId: warRoom.campaign.id,
+          questId,
+        });
+
+        if (response.status !== 'success') {
+          throw new Error(response.message);
+        }
+
+        revalidator.revalidate();
+        navigate(questBoardPath);
+      }
+
+      const message = `Quest removed: ${quest?.name ?? questId}`;
+      setNotice(message);
+      warRoom.recordActivity?.(message);
+    } catch (caught) {
+      console.error('Delete quest error:', caught);
+      setNotice(null);
+      setError(getApiErrorMessage(caught, 'The quest did not delete cleanly. Try again.'));
+    }
+  };
+
   return (
     <ManagementWorkspace
       eyebrow="Setup / Quests"
@@ -621,6 +677,15 @@ export default function SetupQuestRoute() {
               <button className="form-submit" type="submit" disabled={isSubmitting}>
                 {isSubmitting ? 'Saving...' : isEditing ? 'Save Quest' : 'Add Quest'}
               </button>
+              {isEditing ? (
+                <button
+                  className="ghost-action ghost-action-inline"
+                  type="button"
+                  onClick={() => void removeQuest()}
+                >
+                  Delete Quest
+                </button>
+              ) : null}
             </div>
           </form>
 

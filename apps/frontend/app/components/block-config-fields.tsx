@@ -235,7 +235,7 @@ export function BlockConfigFields({ index, blockType }: Props) {
 
   if (blockType === 'vtm-pool-resolver') {
     return (
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <ConfigField
           label="Attribute"
           hint="VTM attribute list only for this resolver block."
@@ -260,14 +260,6 @@ export function BlockConfigFields({ index, blockType }: Props) {
             placeholder="Pick skill…"
             searchPlaceholder="Search skills…"
             emptyLabel="No matching VTM skill."
-          />
-        </ConfigField>
-        <ConfigField label="Difficulty (1–10)" error={blockErrors.difficulty?.message}>
-          <Input
-            type="number"
-            min={1}
-            max={10}
-            {...register(`pipeline.${index}.config.difficulty` as const)}
           />
         </ConfigField>
       </div>
@@ -420,16 +412,9 @@ function OutcomeMapConfig({ index }: { index: number }) {
           <div key={field.id} className="flex items-center gap-2">
             <Input
               type="number"
-              placeholder="Min"
-              className="w-20 shrink-0"
-              {...register(`pipeline.${index}.config.outcomes.${outcomeIndex}.minScore` as never)}
-            />
-            <span className="text-muted-foreground font-mono text-xs shrink-0">—</span>
-            <Input
-              type="number"
-              placeholder="Max"
-              className="w-20 shrink-0"
-              {...register(`pipeline.${index}.config.outcomes.${outcomeIndex}.maxScore` as never)}
+              placeholder="Threshold"
+              className="w-28 shrink-0"
+              {...register(`pipeline.${index}.config.outcomes.${outcomeIndex}.threshold` as never)}
             />
             <Input
               type="text"
@@ -450,7 +435,7 @@ function OutcomeMapConfig({ index }: { index: number }) {
       </div>
       <button
         className="text-left text-muted-foreground hover:text-foreground font-mono text-[0.68rem] tracking-[0.14em] uppercase transition-colors"
-        onClick={() => append({ minScore: 0, maxScore: 10, text: '' })}
+        onClick={() => append({ threshold: 0, text: '' })}
         type="button"
       >
         + Add Outcome

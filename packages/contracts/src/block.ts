@@ -29,8 +29,7 @@ export const sendMessagesPayloadSchema = z.object({
 });
 
 export const testThresholdSchema = z.object({
-  minScore: z.number(),
-  maxScore: z.number(),
+  threshold: z.number(),
   text: z.string(),
 });
 

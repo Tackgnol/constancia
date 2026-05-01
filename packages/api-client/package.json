@@ -37,7 +37,7 @@
   },
   "scripts": {
     "prebuild": "npm run generate",
-    "build": "tsc",
+    "build": "tsc --build --force",
     "generate": "cd ../.. && npm run generate:api",
     "pretypecheck": "npm run generate",
     "typecheck": "tsc --noEmit",

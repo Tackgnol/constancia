@@ -1,14 +1,62 @@
-import { Link, useOutletContext } from 'react-router';
+import type { LoaderFunctionArgs } from 'react-router';
+import { Link, useLoaderData, useOutletContext } from 'react-router';
+import { listNpcs } from '@constancia/api-client/endpoints/npcs/npcs';
 import { ManagementWorkspace } from '@/components/layout/management-workspace';
+import { buildServerApiOptions, resolveCurrentCampaignId } from '@/lib/api-proxy.server';
+import { demoNpcs } from '@/lib/demo-npcs';
 import type { WarRoomContext } from '@/lib/war-room-data';
+
+interface SetupNpcDirectoryItem {
+  id: string;
+  name: string;
+  primarySystemBlockLabel: string;
+  factCount: number;
+}
 
 function getSetupBase(warRoom: WarRoomContext) {
   return warRoom.demoMode ? '/demo/setup' : '/setup';
 }
 
+function mapNpcDirectoryItem(input: {
+  id: string;
+  name: string;
+  systemBlocks?: Array<{ label?: string }>;
+  facts?: unknown[];
+}): SetupNpcDirectoryItem {
+  return {
+    id: input.id,
+    name: input.name,
+    primarySystemBlockLabel: input.systemBlocks?.[0]?.label ?? 'No system block',
+    factCount: input.facts?.length ?? 0,
+  };
+}
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const pathname = new URL(request.url).pathname;
+  if (pathname.startsWith('/demo/')) {
+    return { npcs: demoNpcs.map(mapNpcDirectoryItem) };
+  }
+
+  const campaignId = await resolveCurrentCampaignId(request);
+  if (!campaignId) {
+    return { npcs: [] };
+  }
+
+  const response = await listNpcs({ id: campaignId }, buildServerApiOptions(request));
+  return {
+    npcs: response.status === 'ok' ? response.data.map(mapNpcDirectoryItem) : [],
+  };
+}
+
 export default function SetupRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
+  const { npcs } = useLoaderData<typeof loader>();
   const setupBase = getSetupBase(warRoom);
+  const hasDirectoryItems =
+    warRoom.events.length > 0 ||
+    warRoom.quests.length > 0 ||
+    warRoom.lore.length > 0 ||
+    npcs.length > 0;
 
   return (
     <ManagementWorkspace
@@ -60,7 +108,7 @@ export default function SetupRoute() {
         </Link>
       </section>
 
-      {warRoom.events.length > 0 || warRoom.quests.length > 0 || warRoom.lore.length > 0 ? (
+      {hasDirectoryItems ? (
         <section className="setup-panel">
           <div className="setup-panel-header">
             <div>
@@ -85,6 +133,21 @@ export default function SetupRoute() {
                     <span className="event-edit-kind">{event.type}</span>
                     <span className="event-edit-name">{event.name}</span>
                     <span className="event-edit-meta">{event.status}</span>
+                  </Link>
+                ))}
+              </section>
+            ) : null}
+
+            {npcs.length > 0 ? (
+              <section className="setup-directory-list">
+                <p className="detail-label">NPCs</p>
+                {npcs.map((npc) => (
+                  <Link className="event-edit-row" key={npc.id} to={`${setupBase}/npcs/${npc.id}`}>
+                    <span className="event-edit-kind">{npc.primarySystemBlockLabel}</span>
+                    <span className="event-edit-name">{npc.name}</span>
+                    <span className="event-edit-meta">
+                      {npc.factCount} fact{npc.factCount === 1 ? '' : 's'}
+                    </span>
                   </Link>
                 ))}
               </section>

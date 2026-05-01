@@ -117,8 +117,8 @@ describe('Contract types', () => {
         discordChannelId: 'channel-1',
         title: 'Dexterity + Stealth',
         thresholds: [
-          { minScore: 0, maxScore: 3, text: 'They fall over.' },
-          { minScore: 4, maxScore: 6, text: 'They pull it off.' },
+          { threshold: 0, text: 'They fall over.' },
+          { threshold: 3, text: 'They pull it off.' },
         ],
       }).success,
     ).toBe(true);

@@ -29,6 +29,8 @@ steps:
       FRONTEND_URL: https://gm.example.test
       BETTER_AUTH_URL: https://api.example.test
       BACKEND_PUBLIC_URL: https://api.example.test
+      FRONTEND_PORT: '3910'
+      BACKEND_PORT: '3911'
       DISCORD_TOKEN: ci-discord-token
       DISCORD_CLIENT_ID: ci-discord-client-id
       VITE_DISCORD_AUTH_ENABLED: 'false'

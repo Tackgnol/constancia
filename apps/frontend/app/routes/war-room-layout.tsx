@@ -1,4 +1,7 @@
-import { listCampaigns } from '@constancia/api-client/endpoints/campaigns/campaigns';
+import {
+  listCampaigns,
+  updateCampaign,
+} from '@constancia/api-client/endpoints/campaigns/campaigns';
 import { listChannels } from '@constancia/api-client/endpoints/channels/channels';
 import { listCharacters } from '@constancia/api-client/endpoints/characters/characters';
 import { listEvents } from '@constancia/api-client/endpoints/events/events';
@@ -8,6 +11,8 @@ import { getServiceHealth } from '@constancia/api-client/endpoints/meta/meta';
 import { listGameSystems } from '@constancia/api-client/endpoints/systems/systems';
 import { PlayerWhisperForm } from '@/components/war-room/player-whisper-form';
 import { SceneRailExtras } from '@/components/war-room/scene-rail-extras';
+import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
+import { buildServerApiOptions } from '@/lib/api-proxy.server';
 import type { PlayerPresence } from '@/lib/war-room-data';
 import {
   activityFeed,
@@ -18,9 +23,18 @@ import {
   players,
   type WarRoomContext,
 } from '@/lib/war-room-data';
-import { useState } from 'react';
-import type { LoaderFunctionArgs } from 'react-router';
-import { Form, NavLink, Outlet, redirect, useLoaderData, useLocation } from 'react-router';
+import { useEffect, useState } from 'react';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
+import {
+  Form,
+  NavLink,
+  Outlet,
+  redirect,
+  useFetcher,
+  useLoaderData,
+  useLocation,
+  useRevalidator,
+} from 'react-router';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const fetchOpts: RequestInit = {
@@ -60,6 +74,63 @@ export async function loader({ request }: LoaderFunctionArgs) {
   return { health, campaigns, systems, channels, events, characters, quests, lore };
 }
 
+type RenameCampaignActionData = { status: 'success' } | { status: 'error'; message: string };
+
+function isRenameCampaignActionData(value: unknown): value is RenameCampaignActionData {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'status' in value &&
+    ((value as { status?: unknown }).status === 'success' ||
+      ((value as { status?: unknown }).status === 'error' &&
+        typeof (value as { message?: unknown }).message === 'string'))
+  );
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const intent = formData.get('intent');
+  const campaignId = formData.get('campaignId');
+  const name = formData.get('name');
+
+  if (intent !== 'rename-campaign') {
+    return Response.json(
+      { status: 'error', message: 'Unsupported campaign action.' },
+      { status: 400 },
+    );
+  }
+
+  if (
+    typeof campaignId !== 'string' ||
+    campaignId.length === 0 ||
+    typeof name !== 'string' ||
+    name.trim().length === 0
+  ) {
+    return Response.json(
+      { status: 'error', message: 'Campaign name is incomplete.' },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const response = await updateCampaign(
+      { id: campaignId },
+      { name: name.trim() },
+      buildServerApiOptions(request),
+    );
+    assertApiOk(response, 'The campaign name did not update cleanly. Try again.');
+    return Response.json({ status: 'success' });
+  } catch (caught) {
+    return Response.json(
+      {
+        status: 'error',
+        message: getApiErrorMessage(caught, 'The campaign name did not update cleanly. Try again.'),
+      },
+      { status: 500 },
+    );
+  }
+}
+
 const tabs = [
   { to: '/setup', label: 'Setup' },
   { to: '/', label: 'Play', end: true },
@@ -73,12 +144,15 @@ export default function WarRoomLayout() {
   const location = useLocation();
   const { health, campaigns, systems, channels, events, characters, quests, lore } =
     useLoaderData<typeof loader>();
+  const renameFetcher = useFetcher<RenameCampaignActionData>();
+  const revalidator = useRevalidator();
 
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
 
   const liveCampaign = normalizeCampaigns(campaigns).at(0) ?? fallbackCampaign;
   const liveSystem = normalizeSystems(systems).at(0) ?? fallbackSystem;
-  const onlinePlayers = players.filter((player) => player.status === 'online').length;
+  const [editNameValue, setEditNameValue] = useState(liveCampaign.name);
 
   const liveChannels = (channels.status === 'ok' ? channels.data : []).map((ch) => ({
     id: ch.id,
@@ -111,10 +185,46 @@ export default function WarRoomLayout() {
     };
   });
 
+  const renameActionData = isRenameCampaignActionData(renameFetcher.data)
+    ? renameFetcher.data
+    : undefined;
+
+  useEffect(() => {
+    if (!isEditingName) {
+      setEditNameValue(liveCampaign.name);
+    }
+  }, [isEditingName, liveCampaign.name]);
+
+  useEffect(() => {
+    if (renameActionData?.status === 'success') {
+      setIsEditingName(false);
+      revalidator.revalidate();
+    }
+  }, [renameActionData, revalidator]);
+
+  const submitCampaignName = () => {
+    const trimmed = editNameValue.trim();
+    if (trimmed.length === 0 || trimmed === liveCampaign.name || renameFetcher.state !== 'idle') {
+      if (trimmed === liveCampaign.name) {
+        setIsEditingName(false);
+      }
+      return;
+    }
+
+    renameFetcher.submit(
+      {
+        intent: 'rename-campaign',
+        campaignId: liveCampaign.id,
+        name: trimmed,
+      },
+      { method: 'post' },
+    );
+  };
+
   const outletContext: WarRoomContext = {
     campaign: {
       ...liveCampaign,
-      connectedPlayers: liveCampaign.connectedPlayers || onlinePlayers,
+      connectedPlayers: livePlayers.length,
     },
     channels: liveChannels,
     system: liveSystem,
@@ -135,7 +245,43 @@ export default function WarRoomLayout() {
 
       <header className="topbar">
         <div className="topbar-group">
-          <span className="campaign-name">{outletContext.campaign.name}</span>
+          {isEditingName ? (
+            <form
+              className="campaign-name-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                submitCampaignName();
+              }}
+            >
+              <input
+                aria-label="Campaign name"
+                className="campaign-name-input"
+                onChange={(event) => setEditNameValue(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    setEditNameValue(liveCampaign.name);
+                    setIsEditingName(false);
+                  }
+                }}
+                value={editNameValue}
+              />
+              <button
+                className="campaign-name-action"
+                disabled={renameFetcher.state !== 'idle'}
+                type="submit"
+              >
+                Save
+              </button>
+            </form>
+          ) : (
+            <button
+              className="campaign-name campaign-name-button"
+              onClick={() => setIsEditingName(true)}
+              type="button"
+            >
+              {outletContext.campaign.name}
+            </button>
+          )}
           <span className="system-badge">{outletContext.system.name}</span>
           <span className="channel-name">{outletContext.campaign.channel}</span>
           <span className="channel-name">GM: authenticated</span>

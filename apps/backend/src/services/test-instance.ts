@@ -39,15 +39,14 @@ function extractThresholds(pipeline: BlockInstance[]): TestThreshold[] {
       return [];
     }
 
-    const minScore = readNumber(outcome.minScore);
-    const maxScore = readNumber(outcome.maxScore);
+    const threshold = readNumber(outcome.threshold);
     const text = readString(outcome.text);
 
-    if (minScore === undefined || maxScore === undefined || text === undefined) {
+    if (threshold === undefined || text === undefined) {
       return [];
     }
 
-    return [{ minScore, maxScore, text }];
+    return [{ threshold, text }];
   });
 }
 

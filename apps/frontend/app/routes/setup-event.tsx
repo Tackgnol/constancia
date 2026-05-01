@@ -1,9 +1,20 @@
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { ActionFunctionArgs } from 'react-router';
-import { Link, useLocation, useOutletContext, useParams, useRevalidator } from 'react-router';
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useOutletContext,
+  useParams,
+  useRevalidator,
+} from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createEvent, updateEvent } from '@constancia/api-client/endpoints/events/events';
+import {
+  createEvent,
+  deleteEvent,
+  updateEvent,
+} from '@constancia/api-client/endpoints/events/events';
 import type {
   CreateEventBody,
   ListEvents200DataItem,
@@ -42,6 +53,27 @@ function isPipelineBlockType(value: string): value is PipelineBlock['blockType']
   return BLOCK_TYPES.includes(value as PipelineBlock['blockType']);
 }
 
+function normalizeOutcomeConfig(config: Record<string, unknown>): Record<string, unknown> {
+  const outcomes = config.outcomes;
+  if (!Array.isArray(outcomes)) {
+    return config;
+  }
+
+  return {
+    ...config,
+    outcomes: outcomes.map((entry) => {
+      if (!isRecord(entry) || 'threshold' in entry || !('minScore' in entry)) {
+        return entry;
+      }
+
+      return {
+        threshold: entry.minScore,
+        text: entry.text,
+      };
+    }),
+  };
+}
+
 function normalizeEventPipeline(event: ListEvents200DataItem): PipelineBlock[] {
   const type = isEventType(event.type) ? event.type : 'narration';
   if (!Array.isArray(event.pipeline)) {
@@ -60,7 +92,12 @@ function normalizeEventPipeline(event: ListEvents200DataItem): PipelineBlock[] {
     return [
       {
         blockType: block.blockType,
-        config: isRecord(block.config) ? block.config : {},
+        config:
+          isRecord(block.config) && block.blockType === 'outcome-map'
+            ? normalizeOutcomeConfig(block.config)
+            : isRecord(block.config)
+              ? block.config
+              : {},
       },
     ];
   });
@@ -109,30 +146,49 @@ function parseEventPayload(
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
+  const intent = formData.get('intent');
   const campaignId = formData.get('campaignId');
   const eventId = formData.get('eventId');
   const payload = parseEventPayload(formData.get('payload'));
+  const apiOptions = buildServerApiOptions(request);
 
-  if (typeof campaignId !== 'string' || campaignId.length === 0 || !payload) {
+  if (typeof campaignId !== 'string' || campaignId.length === 0) {
     return Response.json(
-      { status: 'error', message: 'Event payload is incomplete.' },
+      { status: 'error', message: 'Campaign context is missing.' },
       { status: 400 },
     );
   }
 
   try {
+    if (intent === 'delete-event') {
+      if (typeof eventId !== 'string' || eventId.length === 0) {
+        return Response.json({ status: 'error', message: 'Event id is missing.' }, { status: 400 });
+      }
+
+      const response = await deleteEvent({ id: campaignId, eventId }, apiOptions);
+      assertApiOk(response, 'The event dossier did not delete cleanly. Try again.');
+      return Response.json({ status: 'success' });
+    }
+
+    if (!payload) {
+      return Response.json(
+        { status: 'error', message: 'Event payload is incomplete.' },
+        { status: 400 },
+      );
+    }
+
     if (typeof eventId === 'string' && eventId.length > 0) {
       const response = await updateEvent(
         { id: campaignId, eventId },
         payload as UpdateEventBody,
-        buildServerApiOptions(request),
+        apiOptions,
       );
       assertApiOk(response, 'The event dossier did not update cleanly. Try again in a moment.');
     } else {
       const response = await createEvent(
         { id: campaignId },
         payload as CreateEventBody,
-        buildServerApiOptions(request),
+        apiOptions,
       );
       assertApiOk(response, 'The event dossier did not stage cleanly. Try again in a moment.');
     }
@@ -158,6 +214,7 @@ export default function SetupEventRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
   const { eventId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const revalidator = useRevalidator();
   const setupBase = getSetupBase(warRoom);
   const isDemoCampaign = warRoom.campaign.id.startsWith('demo-');
@@ -204,6 +261,43 @@ export default function SetupEventRoute() {
         ? 'The event dossier did not update cleanly. Try again in a moment.'
         : 'The event dossier did not stage cleanly. Try again in a moment.';
       const message = getApiErrorMessage(err, fallbackMessage);
+      eventMethods.setError('root.serverError', { type: 'manual', message });
+      setEventError(message);
+    }
+  };
+
+  const removeEvent = async () => {
+    if (!isEditing || !eventId) {
+      return;
+    }
+
+    try {
+      setEventError(null);
+      eventMethods.clearErrors('root');
+
+      if (!isDemoCampaign) {
+        const response = await postRouteAction(location.pathname, {
+          intent: 'delete-event',
+          campaignId: warRoom.campaign.id,
+          eventId,
+        });
+
+        if (response.status !== 'success') {
+          throw new Error(response.message);
+        }
+
+        revalidator.revalidate();
+      }
+
+      const message = `Event removed: ${editingEvent?.name ?? eventId}`;
+      warRoom.recordActivity?.(message);
+      navigate(setupBase);
+    } catch (err) {
+      console.error('Delete event error:', err);
+      const message = getApiErrorMessage(
+        err,
+        'The event dossier did not delete cleanly. Try again.',
+      );
       eventMethods.setError('root.serverError', { type: 'manual', message });
       setEventError(message);
     }
@@ -263,6 +357,17 @@ export default function SetupEventRoute() {
             onSubmit={onSubmitEvent}
             submitLabel={isEditing ? 'Update Event' : 'Save Event'}
           />
+          {isEditing ? (
+            <div className="form-actions">
+              <button
+                className="ghost-action ghost-action-inline"
+                type="button"
+                onClick={() => void removeEvent()}
+              >
+                Delete Event
+              </button>
+            </div>
+          ) : null}
         </section>
       ) : null}
     </ManagementWorkspace>

@@ -28,8 +28,8 @@ describe('test-instance helpers', () => {
             blockType: 'outcome-map',
             config: {
               outcomes: [
-                { minScore: 0, maxScore: 3, text: 'They fall over.' },
-                { minScore: 4, maxScore: 6, text: 'They pull it off.' },
+                { threshold: 0, text: 'They fall over.' },
+                { threshold: 3, text: 'They pull it off.' },
               ],
             },
           },
@@ -47,8 +47,8 @@ describe('test-instance helpers', () => {
       description: 'Slip through the courtyard before the ghoul turns.',
       imageUrl: 'https://example.com/hounds.jpg',
       thresholds: [
-        { minScore: 0, maxScore: 3, text: 'They fall over.' },
-        { minScore: 4, maxScore: 6, text: 'They pull it off.' },
+        { threshold: 0, text: 'They fall over.' },
+        { threshold: 3, text: 'They pull it off.' },
       ],
     });
   });

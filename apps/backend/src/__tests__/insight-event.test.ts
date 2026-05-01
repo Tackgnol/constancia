@@ -40,13 +40,13 @@ describe('insight-event helpers', () => {
         { blockType: 'vtm-insight-resolver', config: { attribute: 'wits', skill: 'awareness' } },
         {
           blockType: 'outcome-map',
-          config: { outcomes: [{ minScore: 0, maxScore: 10, text: 'You catch it.' }] },
+          config: { outcomes: [{ threshold: 0, text: 'You catch it.' }] },
         },
       ]),
     ).toEqual([
       {
         blockType: 'outcome-map',
-        config: { outcomes: [{ minScore: 0, maxScore: 10, text: 'You catch it.' }] },
+        config: { outcomes: [{ threshold: 0, text: 'You catch it.' }] },
       },
     ]);
   });

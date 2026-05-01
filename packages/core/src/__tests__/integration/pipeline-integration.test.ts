@@ -28,11 +28,10 @@ describe('Pipeline Integration', () => {
         blockType: 'outcome-map',
         config: {
           outcomes: [
-            { minScore: 0, maxScore: 0, text: 'You notice nothing unusual.' },
-            { minScore: 1, maxScore: 2, text: 'Something moves in the shadows...' },
+            { threshold: 0, text: 'You notice nothing unusual.' },
+            { threshold: 1, text: 'Something moves in the shadows...' },
             {
-              minScore: 3,
-              maxScore: 10,
+              threshold: 2,
               text: 'You spot the Nosferatu hiding behind the pillar.',
             },
           ],
@@ -153,7 +152,7 @@ describe('Pipeline Integration', () => {
       {
         blockType: 'outcome-map',
         config: {
-          outcomes: [{ minScore: 0, maxScore: 1 }],
+          outcomes: [{ threshold: 0 }],
         },
       },
       {
