@@ -57,6 +57,28 @@ describe('character sheet service', () => {
     expect(sheet?.stats).toMatchObject({ wits: 3, awareness: 2 });
   });
 
+  it('loads VTM stats for legacy campaign system ids', async () => {
+    prismaMock.character.findUnique.mockResolvedValue({
+      ...baseRecord,
+      campaign: { ...baseRecord.campaign, gameSystemId: 'VtM5' },
+    });
+    prismaMock.campaignAdmin.findUnique.mockResolvedValue({ id: 'admin-1' });
+
+    const sheet = await getCharacterSheetForActor(
+      prismaMock as never,
+      'campaign-1',
+      'char-1',
+      'discord-gm-1',
+    );
+
+    expect(sheet?.system.id).toBe('vtm-v5');
+    expect(sheet?.system.statSchema.groups.map((group) => group.key)).toEqual([
+      'attributes',
+      'skills',
+    ]);
+    expect(sheet?.stats).toMatchObject({ wits: 3, awareness: 2 });
+  });
+
   it('blocks a player from reading someone else sheet', async () => {
     prismaMock.character.findUnique.mockResolvedValue(baseRecord);
     prismaMock.campaignAdmin.findUnique.mockResolvedValue(null);
