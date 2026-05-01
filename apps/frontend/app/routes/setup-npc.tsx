@@ -10,7 +10,12 @@ import {
   useRevalidator,
 } from 'react-router';
 import { listNpcs } from '@constancia/api-client/endpoints/npcs/npcs';
-import { createNpc, createNpcFact, updateNpc } from '@constancia/api-client/endpoints/npcs/npcs';
+import {
+  createNpc,
+  createNpcFact,
+  deleteNpc,
+  updateNpc,
+} from '@constancia/api-client/endpoints/npcs/npcs';
 import type {
   CreateNpcBody,
   CreateNpcFactBody,
@@ -30,6 +35,7 @@ import { SetupNpcForm } from '@/components/npcs/setup-npc-form';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import { demoNpcs } from '@/lib/demo-npcs';
+import { postRouteAction } from '@/lib/route-action-client';
 import type { WarRoomContext } from '@/lib/war-room-data';
 
 type ApiKnownPlayer = {
@@ -188,14 +194,26 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ status: 'success', data: { ...response.data, knownTo: [] } });
     }
 
+    if (intent === 'delete-npc') {
+      if (typeof npcId !== 'string' || npcId.length === 0) {
+        return Response.json({ status: 'error', message: 'NPC id is missing.' }, { status: 400 });
+      }
+
+      const response = await deleteNpc({ id: campaignId, npcId }, apiOptions);
+      assertApiOk(response, 'The dossier did not delete cleanly. Try again.');
+      return Response.json({ status: 'success' });
+    }
+
     return Response.json({ status: 'error', message: 'Unsupported NPC action.' }, { status: 400 });
   } catch (caught) {
     const fallbackMessage =
-      intent === 'update-npc'
-        ? 'The dossier update did not hold. Check the fields and try again.'
-        : intent === 'create-npc-fact'
-          ? 'The new fact would not file cleanly. Try again.'
-          : 'The dossier did not bind cleanly. Check the fields and try again.';
+      intent === 'delete-npc'
+        ? 'The dossier did not delete cleanly. Try again.'
+        : intent === 'update-npc'
+          ? 'The dossier update did not hold. Check the fields and try again.'
+          : intent === 'create-npc-fact'
+            ? 'The new fact would not file cleanly. Try again.'
+            : 'The dossier did not bind cleanly. Check the fields and try again.';
 
     return Response.json(
       { status: 'error', message: getApiErrorMessage(caught, fallbackMessage) },
@@ -247,6 +265,38 @@ export default function SetupNpcRoute() {
       setError(null);
     }
   }, [isDemoCampaign, isEditing, loadedNpc, npcId]);
+
+  const removeNpc = async () => {
+    if (!isEditing || !npcId) {
+      return;
+    }
+
+    try {
+      setError(null);
+      if (isDemoCampaign) {
+        navigate(npcBoardPath);
+      } else {
+        const response = await postRouteAction(location.pathname, {
+          intent: 'delete-npc',
+          campaignId: warRoom.campaign.id,
+          npcId,
+        });
+
+        if (response.status !== 'success') {
+          throw new Error(response.message);
+        }
+
+        revalidator.revalidate();
+        navigate(npcBoardPath);
+      }
+
+      const message = `NPC removed: ${npc?.name ?? npcId}`;
+      warRoom.recordActivity?.(message);
+    } catch (caught) {
+      console.error('Delete NPC error:', caught);
+      setError(getApiErrorMessage(caught, 'The dossier did not delete cleanly. Try again.'));
+    }
+  };
 
   return (
     <ManagementWorkspace
@@ -334,6 +384,15 @@ export default function SetupNpcRoute() {
               }
             }}
           />
+          <div className="form-actions">
+            <button
+              className="ghost-action ghost-action-inline"
+              type="button"
+              onClick={() => void removeNpc()}
+            >
+              Delete NPC
+            </button>
+          </div>
 
           <section className="setup-subsection">
             <div className="setup-subsection-header">

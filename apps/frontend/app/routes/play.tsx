@@ -177,8 +177,7 @@ function extractTargetAndPreview(
     if (block.blockType === 'vtm-pool-resolver' && !preview) {
       const attr = typeof cfg.attribute === 'string' ? cfg.attribute : '?';
       const skill = typeof cfg.skill === 'string' ? cfg.skill : '?';
-      const diff = cfg.difficulty ?? '?';
-      preview = `${attr} + ${skill} · difficulty ${diff}`;
+      preview = `${attr} + ${skill}`;
       target = null;
     }
   }

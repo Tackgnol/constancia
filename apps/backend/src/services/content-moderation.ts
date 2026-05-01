@@ -220,8 +220,12 @@ function buildModerationDetails(
   }
 
   const categories = Object.entries(result.categories)
-    .filter(([, flagged]) => flagged === true)
+    .filter(([category, flagged]) => flagged === true && category === 'sexual/minors')
     .map(([category]) => category);
+
+  if (categories.length === 0) {
+    return [];
+  }
 
   const inputTypes = new Set<string>();
   if (result.category_applied_input_types) {

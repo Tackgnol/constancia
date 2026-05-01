@@ -2565,17 +2565,14 @@
                                             "type": "object",
                                             "additionalProperties": false,
                                             "properties": {
-                                              "minScore": {
-                                                "type": "number"
-                                              },
-                                              "maxScore": {
+                                              "threshold": {
                                                 "type": "number"
                                               },
                                               "text": {
                                                 "type": "string"
                                               }
                                             },
-                                            "required": ["minScore", "maxScore", "text"]
+                                            "required": ["threshold", "text"]
                                           }
                                         },
                                         "shortCircuit": {
@@ -2773,7 +2770,7 @@
                                           "description": "Number of successes needed to succeed"
                                         }
                                       },
-                                      "required": ["attribute", "skill", "difficulty"]
+                                      "required": ["attribute", "skill"]
                                     }
                                   },
                                   "required": ["blockType", "config"]
@@ -2874,17 +2871,14 @@
                                     "type": "object",
                                     "additionalProperties": false,
                                     "properties": {
-                                      "minScore": {
-                                        "type": "number"
-                                      },
-                                      "maxScore": {
+                                      "threshold": {
                                         "type": "number"
                                       },
                                       "text": {
                                         "type": "string"
                                       }
                                     },
-                                    "required": ["minScore", "maxScore", "text"]
+                                    "required": ["threshold", "text"]
                                   }
                                 },
                                 "shortCircuit": {
@@ -3082,7 +3076,7 @@
                                   "description": "Number of successes needed to succeed"
                                 }
                               },
-                              "required": ["attribute", "skill", "difficulty"]
+                              "required": ["attribute", "skill"]
                             }
                           },
                           "required": ["blockType", "config"]
@@ -3191,17 +3185,14 @@
                                           "type": "object",
                                           "additionalProperties": false,
                                           "properties": {
-                                            "minScore": {
-                                              "type": "number"
-                                            },
-                                            "maxScore": {
+                                            "threshold": {
                                               "type": "number"
                                             },
                                             "text": {
                                               "type": "string"
                                             }
                                           },
-                                          "required": ["minScore", "maxScore", "text"]
+                                          "required": ["threshold", "text"]
                                         }
                                       },
                                       "shortCircuit": {
@@ -3399,7 +3390,7 @@
                                         "description": "Number of successes needed to succeed"
                                       }
                                     },
-                                    "required": ["attribute", "skill", "difficulty"]
+                                    "required": ["attribute", "skill"]
                                   }
                                 },
                                 "required": ["blockType", "config"]
@@ -3536,17 +3527,14 @@
                                           "type": "object",
                                           "additionalProperties": false,
                                           "properties": {
-                                            "minScore": {
-                                              "type": "number"
-                                            },
-                                            "maxScore": {
+                                            "threshold": {
                                               "type": "number"
                                             },
                                             "text": {
                                               "type": "string"
                                             }
                                           },
-                                          "required": ["minScore", "maxScore", "text"]
+                                          "required": ["threshold", "text"]
                                         }
                                       },
                                       "shortCircuit": {
@@ -3744,7 +3732,7 @@
                                         "description": "Number of successes needed to succeed"
                                       }
                                     },
-                                    "required": ["attribute", "skill", "difficulty"]
+                                    "required": ["attribute", "skill"]
                                   }
                                 },
                                 "required": ["blockType", "config"]
@@ -3848,17 +3836,14 @@
                                     "type": "object",
                                     "additionalProperties": false,
                                     "properties": {
-                                      "minScore": {
-                                        "type": "number"
-                                      },
-                                      "maxScore": {
+                                      "threshold": {
                                         "type": "number"
                                       },
                                       "text": {
                                         "type": "string"
                                       }
                                     },
-                                    "required": ["minScore", "maxScore", "text"]
+                                    "required": ["threshold", "text"]
                                   }
                                 },
                                 "shortCircuit": {
@@ -4056,7 +4041,7 @@
                                   "description": "Number of successes needed to succeed"
                                 }
                               },
-                              "required": ["attribute", "skill", "difficulty"]
+                              "required": ["attribute", "skill"]
                             }
                           },
                           "required": ["blockType", "config"]
@@ -4172,17 +4157,14 @@
                                           "type": "object",
                                           "additionalProperties": false,
                                           "properties": {
-                                            "minScore": {
-                                              "type": "number"
-                                            },
-                                            "maxScore": {
+                                            "threshold": {
                                               "type": "number"
                                             },
                                             "text": {
                                               "type": "string"
                                             }
                                           },
-                                          "required": ["minScore", "maxScore", "text"]
+                                          "required": ["threshold", "text"]
                                         }
                                       },
                                       "shortCircuit": {
@@ -4380,7 +4362,7 @@
                                         "description": "Number of successes needed to succeed"
                                       }
                                     },
-                                    "required": ["attribute", "skill", "difficulty"]
+                                    "required": ["attribute", "skill"]
                                   }
                                 },
                                 "required": ["blockType", "config"]
@@ -7281,17 +7263,14 @@
                                             "type": "object",
                                             "additionalProperties": false,
                                             "properties": {
-                                              "minScore": {
-                                                "type": "number"
-                                              },
-                                              "maxScore": {
+                                              "threshold": {
                                                 "type": "number"
                                               },
                                               "text": {
                                                 "type": "string"
                                               }
                                             },
-                                            "required": ["minScore", "maxScore", "text"]
+                                            "required": ["threshold", "text"]
                                           }
                                         },
                                         "shortCircuit": {
@@ -7489,7 +7468,7 @@
                                           "description": "Number of successes needed to succeed"
                                         }
                                       },
-                                      "required": ["attribute", "skill", "difficulty"]
+                                      "required": ["attribute", "skill"]
                                     }
                                   },
                                   "required": ["blockType", "config"]

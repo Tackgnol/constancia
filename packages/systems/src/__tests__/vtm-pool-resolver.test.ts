@@ -29,7 +29,7 @@ describe('vtmPoolResolverBlock', () => {
   });
 
   it('returns success for a normal roll with enough successes', async () => {
-    // pool=4, hunger=0, difficulty=2
+    // pool=4, hunger=0, default difficulty=1
     // dice: [7, 8, 3, 4] → 2 successes (7 and 8), no 10s, no hungerOnes
     randomSpy
       .mockReturnValueOnce(mockForDie(7))
@@ -42,7 +42,7 @@ describe('vtmPoolResolverBlock', () => {
     });
 
     const result = await vtmPoolResolverBlock.execute(
-      { attribute: 'strength', skill: 'brawl', difficulty: 2 },
+      { attribute: 'strength', skill: 'brawl' },
       ctx,
     );
 
@@ -64,11 +64,11 @@ describe('vtmPoolResolverBlock', () => {
     expect(output.critPairs).toBe(0);
     expect(output.hungerOnes).toBe(0);
     expect(output.outcome).toBe('success');
-    expect(output.difficulty).toBe(2);
+    expect(output.difficulty).toBe(1);
   });
 
   it('returns critical_success when two 10s are rolled with no hunger', async () => {
-    // pool=4, hunger=0, difficulty=1
+    // pool=4, hunger=0, default difficulty=1
     // dice: [10, 10, 3, 4] → base=2 successes, critPairs=1, bonus=+2, total=4, no hunger10s
     randomSpy
       .mockReturnValueOnce(mockForDie(10))
@@ -81,7 +81,7 @@ describe('vtmPoolResolverBlock', () => {
     });
 
     const result = await vtmPoolResolverBlock.execute(
-      { attribute: 'dexterity', skill: 'firearms', difficulty: 1 },
+      { attribute: 'dexterity', skill: 'firearms' },
       ctx,
     );
 
@@ -113,10 +113,7 @@ describe('vtmPoolResolverBlock', () => {
       },
     });
 
-    const result = await vtmPoolResolverBlock.execute(
-      { attribute: 'wits', skill: 'stealth', difficulty: 1 },
-      ctx,
-    );
+    const result = await vtmPoolResolverBlock.execute({ attribute: 'wits', skill: 'stealth' }, ctx);
 
     const output = result.output as {
       critPairs: number;
@@ -128,7 +125,7 @@ describe('vtmPoolResolverBlock', () => {
   });
 
   it('returns failure when no successes and no hunger ones', async () => {
-    // pool=3, hunger=0, difficulty=3
+    // pool=3, hunger=0, default difficulty=1
     // dice: [1, 2, 3] → 0 successes
     randomSpy
       .mockReturnValueOnce(mockForDie(1))
@@ -140,7 +137,7 @@ describe('vtmPoolResolverBlock', () => {
     });
 
     const result = await vtmPoolResolverBlock.execute(
-      { attribute: 'intelligence', skill: 'academics', difficulty: 3 },
+      { attribute: 'intelligence', skill: 'academics' },
       ctx,
     );
 
@@ -169,7 +166,7 @@ describe('vtmPoolResolverBlock', () => {
     });
 
     const result = await vtmPoolResolverBlock.execute(
-      { attribute: 'resolve', skill: 'composure', difficulty: 2 },
+      { attribute: 'resolve', skill: 'composure' },
       ctx,
     );
 
@@ -195,7 +192,7 @@ describe('vtmPoolResolverBlock', () => {
     });
 
     const result = await vtmPoolResolverBlock.execute(
-      { attribute: 'missing_attr', skill: 'missing_skill', difficulty: 2 },
+      { attribute: 'missing_attr', skill: 'missing_skill' },
       ctx,
     );
 
@@ -216,7 +213,7 @@ describe('vtmPoolResolverBlock', () => {
   });
 
   it('emits player and channel messages', async () => {
-    // pool=2, hunger=0, difficulty=1, dice: [7, 8]
+    // pool=2, hunger=0, default difficulty=1, dice: [7, 8]
     randomSpy.mockReturnValueOnce(mockForDie(7)).mockReturnValueOnce(mockForDie(8));
 
     const ctx = makeContext({
@@ -224,7 +221,7 @@ describe('vtmPoolResolverBlock', () => {
     });
 
     const result = await vtmPoolResolverBlock.execute(
-      { attribute: 'stamina', skill: 'athletics', difficulty: 1 },
+      { attribute: 'stamina', skill: 'athletics' },
       ctx,
     );
 
@@ -250,14 +247,14 @@ describe('vtmPoolResolverBlock', () => {
     });
 
     const result = await vtmPoolResolverBlock.execute(
-      { attribute: 'missing_attr', skill: 'missing_skill', difficulty: 2 },
+      { attribute: 'missing_attr', skill: 'missing_skill' },
       ctx,
     );
 
     expect(result.messages).toEqual([
       {
         target: 'player',
-        content: '🎲 Pool: 0 dice — no dice to roll. Successes: 0 vs difficulty 2 → Failure',
+        content: '🎲 Pool: 0 dice — no dice to roll. Successes: 0 vs difficulty 1 → Failure',
       },
       { target: 'channel', content: '❌ Failure — no dice in pool.' },
     ]);

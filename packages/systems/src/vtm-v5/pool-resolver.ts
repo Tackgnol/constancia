@@ -3,7 +3,7 @@ import type { BlockDefinition, BlockContext, BlockMessage } from '@constancia/co
 interface VtmPoolResolverConfig {
   attribute: string;
   skill: string;
-  difficulty: number;
+  difficulty?: number;
 }
 
 interface VtmPoolResult {
@@ -76,7 +76,7 @@ export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
       skill: { type: 'string', description: 'Key into characterData.skills' },
       difficulty: { type: 'number', description: 'Number of successes needed to succeed' },
     },
-    required: ['attribute', 'skill', 'difficulty'],
+    required: ['attribute', 'skill'],
   },
   execute: async (
     config: VtmPoolResolverConfig,
@@ -92,6 +92,7 @@ export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
     const hunger = readNumber(ctx.characterData.hunger);
     const pool = attrVal + skillVal;
     const targetId = contextPlayerTargetId(ctx);
+    const difficulty = config.difficulty ?? 1;
 
     if (pool <= 0) {
       const result: VtmPoolResult = {
@@ -102,7 +103,7 @@ export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
         critPairs: 0,
         hungerOnes: 0,
         outcome: 'failure',
-        difficulty: config.difficulty,
+        difficulty,
       };
       return {
         output: result,
@@ -110,7 +111,7 @@ export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
           {
             target: 'player',
             ...(targetId ? { targetId } : {}),
-            content: `🎲 Pool: 0 dice — no dice to roll. Successes: 0 vs difficulty ${config.difficulty} → Failure`,
+            content: `🎲 Pool: 0 dice — no dice to roll. Successes: 0 vs difficulty ${difficulty} → Failure`,
           },
           { target: 'channel', content: `❌ Failure — no dice in pool.` },
         ],
@@ -136,7 +137,7 @@ export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
     let outcome: VtmPoolResult['outcome'];
     if (successes === 0 && hungerOnes > 0) {
       outcome = 'bestial_failure';
-    } else if (successes < config.difficulty) {
+    } else if (successes < difficulty) {
       outcome = 'failure';
     } else if (critPairs > 0 && hunger10s > 0) {
       outcome = 'messy_critical';
@@ -154,7 +155,7 @@ export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
       critPairs,
       hungerOnes,
       outcome,
-      difficulty: config.difficulty,
+      difficulty,
     };
 
     const label = outcomeLabel(outcome);
@@ -162,7 +163,7 @@ export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
     const playerMsg =
       `🎲 Pool: ${pool} dice (${normalDiceCount} normal + ${hungerDiceCount} hunger)` +
       ` | Rolled: [${normalDice.join(', ')}] + hunger [${hungerDice.join(', ')}]` +
-      ` | Successes: ${successes} vs difficulty ${config.difficulty} → ${label}`;
+      ` | Successes: ${successes} vs difficulty ${difficulty} → ${label}`;
 
     let channelMsg: string;
     switch (outcome) {

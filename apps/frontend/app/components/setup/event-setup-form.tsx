@@ -38,9 +38,22 @@ export function EventSetupForm({
     formState: { errors, isSubmitting, submitCount },
   } = methods;
   const eventType = methods.watch('type');
+  const selectedChannelId = methods.watch('channelId');
   const pipeline = methods.watch('pipeline') ?? [];
   const previousTypeRef = useRef(eventType);
   const hasValidationErrors = submitCount > 0 && Object.keys(errors).some((key) => key !== 'root');
+
+  useEffect(() => {
+    if (channels.length !== 1 || selectedChannelId.trim().length > 0) {
+      return;
+    }
+
+    methods.setValue('channelId', channels[0].id, {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true,
+    });
+  }, [channels, methods, selectedChannelId]);
 
   useEffect(() => {
     const previousType = previousTypeRef.current;
@@ -125,7 +138,7 @@ export function EventSetupForm({
                     <SelectTrigger id="event-channel">
                       <SelectValue placeholder="Select channel…" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent sideOffset={4}>
                       {channels.map((channel) => (
                         <SelectItem
                           key={channel.id}
@@ -141,25 +154,27 @@ export function EventSetupForm({
               ) : null}
             </div>
 
-            <div className="form-field form-field-toggle">
-              <Label className={formFieldLabelClassName}>Stop After Match</Label>
-              <div className="toggle-row">
-                <Controller
-                  control={control}
-                  name="shortCircuit"
-                  render={({ field }) => (
-                    <Checkbox
-                      id="event-sc"
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  )}
-                />
-                <label htmlFor="event-sc" className="form-hint cursor-pointer select-none">
-                  Stop once an action resolves the event.
-                </label>
+            {eventType !== 'narration' ? (
+              <div className="form-field form-field-toggle">
+                <Label className={formFieldLabelClassName}>Stop After Match</Label>
+                <div className="toggle-row">
+                  <Controller
+                    control={control}
+                    name="shortCircuit"
+                    render={({ field }) => (
+                      <Checkbox
+                        id="event-sc"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    )}
+                  />
+                  <label htmlFor="event-sc" className="form-hint cursor-pointer select-none">
+                    Stop once an action resolves the event.
+                  </label>
+                </div>
               </div>
-            </div>
+            ) : null}
           </div>
         </div>
 

@@ -94,8 +94,8 @@ describe('bot HTTP server', () => {
           description: 'Cross the gallery unseen.',
           imageUrl: 'https://example.com/gallery.jpg',
           thresholds: [
-            { minScore: 0, maxScore: 3, text: 'They stumble into the display case.' },
-            { minScore: 4, maxScore: 6, text: 'They move through cleanly.' },
+            { threshold: 0, text: 'They stumble into the display case.' },
+            { threshold: 3, text: 'They move through cleanly.' },
           ],
         },
       });

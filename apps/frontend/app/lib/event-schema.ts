@@ -47,8 +47,7 @@ export const conditionalGateConfigSchema = z.object({
 });
 
 export const outcomeEntrySchema = z.object({
-  minScore: z.coerce.number(),
-  maxScore: z.coerce.number(),
+  threshold: z.coerce.number(),
   text: z.string().min(1, 'Text is required'),
 });
 
@@ -65,7 +64,6 @@ export const retrieveDataConfigSchema = z.object({
 export const vtmPoolResolverConfigSchema = z.object({
   attribute: z.string().min(1, 'Attribute key is required'),
   skill: z.string().min(1, 'Skill key is required'),
-  difficulty: z.coerce.number().min(1).max(10),
 });
 
 export const vtmInsightResolverConfigSchema = z.object({
@@ -109,9 +107,9 @@ export const defaultBlockConfigs: Record<BlockType, Record<string, unknown>> = {
   'message-group': { content: '', imageUrl: '', groupPlayerIds: [] },
   'display-image': { imageUrl: '', caption: '' },
   'conditional-gate': { statPath: '', operator: 'gte', threshold: 1 },
-  'outcome-map': { outcomes: [{ minScore: 0, maxScore: 10, text: '' }], shortCircuit: true },
+  'outcome-map': { outcomes: [{ threshold: 0, text: '' }], shortCircuit: true },
   'retrieve-data': { dataType: '', query: {} },
-  'vtm-pool-resolver': { attribute: '', skill: '', difficulty: 3 },
+  'vtm-pool-resolver': { attribute: '', skill: '' },
   'vtm-insight-resolver': { attribute: '', skill: '' },
 };
 
@@ -238,13 +236,29 @@ const pipelineBlockConfigNormalizers: Partial<Record<BlockType, PipelineBlockCon
   }),
 };
 
-export function normalizePipelineForSubmission(pipeline: PipelineBlock[]): PipelineBlock[] {
-  return pipeline.map((block) => pipelineBlockConfigNormalizers[block.blockType]?.(block) ?? block);
+export function normalizePipelineForSubmission(
+  pipeline: PipelineBlock[],
+  shortCircuit: boolean,
+): PipelineBlock[] {
+  return pipeline.map((block) => {
+    const normalized = pipelineBlockConfigNormalizers[block.blockType]?.(block) ?? block;
+    if (normalized.blockType !== 'outcome-map') {
+      return normalized;
+    }
+
+    return {
+      ...normalized,
+      config: {
+        ...normalized.config,
+        shortCircuit,
+      },
+    };
+  });
 }
 
 export function normalizeEventFormValues(values: EventFormValues): EventFormValues {
   return {
     ...values,
-    pipeline: normalizePipelineForSubmission(values.pipeline),
+    pipeline: normalizePipelineForSubmission(values.pipeline, values.shortCircuit),
   };
 }
