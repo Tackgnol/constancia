@@ -93,6 +93,7 @@ export default function ParticipantsRoute() {
                 currentGameName={currentGameName}
                 campaignId={warRoom.campaign.id}
                 gameSystemId={warRoom.system.id}
+                actionPath={warRoom.demoMode ? '/demo/participants' : '/participants'}
               />
             );
           })
@@ -108,12 +109,14 @@ function ParticipantRow({
   currentGameName,
   campaignId,
   gameSystemId,
+  actionPath,
 }: {
   char: ListCharacters200DataItem;
   discordName: string;
   currentGameName: string;
   campaignId: string;
   gameSystemId: string;
+  actionPath: string;
 }) {
   const fetcher = useFetcher();
   const isSaving = fetcher.state !== 'idle';
@@ -156,7 +159,7 @@ function ParticipantRow({
         gameName: values.gameName.trim(),
         archetype: values.archetype,
       },
-      { method: 'post' },
+      { action: actionPath, method: 'post' },
     );
   };
 

@@ -261,7 +261,7 @@ export default function PlayRoute() {
   for (const event of liveEvents) {
     const section = sections.find((s) => s.id === event.type) || sections[3];
     const channel = event.channelId ? (channelById.get(event.channelId) ?? null) : null;
-    const sceneId = channel?.name ?? null;
+    const sceneId = channel?.id ?? null;
 
     if (warRoom.activeTag && sceneId !== warRoom.activeTag) continue;
 
@@ -277,7 +277,7 @@ export default function PlayRoute() {
       name: event.name,
       meta: event.status,
       scene: sceneId,
-      sceneLabel: sceneId ? (tagLabelById.get(sceneId) ?? sceneId) : null,
+      sceneLabel: sceneId ? (tagLabelById.get(sceneId) ?? channel?.name ?? sceneId) : null,
       target,
       preview,
     });
