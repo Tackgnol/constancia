@@ -274,6 +274,34 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
+  app.delete<{ Params: QuestParams }>(
+    '/quests/:questId',
+    {
+      schema: {
+        tags: ['journal'],
+        summary: 'Delete a quest',
+        operationId: 'deleteQuest',
+        params: questParamsSchema,
+        response: {
+          200: deleteResponseSchema,
+        },
+      },
+    },
+    async (request) => {
+      const params = request.params as QuestParams;
+      const prisma = getPrismaClient();
+      try {
+        await prisma.quest.delete({ where: { id: params.questId } });
+        return deleted(true);
+      } catch (err) {
+        if (isPrismaNotFoundError(err)) {
+          return deleted(false);
+        }
+        throw err;
+      }
+    },
+  );
+
   app.get<{ Params: CampaignParams }>(
     '/summaries',
     {
