@@ -23,7 +23,7 @@ x-backend-environment: &backend-environment
   NODE_ENV: production
   PORT: 3000
   BACKEND_HOST: 0.0.0.0
-  DATABASE_URL: postgresql://${POSTGRES_USER:-constancia}:${POSTGRES_PASSWORD_URLENCODED:-${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}}@postgres:5432/${POSTGRES_DB:-constancia}?schema=public
+  DATABASE_URL: postgresql://${POSTGRES_USER:-constancia}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/${POSTGRES_DB:-constancia}?schema=public
   FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL is required}
   AUTH_COOKIE_DOMAIN: ${AUTH_COOKIE_DOMAIN:-}
   BETTER_AUTH_URL: ${BETTER_AUTH_URL:?BETTER_AUTH_URL is required}
@@ -83,7 +83,7 @@ services:
     deploy:
       replicas: 0
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-constancia}:${POSTGRES_PASSWORD_URLENCODED:-${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}}@postgres:5432/${POSTGRES_DB:-constancia}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-constancia}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/${POSTGRES_DB:-constancia}?schema=public
     networks:
       - db
 

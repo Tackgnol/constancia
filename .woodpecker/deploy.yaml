@@ -34,50 +34,85 @@ when:
   - event: push
     branch: master
 
+# Shared environment (non-secret) applied to both steps.
+x-common-environment: &common-environment
+  COMPOSE_PROJECT_NAME: constancia
+  POSTGRES_DB: constancia
+  POSTGRES_USER: constancia
+  FRONTEND_PORT: '3020'
+  BACKEND_PORT: '3021'
+  VITE_DISCORD_AUTH_ENABLED: 'false'
+  CONTENT_MODERATION_ENABLED: 'true'
+  CONTENT_MODERATION_FAIL_CLOSED: 'false'
+  UPLOAD_STORAGE_DRIVER: r2
+
+# Shared secrets applied to both steps.
+x-common-secrets: &common-secrets
+  POSTGRES_PASSWORD:
+    from_secret: postgres_password
+  BETTER_AUTH_SECRET:
+    from_secret: better_auth_secret
+  BOT_API_KEY:
+    from_secret: bot_api_key
+  FRONTEND_URL:
+    from_secret: frontend_url
+  BETTER_AUTH_URL:
+    from_secret: better_auth_url
+  BACKEND_PUBLIC_URL:
+    from_secret: backend_public_url
+  DISCORD_TOKEN:
+    from_secret: discord_token
+  DISCORD_CLIENT_ID:
+    from_secret: discord_client_id
+  OPENAI_API_KEY:
+    from_secret: openai_api_key
+  R2_ENDPOINT:
+    from_secret: r2_endpoint
+  R2_ACCESS_KEY_ID:
+    from_secret: r2_access_key_id
+  R2_SECRET_ACCESS_KEY:
+    from_secret: r2_secret_access_key
+  R2_BUCKET:
+    from_secret: r2_bucket
+  UPLOAD_PUBLIC_BASE_URL:
+    from_secret: upload_public_base_url
+
 steps:
-  deploy:
+  build:
     image: docker:27-cli
+    timeout: 30
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      COMPOSE_PROJECT_NAME: constancia
-      POSTGRES_DB: constancia
-      POSTGRES_USER: constancia
-      FRONTEND_PORT: '3020'
-      BACKEND_PORT: '3021'
-      VITE_DISCORD_AUTH_ENABLED: 'false'
-      CONTENT_MODERATION_ENABLED: 'true'
-      CONTENT_MODERATION_FAIL_CLOSED: 'false'
-      UPLOAD_STORAGE_DRIVER: r2
+      <<: *common-environment
+      <<: *common-secrets
+    commands:
+      - |
+        set -e
 
-      POSTGRES_PASSWORD:
-        from_secret: postgres_password
-      BETTER_AUTH_SECRET:
-        from_secret: better_auth_secret
-      BOT_API_KEY:
-        from_secret: bot_api_key
-      FRONTEND_URL:
-        from_secret: frontend_url
-      BETTER_AUTH_URL:
-        from_secret: better_auth_url
-      BACKEND_PUBLIC_URL:
-        from_secret: backend_public_url
-      DISCORD_TOKEN:
-        from_secret: discord_token
-      DISCORD_CLIENT_ID:
-        from_secret: discord_client_id
-      OPENAI_API_KEY:
-        from_secret: openai_api_key
-      R2_ENDPOINT:
-        from_secret: r2_endpoint
-      R2_ACCESS_KEY_ID:
-        from_secret: r2_access_key_id
-      R2_SECRET_ACCESS_KEY:
-        from_secret: r2_secret_access_key
-      R2_BUCKET:
-        from_secret: r2_bucket
-      UPLOAD_PUBLIC_BASE_URL:
-        from_secret: upload_public_base_url
+        # POSTGRES_PASSWORD_URLENCODED is required by compose.prod.yaml for DATABASE_URL.
+        # The raw password is sufficient for structural config validation here
+        # (no actual DB connection is made). The deploy step computes the proper
+        # URL-encoded value using Node.js before running docker stack deploy.
+        POSTGRES_PASSWORD_URLENCODED="$POSTGRES_PASSWORD"
+        export POSTGRES_PASSWORD_URLENCODED
+
+        docker compose -f compose.prod.yaml config > /dev/null
+        docker compose -f compose.prod.yaml config --format json | grep -q '"published": "3020"'
+        docker compose -f compose.prod.yaml config --format json | grep -q '"published": "3021"'
+        echo "Config validation passed"
+
+        docker compose -f compose.prod.yaml build backend frontend bot migrate
+        echo "All images built"
+
+  deploy:
+    image: docker:27-cli
+    timeout: 30
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      <<: *common-environment
+      <<: *common-secrets
     commands:
       - |
         set -e
@@ -140,21 +175,22 @@ steps:
           require_env R2_BUCKET
         fi
 
-        docker compose -f compose.prod.yaml config > /dev/null
-        docker compose -f compose.prod.yaml config --format json | grep -q '"published": "3020"'
-        docker compose -f compose.prod.yaml config --format json | grep -q '"published": "3021"'
-
-        docker compose -f compose.prod.yaml build backend frontend bot migrate
-
         # URL-encode the password using Node.js from the already-built backend image
         # (reliable across all environments; avoids busybox shell encoding issues)
+        echo "Encoding postgres password..."
         POSTGRES_PASSWORD_URLENCODED="$(docker run --rm \
           -e RAW_PASS="$POSTGRES_PASSWORD" \
           constancia-backend:prod \
           node -e 'process.stdout.write(encodeURIComponent(process.env.RAW_PASS))')"
+        if [ -z "$POSTGRES_PASSWORD_URLENCODED" ]; then
+          echo "Failed to URL-encode POSTGRES_PASSWORD" >&2
+          exit 1
+        fi
         export POSTGRES_PASSWORD_URLENCODED
+        echo "Password encoded"
 
         if ! docker service inspect constancia_postgres > /dev/null 2>&1; then
+          echo "Bootstrapping postgres service..."
           docker compose -f compose.prod.yaml down --remove-orphans || true
           BACKEND_REPLICAS=0 FRONTEND_REPLICAS=0 BOT_REPLICAS=0 \
             docker stack deploy -c compose.prod.yaml constancia --detach=true --resolve-image never
@@ -167,6 +203,7 @@ steps:
             container_id="$(docker ps --filter label=com.docker.swarm.service.name="$service" --format '{{.ID}}' | head -n 1)"
             if [ -n "$container_id" ]; then
               health="$(docker inspect "$container_id" --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' 2>/dev/null || true)"
+              echo "Waiting for $service health: $health"
               if [ "$health" = "healthy" ]; then
                 return 0
               fi
@@ -202,6 +239,7 @@ steps:
           -e PGPASSWORD="$POSTGRES_PASSWORD" \
           postgres:17-alpine \
           psql -h constancia_postgres -U "${POSTGRES_USER:-constancia}" -d "${POSTGRES_DB:-constancia}" -v ON_ERROR_STOP=1 -c 'select 1' > /dev/null
+        echo "Postgres connectivity verified"
 
         docker run --rm --network constancia_db \
           -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
@@ -209,10 +247,14 @@ steps:
           -e PGHOST="constancia_postgres" \
           -e POSTGRES_DB="${POSTGRES_DB:-constancia}" \
           constancia-migrate:prod
+        echo "Migrations complete"
 
         docker stack deploy -c compose.prod.yaml constancia --detach=true --resolve-image never
+        echo "Updating backend..."
         docker service update --force --detach=false constancia_backend
+        echo "Updating frontend..."
         docker service update --force --detach=false constancia_frontend
+        echo "Updating bot..."
         docker service update --force --detach=false constancia_bot
         docker stack services constancia
         docker service ps constancia_frontend --no-trunc

@@ -20,6 +20,7 @@ import botAuthPlugin from '../plugins/bot-auth-plugin.js';
 const apiRoutes: FastifyPluginAsync = async (app) => {
   await app.register(authPublicRoutes, { prefix: '/auth' });
   await app.register(uploadPublicRoutes, { prefix: '/uploads' });
+  await app.register(systemRoutes, { prefix: '/systems' });
 
   // Session-guarded routes (user-facing)
   await app.register(async (protected_) => {
@@ -36,7 +37,6 @@ const apiRoutes: FastifyPluginAsync = async (app) => {
     await protected_.register(messageRoutes, { prefix: '/campaigns/:id/messages' });
     await protected_.register(journalRoutes, { prefix: '/campaigns/:id' });
     await protected_.register(loreRoutes, { prefix: '/campaigns/:id/lore' });
-    await protected_.register(systemRoutes, { prefix: '/systems' });
   });
 
   // Bot-to-backend routes (API key protected). /auth/magic-link lives here so
