@@ -91,9 +91,8 @@ npm run generate:api  # regenerate the orval client from the OpenAPI spec
 
 ## Production deploy
 
-The repo deploys to a single Linux VM. Caddy on the host terminates TLS and
-reverse-proxies to loopback ports published by Docker Compose. CI is
-Woodpecker.
+The repo deploys to a single Linux VM in Docker Swarm mode. Caddy on the host
+terminates TLS and reverse-proxies to Swarm-published ports. CI is Woodpecker.
 
 Files involved:
 
@@ -103,26 +102,48 @@ Files involved:
 - `.woodpecker/dev-tests.yaml` — typecheck + test on the `dev` branch
 - `.woodpecker/branch-tests.yaml` — full PR gate (lint/typecheck/test/build +
   prod-image smoke build under an isolated Compose project)
-- `.woodpecker/deploy.yaml` — `master` push: build, run migrations, bring up
-  backend + frontend + bot, prune dangling images
+- `.woodpecker/deploy.yaml` — `master` push: build, run migrations, deploy the
+  Swarm stack, force-update runtime services, prune dangling images
 - `env.production.example` — annotated reference for every env var, including
   which ones become Woodpecker secrets
 
 ### Network topology
 
-Compose creates four networks; each service joins only the ones it needs.
+The stack creates the app-private networks and also joins the pre-existing
+`rpg-network` overlay used by the host reverse proxy.
 
 ```
 db      (internal)  postgres  <->  backend, migrate
 fe-be   (internal)  backend   <->  frontend
 bot-be  (internal)  backend   <->  bot
-egress  (bridge)    backend, bot  ->  internet (Discord, OpenAI, R2)
+rpg-network        Caddy     <->  backend, frontend
+egress             backend, bot  ->  internet (Discord, OpenAI, R2)
 ```
 
 Postgres has no internet route and no path from the frontend or the bot. The
-frontend cannot reach the bot. The bot cannot reach the database. All
-published ports bind to `127.0.0.1` only — Caddy on the host is the sole
-external entrypoint.
+frontend cannot reach the bot. The bot cannot reach the database. Caddy on the
+host is the intended external entrypoint.
+
+The production Caddy site should route Constancia like this:
+
+```caddyfile
+constancia.rpgtools.eu.org {
+  import cloudflare_tls
+
+  @backend path /api/auth/* /api/v1/auth/* /api/v1/uploads/*
+  handle @backend {
+    reverse_proxy 127.0.0.1:3021
+  }
+
+  handle {
+    reverse_proxy 127.0.0.1:3020
+  }
+}
+```
+
+`/api/v1/uploads/*` is needed when testing R2 without a public R2 custom
+domain. In that mode, uploaded objects are stored in R2 but served through the
+backend URL.
 
 ### One-shot reproduction of the deploy locally
 
@@ -141,22 +162,23 @@ docker compose -f compose.prod.yaml up -d bot
 `env.production.example` is the single source of truth for env vars and which
 of them must come from secret stores in CI. The short version:
 
-| Variable                | Purpose                                                 |
-| ----------------------- | ------------------------------------------------------- |
-| `POSTGRES_PASSWORD`     | Database password. Set once; persisted in the volume.   |
-| `BETTER_AUTH_SECRET`    | Session signing secret for Better Auth.                 |
-| `BOT_API_KEY`           | Shared key for backend <-> bot HTTP.                    |
-| `FRONTEND_URL`          | Public URL of the GM dashboard.                         |
-| `BETTER_AUTH_URL`       | Public URL of the backend (auth lives at `/auth/*`).    |
-| `BACKEND_PUBLIC_URL`    | Public URL of the backend (used to build upload URLs).  |
-| `VITE_API_URL`          | Public URL of the backend (baked into the FE bundle).   |
-| `DISCORD_TOKEN`         | Discord bot token.                                      |
-| `DISCORD_CLIENT_ID`     | Discord application client ID.                          |
-| `DISCORD_CLIENT_SECRET` | Optional. Enables Better Auth Discord OAuth.            |
-| `OPENAI_API_KEY`        | Optional. Required when `CONTENT_MODERATION_ENABLED`.   |
-| `R2_*`                  | Optional. Required when `UPLOAD_STORAGE_DRIVER=r2`.     |
-| `FRONTEND_PORT`         | Host loopback port published for Caddy. Default `3010`. |
-| `BACKEND_PORT`          | Host loopback port published for Caddy. Default `3011`. |
+| Variable                 | Purpose                                                 |
+| ------------------------ | ------------------------------------------------------- |
+| `POSTGRES_PASSWORD`      | Database password. Set once; persisted in the volume.   |
+| `BETTER_AUTH_SECRET`     | Session signing secret for Better Auth.                 |
+| `BOT_API_KEY`            | Shared key for backend <-> bot HTTP.                    |
+| `FRONTEND_URL`           | Public URL of the GM dashboard.                         |
+| `BETTER_AUTH_URL`        | Public URL of the backend (auth lives at `/auth/*`).    |
+| `BACKEND_PUBLIC_URL`     | Public URL of the backend (used to build upload URLs).  |
+| `VITE_API_URL`           | Public URL of the backend (baked into the FE bundle).   |
+| `DISCORD_TOKEN`          | Discord bot token.                                      |
+| `DISCORD_CLIENT_ID`      | Discord application client ID.                          |
+| `DISCORD_CLIENT_SECRET`  | Optional. Enables Better Auth Discord OAuth.            |
+| `OPENAI_API_KEY`         | Optional. Required when `CONTENT_MODERATION_ENABLED`.   |
+| `R2_*`                   | Optional. Required when `UPLOAD_STORAGE_DRIVER=r2`.     |
+| `UPLOAD_PUBLIC_BASE_URL` | Optional. Direct public R2/custom-domain upload prefix. |
+| `FRONTEND_PORT`          | Published frontend port for Caddy. Default `3020`.      |
+| `BACKEND_PORT`           | Published backend port for Caddy. Default `3021`.       |
 
 If you enable Discord OAuth, the redirect to register in the developer portal
 is `${BETTER_AUTH_URL}/auth/callback/discord`.

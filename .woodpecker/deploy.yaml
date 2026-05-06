@@ -14,7 +14,7 @@
 #   discord_client_secret      # Better Auth Discord OAuth in the backend/frontend
 #   discord_guild_id           # Faster per-guild slash-command registration
 #   openai_api_key             # Required when CONTENT_MODERATION_ENABLED=true
-#   upload_public_base_url     # Public URL prefix for local upload files
+#   upload_public_base_url     # Public R2/custom-domain prefix for direct object serving
 #   r2_endpoint                # Required when UPLOAD_STORAGE_DRIVER=r2
 #   r2_access_key_id           #   "
 #   r2_secret_access_key       #   "
@@ -24,8 +24,8 @@
 # for the full list of toggles):
 #   POSTGRES_DB=constancia
 #   POSTGRES_USER=constancia
-#   FRONTEND_PORT=3010                # published fallback port
-#   BACKEND_PORT=3011                 # published fallback port
+#   FRONTEND_PORT=3020                # Caddy constancia.rpgtools.eu.org frontend target
+#   BACKEND_PORT=3021                 # Caddy constancia.rpgtools.eu.org auth/API target
 #   VITE_DISCORD_AUTH_ENABLED=false
 #   CONTENT_MODERATION_ENABLED=true
 #   UPLOAD_STORAGE_DRIVER=r2
@@ -43,8 +43,8 @@ steps:
       COMPOSE_PROJECT_NAME: constancia
       POSTGRES_DB: constancia
       POSTGRES_USER: constancia
-      FRONTEND_PORT: '3010'
-      BACKEND_PORT: '3011'
+      FRONTEND_PORT: '3020'
+      BACKEND_PORT: '3021'
       VITE_DISCORD_AUTH_ENABLED: 'false'
       CONTENT_MODERATION_ENABLED: 'true'
       CONTENT_MODERATION_FAIL_CLOSED: 'false'
@@ -94,9 +94,9 @@ steps:
           echo "=== backend health ===" >&2
           docker ps --filter label=com.docker.swarm.service.name=constancia_backend --format '{{.ID}}' | head -n 1 | xargs -r docker inspect --format '{{json .State.Health}}' >&2 || true
           echo "=== backend logs ===" >&2
-          docker service logs --no-color --tail=200 constancia_backend >&2 || true
+          docker service logs --tail=200 constancia_backend >&2 || true
           echo "=== frontend logs ===" >&2
-          docker service logs --no-color --tail=120 constancia_frontend >&2 || true
+          docker service logs --tail=120 constancia_frontend >&2 || true
         }
 
         trap print_diagnostics EXIT
@@ -122,6 +122,7 @@ steps:
         require_url FRONTEND_URL
         require_url BETTER_AUTH_URL
         require_url BACKEND_PUBLIC_URL
+        require_env POSTGRES_PASSWORD
 
         if [ -n "$UPLOAD_PUBLIC_BASE_URL" ]; then
           require_url UPLOAD_PUBLIC_BASE_URL
@@ -139,8 +140,8 @@ steps:
         fi
 
         docker compose -f compose.prod.yaml config > /dev/null
-        docker compose -f compose.prod.yaml config --format json | grep -q '"published": "3010"'
-        docker compose -f compose.prod.yaml config --format json | grep -q '"published": "3011"'
+        docker compose -f compose.prod.yaml config --format json | grep -q '"published": "3020"'
+        docker compose -f compose.prod.yaml config --format json | grep -q '"published": "3021"'
 
         docker compose -f compose.prod.yaml build backend frontend bot migrate
 
@@ -171,7 +172,7 @@ steps:
         wait_for_service_health constancia_postgres
 
         docker run --rm --network constancia_db \
-          -e DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@constancia_postgres:5432/${POSTGRES_DB}?schema=public" \
+          -e DATABASE_URL="postgresql://${POSTGRES_USER:-constancia}:${POSTGRES_PASSWORD}@constancia_postgres:5432/${POSTGRES_DB:-constancia}?schema=public" \
           constancia-migrate:prod
 
         docker stack deploy -c compose.prod.yaml constancia --detach=true --resolve-image never

@@ -99,7 +99,7 @@ services:
     environment: *backend-environment
     ports:
       - target: 3000
-        published: '${BACKEND_PORT:-3011}'
+        published: '${BACKEND_PORT:-3021}'
         protocol: tcp
     volumes:
       - backend_uploads:/app/data/uploads
@@ -159,7 +159,7 @@ services:
       VITE_DISCORD_AUTH_ENABLED: ${VITE_DISCORD_AUTH_ENABLED:-false}
     ports:
       - target: 3000
-        published: '${FRONTEND_PORT:-3010}'
+        published: '${FRONTEND_PORT:-3020}'
         protocol: tcp
     networks:
       - fe-be
