@@ -140,18 +140,19 @@ steps:
           require_env R2_BUCKET
         fi
 
-        url_encode() {
-          printf '%s' "$1" | awk 'BEGIN{for(i=0;i<=255;i++)hex[sprintf("%c",i)]=sprintf("%02X",i)}{for(i=1;i<=length($0);i++)printf"%%%s",hex[substr($0,i,1)]}'
-        }
-
-        POSTGRES_PASSWORD_URLENCODED="$(url_encode "$POSTGRES_PASSWORD")"
-        export POSTGRES_PASSWORD_URLENCODED
-
         docker compose -f compose.prod.yaml config > /dev/null
         docker compose -f compose.prod.yaml config --format json | grep -q '"published": "3020"'
         docker compose -f compose.prod.yaml config --format json | grep -q '"published": "3021"'
 
         docker compose -f compose.prod.yaml build backend frontend bot migrate
+
+        # URL-encode the password using Node.js from the already-built backend image
+        # (reliable across all environments; avoids busybox shell encoding issues)
+        POSTGRES_PASSWORD_URLENCODED="$(docker run --rm \
+          -e RAW_PASS="$POSTGRES_PASSWORD" \
+          constancia-backend:prod \
+          node -e 'process.stdout.write(encodeURIComponent(process.env.RAW_PASS))')"
+        export POSTGRES_PASSWORD_URLENCODED
 
         if ! docker service inspect constancia_postgres > /dev/null 2>&1; then
           docker compose -f compose.prod.yaml down --remove-orphans || true
@@ -203,7 +204,10 @@ steps:
           psql -h constancia_postgres -U "${POSTGRES_USER:-constancia}" -d "${POSTGRES_DB:-constancia}" -v ON_ERROR_STOP=1 -c 'select 1' > /dev/null
 
         docker run --rm --network constancia_db \
-          -e DATABASE_URL="postgresql://${POSTGRES_USER:-constancia}:${POSTGRES_PASSWORD_URLENCODED}@constancia_postgres:5432/${POSTGRES_DB:-constancia}?schema=public" \
+          -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+          -e POSTGRES_USER="${POSTGRES_USER:-constancia}" \
+          -e PGHOST="constancia_postgres" \
+          -e POSTGRES_DB="${POSTGRES_DB:-constancia}" \
           constancia-migrate:prod
 
         docker stack deploy -c compose.prod.yaml constancia --detach=true --resolve-image never

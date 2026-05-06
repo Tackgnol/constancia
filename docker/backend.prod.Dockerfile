@@ -19,7 +19,7 @@ RUN npx turbo run build --filter=@constancia/backend...
 FROM build AS migrate
 WORKDIR /app/packages/db
 ENV NODE_ENV=production
-CMD ["npm", "run", "db:deploy"]
+CMD ["node", "/app/packages/db/migrate-entrypoint.mjs"]
 
 FROM base AS runtime
 ENV NODE_ENV=production
