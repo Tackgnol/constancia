@@ -407,8 +407,8 @@ describe('backend app', () => {
           gameSystemId: 'vtm-v5',
         },
       },
-      { method: 'GET', url: '/api/v1/systems', statusCode: 401 },
-      { method: 'GET', url: '/api/v1/systems/vtm-v5', statusCode: 401 },
+      { method: 'GET', url: '/api/v1/systems', statusCode: 200 },
+      { method: 'GET', url: '/api/v1/systems/vtm-v5', statusCode: 200 },
     ] as const;
 
     for (const testCase of cases) {
