@@ -192,7 +192,7 @@ steps:
             -e POSTGRES_USER="${POSTGRES_USER:-constancia}" \
             -e NEW_PG_PASSWORD="$POSTGRES_PASSWORD" \
             "$postgres_container_id" \
-            sh -c 'printf "ALTER USER %s WITH PASSWORD '\''%s'\'';\n" "$(printf "%s" "$POSTGRES_USER" | sed "s/\"/\"\"/g")" "$(printf "%s" "$NEW_PG_PASSWORD" | sed "s/'\''/'\'''\''/g")" | psql -d "$POSTGRES_DB" -v ON_ERROR_STOP=1'
+            sh -c 'printf "ALTER USER %s WITH PASSWORD '\''%s'\'';\n" "$(printf "%s" "$POSTGRES_USER" | sed "s/\"/\"\"/g")" "$(printf "%s" "$NEW_PG_PASSWORD" | sed "s/'\''/'\'''\''/g")" | psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1'
         }
 
         sync_postgres_password
