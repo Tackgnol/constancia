@@ -1,4 +1,4 @@
-# Deploys master only. Secrets/config to create in Woodpecker (repo scoped):
+# Deploys master only. Secrets/config to create in Woodpecker:
 #
 # Required for a full production deploy:
 #   postgres_password
