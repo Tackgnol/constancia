@@ -34,57 +34,49 @@ when:
   - event: push
     branch: master
 
-# Shared environment (non-secret) applied to both steps.
-x-common-environment: &common-environment
-  COMPOSE_PROJECT_NAME: constancia
-  POSTGRES_DB: constancia
-  POSTGRES_USER: constancia
-  FRONTEND_PORT: '3020'
-  BACKEND_PORT: '3021'
-  VITE_DISCORD_AUTH_ENABLED: 'false'
-  CONTENT_MODERATION_ENABLED: 'true'
-  CONTENT_MODERATION_FAIL_CLOSED: 'false'
-  UPLOAD_STORAGE_DRIVER: r2
-
-# Shared secrets applied to both steps.
-x-common-secrets: &common-secrets
-  POSTGRES_PASSWORD:
-    from_secret: postgres_password
-  BETTER_AUTH_SECRET:
-    from_secret: better_auth_secret
-  BOT_API_KEY:
-    from_secret: bot_api_key
-  FRONTEND_URL:
-    from_secret: frontend_url
-  BETTER_AUTH_URL:
-    from_secret: better_auth_url
-  BACKEND_PUBLIC_URL:
-    from_secret: backend_public_url
-  DISCORD_TOKEN:
-    from_secret: discord_token
-  DISCORD_CLIENT_ID:
-    from_secret: discord_client_id
-  OPENAI_API_KEY:
-    from_secret: openai_api_key
-  R2_ENDPOINT:
-    from_secret: r2_endpoint
-  R2_ACCESS_KEY_ID:
-    from_secret: r2_access_key_id
-  R2_SECRET_ACCESS_KEY:
-    from_secret: r2_secret_access_key
-  R2_BUCKET:
-    from_secret: r2_bucket
-  UPLOAD_PUBLIC_BASE_URL:
-    from_secret: upload_public_base_url
-
 steps:
   build:
     image: docker:27-cli
-    timeout: 30
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      <<: [*common-environment, *common-secrets]
+      COMPOSE_PROJECT_NAME: constancia
+      POSTGRES_DB: constancia
+      POSTGRES_USER: constancia
+      FRONTEND_PORT: '3020'
+      BACKEND_PORT: '3021'
+      VITE_DISCORD_AUTH_ENABLED: 'false'
+      CONTENT_MODERATION_ENABLED: 'true'
+      CONTENT_MODERATION_FAIL_CLOSED: 'false'
+      UPLOAD_STORAGE_DRIVER: r2
+      POSTGRES_PASSWORD:
+        from_secret: postgres_password
+      BETTER_AUTH_SECRET:
+        from_secret: better_auth_secret
+      BOT_API_KEY:
+        from_secret: bot_api_key
+      FRONTEND_URL:
+        from_secret: frontend_url
+      BETTER_AUTH_URL:
+        from_secret: better_auth_url
+      BACKEND_PUBLIC_URL:
+        from_secret: backend_public_url
+      DISCORD_TOKEN:
+        from_secret: discord_token
+      DISCORD_CLIENT_ID:
+        from_secret: discord_client_id
+      OPENAI_API_KEY:
+        from_secret: openai_api_key
+      R2_ENDPOINT:
+        from_secret: r2_endpoint
+      R2_ACCESS_KEY_ID:
+        from_secret: r2_access_key_id
+      R2_SECRET_ACCESS_KEY:
+        from_secret: r2_secret_access_key
+      R2_BUCKET:
+        from_secret: r2_bucket
+      UPLOAD_PUBLIC_BASE_URL:
+        from_secret: upload_public_base_url
     commands:
       - |
         set -e
@@ -106,11 +98,46 @@ steps:
 
   deploy:
     image: docker:27-cli
-    timeout: 30
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      <<: [*common-environment, *common-secrets]
+      COMPOSE_PROJECT_NAME: constancia
+      POSTGRES_DB: constancia
+      POSTGRES_USER: constancia
+      FRONTEND_PORT: '3020'
+      BACKEND_PORT: '3021'
+      VITE_DISCORD_AUTH_ENABLED: 'false'
+      CONTENT_MODERATION_ENABLED: 'true'
+      CONTENT_MODERATION_FAIL_CLOSED: 'false'
+      UPLOAD_STORAGE_DRIVER: r2
+      POSTGRES_PASSWORD:
+        from_secret: postgres_password
+      BETTER_AUTH_SECRET:
+        from_secret: better_auth_secret
+      BOT_API_KEY:
+        from_secret: bot_api_key
+      FRONTEND_URL:
+        from_secret: frontend_url
+      BETTER_AUTH_URL:
+        from_secret: better_auth_url
+      BACKEND_PUBLIC_URL:
+        from_secret: backend_public_url
+      DISCORD_TOKEN:
+        from_secret: discord_token
+      DISCORD_CLIENT_ID:
+        from_secret: discord_client_id
+      OPENAI_API_KEY:
+        from_secret: openai_api_key
+      R2_ENDPOINT:
+        from_secret: r2_endpoint
+      R2_ACCESS_KEY_ID:
+        from_secret: r2_access_key_id
+      R2_SECRET_ACCESS_KEY:
+        from_secret: r2_secret_access_key
+      R2_BUCKET:
+        from_secret: r2_bucket
+      UPLOAD_PUBLIC_BASE_URL:
+        from_secret: upload_public_base_url
     commands:
       - |
         set -e
