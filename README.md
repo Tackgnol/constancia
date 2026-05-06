@@ -162,26 +162,33 @@ docker compose -f compose.prod.yaml up -d bot
 `env.production.example` is the single source of truth for env vars and which
 of them must come from secret stores in CI. The short version:
 
-| Variable                 | Purpose                                                 |
-| ------------------------ | ------------------------------------------------------- |
-| `POSTGRES_PASSWORD`      | Database password. Set once; persisted in the volume.   |
-| `BETTER_AUTH_SECRET`     | Session signing secret for Better Auth.                 |
-| `BOT_API_KEY`            | Shared key for backend <-> bot HTTP.                    |
-| `FRONTEND_URL`           | Public URL of the GM dashboard.                         |
-| `BETTER_AUTH_URL`        | Public URL of the backend (auth lives at `/auth/*`).    |
-| `BACKEND_PUBLIC_URL`     | Public URL of the backend (used to build upload URLs).  |
-| `VITE_API_URL`           | Public URL of the backend (baked into the FE bundle).   |
-| `DISCORD_TOKEN`          | Discord bot token.                                      |
-| `DISCORD_CLIENT_ID`      | Discord application client ID.                          |
-| `DISCORD_CLIENT_SECRET`  | Optional. Enables Better Auth Discord OAuth.            |
-| `OPENAI_API_KEY`         | Optional. Required when `CONTENT_MODERATION_ENABLED`.   |
-| `R2_*`                   | Optional. Required when `UPLOAD_STORAGE_DRIVER=r2`.     |
-| `UPLOAD_PUBLIC_BASE_URL` | Optional. Direct public R2/custom-domain upload prefix. |
-| `FRONTEND_PORT`          | Published frontend port for Caddy. Default `3020`.      |
-| `BACKEND_PORT`           | Published backend port for Caddy. Default `3021`.       |
+| Variable                       | Purpose                                                 |
+| ------------------------------ | ------------------------------------------------------- |
+| `POSTGRES_PASSWORD`            | Database password. Set once; persisted in the volume.   |
+| `POSTGRES_PASSWORD_URLENCODED` | Manual deploy only; URL-encoded DB password.            |
+| `BETTER_AUTH_SECRET`           | Session signing secret for Better Auth.                 |
+| `BOT_API_KEY`                  | Shared key for backend <-> bot HTTP.                    |
+| `FRONTEND_URL`                 | Public URL of the GM dashboard.                         |
+| `BETTER_AUTH_URL`              | Public URL of the backend (auth lives at `/auth/*`).    |
+| `BACKEND_PUBLIC_URL`           | Public URL of the backend (used to build upload URLs).  |
+| `VITE_API_URL`                 | Public URL of the backend (baked into the FE bundle).   |
+| `DISCORD_TOKEN`                | Discord bot token.                                      |
+| `DISCORD_CLIENT_ID`            | Discord application client ID.                          |
+| `DISCORD_CLIENT_SECRET`        | Optional. Enables Better Auth Discord OAuth.            |
+| `OPENAI_API_KEY`               | Optional. Required when `CONTENT_MODERATION_ENABLED`.   |
+| `R2_*`                         | Optional. Required when `UPLOAD_STORAGE_DRIVER=r2`.     |
+| `UPLOAD_PUBLIC_BASE_URL`       | Optional. Direct public R2/custom-domain upload prefix. |
+| `FRONTEND_PORT`                | Published frontend port for Caddy. Default `3020`.      |
+| `BACKEND_PORT`                 | Published backend port for Caddy. Default `3021`.       |
 
 If you enable Discord OAuth, the redirect to register in the developer portal
 is `${BETTER_AUTH_URL}/auth/callback/discord`.
+
+Prisma connection URLs must percent-encode special characters in passwords. The
+Woodpecker deploy computes `POSTGRES_PASSWORD_URLENCODED` from the raw
+`postgres_password` secret before rendering the stack. For manual deploys, set
+`POSTGRES_PASSWORD_URLENCODED` yourself if `POSTGRES_PASSWORD` contains URL
+reserved characters.
 
 ---
 
