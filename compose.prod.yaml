@@ -97,6 +97,11 @@ services:
       <<: *runtime-deploy
       replicas: ${BACKEND_REPLICAS:-1}
     environment: *backend-environment
+    ports:
+      - host_ip: 127.0.0.1
+        published: '${BACKEND_PORT:-3011}'
+        target: 3000
+        protocol: tcp
     volumes:
       - backend_uploads:/app/data/uploads
     networks:
@@ -153,6 +158,11 @@ services:
       BACKEND_URL: http://backend:3000
       BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:?BACKEND_PUBLIC_URL is required}
       VITE_DISCORD_AUTH_ENABLED: ${VITE_DISCORD_AUTH_ENABLED:-false}
+    ports:
+      - host_ip: 127.0.0.1
+        published: '${FRONTEND_PORT:-3010}'
+        target: 3000
+        protocol: tcp
     networks:
       - fe-be
       - rpg-network
