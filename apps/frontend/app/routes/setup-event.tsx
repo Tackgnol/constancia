@@ -248,7 +248,7 @@ export default function SetupEventRoute() {
           throw new Error(response.message);
         }
 
-        revalidator.revalidate();
+        await revalidator.revalidate();
       }
 
       setSavedEvent(normalizedValues);

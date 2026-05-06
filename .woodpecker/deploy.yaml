@@ -24,8 +24,6 @@
 # for the full list of toggles):
 #   POSTGRES_DB=constancia
 #   POSTGRES_USER=constancia
-#   FRONTEND_PORT=3010                # host loopback port; Caddy → localhost:3010
-#   BACKEND_PORT=3011                 # host loopback port; Caddy → localhost:3011
 #   VITE_DISCORD_AUTH_ENABLED=false
 #   CONTENT_MODERATION_ENABLED=true
 #   UPLOAD_STORAGE_DRIVER=r2
@@ -43,8 +41,6 @@ steps:
       COMPOSE_PROJECT_NAME: constancia
       POSTGRES_DB: constancia
       POSTGRES_USER: constancia
-      FRONTEND_PORT: '3010'
-      BACKEND_PORT: '3011'
       VITE_DISCORD_AUTH_ENABLED: 'false'
       CONTENT_MODERATION_ENABLED: 'true'
       CONTENT_MODERATION_FAIL_CLOSED: 'false'
@@ -89,14 +85,14 @@ steps:
           fi
 
           echo "Deployment failed with exit code $exit_code" >&2
-          echo "=== docker compose ps ===" >&2
-          docker compose -f compose.prod.yaml ps >&2 || true
+          echo "=== docker stack ps ===" >&2
+          docker stack ps constancia --no-trunc >&2 || true
           echo "=== backend health ===" >&2
-          docker inspect constancia-backend-1 --format '{{json .State.Health}}' >&2 || true
+          docker ps --filter label=com.docker.swarm.service.name=constancia_backend --format '{{.ID}}' | head -n 1 | xargs -r docker inspect --format '{{json .State.Health}}' >&2 || true
           echo "=== backend logs ===" >&2
-          docker compose -f compose.prod.yaml logs --no-color --tail=200 backend >&2 || true
+          docker service logs --no-color --tail=200 constancia_backend >&2 || true
           echo "=== frontend logs ===" >&2
-          docker compose -f compose.prod.yaml logs --no-color --tail=120 frontend >&2 || true
+          docker service logs --no-color --tail=120 constancia_frontend >&2 || true
         }
 
         trap print_diagnostics EXIT
@@ -139,15 +135,39 @@ steps:
         fi
 
         docker compose -f compose.prod.yaml config > /dev/null
-        docker compose -f compose.prod.yaml config --format json | grep -q '"published": "3010"'
-        docker compose -f compose.prod.yaml config --format json | grep -q '"published": "3011"'
 
         docker compose -f compose.prod.yaml build backend frontend bot migrate
-        docker compose -f compose.prod.yaml up -d --wait postgres
-        docker compose -f compose.prod.yaml run --rm --no-deps migrate
-        docker compose -f compose.prod.yaml up -d --wait --force-recreate backend frontend
-        docker compose -f compose.prod.yaml port frontend 3000 | grep -q '127.0.0.1:3010'
-        docker compose -f compose.prod.yaml port backend 3000 | grep -q '127.0.0.1:3011'
-        docker compose -f compose.prod.yaml up -d bot
-        docker compose -f compose.prod.yaml ps
+
+        if ! docker service inspect constancia_postgres > /dev/null 2>&1; then
+          docker compose -f compose.prod.yaml down --remove-orphans || true
+          BACKEND_REPLICAS=0 FRONTEND_REPLICAS=0 BOT_REPLICAS=0 \
+            docker stack deploy -c compose.prod.yaml constancia --detach=false --resolve-image never
+        fi
+
+        wait_for_service_health() {
+          service="$1"
+          deadline=$(( $(date +%s) + 180 ))
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            container_id="$(docker ps --filter label=com.docker.swarm.service.name="$service" --format '{{.ID}}' | head -n 1)"
+            if [ -n "$container_id" ]; then
+              health="$(docker inspect "$container_id" --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' 2>/dev/null || true)"
+              if [ "$health" = "healthy" ]; then
+                return 0
+              fi
+            fi
+            sleep 3
+          done
+
+          echo "Timed out waiting for $service to become healthy" >&2
+          return 1
+        }
+
+        wait_for_service_health constancia_postgres
+
+        docker run --rm --network constancia_db \
+          -e DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@constancia_postgres:5432/${POSTGRES_DB}?schema=public" \
+          constancia-migrate:prod
+
+        docker stack deploy -c compose.prod.yaml constancia --detach=false --resolve-image never
+        docker stack services constancia
         docker image prune -f

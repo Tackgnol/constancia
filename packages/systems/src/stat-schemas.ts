@@ -11,6 +11,16 @@ export interface GameSystemSummary {
 type SystemStatValue = number | string | boolean;
 
 const DEFAULT_SYSTEM_SUMMARY_VERSION = '0.1.0';
+const GAME_SYSTEM_ID_ALIASES: Record<string, string> = {
+  'vtm-5': 'vtm-v5',
+  vtm5: 'vtm-v5',
+  'vtm-v5': 'vtm-v5',
+  'vampire-the-masquerade-5e': 'vtm-v5',
+  'vampire-the-masquerade-v5': 'vtm-v5',
+  'vampire-the-masquerade-5th-edition': 'vtm-v5',
+  morkborg: 'mork-borg',
+  'mork-borg': 'mork-borg',
+};
 
 export const GAME_SYSTEM_SUMMARIES: readonly GameSystemSummary[] = [
   {
@@ -29,6 +39,18 @@ const GAME_SYSTEM_STAT_SCHEMAS: Record<string, StatSchema> = {
   'vtm-v5': VTM_STAT_SCHEMA,
   'mork-borg': MB_STAT_SCHEMA,
 };
+
+function normalizeGameSystemLookupKey(systemId: string): string {
+  return systemId
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_:]+/g, '-');
+}
+
+export function resolveGameSystemId(systemId: string): string {
+  const lookupKey = normalizeGameSystemLookupKey(systemId);
+  return GAME_SYSTEM_ID_ALIASES[lookupKey] ?? systemId;
+}
 
 function coerceStatValue(field: StatField, rawValue: unknown): SystemStatValue {
   if (field.type === 'number') {
@@ -68,11 +90,12 @@ export function listSupportedGameSystems(): readonly GameSystemSummary[] {
 }
 
 export function getGameSystemSummary(systemId: string): GameSystemSummary | null {
-  return GAME_SYSTEM_SUMMARIES.find((system) => system.id === systemId) ?? null;
+  const canonicalId = resolveGameSystemId(systemId);
+  return GAME_SYSTEM_SUMMARIES.find((system) => system.id === canonicalId) ?? null;
 }
 
 export function getStatSchemaForSystem(systemId: string): StatSchema {
-  return GAME_SYSTEM_STAT_SCHEMAS[systemId] ?? { groups: [] };
+  return GAME_SYSTEM_STAT_SCHEMAS[resolveGameSystemId(systemId)] ?? { groups: [] };
 }
 
 export function extractSystemStats(
@@ -80,7 +103,7 @@ export function extractSystemStats(
   systemData: Record<string, unknown> | null | undefined,
 ): Record<string, SystemStatValue> {
   const source = systemData ?? {};
-  const schema = getStatSchemaForSystem(systemId);
+  const schema = getStatSchemaForSystem(resolveGameSystemId(systemId));
 
   return Object.fromEntries(
     schema.groups.flatMap((group) => {
@@ -103,7 +126,7 @@ export function mergeSystemStats(
   statValues: Record<string, unknown>,
 ): Record<string, unknown> {
   const next = { ...(systemData ?? {}) };
-  const schema = getStatSchemaForSystem(systemId);
+  const schema = getStatSchemaForSystem(resolveGameSystemId(systemId));
 
   for (const group of schema.groups) {
     const currentGroup =

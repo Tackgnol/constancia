@@ -15,6 +15,17 @@ describe('system stat schemas', () => {
     expect(schema.groups[1]?.fields.some((field) => field.key === 'occult')).toBe(true);
   });
 
+  it('resolves legacy VTM system ids to the configured stat schema', () => {
+    const schema = getStatSchemaForSystem('VtM5');
+
+    expect(getGameSystemSummary('VtM5')?.id).toBe('vtm-v5');
+    expect(schema.groups.map((group) => group.key)).toEqual(['attributes', 'skills']);
+    expect(extractSystemStats('VtM5', { attributes: { wits: 2 } })).toMatchObject({
+      wits: 2,
+      strength: 0,
+    });
+  });
+
   it('extracts VTM stats from nested system data', () => {
     expect(
       extractSystemStats('vtm-v5', {
