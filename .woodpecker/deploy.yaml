@@ -24,8 +24,6 @@
 # for the full list of toggles):
 #   POSTGRES_DB=constancia
 #   POSTGRES_USER=constancia
-#   FRONTEND_PORT=3020                # Caddy constancia.rpgtools.eu.org frontend target
-#   BACKEND_PORT=3021                 # Caddy constancia.rpgtools.eu.org auth/API target
 #   VITE_DISCORD_AUTH_ENABLED=false
 #   CONTENT_MODERATION_ENABLED=true
 #   UPLOAD_STORAGE_DRIVER=r2
