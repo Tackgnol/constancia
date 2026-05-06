@@ -179,6 +179,29 @@ steps:
 
         wait_for_service_health constancia_postgres
 
+        sync_postgres_password() {
+          postgres_container_id="$(docker ps --filter label=com.docker.swarm.service.name=constancia_postgres --format '{{.ID}}' | head -n 1)"
+          if [ -z "$postgres_container_id" ]; then
+            echo "Could not find running constancia_postgres container" >&2
+            return 1
+          fi
+
+          docker exec -i \
+            -u postgres \
+            -e POSTGRES_DB="${POSTGRES_DB:-constancia}" \
+            -e POSTGRES_USER="${POSTGRES_USER:-constancia}" \
+            -e NEW_PG_PASSWORD="$POSTGRES_PASSWORD" \
+            "$postgres_container_id" \
+            sh -c 'printf "ALTER USER %s WITH PASSWORD '\''%s'\'';\n" "$(printf "%s" "$POSTGRES_USER" | sed "s/\"/\"\"/g")" "$(printf "%s" "$NEW_PG_PASSWORD" | sed "s/'\''/'\'''\''/g")" | psql -d "$POSTGRES_DB" -v ON_ERROR_STOP=1'
+        }
+
+        sync_postgres_password
+
+        docker run --rm --network constancia_db \
+          -e PGPASSWORD="$POSTGRES_PASSWORD" \
+          postgres:17-alpine \
+          psql -h constancia_postgres -U "${POSTGRES_USER:-constancia}" -d "${POSTGRES_DB:-constancia}" -v ON_ERROR_STOP=1 -c 'select 1' > /dev/null
+
         docker run --rm --network constancia_db \
           -e DATABASE_URL="postgresql://${POSTGRES_USER:-constancia}:${POSTGRES_PASSWORD_URLENCODED}@constancia_postgres:5432/${POSTGRES_DB:-constancia}?schema=public" \
           constancia-migrate:prod
