@@ -1,22 +1,23 @@
-name: constancia
-
 # ---------------------------------------------------------------------------
 # Network topology (least-privilege, see networks: at the bottom)
 #
 #   db      [internal]  postgres ⇄ backend, migrate
 #   fe-be   [internal]  backend  ⇄ frontend
 #   bot-be  [internal]  backend  ⇄ bot
-#   edge    [bridge]    Caddy host loopback ports ⇄ backend, frontend
-#   egress  [bridge]    backend, bot  → internet (OpenAI, R2, Discord)
+#   rpg-network [overlay] Caddy ⇄ backend, frontend
+#   egress [overlay] backend, bot  → internet (OpenAI, R2, Discord)
 #
 # Postgres is unreachable except from backend/migrate. Frontend cannot reach
 # Postgres or the bot. Bot cannot reach Postgres or the frontend. Caddy on the
-# host reverse-proxies to the loopback ports published below.
+# reverse-proxies over the external rpg-network overlay.
 # ---------------------------------------------------------------------------
 
 x-runtime-deploy: &runtime-deploy
-  restart: unless-stopped
-  init: true
+  update_config:
+    order: start-first
+    failure_action: rollback
+  restart_policy:
+    condition: on-failure
 
 x-backend-environment: &backend-environment
   NODE_ENV: production
@@ -54,7 +55,9 @@ x-backend-environment: &backend-environment
 services:
   postgres:
     image: postgres:17-alpine
-    restart: unless-stopped
+    deploy:
+      restart_policy:
+        condition: on-failure
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-constancia}
       POSTGRES_USER: ${POSTGRES_USER:-constancia}
@@ -72,28 +75,27 @@ services:
       start_period: 10s
 
   migrate:
+    image: constancia-migrate:prod
     build:
       context: .
       dockerfile: docker/backend.prod.Dockerfile
       target: migrate
-    depends_on:
-      postgres:
-        condition: service_healthy
+    deploy:
+      replicas: 0
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-constancia}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-constancia}?schema=public
     networks:
       - db
-    restart: 'no'
 
   backend:
-    <<: *runtime-deploy
+    image: constancia-backend:prod
     build:
       context: .
       dockerfile: docker/backend.prod.Dockerfile
       target: runtime
-    depends_on:
-      postgres:
-        condition: service_healthy
+    deploy:
+      <<: *runtime-deploy
+      replicas: ${BACKEND_REPLICAS:-1}
     environment: *backend-environment
     volumes:
       - backend_uploads:/app/data/uploads
@@ -101,10 +103,8 @@ services:
       - db
       - fe-be
       - bot-be
-      - edge
+      - rpg-network
       - egress
-    ports:
-      - '127.0.0.1:${BACKEND_PORT:?BACKEND_PORT is required}:3000'
     healthcheck:
       test:
         - CMD
@@ -117,13 +117,13 @@ services:
       start_period: 20s
 
   bot:
-    <<: *runtime-deploy
+    image: constancia-bot:prod
     build:
       context: .
       dockerfile: docker/bot.prod.Dockerfile
-    depends_on:
-      backend:
-        condition: service_healthy
+    deploy:
+      <<: *runtime-deploy
+      replicas: ${BOT_REPLICAS:-1}
     environment:
       NODE_ENV: production
       BACKEND_URL: http://backend:3000
@@ -139,13 +139,13 @@ services:
       - egress
 
   frontend:
-    <<: *runtime-deploy
+    image: constancia-frontend:prod
     build:
       context: .
       dockerfile: docker/frontend.prod.Dockerfile
-    depends_on:
-      backend:
-        condition: service_healthy
+    deploy:
+      <<: *runtime-deploy
+      replicas: ${FRONTEND_REPLICAS:-1}
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
@@ -155,9 +155,7 @@ services:
       VITE_DISCORD_AUTH_ENABLED: ${VITE_DISCORD_AUTH_ENABLED:-false}
     networks:
       - fe-be
-      - edge
-    ports:
-      - '127.0.0.1:${FRONTEND_PORT:?FRONTEND_PORT is required}:3000'
+      - rpg-network
     healthcheck:
       test:
         - CMD
@@ -176,11 +174,11 @@ volumes:
 networks:
   db:
     internal: true
+    attachable: true
   fe-be:
     internal: true
   bot-be:
     internal: true
-  edge:
-    driver: bridge
+  rpg-network:
+    external: true
   egress:
-    driver: bridge
