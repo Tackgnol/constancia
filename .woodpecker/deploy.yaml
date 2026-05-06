@@ -84,8 +84,7 @@ steps:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      <<: *common-environment
-      <<: *common-secrets
+      <<: [*common-environment, *common-secrets]
     commands:
       - |
         set -e
@@ -111,8 +110,7 @@ steps:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      <<: *common-environment
-      <<: *common-secrets
+      <<: [*common-environment, *common-secrets]
     commands:
       - |
         set -e
