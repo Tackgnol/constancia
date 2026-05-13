@@ -15,6 +15,7 @@ const openApiPlugin: FastifyPluginAsync = async (app) => {
       tags: [
         { name: 'meta', description: 'Service metadata and health checks' },
         { name: 'auth', description: 'Authentication and session endpoints' },
+        { name: 'admin', description: 'Superuser-only review endpoints' },
         { name: 'campaigns', description: 'Campaign management endpoints' },
         { name: 'characters', description: 'Character management endpoints' },
         { name: 'npcs', description: 'NPC and knowledge endpoints' },

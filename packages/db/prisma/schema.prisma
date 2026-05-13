@@ -13,6 +13,7 @@ model User {
   email                String   @unique
   emailVerified        Boolean  @default(false)
   image                String?
+  isSuperUser          Boolean  @default(false)
   uploadsEnabled       Boolean  @default(false)
   uploadAllowanceBytes Int      @default(52428800)
   createdAt            DateTime @default(now())
@@ -21,6 +22,7 @@ model User {
   sessions     Session[]
   accounts     Account[]
   uploadAssets UploadAsset[]
+  messageReports MessageReport[]
 
   @@map("user")
 }
@@ -44,6 +46,36 @@ model UploadAsset {
   @@index([userId, createdAt])
   @@index([eventId])
   @@map("upload_assets")
+}
+
+model MessageReport {
+  id               String              @id @default(cuid())
+  eventId          String?
+  campaignId       String?
+  discordGuildId   String?
+  discordChannelId String?
+  discordMessageId String?
+  discordUserId    String
+  messageTarget    String?
+  messageContent   String              @default("")
+  imageUrl         String?
+  status           MessageReportStatus @default(pending)
+  createdAt        DateTime            @default(now())
+  reviewedAt       DateTime?
+  reviewedByUserId String?
+
+  reviewedBy User? @relation(fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([eventId])
+  @@index([campaignId])
+  @@map("message_reports")
+}
+
+enum MessageReportStatus {
+  pending
+  reviewed
+  dismissed
 }
 
 model Session {

@@ -3329,6 +3329,57 @@ h3 {
   white-space: pre;
 }
 
+.image-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.75rem;
+}
+
+.image-upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.75rem;
+  padding: 0 0.65rem;
+  border: 1px solid var(--line);
+  background: var(--surface-low);
+  color: var(--muted-strong);
+  font:
+    700 0.65rem/1 'IBM Plex Mono',
+    monospace;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease,
+    background 150ms ease;
+}
+
+.image-upload-button:hover {
+  border-color: var(--primary-glow);
+  color: var(--text);
+}
+
+.image-upload-button input {
+  display: none;
+}
+
+.image-upload-status {
+  color: var(--muted-strong);
+  font:
+    0.65rem/1.2 'IBM Plex Mono',
+    monospace;
+}
+
+.image-upload-status-error {
+  color: var(--destructive-foreground);
+}
+
+.image-upload-status-done {
+  color: #3fb950;
+}
+
 @media (max-width: 640px) {
   .topbar,
   .route-panel,

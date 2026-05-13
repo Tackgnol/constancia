@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
-import { useOutletContext } from 'react-router';
+import { useLocation, useOutletContext } from 'react-router';
 import { VTM_ATTRIBUTES, VTM_SKILLS, type VtmStatOption } from '@constancia/systems';
+import { ImageUploadField } from '@/components/forms/image-upload-field';
 import { Input } from './ui/input.js';
 import { RecipientMultiValueField } from './recipient-multi-value-field.js';
 import { Label } from './ui/label.js';
@@ -80,6 +81,8 @@ export function BlockConfigFields({ index, blockType }: Props) {
     { message?: string }
   >;
   const recipientOptions = buildRecipientOptions(warRoom.rawCharacters, warRoom.players);
+  const imageUrlName = `pipeline.${index}.config.imageUrl` as const;
+  const captionName = `pipeline.${index}.config.caption` as const;
 
   if (blockType === 'message-player') {
     return (
@@ -104,11 +107,7 @@ export function BlockConfigFields({ index, blockType }: Props) {
             />
           </ConfigField>
           <ConfigField label="Image URL" optional>
-            <Input
-              type="text"
-              placeholder="https://…"
-              {...register(`pipeline.${index}.config.imageUrl` as const)}
-            />
+            <ImageUrlField name={imageUrlName} />
           </ConfigField>
         </div>
       </div>
@@ -126,11 +125,7 @@ export function BlockConfigFields({ index, blockType }: Props) {
           />
         </ConfigField>
         <ConfigField label="Image URL" optional>
-          <Input
-            type="text"
-            placeholder="https://…"
-            {...register(`pipeline.${index}.config.imageUrl` as const)}
-          />
+          <ImageUrlField name={imageUrlName} />
         </ConfigField>
       </div>
     );
@@ -159,11 +154,7 @@ export function BlockConfigFields({ index, blockType }: Props) {
             />
           </ConfigField>
           <ConfigField label="Image URL" optional>
-            <Input
-              type="text"
-              placeholder="https://…"
-              {...register(`pipeline.${index}.config.imageUrl` as const)}
-            />
+            <ImageUrlField name={imageUrlName} />
           </ConfigField>
         </div>
       </div>
@@ -174,11 +165,7 @@ export function BlockConfigFields({ index, blockType }: Props) {
     return (
       <div className="grid grid-cols-2 gap-3">
         <ConfigField label="Image URL" error={blockErrors.imageUrl?.message}>
-          <Input
-            type="text"
-            placeholder="https://…"
-            {...register(`pipeline.${index}.config.imageUrl` as const)}
-          />
+          <ImageUrlField name={imageUrlName} captionName={captionName} />
         </ConfigField>
         <ConfigField label="Caption" optional>
           <Input
@@ -300,6 +287,41 @@ export function BlockConfigFields({ index, blockType }: Props) {
   }
 
   return null;
+}
+
+type ImageUrlPath = `pipeline.${number}.config.imageUrl`;
+type ImageCaptionPath = `pipeline.${number}.config.caption`;
+
+function ImageUrlField({
+  name,
+  captionName,
+}: {
+  name: ImageUrlPath;
+  captionName?: ImageCaptionPath;
+}) {
+  const location = useLocation();
+  const warRoom = useOutletContext<WarRoomContext>();
+  const { setValue, watch } = useFormContext<EventFormValues>();
+  const value = (watch(name) as string | undefined) ?? '';
+  const captionValue =
+    captionName === undefined ? '' : ((watch(captionName) as string | undefined) ?? '');
+
+  return (
+    <ImageUploadField
+      id={name}
+      actionPath={location.pathname}
+      caption={captionValue}
+      disabled={warRoom.demoMode ?? warRoom.campaign.id.startsWith('demo-')}
+      onChange={(nextValue) =>
+        setValue(name, nextValue, {
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true,
+        })
+      }
+      value={value}
+    />
+  );
 }
 
 function VtmStatAutocomplete({

@@ -14,6 +14,7 @@ import botRoutes from './bot-routes.js';
 import systemRoutes from './system-routes.js';
 import userSettingsRoutes from './user-settings-routes.js';
 import { uploadProtectedRoutes, uploadPublicRoutes } from './upload-routes.js';
+import adminRoutes from './admin-routes.js';
 import sessionGuardPlugin from '../plugins/session-guard-plugin.js';
 import botAuthPlugin from '../plugins/bot-auth-plugin.js';
 
@@ -26,6 +27,7 @@ const apiRoutes: FastifyPluginAsync = async (app) => {
   await app.register(async (protected_) => {
     await protected_.register(sessionGuardPlugin);
     await protected_.register(userSettingsRoutes, { prefix: '/users' });
+    await protected_.register(adminRoutes, { prefix: '/admin' });
     await protected_.register(uploadProtectedRoutes, { prefix: '/uploads' });
     await protected_.register(campaignRoutes, { prefix: '/campaigns' });
     await protected_.register(channelRoutes, { prefix: '/campaigns/:id/channels' });

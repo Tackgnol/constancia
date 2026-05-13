@@ -26,6 +26,7 @@ import { buildServerApiOptions } from '@/lib/api-proxy.server';
 import { postRouteAction } from '@/lib/route-action-client';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
+import { handleUploadImageAction } from '@/lib/upload-image-action.server';
 import {
   BLOCK_TYPES,
   EVENT_TYPES,
@@ -152,14 +153,18 @@ export async function action({ request }: ActionFunctionArgs) {
   const payload = parseEventPayload(formData.get('payload'));
   const apiOptions = buildServerApiOptions(request);
 
-  if (typeof campaignId !== 'string' || campaignId.length === 0) {
-    return Response.json(
-      { status: 'error', message: 'Campaign context is missing.' },
-      { status: 400 },
-    );
-  }
-
   try {
+    if (intent === 'upload-image') {
+      return handleUploadImageAction(request, formData);
+    }
+
+    if (typeof campaignId !== 'string' || campaignId.length === 0) {
+      return Response.json(
+        { status: 'error', message: 'Campaign context is missing.' },
+        { status: 400 },
+      );
+    }
+
     if (intent === 'delete-event') {
       if (typeof eventId !== 'string' || eventId.length === 0) {
         return Response.json({ status: 'error', message: 'Event id is missing.' }, { status: 400 });

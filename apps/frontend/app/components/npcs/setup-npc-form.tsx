@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { CreateNpcBody } from '@constancia/api-client/model';
 import { formFieldLabelClassName } from '@/components/forms/field-label';
+import { ImageUploadField } from '@/components/forms/image-upload-field';
 import { postRouteAction } from '@/lib/route-action-client';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -169,15 +170,22 @@ export function SetupNpcForm({
           <Label htmlFor="npc-image-url" className={formFieldLabelClassName}>
             Portrait URL <span className="form-optional">optional</span>
           </Label>
-          <Input
-            id="npc-image-url"
-            type="url"
-            placeholder="https://i.imgur.com/example.png"
-            {...register('imageUrl')}
+          <Controller
+            control={control}
+            name="imageUrl"
+            render={({ field }) => (
+              <ImageUploadField
+                id="npc-image-url"
+                actionPath={actionPath}
+                disabled={isDemoCampaign}
+                onChange={field.onChange}
+                placeholder="https://i.imgur.com/example.png"
+                value={field.value}
+              />
+            )}
           />
           <span className="form-hint">
-            No uploads in this panel. Host the portrait elsewhere — Imgur, Discord CDN, or a similar
-            service — then paste the direct image URL.
+            Upload a portrait or paste a direct image URL. Demo mode keeps uploads disabled.
           </span>
           {errors.imageUrl ? <span className="form-error">{errors.imageUrl.message}</span> : null}
         </div>

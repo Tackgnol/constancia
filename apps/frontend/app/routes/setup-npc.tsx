@@ -36,6 +36,7 @@ import { SetupNotice } from '@/components/setup/setup-notice';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import { demoNpcs } from '@/lib/demo-npcs';
 import { postRouteAction } from '@/lib/route-action-client';
+import { handleUploadImageAction } from '@/lib/upload-image-action.server';
 import type { WarRoomContext } from '@/lib/war-room-data';
 
 type ApiKnownPlayer = {
@@ -134,6 +135,11 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const intent = formData.get('intent');
+
+  if (intent === 'upload-image') {
+    return handleUploadImageAction(request, formData);
+  }
+
   const campaignId = formData.get('campaignId');
   const npcId = formData.get('npcId');
   const apiOptions = buildServerApiOptions(request);

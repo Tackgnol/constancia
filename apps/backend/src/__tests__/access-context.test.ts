@@ -70,6 +70,7 @@ describe('access context', () => {
       userId: 'user-1',
       email: 'gm@example.com',
       discordUserId: 'discord-account-99',
+      isSuperUser: false,
     });
   });
 });

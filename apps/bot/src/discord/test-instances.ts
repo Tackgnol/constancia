@@ -19,6 +19,7 @@ import { submitBotTestResult } from '@constancia/api-client/endpoints/bot/bot';
 import { botRequestOptions } from '../config.js';
 import { deliverMessages } from '../delivery.js';
 import type { BotComponentHandler, BotModalHandler } from './command-types.js';
+import { buildMessageReportButton } from './message-reports.js';
 
 const TEST_INSTANCE_SUBMIT_PREFIX = 'test-instance:submit:';
 const TEST_INSTANCE_MODAL_PREFIX = 'test-instance:modal:';
@@ -72,6 +73,7 @@ function buildTestInstanceButton(
       )
       .setLabel('Submit Result')
       .setStyle(ButtonStyle.Primary),
+    buildMessageReportButton(payload.eventId),
   );
 }
 

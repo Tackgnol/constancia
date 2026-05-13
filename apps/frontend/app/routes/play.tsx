@@ -8,6 +8,7 @@ import type { ListEvents200DataItem } from '@constancia/api-client/model';
 import { buildServerApiOptions } from '@/lib/api-proxy.server';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import { postRouteAction } from '@/lib/route-action-client';
+import { handleUploadImageAction } from '@/lib/upload-image-action.server';
 import type { TriggerKind, WarRoomContext } from '@/lib/war-room-data';
 
 const HOLD_DURATION_MS = 1800;
@@ -51,6 +52,11 @@ function asStringArray(input: FormDataEntryValue | null): string[] {
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const intent = formData.get('intent');
+
+  if (intent === 'upload-image') {
+    return handleUploadImageAction(request, formData);
+  }
+
   const campaignId = formData.get('campaignId');
   const apiOptions = buildServerApiOptions(request);
 

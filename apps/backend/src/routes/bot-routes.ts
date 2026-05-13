@@ -8,6 +8,7 @@ import {
   botTestResultBodySchema,
   botTestResultResponseSchema,
   campaignSchema,
+  botMessageReportBodySchema,
   campaignDiscordUserParamsSchema,
   channelParamsSchema,
   deleteResponseSchema,
@@ -15,6 +16,7 @@ import {
   journalForPlayerSchema,
   guildParamsSchema,
   listResponseSchema,
+  messageReportSchema,
   playerVisibleNpcSchema,
   participantParamsSchema,
   setupChannelBodySchema,
@@ -37,6 +39,48 @@ interface BotTestResultBody {
   channelId: string;
   discordUserId: string;
   playerScore: number;
+}
+
+interface BotMessageReportBody {
+  eventId: string;
+  campaignId?: string;
+  discordGuildId?: string;
+  discordChannelId?: string;
+  discordMessageId?: string;
+  discordUserId: string;
+  messageTarget?: string;
+  messageContent?: string;
+  imageUrl?: string;
+}
+
+function mapMessageReport(report: {
+  id: string;
+  eventId: string | null;
+  campaignId: string | null;
+  discordGuildId: string | null;
+  discordChannelId: string | null;
+  discordMessageId: string | null;
+  discordUserId: string;
+  messageTarget: string | null;
+  messageContent: string;
+  imageUrl: string | null;
+  status: string;
+  createdAt: Date;
+}) {
+  return {
+    id: report.id,
+    ...(report.eventId === null ? {} : { eventId: report.eventId }),
+    ...(report.campaignId === null ? {} : { campaignId: report.campaignId }),
+    ...(report.discordGuildId === null ? {} : { discordGuildId: report.discordGuildId }),
+    ...(report.discordChannelId === null ? {} : { discordChannelId: report.discordChannelId }),
+    ...(report.discordMessageId === null ? {} : { discordMessageId: report.discordMessageId }),
+    discordUserId: report.discordUserId,
+    ...(report.messageTarget === null ? {} : { messageTarget: report.messageTarget }),
+    messageContent: report.messageContent,
+    ...(report.imageUrl === null ? {} : { imageUrl: report.imageUrl }),
+    status: report.status,
+    createdAt: report.createdAt.toISOString(),
+  };
 }
 
 interface GuildParams {
@@ -72,6 +116,54 @@ interface CampaignDiscordUserParams {
 }
 
 const botRoutes: FastifyPluginAsync = async (app) => {
+  app.post<{ Body: BotMessageReportBody }>(
+    '/message-reports',
+    {
+      schema: {
+        tags: ['bot'],
+        summary: 'Store a Discord message report from a player',
+        operationId: 'createBotMessageReport',
+        body: botMessageReportBodySchema,
+        response: {
+          201: singleResponseSchema(messageReportSchema),
+        },
+      },
+    },
+    async (request, reply) => {
+      const prisma = getPrismaClient();
+      const report = await prisma.messageReport.create({
+        data: {
+          eventId: request.body.eventId,
+          campaignId: request.body.campaignId,
+          discordGuildId: request.body.discordGuildId,
+          discordChannelId: request.body.discordChannelId,
+          discordMessageId: request.body.discordMessageId,
+          discordUserId: request.body.discordUserId,
+          messageTarget: request.body.messageTarget,
+          messageContent: request.body.messageContent ?? '',
+          imageUrl: request.body.imageUrl,
+        },
+        select: {
+          id: true,
+          eventId: true,
+          campaignId: true,
+          discordGuildId: true,
+          discordChannelId: true,
+          discordMessageId: true,
+          discordUserId: true,
+          messageTarget: true,
+          messageContent: true,
+          imageUrl: true,
+          status: true,
+          createdAt: true,
+        },
+      });
+
+      reply.code(201);
+      return ok(mapMessageReport(report));
+    },
+  );
+
   app.post<{ Body: BotTestResultBody }>(
     '/test-result',
     {

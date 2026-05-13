@@ -69,7 +69,13 @@ describe('bot HTTP server', () => {
         status: 'ok',
         data: { eventId: 'event-1', delivered: 1, skipped: 0 },
       });
-      expect(send).toHaveBeenCalledWith('The coterie hears the door unlock.');
+      expect(send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'The coterie hears the door unlock.',
+        }),
+      );
+      const sentPayload = send.mock.calls[0]?.[0];
+      expect(sentPayload.components[0].components[0].data.custom_id).toBe('message-report:event-1');
     } finally {
       await app.close();
     }
@@ -125,6 +131,8 @@ describe('bot HTTP server', () => {
         'test-instance:submit:event-7:campaign-3',
       );
       expect(sentPayload.components[0].components[0].data.label).toBe('Submit Result');
+      expect(sentPayload.components[0].components[1].data.custom_id).toBe('message-report:event-7');
+      expect(sentPayload.components[0].components[1].data.label).toBe('Report');
     } finally {
       await app.close();
     }

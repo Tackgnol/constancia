@@ -9,8 +9,12 @@
 #   backend_public_url
 #   discord_token
 #   discord_client_id
+#   superuser_email
+#   superuser_discord_id
 #
 # Optional (only when enabling the corresponding feature):
+#   superuser_name              # Defaults to "Constancia Superuser"
+#   superuser_upload_allowance_bytes
 #   discord_client_secret      # Better Auth Discord OAuth in the backend/frontend
 #   discord_guild_id           # Faster per-guild slash-command registration
 #   openai_api_key             # Required when CONTENT_MODERATION_ENABLED=true
@@ -65,6 +69,14 @@ steps:
         from_secret: discord_token
       DISCORD_CLIENT_ID:
         from_secret: discord_client_id
+      SUPERUSER_EMAIL:
+        from_secret: superuser_email
+      SUPERUSER_DISCORD_ID:
+        from_secret: superuser_discord_id
+      SUPERUSER_NAME:
+        from_secret: superuser_name
+      SUPERUSER_UPLOAD_ALLOWANCE_BYTES:
+        from_secret: superuser_upload_allowance_bytes
       OPENAI_API_KEY:
         from_secret: openai_api_key
       R2_ENDPOINT:
@@ -126,6 +138,14 @@ steps:
         from_secret: discord_token
       DISCORD_CLIENT_ID:
         from_secret: discord_client_id
+      SUPERUSER_EMAIL:
+        from_secret: superuser_email
+      SUPERUSER_DISCORD_ID:
+        from_secret: superuser_discord_id
+      SUPERUSER_NAME:
+        from_secret: superuser_name
+      SUPERUSER_UPLOAD_ALLOWANCE_BYTES:
+        from_secret: superuser_upload_allowance_bytes
       OPENAI_API_KEY:
         from_secret: openai_api_key
       R2_ENDPOINT:
@@ -184,6 +204,8 @@ steps:
         require_url BETTER_AUTH_URL
         require_url BACKEND_PUBLIC_URL
         require_env POSTGRES_PASSWORD
+        require_env SUPERUSER_EMAIL
+        require_env SUPERUSER_DISCORD_ID
 
         if [ -n "$UPLOAD_PUBLIC_BASE_URL" ]; then
           require_url UPLOAD_PUBLIC_BASE_URL
@@ -271,6 +293,10 @@ steps:
           -e POSTGRES_USER="${POSTGRES_USER:-constancia}" \
           -e PGHOST="constancia_postgres" \
           -e POSTGRES_DB="${POSTGRES_DB:-constancia}" \
+          -e SUPERUSER_EMAIL="$SUPERUSER_EMAIL" \
+          -e SUPERUSER_DISCORD_ID="$SUPERUSER_DISCORD_ID" \
+          -e SUPERUSER_NAME="$SUPERUSER_NAME" \
+          -e SUPERUSER_UPLOAD_ALLOWANCE_BYTES="$SUPERUSER_UPLOAD_ALLOWANCE_BYTES" \
           constancia-migrate:prod
         echo "Migrations complete"
 

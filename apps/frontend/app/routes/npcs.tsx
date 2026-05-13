@@ -20,6 +20,7 @@ import { NpcPortraitFallback } from '@/components/npcs/npc-portrait-fallback';
 import { SystemBlockRenderer } from '@/components/npcs/system-block-renderer';
 import { buildRecipientOptions, type WarRoomContext } from '@/lib/war-room-data';
 import { demoNpcs } from '@/lib/demo-npcs';
+import { handleUploadImageAction } from '@/lib/upload-image-action.server';
 
 type ApiKnownPlayer = {
   characterId: string;
@@ -107,6 +108,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
+  const intent = formData.get('intent');
+
+  if (intent === 'upload-image') {
+    return handleUploadImageAction(request, formData);
+  }
+
   const campaignId = formData.get('campaignId');
   const npcId = formData.get('npcId');
   const npcFactIds = asStringArray(formData.get('npcFactIds'));

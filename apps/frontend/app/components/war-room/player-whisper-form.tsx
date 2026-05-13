@@ -4,9 +4,9 @@ import { MessageSquare, Send, X } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { formFieldLabelClassName } from '@/components/forms/field-label';
+import { ImageUploadField } from '@/components/forms/image-upload-field';
 import { postRouteAction } from '@/lib/route-action-client';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -222,7 +222,20 @@ export function PlayerWhisperForm({ warRoom }: PlayerWhisperFormProps) {
 
           <div className="form-field form-field-full">
             <Label className={formFieldLabelClassName}>Image URL</Label>
-            <Input type="text" placeholder="Optional image URL..." {...register('imageUrl')} />
+            <Controller
+              control={control}
+              name="imageUrl"
+              render={({ field }) => (
+                <ImageUploadField
+                  id="whisper-image-url"
+                  actionPath={actionPath}
+                  disabled={isDemoMode}
+                  onChange={field.onChange}
+                  placeholder="Optional image URL..."
+                  value={field.value ?? ''}
+                />
+              )}
+            />
           </div>
 
           {errors.root?.serverError?.message ? (

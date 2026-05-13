@@ -4,6 +4,7 @@ import {
   type SendMessagesPayload,
 } from '@constancia/contracts';
 import type { Client } from 'discord.js';
+import { buildMessageReportRow } from './discord/message-reports.js';
 
 function formatMessageContent(message: Pick<BlockMessage, 'content' | 'imageUrl'>): string {
   return [message.content.trim(), message.imageUrl?.trim()].filter(Boolean).join('\n');
@@ -13,6 +14,7 @@ export async function deliverMessage(
   client: Client,
   discordChannelId: string,
   message: BlockMessage,
+  eventId: string,
 ): Promise<{ delivered: number; skipped: number }> {
   const content = formatMessageContent(message);
   if (!content) {
@@ -36,14 +38,20 @@ export async function deliverMessage(
       return { delivered: 0, skipped: 1 };
     }
 
-    await channel.send(content);
+    await channel.send({
+      content,
+      components: [buildMessageReportRow(eventId)],
+    });
     return { delivered: 1, skipped: 0 };
   }
 
   if (resolvedRecipients.target === 'player') {
     try {
       const user = await client.users.fetch(resolvedRecipients.userIds[0]);
-      await user.send(content);
+      await user.send({
+        content,
+        components: [buildMessageReportRow(eventId)],
+      });
       return { delivered: 1, skipped: 0 };
     } catch (error) {
       console.warn('[bot-http] Failed to deliver player DM:', {
@@ -58,7 +66,10 @@ export async function deliverMessage(
     resolvedRecipients.userIds.map(async (targetId: string) => {
       try {
         const user = await client.users.fetch(targetId);
-        await user.send(content);
+        await user.send({
+          content,
+          components: [buildMessageReportRow(eventId)],
+        });
         return true;
       } catch (error) {
         console.warn('[bot-http] Failed to deliver group DM:', { targetId, error });
@@ -79,7 +90,7 @@ export async function deliverMessages(
   let skipped = 0;
 
   for (const message of body.messages) {
-    const result = await deliverMessage(client, body.discordChannelId, message);
+    const result = await deliverMessage(client, body.discordChannelId, message, body.eventId);
     delivered += result.delivered;
     skipped += result.skipped;
   }

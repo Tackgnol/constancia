@@ -8,6 +8,7 @@ export interface SessionAccessContext {
   userId: string;
   email: string | null;
   discordUserId: string | null;
+  isSuperUser: boolean;
 }
 
 export interface BotAccessContext {
@@ -17,6 +18,7 @@ export interface BotAccessContext {
 export type AccessContext = SessionAccessContext | BotAccessContext;
 
 export type DiscordAccountLookup = (userId: string) => Promise<string | null>;
+export type SuperUserLookup = (userId: string) => Promise<boolean>;
 
 async function lookupDiscordAccountUserId(userId: string): Promise<string | null> {
   if (process.env.NODE_ENV === 'test') {
@@ -39,6 +41,20 @@ async function lookupDiscordAccountUserId(userId: string): Promise<string | null
   return account?.accountId ?? null;
 }
 
+async function lookupIsSuperUser(userId: string): Promise<boolean> {
+  if (process.env.NODE_ENV === 'test') {
+    return false;
+  }
+
+  const prisma = getPrismaClient();
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isSuperUser: true },
+  });
+
+  return user?.isSuperUser ?? false;
+}
+
 export async function resolveDiscordUserIdForSession(
   session: AuthSession,
   lookupDiscordAccount: DiscordAccountLookup = lookupDiscordAccountUserId,
@@ -49,6 +65,7 @@ export async function resolveDiscordUserIdForSession(
 export async function createSessionAccessContext(
   session: AuthSession,
   lookupDiscordAccount: DiscordAccountLookup = lookupDiscordAccountUserId,
+  lookupSuperUser: SuperUserLookup = lookupIsSuperUser,
 ): Promise<SessionAccessContext> {
   const email = typeof session.user.email === 'string' ? session.user.email : null;
 
@@ -57,6 +74,7 @@ export async function createSessionAccessContext(
     userId: session.user.id,
     email,
     discordUserId: await resolveDiscordUserIdForSession(session, lookupDiscordAccount),
+    isSuperUser: await lookupSuperUser(session.user.id),
   };
 }
 

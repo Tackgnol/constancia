@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { UpdateNpcBody } from '@constancia/api-client/model';
 import { formFieldLabelClassName } from '@/components/forms/field-label';
+import { ImageUploadField } from '@/components/forms/image-upload-field';
 import { postRouteAction } from '@/lib/route-action-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -166,7 +167,19 @@ export function NpcEditForm({
           <Label htmlFor={`npc-edit-image-${npc.id}`} className={formFieldLabelClassName}>
             Portrait URL <span className="form-optional">optional</span>
           </Label>
-          <Input id={`npc-edit-image-${npc.id}`} type="url" {...register('imageUrl')} />
+          <Controller
+            control={control}
+            name="imageUrl"
+            render={({ field }) => (
+              <ImageUploadField
+                id={`npc-edit-image-${npc.id}`}
+                actionPath={actionPath}
+                disabled={isDemoCampaign}
+                onChange={field.onChange}
+                value={field.value}
+              />
+            )}
+          />
           {errors.imageUrl ? <span className="form-error">{errors.imageUrl.message}</span> : null}
         </div>
       </div>

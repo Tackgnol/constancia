@@ -513,6 +513,23 @@ export const botTestResultBodySchema = {
   required: ['eventId', 'campaignId', 'channelId', 'discordUserId', 'playerScore'],
 } as const;
 
+export const botMessageReportBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    eventId: { type: 'string' },
+    campaignId: { type: 'string' },
+    discordGuildId: { type: 'string' },
+    discordChannelId: { type: 'string' },
+    discordMessageId: { type: 'string' },
+    discordUserId: { type: 'string' },
+    messageTarget: { type: 'string' },
+    messageContent: { type: 'string' },
+    imageUrl: { type: 'string' },
+  },
+  required: ['eventId', 'discordUserId'],
+} as const;
+
 export const standardResponseSchema = {
   type: 'object',
   additionalProperties: true,
@@ -895,6 +912,26 @@ export const botTestResultResponseSchema = {
     halted: { type: 'boolean' },
   },
   required: ['eventId', 'campaignId', 'messages', 'halted'],
+} as const;
+
+export const messageReportSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    eventId: { type: 'string' },
+    campaignId: { type: 'string' },
+    discordGuildId: { type: 'string' },
+    discordChannelId: { type: 'string' },
+    discordMessageId: { type: 'string' },
+    discordUserId: { type: 'string' },
+    messageTarget: { type: 'string' },
+    messageContent: { type: 'string' },
+    imageUrl: { type: 'string' },
+    status: { type: 'string' },
+    createdAt: { type: 'string', format: 'date-time' },
+  },
+  required: ['id', 'discordUserId', 'messageContent', 'status', 'createdAt'],
 } as const;
 
 export const setupChannelBodySchema = {

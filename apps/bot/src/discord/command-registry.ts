@@ -5,6 +5,7 @@ import { participantsCommand } from '../commands/participants.js';
 import { rollCommand } from '../commands/roll.js';
 import { sheetCommand } from '../commands/sheet.js';
 import { setupCommand } from '../commands/setup.js';
+import { messageReportComponentHandler } from './message-reports.js';
 import { testInstanceComponentHandler, testInstanceModalHandler } from './test-instances.js';
 import type {
   BotChatCommand,
@@ -30,6 +31,7 @@ const commandMap = new Map<string, BotChatCommand>(
 export const componentHandlers: readonly BotComponentHandler[] = [
   testInstanceComponentHandler,
   journalComponentHandler,
+  messageReportComponentHandler,
 ];
 export const modalHandlers: readonly BotModalHandler[] = [testInstanceModalHandler];
 
