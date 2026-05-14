@@ -3,12 +3,14 @@ import type { LoaderFunctionArgs } from 'react-router';
 import { Link, useLoaderData } from 'react-router';
 import { CharacterSheetForm } from '@/components/character-sheet/character-sheet-form';
 import {
+  ApiRequestError,
   getPlayerCharacterSheet,
   updatePlayerCharacterSheet,
   type CharacterSheetData,
   type CharacterSheetPatchBody,
 } from '@/lib/character-sheet';
 import { demoPlayerSheet } from '@/lib/demo-player-data';
+import { PlayerAccessErrorBoundary, throwPlayerAccessError } from '@/lib/player-access-error';
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const campaignId = params.campaignId ?? 'demo-crimson-dynasty';
@@ -25,10 +27,20 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       },
     });
   } catch (error) {
+    if (error instanceof ApiRequestError) {
+      throwPlayerAccessError(
+        error.status,
+        new URL(request.url).pathname,
+        'Failed to load player sheet.',
+      );
+    }
+
     console.error('Failed to load player sheet:', error);
     throw new Response('Failed to load player sheet.', { status: 502 });
   }
 }
+
+export const ErrorBoundary = PlayerAccessErrorBoundary;
 
 export function meta() {
   return [

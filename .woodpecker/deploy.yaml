@@ -15,7 +15,10 @@
 # Optional (only when enabling the corresponding feature):
 #   superuser_name              # Defaults to "Constancia Superuser"
 #   superuser_upload_allowance_bytes
-#   discord_client_secret      # Better Auth Discord OAuth in the backend/frontend
+#   logto_endpoint             # Required when LOGTO_ENABLED=true
+#   logto_app_id               #   "
+#   logto_app_secret           #   "
+#   logto_redirect_uri         # Optional; defaults to ${BETTER_AUTH_URL}/api/auth/oauth2/callback/logto
 #   discord_guild_id           # Faster per-guild slash-command registration
 #   openai_api_key             # Required when CONTENT_MODERATION_ENABLED=true
 #   upload_public_base_url     # Public R2/custom-domain prefix for direct object serving
@@ -30,7 +33,9 @@
 #   POSTGRES_USER=constancia
 #   FRONTEND_PORT=3020                # Caddy constancia.rpgtools.eu.org frontend target
 #   BACKEND_PORT=3021                 # Caddy constancia.rpgtools.eu.org auth/API target
-#   VITE_DISCORD_AUTH_ENABLED=false
+#   VITE_LOGTO_ENABLED=false
+#   LOGTO_ENABLED=false
+#   LOGTO_SCOPES="openid email profile identities"
 #   CONTENT_MODERATION_ENABLED=true
 #   UPLOAD_STORAGE_DRIVER=r2
 
@@ -49,7 +54,9 @@ steps:
       POSTGRES_USER: constancia
       FRONTEND_PORT: '3020'
       BACKEND_PORT: '3021'
-      VITE_DISCORD_AUTH_ENABLED: 'false'
+      VITE_LOGTO_ENABLED: 'false'
+      LOGTO_ENABLED: 'false'
+      LOGTO_SCOPES: 'openid email profile identities'
       CONTENT_MODERATION_ENABLED: 'true'
       CONTENT_MODERATION_FAIL_CLOSED: 'false'
       UPLOAD_STORAGE_DRIVER: r2
@@ -77,6 +84,14 @@ steps:
         from_secret: superuser_name
       SUPERUSER_UPLOAD_ALLOWANCE_BYTES:
         from_secret: superuser_upload_allowance_bytes
+      LOGTO_ENDPOINT:
+        from_secret: logto_endpoint
+      LOGTO_APP_ID:
+        from_secret: logto_app_id
+      LOGTO_APP_SECRET:
+        from_secret: logto_app_secret
+      LOGTO_REDIRECT_URI:
+        from_secret: logto_redirect_uri
       OPENAI_API_KEY:
         from_secret: openai_api_key
       R2_ENDPOINT:
@@ -118,7 +133,9 @@ steps:
       POSTGRES_USER: constancia
       FRONTEND_PORT: '3020'
       BACKEND_PORT: '3021'
-      VITE_DISCORD_AUTH_ENABLED: 'false'
+      VITE_LOGTO_ENABLED: 'false'
+      LOGTO_ENABLED: 'false'
+      LOGTO_SCOPES: 'openid email profile identities'
       CONTENT_MODERATION_ENABLED: 'true'
       CONTENT_MODERATION_FAIL_CLOSED: 'false'
       UPLOAD_STORAGE_DRIVER: r2
@@ -146,6 +163,14 @@ steps:
         from_secret: superuser_name
       SUPERUSER_UPLOAD_ALLOWANCE_BYTES:
         from_secret: superuser_upload_allowance_bytes
+      LOGTO_ENDPOINT:
+        from_secret: logto_endpoint
+      LOGTO_APP_ID:
+        from_secret: logto_app_id
+      LOGTO_APP_SECRET:
+        from_secret: logto_app_secret
+      LOGTO_REDIRECT_URI:
+        from_secret: logto_redirect_uri
       OPENAI_API_KEY:
         from_secret: openai_api_key
       R2_ENDPOINT:

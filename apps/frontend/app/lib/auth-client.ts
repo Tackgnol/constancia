@@ -1,12 +1,12 @@
 import { createAuthClient } from 'better-auth/react';
-import { magicLinkClient } from 'better-auth/client/plugins';
+import { genericOAuthClient, magicLinkClient } from 'better-auth/client/plugins';
 
 const authClientOptions = {
   basePath: '/api/auth',
   fetchOptions: {
     credentials: 'include' as const,
   },
-  plugins: [magicLinkClient()],
+  plugins: [magicLinkClient(), genericOAuthClient()],
 };
 
 const authClientInstance: ReturnType<typeof createAuthClient<typeof authClientOptions>> =

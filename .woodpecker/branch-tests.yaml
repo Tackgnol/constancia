@@ -33,7 +33,9 @@ steps:
       BACKEND_PORT: '3911'
       DISCORD_TOKEN: ci-discord-token
       DISCORD_CLIENT_ID: ci-discord-client-id
-      VITE_DISCORD_AUTH_ENABLED: 'false'
+      VITE_LOGTO_ENABLED: 'false'
+      LOGTO_ENABLED: 'false'
+      LOGTO_SCOPES: 'openid email profile identities'
     commands:
       - |
         set -e

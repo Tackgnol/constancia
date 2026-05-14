@@ -6,6 +6,7 @@ import { authClient } from '@/lib/auth-client';
 interface AuthLoaderData {
   mode: 'idle' | 'error' | 'verifying';
   message: string;
+  reason: 'default' | 'session-required' | 'discord-required';
   token?: string;
   next?: string;
 }
@@ -15,32 +16,54 @@ function normalizeNext(next: string | null) {
 }
 
 function formatAuthError(error: string) {
-  return `Magic link verification failed: ${error}.`;
+  return `This table pass could not be opened: ${error}.`;
+}
+
+function resolveReason(reason: string | null): AuthLoaderData['reason'] {
+  return reason === 'session-required' || reason === 'discord-required' ? reason : 'default';
+}
+
+function getIdleMessage(reason: AuthLoaderData['reason']) {
+  if (reason === 'session-required') {
+    return 'Your session is missing or expired. Continue with Discord, or ask your GM for a fresh table pass.';
+  }
+
+  if (reason === 'discord-required') {
+    return 'You are signed in, but Constancia could not confirm your Discord seat at the table.';
+  }
+
+  return 'Open a Discord-delivered table pass, or continue with Discord if you already have table access.';
 }
 
 export async function loader({ request }: LoaderFunctionArgs): Promise<AuthLoaderData | Response> {
   const url = new URL(request.url);
   const token = url.searchParams.get('token');
   const error = url.searchParams.get('error');
+  const reason = resolveReason(url.searchParams.get('reason'));
   const next = normalizeNext(url.searchParams.get('next'));
 
   if (error) {
     return {
       mode: 'error',
       message: formatAuthError(error),
+      reason,
+      next,
     };
   }
 
   if (!token) {
     return {
       mode: 'idle',
-      message: 'Waiting for a Discord-delivered magic link.',
+      message: getIdleMessage(reason),
+      reason,
+      next,
     };
   }
 
   return {
     mode: 'verifying',
-    message: 'Verifying magic link...',
+    message: 'Checking your table pass...',
+    reason,
     token,
     next,
   };
@@ -48,10 +71,10 @@ export async function loader({ request }: LoaderFunctionArgs): Promise<AuthLoade
 
 export default function AuthRoute() {
   const loaderData = useLoaderData<typeof loader>() as AuthLoaderData;
-  const discordOauthEnabled = import.meta.env.VITE_DISCORD_AUTH_ENABLED === 'true';
+  const logtoEnabled = import.meta.env.VITE_LOGTO_ENABLED === 'true';
   const [mode, setMode] = useState<'idle' | 'error' | 'verifying'>(loaderData.mode);
   const [message, setMessage] = useState(loaderData.message);
-  const [discordAuthPending, setDiscordAuthPending] = useState(false);
+  const [logtoAuthPending, setLogtoAuthPending] = useState(false);
 
   useEffect(() => {
     if (loaderData.mode !== 'verifying') return;
@@ -79,19 +102,21 @@ export default function AuthRoute() {
       });
   }, []);
 
-  async function handleDiscordSignIn() {
-    setDiscordAuthPending(true);
+  async function handleLogtoSignIn() {
+    setLogtoAuthPending(true);
     setMode('idle');
-    setMessage('Handing off to Discord sign-in...');
+    setMessage('Sending you to Discord...');
 
     try {
-      await authClient.signIn.social({
-        provider: 'discord',
+      await authClient.signIn.oauth2({
+        providerId: 'logto',
+        callbackURL: loaderData.next ?? '/',
+        requestSignUp: true,
       });
     } catch (error) {
       setMode('error');
       setMessage(error instanceof Error ? error.message : 'Discord sign-in could not be started.');
-      setDiscordAuthPending(false);
+      setLogtoAuthPending(false);
     }
   }
 
@@ -99,51 +124,55 @@ export default function AuthRoute() {
     <main className="auth-shell">
       <section className="auth-panel">
         <p className="eyebrow">Constancia Access</p>
-        <h1>Discord access for GMs and players</h1>
+        <h1>Your seat is Discord</h1>
         <p className="hero-copy">
-          Authentication stays Discord-native. Use the direct Discord sign-in when the OAuth
-          provider is configured, or fall back to the bot-delivered magic link while that rollout is
-          still in progress.
+          Constancia uses Discord to find your campaigns, sheets, and table permissions. A GM's
+          table pass opens the first door; Discord keeps that access stable after the link expires.
         </p>
 
-        {discordOauthEnabled ? (
-          <button
-            type="button"
-            className="primary-button"
-            onClick={() => void handleDiscordSignIn()}
-            disabled={discordAuthPending}
-          >
-            {discordAuthPending ? 'Redirecting to Discord…' : 'Continue with Discord'}
-          </button>
+        {logtoEnabled ? (
+          <div className="auth-actions">
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => void handleLogtoSignIn()}
+              disabled={logtoAuthPending}
+            >
+              {logtoAuthPending ? 'Opening Discord...' : 'Continue with Discord'}
+            </button>
+          </div>
         ) : (
           <p className="form-hint">
-            Discord OAuth will appear here once the backend provider credentials are configured.
+            Discord sign-in will appear here once Logto is configured for this environment.
           </p>
         )}
 
         <div className={`auth-status auth-status-${mode}`}>
-          <strong>Auth status</strong>
+          <strong>
+            {loaderData.reason === 'discord-required'
+              ? 'Discord required'
+              : loaderData.reason === 'session-required'
+                ? 'Session required'
+                : 'Access status'}
+          </strong>
           <p>{message}</p>
         </div>
 
         <div className="detail-grid">
           <article className="detail-card">
-            <p className="detail-label">Primary flow</p>
+            <p className="detail-label">Table pass</p>
             <ol className="detail-list auth-list">
-              <li>Use direct Discord sign-in when it is available for this environment.</li>
-              <li>Otherwise run the bot admin login command in Discord.</li>
-              <li>Open the DM-delivered link to establish the backend session.</li>
+              <li>A GM or bot sends the first link through Discord.</li>
+              <li>Opening it creates a session for that table seat.</li>
+              <li>If it expired, ask your GM for a fresh pass.</li>
             </ol>
           </article>
 
           <article className="detail-card">
-            <p className="detail-label">Current scope</p>
+            <p className="detail-label">Durable access</p>
             <div className="detail-stack">
-              <p>All access still resolves back to a Discord identity on the backend.</p>
-              <p>
-                That lets the player-safe dossier routes stop trusting a raw Discord id in the URL
-                and use the authenticated session instead.
-              </p>
+              <p>Continue with Discord to keep access after a table pass is consumed.</p>
+              <p>Constancia will only open game material when the session resolves to Discord.</p>
             </div>
           </article>
         </div>

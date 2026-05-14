@@ -36,6 +36,12 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3001}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-constancia-development-secret-change-me-12345}
+      LOGTO_ENABLED: ${LOGTO_ENABLED:-false}
+      LOGTO_ENDPOINT: ${LOGTO_ENDPOINT:-}
+      LOGTO_APP_ID: ${LOGTO_APP_ID:-}
+      LOGTO_APP_SECRET: ${LOGTO_APP_SECRET:-}
+      LOGTO_REDIRECT_URI: ${LOGTO_REDIRECT_URI:-}
+      LOGTO_SCOPES: ${LOGTO_SCOPES:-openid email profile identities}
       BOT_API_KEY: ${BOT_API_KEY:-constancia-bot-dev-key}
       BOT_INTERNAL_URL: ${BOT_INTERNAL_URL:-http://bot:3002}
     networks:
@@ -159,6 +165,7 @@ services:
     environment:
       NODE_ENV: development
       VITE_API_URL: ${VITE_API_URL:-http://localhost:3001}
+      VITE_LOGTO_ENABLED: ${VITE_LOGTO_ENABLED:-false}
     networks:
       - edge
       - control-plane

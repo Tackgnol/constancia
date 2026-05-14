@@ -14,6 +14,12 @@ export interface BackendConfig {
   betterAuthPath: string;
   discordClientId?: string;
   discordClientSecret?: string;
+  logtoEnabled: boolean;
+  logtoEndpoint?: string;
+  logtoAppId?: string;
+  logtoAppSecret?: string;
+  logtoRedirectUri?: string;
+  logtoScopes: string;
   magicLinkFrontendPath: string;
   botApiKey: string;
   botInternalUrl: string;
@@ -64,6 +70,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
   const contentModerationEnabled = parseBoolean(env.CONTENT_MODERATION_ENABLED, false);
   const frontendUrl = env.FRONTEND_URL ?? DEFAULT_FRONTEND_URL;
   const betterAuthUrl = env.BETTER_AUTH_URL ?? DEFAULT_BETTER_AUTH_URL;
+  const betterAuthPath = env.BETTER_AUTH_PATH ?? DEFAULT_BETTER_AUTH_PATH;
+  const logtoEnabled = parseBoolean(env.LOGTO_ENABLED, false);
+  const logtoRedirectUri = resolveLogtoRedirectUri(
+    env.LOGTO_REDIRECT_URI,
+    betterAuthUrl,
+    betterAuthPath,
+  );
 
   if (isProduction && !env.BETTER_AUTH_SECRET) {
     throw new Error('BETTER_AUTH_SECRET must be set in production');
@@ -73,12 +86,19 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     throw new Error('OPENAI_API_KEY must be set when CONTENT_MODERATION_ENABLED=true');
   }
 
+  if (logtoEnabled) {
+    assertRequiredEnv(env.LOGTO_ENDPOINT, 'LOGTO_ENDPOINT', 'LOGTO_ENABLED=true');
+    assertRequiredEnv(env.LOGTO_APP_ID, 'LOGTO_APP_ID', 'LOGTO_ENABLED=true');
+    assertRequiredEnv(env.LOGTO_APP_SECRET, 'LOGTO_APP_SECRET', 'LOGTO_ENABLED=true');
+    assertRequiredEnv(logtoRedirectUri, 'LOGTO_REDIRECT_URI', 'LOGTO_ENABLED=true');
+  }
+
   const uploadStorageDriver = parseUploadStorageDriver(env.UPLOAD_STORAGE_DRIVER);
   if (uploadStorageDriver === 'r2') {
-    assertRequiredEnv(env.R2_ENDPOINT, 'R2_ENDPOINT');
-    assertRequiredEnv(env.R2_ACCESS_KEY_ID, 'R2_ACCESS_KEY_ID');
-    assertRequiredEnv(env.R2_SECRET_ACCESS_KEY, 'R2_SECRET_ACCESS_KEY');
-    assertRequiredEnv(env.R2_BUCKET, 'R2_BUCKET');
+    assertRequiredEnv(env.R2_ENDPOINT, 'R2_ENDPOINT', 'UPLOAD_STORAGE_DRIVER=r2');
+    assertRequiredEnv(env.R2_ACCESS_KEY_ID, 'R2_ACCESS_KEY_ID', 'UPLOAD_STORAGE_DRIVER=r2');
+    assertRequiredEnv(env.R2_SECRET_ACCESS_KEY, 'R2_SECRET_ACCESS_KEY', 'UPLOAD_STORAGE_DRIVER=r2');
+    assertRequiredEnv(env.R2_BUCKET, 'R2_BUCKET', 'UPLOAD_STORAGE_DRIVER=r2');
   }
 
   const botApiKey = env.BOT_API_KEY ?? (isProduction ? undefined : DEFAULT_DEV_BOT_API_KEY);
@@ -101,9 +121,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     authCookieDomain: resolveAuthCookieDomain(env.AUTH_COOKIE_DOMAIN),
     betterAuthSecret: env.BETTER_AUTH_SECRET ?? DEFAULT_BETTER_AUTH_SECRET,
     betterAuthUrl,
-    betterAuthPath: env.BETTER_AUTH_PATH ?? DEFAULT_BETTER_AUTH_PATH,
+    betterAuthPath,
     discordClientId: env.DISCORD_CLIENT_ID,
     discordClientSecret: env.DISCORD_CLIENT_SECRET,
+    logtoEnabled,
+    logtoEndpoint: env.LOGTO_ENDPOINT,
+    logtoAppId: env.LOGTO_APP_ID,
+    logtoAppSecret: env.LOGTO_APP_SECRET,
+    logtoRedirectUri,
+    logtoScopes: env.LOGTO_SCOPES ?? 'openid email profile identities',
     magicLinkFrontendPath: env.MAGIC_LINK_FRONTEND_PATH ?? DEFAULT_MAGIC_LINK_FRONTEND_PATH,
     botApiKey,
     botInternalUrl: env.BOT_INTERNAL_URL ?? DEFAULT_BOT_INTERNAL_URL,
@@ -153,11 +179,23 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
 }
 
 function resolveAuthCookieDomain(configuredDomain: string | undefined): string | undefined {
-  if (configuredDomain && configuredDomain.trim().length > 0) {
-    return configuredDomain.trim();
-  }
+  return readNonEmptyEnv(configuredDomain);
+}
 
-  return undefined;
+function resolveLogtoRedirectUri(
+  configuredRedirectUri: string | undefined,
+  betterAuthUrl: string,
+  betterAuthPath: string,
+): string {
+  return (
+    readNonEmptyEnv(configuredRedirectUri) ??
+    `${betterAuthUrl}${betterAuthPath}/oauth2/callback/logto`
+  );
+}
+
+function readNonEmptyEnv(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : undefined;
 }
 
 function parsePort(value: string | undefined): number {
@@ -201,9 +239,9 @@ function parseUploadStorageDriver(value: string | undefined): 'local' | 'r2' {
   throw new Error(`Invalid UPLOAD_STORAGE_DRIVER value: "${value}"`);
 }
 
-function assertRequiredEnv(value: string | undefined, label: string): void {
-  if (!value) {
-    throw new Error(`${label} must be set when UPLOAD_STORAGE_DRIVER=r2`);
+function assertRequiredEnv(value: string | undefined, label: string, condition: string): void {
+  if (!readNonEmptyEnv(value)) {
+    throw new Error(`${label} must be set when ${condition}`);
   }
 }
 

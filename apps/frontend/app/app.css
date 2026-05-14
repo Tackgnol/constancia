@@ -2713,6 +2713,7 @@ h3 {
 }
 
 .auth-panel {
+  position: relative;
   width: min(960px, 100%);
   display: grid;
   gap: 1rem;
@@ -2745,6 +2746,54 @@ h3 {
 
 .auth-status-error {
   outline-color: rgba(190, 100, 70, 0.45);
+}
+
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.primary-button,
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.65rem;
+  padding: 0.75rem 1rem;
+  border: 0;
+  font:
+    0.72rem/1 'IBM Plex Mono',
+    monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.primary-button {
+  background: var(--primary);
+  color: #061018;
+}
+
+.secondary-button {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  outline: 1px solid var(--outline-variant);
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.auth-link-button {
+  text-decoration: none;
+}
+
+.player-access-panel {
+  max-width: 720px;
 }
 
 .form-status-success {

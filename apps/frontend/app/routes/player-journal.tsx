@@ -9,6 +9,11 @@ import type {
   GetJournalForCurrentPlayer200DataSummariesItem,
 } from '@constancia/api-client/model';
 import { demoPlayerJournal } from '@/lib/demo-player-data';
+import {
+  getPlayerAccessStatusFromPayload,
+  PlayerAccessErrorBoundary,
+  throwPlayerAccessError,
+} from '@/lib/player-access-error';
 
 const QUEST_STATUSES = ['active', 'completed', 'failed'] as const;
 const ENTRY_STATUSES = ['pending', 'done'] as const;
@@ -35,15 +40,30 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     );
 
     if (response.status !== 'ok') {
+      const accessStatus = getPlayerAccessStatusFromPayload(response);
+      if (accessStatus) {
+        throwPlayerAccessError(
+          accessStatus,
+          new URL(request.url).pathname,
+          'Failed to load player journal.',
+        );
+      }
+
       throw new Response('Player journal not found.', { status: 404 });
     }
 
     return response.data;
   } catch (error) {
+    if (error instanceof Response) {
+      throw error;
+    }
+
     console.error('Failed to load player journal:', error);
     throw new Response('Failed to load player journal.', { status: 502 });
   }
 }
+
+export const ErrorBoundary = PlayerAccessErrorBoundary;
 
 export function meta() {
   return [

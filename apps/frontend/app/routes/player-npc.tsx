@@ -3,6 +3,11 @@ import { Link, useLoaderData } from 'react-router';
 import { getVisibleNpcForCurrentPlayer } from '@constancia/api-client/endpoints/npcs/npcs';
 import { NpcPortraitFallback } from '@/components/npcs/npc-portrait-fallback';
 import { getDemoPlayerNpc } from '@/lib/demo-player-data';
+import {
+  getPlayerAccessStatusFromPayload,
+  PlayerAccessErrorBoundary,
+  throwPlayerAccessError,
+} from '@/lib/player-access-error';
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const campaignId = params.campaignId ?? 'demo-crimson-dynasty';
@@ -34,15 +39,30 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     );
 
     if (!response || response.status !== 'ok' || !response.data) {
+      const accessStatus = getPlayerAccessStatusFromPayload(response);
+      if (accessStatus) {
+        throwPlayerAccessError(
+          accessStatus,
+          new URL(request.url).pathname,
+          'Failed to load NPC dossier.',
+        );
+      }
+
       throw new Response('NPC dossier not found.', { status: 404 });
     }
 
     return response.data;
   } catch (err) {
+    if (err instanceof Response) {
+      throw err;
+    }
+
     console.error('Failed to load NPC dossier:', err);
     throw new Response('Failed to load NPC dossier.', { status: 502 });
   }
 }
+
+export const ErrorBoundary = PlayerAccessErrorBoundary;
 
 export function meta() {
   return [

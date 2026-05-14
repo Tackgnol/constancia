@@ -39,12 +39,26 @@ export interface CharacterSheetPatchBody {
   stats: Record<string, string | number | boolean>;
 }
 
+export class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = 'ApiRequestError';
+  }
+}
+
 async function readSheetResponse(response: Response): Promise<CharacterSheetData> {
   const payloadText = await response.text();
-  const payload = payloadText.length > 0 ? (JSON.parse(payloadText) as { data?: unknown }) : {};
+  const payload =
+    payloadText.length > 0 ? (JSON.parse(payloadText) as { data?: unknown; message?: string }) : {};
 
   if (!response.ok || !payload.data) {
-    throw new Error(`Sheet request failed with status ${response.status}`);
+    throw new ApiRequestError(
+      payload.message || `Sheet request failed with status ${response.status}`,
+      response.status,
+    );
   }
 
   return payload.data as CharacterSheetData;

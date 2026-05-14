@@ -22,6 +22,12 @@ function createTestConfig() {
     betterAuthPath: '/api/auth',
     discordClientId: undefined,
     discordClientSecret: undefined,
+    logtoEnabled: false,
+    logtoEndpoint: undefined,
+    logtoAppId: undefined,
+    logtoAppSecret: undefined,
+    logtoRedirectUri: undefined,
+    logtoScopes: 'openid email profile identities',
     magicLinkFrontendPath: '/auth',
     botApiKey: 'constancia-bot-dev-key',
     botInternalUrl: 'http://localhost:3002',
@@ -447,6 +453,12 @@ describe('backend app', () => {
       betterAuthPath: '/api/auth',
       discordClientId: undefined,
       discordClientSecret: undefined,
+      logtoEnabled: false,
+      logtoEndpoint: undefined,
+      logtoAppId: undefined,
+      logtoAppSecret: undefined,
+      logtoRedirectUri: 'http://localhost:3001/api/auth/oauth2/callback/logto',
+      logtoScopes: 'openid email profile identities',
       magicLinkFrontendPath: '/auth',
       botApiKey: 'constancia-bot-dev-key',
       botInternalUrl: 'http://localhost:3002',
@@ -488,6 +500,21 @@ describe('backend app', () => {
     });
 
     expect(config.authCookieDomain).toBe('constancia.example.com');
+  });
+
+  it('falls back to the Better Auth Logto callback when LOGTO_REDIRECT_URI is empty', () => {
+    const config = loadConfig({
+      LOGTO_ENABLED: 'true',
+      LOGTO_ENDPOINT: 'https://logto.constancia.example.com',
+      LOGTO_APP_ID: 'constancia-logto-app',
+      LOGTO_APP_SECRET: 'constancia-logto-secret',
+      LOGTO_REDIRECT_URI: '',
+      BETTER_AUTH_URL: 'https://api.constancia.example.com',
+    });
+
+    expect(config.logtoRedirectUri).toBe(
+      'https://api.constancia.example.com/api/auth/oauth2/callback/logto',
+    );
   });
 
   it('creates and verifies a Better Auth magic link through the design-doc wrapper routes', async () => {
