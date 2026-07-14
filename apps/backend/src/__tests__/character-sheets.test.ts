@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getCharacterSheetForActor,
   getPlayerCharacterSheet,
+  importPlayerCharacterFromProgeny,
   updateCharacterSheetForActor,
 } from '../services/character-sheets.js';
 
@@ -181,5 +182,85 @@ describe('character sheet service', () => {
       }),
     );
     expect(sheet?.stats).toMatchObject({ wits: 4, awareness: 3 });
+  });
+
+  it('imports Progeny data for the current VTM player', async () => {
+    prismaMock.character.findUnique.mockResolvedValue(baseRecord);
+    prismaMock.campaignAdmin.findUnique.mockResolvedValue(null);
+    prismaMock.character.update.mockResolvedValue({
+      ...baseRecord,
+      gameName: 'Dr. Henryk Miedziński',
+      backstory: 'A spectral surgeon.',
+      notes: 'Keep the tools clean.',
+      systemData: {
+        clan: 'Lasombra',
+        attributes: { strength: 4, dexterity: 0, stamina: 0 },
+        skills: { animalKen: 2, medicine: 1 },
+        disciplines: [{ name: 'Cloud Memory', discipline: 'dominate', level: 1 }],
+        progeny: { source: 'progeny', version: 7, characterVersion: 0 },
+      },
+    });
+
+    const result = await importPlayerCharacterFromProgeny(
+      prismaMock as never,
+      'campaign-1',
+      'discord-user-1',
+      {
+        name: 'Dr. Henryk Miedziński',
+        description: 'A spectral surgeon.',
+        notes: 'Keep the tools clean.',
+        clan: 'Lasombra',
+        attributes: { strength: 4 },
+        skills: { 'animal ken': 2, medicine: 1 },
+        disciplines: [{ name: 'Cloud Memory', discipline: 'dominate', level: 1 }],
+        version: 7,
+        characterVersion: 0,
+      },
+    );
+
+    expect(result.status).toBe('imported');
+    expect(prismaMock.character.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          discordUserId_campaignId: {
+            discordUserId: 'discord-user-1',
+            campaignId: 'campaign-1',
+          },
+        },
+        data: expect.objectContaining({
+          gameName: 'Dr. Henryk Miedziński',
+          backstory: 'A spectral surgeon.',
+          systemData: expect.objectContaining({
+            clan: 'Lasombra',
+            attributes: expect.objectContaining({ strength: 4 }),
+            skills: expect.objectContaining({ animalKen: 2, medicine: 1 }),
+            disciplines: [{ name: 'Cloud Memory', discipline: 'dominate', level: 1 }],
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('rejects Progeny imports for non-VTM campaigns', async () => {
+    prismaMock.character.findUnique.mockResolvedValue({
+      ...baseRecord,
+      campaign: { ...baseRecord.campaign, gameSystemId: 'mork-borg' },
+    });
+    prismaMock.campaignAdmin.findUnique.mockResolvedValue(null);
+
+    const result = await importPlayerCharacterFromProgeny(
+      prismaMock as never,
+      'campaign-1',
+      'discord-user-1',
+      {
+        name: 'Henryk',
+        attributes: {},
+        skills: {},
+        version: 7,
+      },
+    );
+
+    expect(result).toEqual({ status: 'unsupported-system' });
+    expect(prismaMock.character.update).not.toHaveBeenCalled();
   });
 });

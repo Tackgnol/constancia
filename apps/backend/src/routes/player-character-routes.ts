@@ -4,13 +4,16 @@ import { ok, sendError, sendNotFound } from '../http-responses.js';
 import {
   campaignParamsSchema,
   characterSheetPatchBodySchema,
+  progenyVtmCharacterBodySchema,
   standardResponseSchema,
 } from '../schemas.js';
 import {
   getPlayerCharacterSheet,
+  importPlayerCharacterFromProgeny,
   updatePlayerCharacterSheet,
 } from '../services/character-sheets.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
+import { ProgenyImportError, type JsonObject } from '@constancia/systems';
 
 interface CampaignParams {
   id: string;
@@ -85,6 +88,51 @@ const playerCharacterRoutes: FastifyPluginAsync = async (app) => {
       }
 
       return ok(sheet);
+    },
+  );
+
+  app.post<{ Params: CampaignParams; Body: JsonObject }>(
+    '/sheet/imports/progeny',
+    {
+      schema: {
+        tags: ['characters'],
+        summary: 'Import the current player sheet from Progeny',
+        operationId: 'importPlayerCharacterFromProgeny',
+        params: campaignParamsSchema,
+        body: progenyVtmCharacterBodySchema,
+        response: {
+          200: standardResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const discordUserId = request.access.kind === 'session' ? request.access.discordUserId : null;
+      if (!discordUserId) {
+        return sendError(reply, 403, 'Discord identity required');
+      }
+
+      try {
+        const result = await importPlayerCharacterFromProgeny(
+          getPrismaClient(),
+          request.params.id,
+          discordUserId,
+          request.body,
+        );
+
+        if (result.status === 'not-found') {
+          return sendNotFound(reply, 'Player sheet not found');
+        }
+        if (result.status === 'unsupported-system') {
+          return sendError(reply, 400, 'Progeny imports are only supported for VTM V5 campaigns');
+        }
+
+        return ok(result.sheet);
+      } catch (caught) {
+        if (caught instanceof ProgenyImportError) {
+          return sendError(reply, 400, caught.message);
+        }
+        throw caught;
+      }
     },
   );
 };

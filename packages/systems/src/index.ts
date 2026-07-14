@@ -1,6 +1,7 @@
 export { vtmPoolResolverBlock } from './vtm-v5/pool-resolver.js';
 export { vtmInsightResolverBlock, resolveVtmInsightScore } from './vtm-v5/insight-resolver.js';
 export * from './vtm-v5/data.js';
+export * from './vtm-v5/progeny.js';
 export * from './mork-borg/data.js';
 export * from './stat-schemas.js';
 

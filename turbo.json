@@ -1,5 +1,10 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    "apps/backend/openapi/openapi.json",
+    "orval.config.ts",
+    "scripts/orval-fix-node-imports.mjs"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

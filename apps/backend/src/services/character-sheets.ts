@@ -5,6 +5,8 @@ import {
   getGameSystemSummary,
   getStatSchemaForSystem,
   mergeSystemStats,
+  parseProgenyVtmCharacter,
+  type JsonObject,
 } from '@constancia/systems';
 
 const characterSheetSelect = {
@@ -86,6 +88,11 @@ export interface CharacterSheetPatchInput {
   notes?: string;
   stats?: Record<string, unknown>;
 }
+
+export type PlayerCharacterImportResult =
+  | { status: 'imported'; sheet: CharacterSheetPayload }
+  | { status: 'not-found' }
+  | { status: 'unsupported-system' };
 
 function toCharacterSheetPayload(
   record: NonNullable<CharacterSheetRecord>,
@@ -266,4 +273,44 @@ export async function updatePlayerCharacterSheet(
   });
 
   return toCharacterSheetPayload(updated, current.access);
+}
+
+export async function importPlayerCharacterFromProgeny(
+  prisma: PrismaClient,
+  campaignId: string,
+  discordUserId: string,
+  source: JsonObject,
+): Promise<PlayerCharacterImportResult> {
+  const current = await getPlayerCharacterSheet(prisma, campaignId, discordUserId);
+  if (current === null) {
+    return { status: 'not-found' };
+  }
+  if (current.system.id !== 'vtm-v5') {
+    return { status: 'unsupported-system' };
+  }
+
+  const imported = parseProgenyVtmCharacter(source);
+  const updated = await prisma.character.update({
+    where: {
+      discordUserId_campaignId: {
+        discordUserId,
+        campaignId,
+      },
+    },
+    data: {
+      gameName: imported.gameName,
+      backstory: imported.backstory,
+      notes: imported.notes,
+      systemData: {
+        ...current.character.systemData,
+        ...imported.systemData,
+      } as Prisma.InputJsonValue,
+    },
+    select: characterSheetSelect,
+  });
+
+  return {
+    status: 'imported',
+    sheet: toCharacterSheetPayload(updated, current.access),
+  };
 }

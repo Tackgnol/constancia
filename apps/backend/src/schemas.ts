@@ -272,6 +272,27 @@ export const characterSheetPatchBodySchema = {
   },
 } as const;
 
+export const progenyVtmCharacterBodySchema = {
+  type: 'object',
+  additionalProperties: true,
+  properties: {
+    name: { type: 'string', minLength: 1, maxLength: 80 },
+    description: { type: 'string', maxLength: 4000 },
+    notes: { type: 'string', maxLength: 4000 },
+    attributes: {
+      type: 'object',
+      additionalProperties: { type: 'integer' },
+    },
+    skills: {
+      type: 'object',
+      additionalProperties: { type: 'integer' },
+    },
+    version: { type: 'integer', minimum: 1 },
+    characterVersion: { type: 'integer', minimum: 0 },
+  },
+  required: ['name', 'attributes', 'skills', 'version'],
+} as const;
+
 const npcSystemBlockSchema = {
   type: 'object',
   additionalProperties: false,

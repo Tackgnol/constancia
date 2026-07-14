@@ -7,87 +7,15 @@ import {
 } from '@constancia/api-client/endpoints/characters/characters';
 import { CharacterSheetForm } from '@/components/character-sheet/character-sheet-form';
 import { Button } from '@/components/ui/button';
-import { type CharacterSheetData, type CharacterSheetPatchBody } from '@/lib/character-sheet';
+import {
+  parseCharacterSheetPatchPayload,
+  readCharacterSheetData,
+  type CharacterSheetData,
+  type CharacterSheetPatchBody,
+} from '@/lib/character-sheet';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import { buildServerApiOptions, resolveCurrentCampaignId } from '@/lib/api-proxy.server';
 import { postRouteAction } from '@/lib/route-action-client';
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-function isPrimitiveStatValue(value: unknown): value is string | number | boolean {
-  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
-}
-
-function isStatsRecord(value: unknown): value is Record<string, string | number | boolean> {
-  return isRecord(value) && Object.values(value).every(isPrimitiveStatValue);
-}
-
-function isCharacterSheetPatchBody(value: unknown): value is CharacterSheetPatchBody {
-  return (
-    isRecord(value) &&
-    typeof value.gameName === 'string' &&
-    typeof value.backstory === 'string' &&
-    typeof value.notes === 'string' &&
-    isStatsRecord(value.stats)
-  );
-}
-
-function isCharacterSheetData(value: unknown): value is CharacterSheetData {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  const { character, campaign, system, stats, access } = value;
-  return (
-    isRecord(character) &&
-    typeof character.id === 'string' &&
-    typeof character.name === 'string' &&
-    typeof character.discordName === 'string' &&
-    typeof character.gameName === 'string' &&
-    typeof character.discordUserId === 'string' &&
-    typeof character.campaignId === 'string' &&
-    typeof character.backstory === 'string' &&
-    typeof character.notes === 'string' &&
-    isRecord(character.systemData) &&
-    isRecord(campaign) &&
-    typeof campaign.id === 'string' &&
-    typeof campaign.name === 'string' &&
-    typeof campaign.discordGuildId === 'string' &&
-    typeof campaign.gameSystemId === 'string' &&
-    isRecord(system) &&
-    typeof system.id === 'string' &&
-    typeof system.name === 'string' &&
-    typeof system.version === 'string' &&
-    isRecord(system.statSchema) &&
-    isStatsRecord(stats) &&
-    isRecord(access) &&
-    (access.mode === 'gm' || access.mode === 'player') &&
-    typeof access.canEdit === 'boolean'
-  );
-}
-
-function parseSheetPatchPayload(input: FormDataEntryValue | null): CharacterSheetPatchBody | null {
-  if (typeof input !== 'string' || input.length === 0) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(input) as unknown;
-    return isCharacterSheetPatchBody(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function readSheetData(data: unknown): CharacterSheetData {
-  if (!isCharacterSheetData(data)) {
-    throw new Error('The backend returned an invalid character sheet.');
-  }
-
-  return data;
-}
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
   const charId = params.charId;
@@ -103,7 +31,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   );
   assertApiOk(response, 'This character sheet could not be loaded.');
 
-  return { sheet: readSheetData(response.data) };
+  return { sheet: readCharacterSheetData(response.data) };
 }
 
 export async function action({ request, params }: ActionFunctionArgs) {
@@ -119,7 +47,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     );
   }
 
-  const payload = parseSheetPatchPayload(formData.get('payload'));
+  const payload = parseCharacterSheetPatchPayload(formData.get('payload'));
   if (!campaignId || !charId || !payload) {
     return Response.json(
       { status: 'error', message: 'Character sheet update is incomplete.' },
@@ -134,7 +62,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
       buildServerApiOptions(request),
     );
     assertApiOk(response, 'The sheet could not be saved. Try again.');
-    return Response.json({ status: 'success', data: readSheetData(response.data) });
+    return Response.json({ status: 'success', data: readCharacterSheetData(response.data) });
   } catch (caught) {
     return Response.json(
       {

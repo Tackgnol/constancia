@@ -1,14 +1,28 @@
 import { useState } from 'react';
-import type { LoaderFunctionArgs } from 'react-router';
-import { Link, useLoaderData } from 'react-router';
-import { CharacterSheetForm } from '@/components/character-sheet/character-sheet-form';
+import {
+  ProgenyImportError,
+  extractSystemStats,
+  parseProgenyVtmCharacter,
+  type ProgenyVtmCharacterExport,
+} from '@constancia/systems';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
+import { Link, useLoaderData, useLocation } from 'react-router';
 import {
   getPlayerCharacterSheet,
+  importPlayerCharacterFromProgeny,
   updatePlayerCharacterSheet,
+} from '@constancia/api-client/endpoints/characters/characters';
+import { CharacterSheetForm } from '@/components/character-sheet/character-sheet-form';
+import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
+import { buildServerApiOptions } from '@/lib/api-proxy.server';
+import {
+  parseCharacterSheetPatchPayload,
+  readCharacterSheetData,
   type CharacterSheetData,
   type CharacterSheetPatchBody,
 } from '@/lib/character-sheet';
 import { demoPlayerSheet } from '@/lib/demo-player-data';
+import { postRouteAction } from '@/lib/route-action-client';
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const campaignId = params.campaignId ?? 'demo-crimson-dynasty';
@@ -18,15 +32,96 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
   }
 
   try {
-    return await getPlayerCharacterSheet(campaignId, {
-      credentials: 'include',
-      headers: {
-        cookie: request.headers.get('Cookie') || '',
-      },
-    });
+    const response = await getPlayerCharacterSheet(
+      { id: campaignId },
+      buildServerApiOptions(request),
+    );
+    assertApiOk(response, 'Failed to load player sheet.');
+    return readCharacterSheetData(response.data);
   } catch (error) {
     console.error('Failed to load player sheet:', error);
     throw new Response('Failed to load player sheet.', { status: 502 });
+  }
+}
+
+function readProgenyPayload(input: FormDataEntryValue | null): ProgenyVtmCharacterExport {
+  if (typeof input !== 'string' || input.length === 0) {
+    throw new ProgenyImportError('The Progeny import payload is missing.');
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(input);
+  } catch {
+    throw new ProgenyImportError('The selected file is not valid JSON.');
+  }
+
+  return parseProgenyVtmCharacter(parsed).source;
+}
+
+export async function action({ request, params }: ActionFunctionArgs) {
+  const campaignId = params.campaignId;
+  const formData = await request.formData();
+  const intent = formData.get('intent');
+
+  if (!campaignId || campaignId.startsWith('demo-')) {
+    return Response.json(
+      { status: 'error', message: 'The player sheet action is unavailable.' },
+      { status: 400 },
+    );
+  }
+
+  try {
+    if (intent === 'update-sheet') {
+      const payload = parseCharacterSheetPatchPayload(formData.get('payload'));
+      if (!payload) {
+        return Response.json(
+          { status: 'error', message: 'Character sheet update is incomplete.' },
+          { status: 400 },
+        );
+      }
+
+      const response = await updatePlayerCharacterSheet(
+        { id: campaignId },
+        payload,
+        buildServerApiOptions(request),
+      );
+      assertApiOk(response, 'The sheet could not be saved. Try again.');
+      return Response.json({
+        status: 'success',
+        data: readCharacterSheetData(response.data),
+      });
+    }
+
+    if (intent === 'import-progeny') {
+      const source = readProgenyPayload(formData.get('payload'));
+      const response = await importPlayerCharacterFromProgeny(
+        { id: campaignId },
+        source,
+        buildServerApiOptions(request),
+      );
+      assertApiOk(response, 'The Progeny character could not be imported.');
+      return Response.json({
+        status: 'success',
+        data: readCharacterSheetData(response.data),
+      });
+    }
+
+    return Response.json(
+      { status: 'error', message: 'Unsupported player sheet action.' },
+      { status: 400 },
+    );
+  } catch (caught) {
+    const isImportValidationError = caught instanceof ProgenyImportError;
+    return Response.json(
+      {
+        status: 'error',
+        message: isImportValidationError
+          ? caught.message
+          : getApiErrorMessage(caught, 'The player sheet could not be updated. Try again.'),
+      },
+      { status: isImportValidationError ? 400 : 500 },
+    );
   }
 }
 
@@ -42,6 +137,7 @@ export function meta() {
 
 export default function PlayerSheetRoute() {
   const loaderSheet = useLoaderData<typeof loader>();
+  const location = useLocation();
   const [sheet, setSheet] = useState<CharacterSheetData>(loaderSheet);
   const playerBasePath = sheet.campaign.id.startsWith('demo-')
     ? '/demo/player'
@@ -64,11 +160,57 @@ export default function PlayerSheetRoute() {
       return updated;
     }
 
-    const updated = await updatePlayerCharacterSheet(sheet.campaign.id, payload, {
-      credentials: 'include',
+    const response = await postRouteAction<CharacterSheetData>(location.pathname, {
+      intent: 'update-sheet',
+      payload: JSON.stringify(payload),
     });
-    setSheet(updated);
-    return updated;
+    if (response.status !== 'success' || !response.data) {
+      throw new Error(
+        response.status === 'error' ? response.message : 'The sheet could not be saved. Try again.',
+      );
+    }
+
+    setSheet(response.data);
+    return response.data;
+  };
+
+  const handleProgenyImport = async (source: ProgenyVtmCharacterExport) => {
+    if (sheet.campaign.id.startsWith('demo-')) {
+      const imported = parseProgenyVtmCharacter(source);
+      const systemData = {
+        ...sheet.character.systemData,
+        ...imported.systemData,
+      };
+      const updated: CharacterSheetData = {
+        ...sheet,
+        character: {
+          ...sheet.character,
+          gameName: imported.gameName,
+          backstory: imported.backstory,
+          notes: imported.notes,
+          systemData,
+        },
+        stats: extractSystemStats(sheet.system.id, systemData),
+      };
+
+      setSheet(updated);
+      return updated;
+    }
+
+    const response = await postRouteAction<CharacterSheetData>(location.pathname, {
+      intent: 'import-progeny',
+      payload: JSON.stringify(source),
+    });
+    if (response.status !== 'success' || !response.data) {
+      throw new Error(
+        response.status === 'error'
+          ? response.message
+          : 'The Progeny character could not be imported.',
+      );
+    }
+
+    setSheet(response.data);
+    return response.data;
   };
 
   return (
@@ -95,7 +237,12 @@ export default function PlayerSheetRoute() {
           </p>
         </section>
 
-        <CharacterSheetForm sheet={sheet} audience="player" onSave={handleSave} />
+        <CharacterSheetForm
+          sheet={sheet}
+          audience="player"
+          onSave={handleSave}
+          onImportProgeny={handleProgenyImport}
+        />
       </article>
     </main>
   );

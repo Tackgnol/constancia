@@ -214,6 +214,101 @@
         }
       }
     },
+    "/api/v1/systems/": {
+      "get": {
+        "operationId": "listGameSystems",
+        "summary": "List registered game systems",
+        "tags": ["systems"],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "name", "version"]
+                      }
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/systems/{id}": {
+      "get": {
+        "operationId": "getGameSystem",
+        "summary": "Get a game system",
+        "tags": ["systems"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "name", "version"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users/me/upload-settings": {
       "get": {
         "operationId": "getUserUploadSettings",
@@ -293,6 +388,96 @@
             }
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/message-reports": {
+      "get": {
+        "operationId": "listMessageReports",
+        "summary": "List pending Discord message reports",
+        "tags": ["admin"],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "eventId": {
+                            "type": "string"
+                          },
+                          "campaignId": {
+                            "type": "string"
+                          },
+                          "discordGuildId": {
+                            "type": "string"
+                          },
+                          "discordChannelId": {
+                            "type": "string"
+                          },
+                          "discordMessageId": {
+                            "type": "string"
+                          },
+                          "discordUserId": {
+                            "type": "string"
+                          },
+                          "messageTarget": {
+                            "type": "string"
+                          },
+                          "messageContent": {
+                            "type": "string"
+                          },
+                          "imageUrl": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": ["id", "discordUserId", "messageContent", "status", "createdAt"]
+                      }
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "403": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -1568,6 +1753,90 @@
                     "additionalProperties": true
                   }
                 }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/{id}/player-character/sheet/imports/progeny": {
+      "post": {
+        "operationId": "importPlayerCharacterFromProgeny",
+        "summary": "Import the current player sheet from Progeny",
+        "tags": ["characters"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "attributes": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "integer"
+                    }
+                  },
+                  "skills": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "integer"
+                    }
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "characterVersion": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": ["name", "attributes", "skills", "version"]
               }
             }
           }
@@ -6451,101 +6720,6 @@
         }
       }
     },
-    "/api/v1/systems/": {
-      "get": {
-        "operationId": "listGameSystems",
-        "summary": "List registered game systems",
-        "tags": ["systems"],
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "version": {
-                            "type": "string"
-                          }
-                        },
-                        "required": ["id", "name", "version"]
-                      }
-                    }
-                  },
-                  "required": ["status", "data"]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/systems/{id}": {
-      "get": {
-        "operationId": "getGameSystem",
-        "summary": "Get a game system",
-        "tags": ["systems"],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["id", "name", "version"]
-                    }
-                  },
-                  "required": ["status", "data"]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/auth/magic-link": {
       "post": {
         "operationId": "createMagicLink",
@@ -6678,6 +6852,116 @@
                       "type": "string"
                     },
                     "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bot/message-reports": {
+      "post": {
+        "operationId": "createBotMessageReport",
+        "summary": "Store a Discord message report from a player",
+        "tags": ["bot"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "eventId": {
+                    "type": "string"
+                  },
+                  "campaignId": {
+                    "type": "string"
+                  },
+                  "discordGuildId": {
+                    "type": "string"
+                  },
+                  "discordChannelId": {
+                    "type": "string"
+                  },
+                  "discordMessageId": {
+                    "type": "string"
+                  },
+                  "discordUserId": {
+                    "type": "string"
+                  },
+                  "messageTarget": {
+                    "type": "string"
+                  },
+                  "messageContent": {
+                    "type": "string"
+                  },
+                  "imageUrl": {
+                    "type": "string"
+                  }
+                },
+                "required": ["eventId", "discordUserId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "eventId": {
+                          "type": "string"
+                        },
+                        "campaignId": {
+                          "type": "string"
+                        },
+                        "discordGuildId": {
+                          "type": "string"
+                        },
+                        "discordChannelId": {
+                          "type": "string"
+                        },
+                        "discordMessageId": {
+                          "type": "string"
+                        },
+                        "discordUserId": {
+                          "type": "string"
+                        },
+                        "messageTarget": {
+                          "type": "string"
+                        },
+                        "messageContent": {
+                          "type": "string"
+                        },
+                        "imageUrl": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": ["id", "discordUserId", "messageContent", "status", "createdAt"]
+                    }
                   },
                   "required": ["status", "data"]
                 }
@@ -7777,6 +8061,10 @@
     {
       "name": "auth",
       "description": "Authentication and session endpoints"
+    },
+    {
+      "name": "admin",
+      "description": "Superuser-only review endpoints"
     },
     {
       "name": "campaigns",

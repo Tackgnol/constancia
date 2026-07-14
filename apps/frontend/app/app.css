@@ -2922,6 +2922,63 @@ h3 {
   gap: 1.5rem;
 }
 
+.progeny-import-form {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: color-mix(in oklch, var(--surface) 88%, var(--primary) 12%);
+}
+
+.progeny-import-heading {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.7fr) minmax(18rem, 1.3fr);
+  gap: 1.25rem;
+  align-items: end;
+}
+
+.progeny-import-heading h2 {
+  margin: 0.35rem 0 0;
+  color: var(--text);
+  font:
+    600 1.05rem/1.2 'IBM Plex Sans',
+    sans-serif;
+}
+
+.progeny-import-heading .form-hint,
+.progeny-import-form .form-status {
+  margin: 0;
+}
+
+.progeny-import-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.progeny-file-input {
+  border: none;
+  border-radius: 0;
+  background: var(--surface-high);
+  box-shadow: none;
+  color: var(--muted-strong);
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+
+.progeny-file-input::file-selector-button {
+  color: var(--text);
+  font:
+    700 0.68rem/1 'IBM Plex Mono',
+    monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.progeny-import-button {
+  min-width: 10.5rem;
+  border-radius: 0;
+}
+
 .form-section {
   display: grid;
   gap: 1rem;
@@ -3401,6 +3458,15 @@ h3 {
 
   .player-dossier-shell {
     padding: 0.9rem;
+  }
+
+  .progeny-import-heading,
+  .progeny-import-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .progeny-import-button {
+    width: 100%;
   }
 
   .board-grid {

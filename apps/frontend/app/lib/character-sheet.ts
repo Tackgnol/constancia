@@ -1,5 +1,4 @@
 import type { StatSchema } from '@constancia/contracts';
-import { getApiBaseUrl } from './api-url';
 
 export interface CharacterSheetData {
   character: {
@@ -39,87 +38,81 @@ export interface CharacterSheetPatchBody {
   stats: Record<string, string | number | boolean>;
 }
 
-async function readSheetResponse(response: Response): Promise<CharacterSheetData> {
-  const payloadText = await response.text();
-  const payload = payloadText.length > 0 ? (JSON.parse(payloadText) as { data?: unknown }) : {};
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
 
-  if (!response.ok || !payload.data) {
-    throw new Error(`Sheet request failed with status ${response.status}`);
+function isPrimitiveStatValue(value: unknown): value is string | number | boolean {
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+}
+
+function isStatsRecord(value: unknown): value is Record<string, string | number | boolean> {
+  return isRecord(value) && Object.values(value).every(isPrimitiveStatValue);
+}
+
+export function isCharacterSheetPatchBody(value: unknown): value is CharacterSheetPatchBody {
+  return (
+    isRecord(value) &&
+    typeof value.gameName === 'string' &&
+    typeof value.backstory === 'string' &&
+    typeof value.notes === 'string' &&
+    isStatsRecord(value.stats)
+  );
+}
+
+function isCharacterSheetData(value: unknown): value is CharacterSheetData {
+  if (!isRecord(value)) {
+    return false;
   }
 
-  return payload.data as CharacterSheetData;
+  const { character, campaign, system, stats, access } = value;
+  return (
+    isRecord(character) &&
+    typeof character.id === 'string' &&
+    typeof character.name === 'string' &&
+    typeof character.discordName === 'string' &&
+    typeof character.gameName === 'string' &&
+    typeof character.discordUserId === 'string' &&
+    typeof character.campaignId === 'string' &&
+    typeof character.backstory === 'string' &&
+    typeof character.notes === 'string' &&
+    isRecord(character.systemData) &&
+    isRecord(campaign) &&
+    typeof campaign.id === 'string' &&
+    typeof campaign.name === 'string' &&
+    typeof campaign.discordGuildId === 'string' &&
+    typeof campaign.gameSystemId === 'string' &&
+    isRecord(system) &&
+    typeof system.id === 'string' &&
+    typeof system.name === 'string' &&
+    typeof system.version === 'string' &&
+    isRecord(system.statSchema) &&
+    isStatsRecord(stats) &&
+    isRecord(access) &&
+    (access.mode === 'gm' || access.mode === 'player') &&
+    typeof access.canEdit === 'boolean'
+  );
 }
 
-export async function getCharacterSheet(
-  campaignId: string,
-  charId: string,
-  options?: RequestInit,
-): Promise<CharacterSheetData> {
-  const response = await fetch(
-    `${getApiBaseUrl()}/api/v1/campaigns/${campaignId}/characters/${charId}/sheet`,
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
+export function parseCharacterSheetPatchPayload(
+  input: FormDataEntryValue | null,
+): CharacterSheetPatchBody | null {
+  if (typeof input !== 'string' || input.length === 0) {
+    return null;
+  }
 
-  return readSheetResponse(response);
+  try {
+    const parsed: unknown = JSON.parse(input);
+    return isCharacterSheetPatchBody(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
 }
 
-export async function updateCharacterSheet(
-  campaignId: string,
-  charId: string,
-  body: CharacterSheetPatchBody,
-  options?: RequestInit,
-): Promise<CharacterSheetData> {
-  const response = await fetch(
-    `${getApiBaseUrl()}/api/v1/campaigns/${campaignId}/characters/${charId}/sheet`,
-    {
-      ...options,
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-      body: JSON.stringify(body),
-    },
-  );
+export function readCharacterSheetData(data: unknown): CharacterSheetData {
+  if (!isCharacterSheetData(data)) {
+    throw new Error('The backend returned an invalid character sheet.');
+  }
 
-  return readSheetResponse(response);
-}
-
-export async function getPlayerCharacterSheet(
-  campaignId: string,
-  options?: RequestInit,
-): Promise<CharacterSheetData> {
-  const response = await fetch(
-    `${getApiBaseUrl()}/api/v1/campaigns/${campaignId}/player-character/sheet`,
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
-
-  return readSheetResponse(response);
-}
-
-export async function updatePlayerCharacterSheet(
-  campaignId: string,
-  body: CharacterSheetPatchBody,
-  options?: RequestInit,
-): Promise<CharacterSheetData> {
-  const response = await fetch(
-    `${getApiBaseUrl()}/api/v1/campaigns/${campaignId}/player-character/sheet`,
-    {
-      ...options,
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-      body: JSON.stringify(body),
-    },
-  );
-
-  return readSheetResponse(response);
+  return data;
 }
