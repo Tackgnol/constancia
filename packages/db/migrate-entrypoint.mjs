@@ -9,6 +9,7 @@
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 
 const {
@@ -68,7 +69,9 @@ async function bootstrapSuperuser() {
     return;
   }
 
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({ connectionString: url }),
+  });
   try {
     const uploadAllowanceBytes = parseOptionalPositiveInt(
       SUPERUSER_UPLOAD_ALLOWANCE_BYTES,
