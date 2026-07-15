@@ -2228,6 +2228,38 @@ h3 {
 
 .sheet-copy-grid {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  /* Keep each field its own height so a growing textarea can't stretch the
+     sibling row and detach its label. */
+  align-items: start;
+}
+
+/* Longform fields (backstory / notes): grow to fit, but stay bounded and
+   scroll internally instead of pushing the page open. */
+.sheet-longform {
+  min-height: 8rem;
+  max-height: 20rem;
+  overflow-y: auto;
+}
+
+.sheet-field-footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.sheet-char-count {
+  margin-left: auto;
+  color: var(--muted);
+  font:
+    500 0.62rem/1 'IBM Plex Mono',
+    monospace;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+.sheet-char-count.is-maxed {
+  color: var(--primary-glow);
 }
 
 .sheet-meta-card,
@@ -2259,6 +2291,25 @@ h3 {
   align-items: start;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.sheet-zero-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  color: var(--muted);
+  font:
+    600 0.65rem/1.2 'IBM Plex Mono',
+    monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sheet-zero-toggle:hover {
+  color: var(--text-secondary);
 }
 
 .sheet-groups {

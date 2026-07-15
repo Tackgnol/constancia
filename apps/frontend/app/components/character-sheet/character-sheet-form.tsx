@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,10 +12,16 @@ import type { StatValue } from '@/components/character-sheet/renderers';
 import type { CharacterSheetData, CharacterSheetPatchBody } from '@/lib/character-sheet';
 import type { ProgenyVtmCharacterExport } from '@constancia/systems';
 
+const GAME_NAME_MAX = 80;
+const LONGFORM_MAX = 4000;
+
 const sheetFormSchema = z.object({
-  gameName: z.string().trim().max(80, 'Keep the in-game name concise.'),
-  backstory: z.string().trim().max(4000, 'Keep the backstory under 4000 characters.'),
-  notes: z.string().trim().max(4000, 'Keep the notes under 4000 characters.'),
+  gameName: z.string().trim().max(GAME_NAME_MAX, 'Keep the in-game name concise.'),
+  backstory: z
+    .string()
+    .trim()
+    .max(LONGFORM_MAX, `Keep the backstory under ${LONGFORM_MAX} characters.`),
+  notes: z.string().trim().max(LONGFORM_MAX, `Keep the notes under ${LONGFORM_MAX} characters.`),
   stats: z.record(z.string(), z.union([z.number(), z.string(), z.boolean()])),
 });
 
@@ -28,6 +34,10 @@ function buildDefaultValues(sheet: CharacterSheetData): CharacterSheetFormValues
     notes: sheet.character.notes,
     stats: sheet.stats,
   };
+}
+
+function isZeroStat(value: unknown): boolean {
+  return value == null || value === 0 || value === '' || value === false;
 }
 
 function getArchetypeLabel(sheet: CharacterSheetData): string | null {
@@ -56,6 +66,7 @@ export function CharacterSheetForm({
 }) {
   const [saveState, setSaveState] = useState<'idle' | 'success' | 'error'>('idle');
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [hideZeros, setHideZeros] = useState(false);
   const archetypeLabel = getArchetypeLabel(sheet);
 
   const {
@@ -71,6 +82,19 @@ export function CharacterSheetForm({
   });
 
   const StatRow = resolveStatRow(sheet.system.id);
+
+  const backstoryLength = (useWatch({ control, name: 'backstory' }) ?? '').length;
+  const notesLength = (useWatch({ control, name: 'notes' }) ?? '').length;
+
+  const watchedStats = useWatch({ control, name: 'stats' }) ?? sheet.stats;
+  const visibleGroups = sheet.system.statSchema.groups
+    .map((group) => ({
+      group,
+      fields: hideZeros
+        ? group.fields.filter((field) => !isZeroStat(watchedStats[field.key]))
+        : group.fields,
+    }))
+    .filter((entry) => entry.fields.length > 0);
 
   useEffect(() => {
     reset(buildDefaultValues(sheet));
@@ -167,7 +191,12 @@ export function CharacterSheetForm({
             <Label htmlFor="sheet-game-name" className="form-label">
               In-Game Name
             </Label>
-            <Input id="sheet-game-name" placeholder="Lucien Vale" {...register('gameName')} />
+            <Input
+              id="sheet-game-name"
+              placeholder="Lucien Vale"
+              maxLength={GAME_NAME_MAX}
+              {...register('gameName')}
+            />
             {errors.gameName ? <span className="form-error">{errors.gameName.message}</span> : null}
           </div>
 
@@ -178,12 +207,23 @@ export function CharacterSheetForm({
               </Label>
               <Textarea
                 id="sheet-backstory"
+                className="sheet-longform"
                 placeholder="Core history, unresolved trauma, or the lie they tell about themselves."
+                maxLength={LONGFORM_MAX}
                 {...register('backstory')}
               />
-              {errors.backstory ? (
-                <span className="form-error">{errors.backstory.message}</span>
-              ) : null}
+              <div className="sheet-field-footer">
+                {errors.backstory ? (
+                  <span className="form-error">{errors.backstory.message}</span>
+                ) : (
+                  <span />
+                )}
+                <span
+                  className={`sheet-char-count${backstoryLength >= LONGFORM_MAX ? ' is-maxed' : ''}`}
+                >
+                  {backstoryLength}/{LONGFORM_MAX}
+                </span>
+              </div>
             </div>
 
             <div className="grid gap-1.5">
@@ -192,10 +232,23 @@ export function CharacterSheetForm({
               </Label>
               <Textarea
                 id="sheet-notes"
+                className="sheet-longform"
                 placeholder="Recent changes, ambitions, feeding notes, debts, or table reminders."
+                maxLength={LONGFORM_MAX}
                 {...register('notes')}
               />
-              {errors.notes ? <span className="form-error">{errors.notes.message}</span> : null}
+              <div className="sheet-field-footer">
+                {errors.notes ? (
+                  <span className="form-error">{errors.notes.message}</span>
+                ) : (
+                  <span />
+                )}
+                <span
+                  className={`sheet-char-count${notesLength >= LONGFORM_MAX ? ' is-maxed' : ''}`}
+                >
+                  {notesLength}/{LONGFORM_MAX}
+                </span>
+              </div>
             </div>
           </div>
         </section>
@@ -209,6 +262,17 @@ export function CharacterSheetForm({
                 editing the same canonical shape.
               </p>
             </div>
+            {sheet.system.statSchema.groups.length > 0 ? (
+              <label className="sheet-zero-toggle">
+                <input
+                  type="checkbox"
+                  className="form-checkbox"
+                  checked={hideZeros}
+                  onChange={(event) => setHideZeros(event.target.checked)}
+                />
+                Hide zeroed stats
+              </label>
+            ) : null}
           </div>
 
           {sheet.system.statSchema.groups.length === 0 ? (
@@ -216,16 +280,21 @@ export function CharacterSheetForm({
               This system does not have a structured sheet configured yet. You can still maintain
               the player name and notes above.
             </div>
+          ) : visibleGroups.length === 0 ? (
+            <div className="sheet-empty">
+              Every stat on this sheet is still at zero. Uncheck “Hide zeroed stats” to fill them
+              in.
+            </div>
           ) : (
             <div className="sheet-groups">
-              {sheet.system.statSchema.groups.map((group) => (
+              {visibleGroups.map(({ group, fields }) => (
                 <section key={group.key} className="sheet-stat-group">
                   <div className="sheet-stat-group-header">
                     <p className="detail-label">{group.label}</p>
                   </div>
 
                   <div className="sheet-stat-grid">
-                    {group.fields.map((field) => {
+                    {fields.map((field) => {
                       const inputId = `stat-${field.key}`;
                       const errorMessage = errors.stats?.[field.key]
                         ? String(errors.stats[field.key]?.message)
