@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { auth } from '../auth.js';
 import { consumeMagicLinkDelivery } from '../auth/magic-link-delivery.js';
 import { ensureDiscordUser } from '../auth/ensure-discord-user.js';
-import { forwardToBetterAuth } from '../auth/http.js';
+import { applyBetterAuthCookies, forwardToBetterAuth } from '../auth/http.js';
 import {
   authMagicLinkBodySchema,
   playerJournalMagicLinkBodySchema,
@@ -35,37 +35,26 @@ interface VerifyPayload {
   };
 }
 
-function getSetCookieHeaders(headers: Headers) {
-  const maybeHeaders = headers as Headers & { getSetCookie?: () => string[] };
-  const setCookieHeaders = maybeHeaders.getSetCookie?.();
-
-  if (setCookieHeaders && setCookieHeaders.length > 0) {
-    return setCookieHeaders;
-  }
-
-  const setCookie = headers.get('set-cookie');
-  return setCookie ? [setCookie] : [];
-}
-
-function forwardBetterAuthHeaders(response: Response, reply: FastifyReply) {
-  response.headers.forEach((value, key) => {
-    if (key.toLowerCase() !== 'set-cookie') {
-      reply.header(key, value);
-    }
-  });
-
-  const setCookieHeaders = getSetCookieHeaders(response.headers);
-  if (setCookieHeaders.length > 0) {
-    reply.header('set-cookie', setCookieHeaders);
-  }
-}
-
 function isSuccessfulVerifyResponse(response: Response) {
-  return response.status >= 200 && response.status < 400;
+  return response.ok;
 }
 
-function readBetterAuthError(payload: VerifyPayload) {
-  return payload.error?.message ?? payload.message ?? null;
+function readRedirectError(response: Response) {
+  const location = response.headers.get('location');
+
+  if (!location) {
+    return null;
+  }
+
+  try {
+    return new URL(location).searchParams.get('error');
+  } catch {
+    return null;
+  }
+}
+
+function readBetterAuthError(response: Response, payload: VerifyPayload) {
+  return payload.error?.message ?? payload.message ?? readRedirectError(response);
 }
 
 function readVerifyPayload(rawPayload: string) {
@@ -105,22 +94,21 @@ export const authPublicRoutes: FastifyPluginAsync = async (app) => {
         { method: 'GET' },
       );
 
-      forwardBetterAuthHeaders(response, reply);
+      applyBetterAuthCookies(response, reply);
 
       const rawPayload = await response.text();
       const payload = readVerifyPayload(rawPayload);
       const verified = isSuccessfulVerifyResponse(response);
 
-      reply.code(200);
+      reply.code(200).type('application/json');
       return {
         status: verified ? 'ok' : 'error',
         data: {
           verified,
-          token: query.token,
           session: payload.session ?? null,
           user: payload.user ?? null,
           error:
-            readBetterAuthError(payload) ??
+            readBetterAuthError(response, payload) ??
             (verified ? null : `Better Auth returned ${response.status}`),
         },
       };
@@ -144,7 +132,8 @@ export const authPublicRoutes: FastifyPluginAsync = async (app) => {
         method: 'POST',
       });
 
-      forwardBetterAuthHeaders(response, reply);
+      applyBetterAuthCookies(response, reply);
+      reply.type('application/json');
 
       return {
         status: response.ok ? 'ok' : 'error',

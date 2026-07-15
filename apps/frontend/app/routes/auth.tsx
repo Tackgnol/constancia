@@ -1,24 +1,41 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
-import { useLoaderData } from 'react-router';
+import { data, redirect, useLoaderData } from 'react-router';
 import { authClient } from '@/lib/auth-client';
+import { verifyMagicLinkForFrontend } from '@/lib/magic-link-verification.server';
 
 interface AuthLoaderData {
-  mode: 'idle' | 'error' | 'verifying';
+  mode: 'idle' | 'error';
   message: string;
-  token?: string;
-  next?: string;
 }
 
 function normalizeNext(next: string | null) {
-  return next && next.startsWith('/') ? next : '/';
+  if (!next) {
+    return '/';
+  }
+
+  const frontendOrigin = 'https://constancia.invalid';
+
+  try {
+    const target = new URL(next, frontendOrigin);
+    return target.origin === frontendOrigin
+      ? `${target.pathname}${target.search}${target.hash}`
+      : '/';
+  } catch {
+    return '/';
+  }
 }
 
 function formatAuthError(error: string) {
-  return `Magic link verification failed: ${error}.`;
+  const explanation =
+    error === 'INVALID_TOKEN'
+      ? 'The magic link is invalid or has already been used'
+      : error.replace(/[.]+$/u, '');
+
+  return `Magic link verification failed: ${explanation}.`;
 }
 
-export async function loader({ request }: LoaderFunctionArgs): Promise<AuthLoaderData | Response> {
+export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const token = url.searchParams.get('token');
   const error = url.searchParams.get('error');
@@ -38,46 +55,34 @@ export async function loader({ request }: LoaderFunctionArgs): Promise<AuthLoade
     };
   }
 
-  return {
-    mode: 'verifying',
-    message: 'Verifying magic link...',
-    token,
-    next,
-  };
+  try {
+    const verification = await verifyMagicLinkForFrontend(request, token);
+
+    if (verification.verified) {
+      return redirect(next, { headers: verification.headers });
+    }
+
+    return data(
+      {
+        mode: 'error',
+        message: formatAuthError(verification.error ?? 'The magic link is invalid or has expired'),
+      } satisfies AuthLoaderData,
+      { headers: verification.headers },
+    );
+  } catch {
+    return {
+      mode: 'error',
+      message: 'Magic link verification failed. Please request a fresh link from Discord.',
+    };
+  }
 }
 
 export default function AuthRoute() {
   const loaderData = useLoaderData<typeof loader>() as AuthLoaderData;
   const discordOauthEnabled = import.meta.env.VITE_DISCORD_AUTH_ENABLED === 'true';
-  const [mode, setMode] = useState<'idle' | 'error' | 'verifying'>(loaderData.mode);
+  const [mode, setMode] = useState<AuthLoaderData['mode']>(loaderData.mode);
   const [message, setMessage] = useState(loaderData.message);
   const [discordAuthPending, setDiscordAuthPending] = useState(false);
-
-  useEffect(() => {
-    if (loaderData.mode !== 'verifying') return;
-    fetch(
-      `/api/v1/auth/verify?token=${encodeURIComponent(loaderData.token!)}&next=${encodeURIComponent(loaderData.next!)}`,
-      { method: 'GET', credentials: 'include' },
-    )
-      .then(async (res) => {
-        const payload = (await res.json().catch(() => null)) as {
-          status?: string;
-          data?: { error?: string };
-          message?: string;
-        } | null;
-        const verified = res.ok && payload?.status === 'ok';
-        if (verified) {
-          window.location.href = loaderData.next!;
-          return;
-        }
-        setMode('error');
-        setMessage(payload?.data?.error || payload?.message || 'Magic link verification failed.');
-      })
-      .catch(() => {
-        setMode('error');
-        setMessage('Magic link verification failed.');
-      });
-  }, []);
 
   async function handleDiscordSignIn() {
     setDiscordAuthPending(true);

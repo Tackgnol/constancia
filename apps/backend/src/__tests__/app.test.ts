@@ -517,5 +517,25 @@ describe('backend app', () => {
     expect(verifyResponse.json().data.verified).toBe(true);
     expect(verifyResponse.json().data.user.email).toBe('discord-user-2@discord.constancia.local');
     expect(verifyResponse.headers['set-cookie']).toBeDefined();
+    expect(verifyResponse.headers['content-type']).toContain('application/json');
+    expect(verifyResponse.json().data).not.toHaveProperty('token');
+
+    const invalidResponse = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/verify?token=invalid-token',
+    });
+
+    expect(invalidResponse.statusCode).toBe(200);
+    expect(invalidResponse.headers['content-type']).toContain('application/json');
+    expect(invalidResponse.headers).not.toHaveProperty('location');
+    expect(invalidResponse.json()).toMatchObject({
+      status: 'error',
+      data: {
+        verified: false,
+        session: null,
+        user: null,
+        error: 'INVALID_TOKEN',
+      },
+    });
   });
 });

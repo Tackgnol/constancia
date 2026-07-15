@@ -42,6 +42,14 @@ function getSetCookieHeaders(headers: Headers) {
   return setCookie ? [setCookie] : [];
 }
 
+export function applyBetterAuthCookies(response: Response, reply: FastifyReply) {
+  const setCookieHeaders = getSetCookieHeaders(response.headers);
+
+  if (setCookieHeaders.length > 0) {
+    reply.header('set-cookie', setCookieHeaders);
+  }
+}
+
 function shouldSkipForwardedHeader(key: string) {
   const lowerKey = key.toLowerCase();
 
@@ -62,10 +70,7 @@ function applyResponseHeaders(response: Response, reply: FastifyReply) {
     }
   });
 
-  const setCookieHeaders = getSetCookieHeaders(response.headers);
-  if (setCookieHeaders.length > 0) {
-    reply.header('set-cookie', setCookieHeaders);
-  }
+  applyBetterAuthCookies(response, reply);
 }
 
 export async function forwardToBetterAuth(
