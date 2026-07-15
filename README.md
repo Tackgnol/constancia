@@ -127,7 +127,7 @@ host is the intended external entrypoint.
 The production Caddy site should route Constancia like this:
 
 ```caddyfile
-constancia.rpgtools.eu.org {
+constancia.rpgtools.co {
   import cloudflare_tls
 
   @backend path /api/auth/* /api/v1/auth/* /api/v1/uploads/*
