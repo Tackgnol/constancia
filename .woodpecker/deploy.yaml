@@ -288,15 +288,19 @@ steps:
           psql -h constancia_postgres -U "${POSTGRES_USER:-constancia}" -d "${POSTGRES_DB:-constancia}" -v ON_ERROR_STOP=1 -c 'select 1' > /dev/null
         echo "Postgres connectivity verified"
 
+        # Pass vars by name (-e NAME) so Docker reads values straight from the
+        # environment. Never inline "$VAR" into argv: a secret containing a
+        # space/quote/newline would otherwise split the arg list and leave a
+        # bare -e ("flag needs an argument: 'e' in -e").
         docker run --rm --network constancia_db \
-          -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-          -e POSTGRES_USER="${POSTGRES_USER:-constancia}" \
+          -e POSTGRES_PASSWORD \
+          -e POSTGRES_USER \
           -e PGHOST="constancia_postgres" \
-          -e POSTGRES_DB="${POSTGRES_DB:-constancia}" \
-          -e SUPERUSER_EMAIL="$SUPERUSER_EMAIL" \
-          -e SUPERUSER_DISCORD_ID="$SUPERUSER_DISCORD_ID" \
-          -e SUPERUSER_NAME="$SUPERUSER_NAME" \
-          -e SUPERUSER_UPLOAD_ALLOWANCE_BYTES="$SUPERUSER_UPLOAD_ALLOWANCE_BYTES" \
+          -e POSTGRES_DB \
+          -e SUPERUSER_EMAIL \
+          -e SUPERUSER_DISCORD_ID \
+          -e SUPERUSER_NAME \
+          -e SUPERUSER_UPLOAD_ALLOWANCE_BYTES \
           constancia-migrate:prod
         echo "Migrations complete"
 
