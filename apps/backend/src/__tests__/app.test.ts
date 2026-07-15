@@ -504,7 +504,7 @@ describe('backend app', () => {
     expect(createResponse.statusCode).toBe(201);
     expect(createResponse.json().status).toBe('ok');
     expect(createResponse.json().data.url).toContain('/auth?token=');
-    expect(createResponse.json().data.url).toContain('next=');
+    expect(new URL(createResponse.json().data.url as string).searchParams.get('next')).toBe('/');
 
     const token = createResponse.json().data.token as string;
     const verifyResponse = await app.inject({
