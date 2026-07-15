@@ -13,6 +13,8 @@
 # ---------------------------------------------------------------------------
 
 x-runtime-deploy: &runtime-deploy
+  labels:
+    org.rpgtools.constancia.deployment: '${CI_COMMIT_SHA:-local}-${CI_PIPELINE_NUMBER:-0}'
   update_config:
     order: start-first
     failure_action: rollback

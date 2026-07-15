@@ -300,13 +300,7 @@ steps:
           constancia-migrate:prod
         echo "Migrations complete"
 
-        docker stack deploy -c compose.prod.yaml constancia --detach=true --resolve-image never
-        echo "Updating backend..."
-        docker service update --force --detach=false constancia_backend
-        echo "Updating frontend..."
-        docker service update --force --detach=false constancia_frontend
-        echo "Updating bot..."
-        docker service update --force --detach=false constancia_bot
+        docker stack deploy -c compose.prod.yaml constancia --detach=false --resolve-image never
         docker stack services constancia
         docker service ps constancia_frontend --no-trunc
         docker image prune -f
