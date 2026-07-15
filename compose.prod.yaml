@@ -156,7 +156,10 @@ services:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: 3000
-      BACKEND_URL: http://backend:3000
+      # Full swarm service name, not the short "backend": the frontend shares the
+      # external rpg-network with other stacks that also expose a "backend"
+      # alias, so the short name resolves ambiguously. constancia_backend is unique.
+      BACKEND_URL: http://constancia_backend:3000
       BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:?BACKEND_PUBLIC_URL is required}
       VITE_DISCORD_AUTH_ENABLED: ${VITE_DISCORD_AUTH_ENABLED:-false}
     ports:

@@ -306,17 +306,23 @@ steps:
 
         docker stack deploy -c compose.prod.yaml constancia --detach=false --resolve-image never
 
-        # The runtime images use stable local :prod tags. Updating only the
-        # deploy label changes Swarm service metadata, not the task template,
-        # so stack deploy can otherwise leave the previous containers running.
-        # Force a rolling task replacement after every successful image build.
-        docker service update --force --detach=false constancia_backend
+        # The runtime images use stable local :prod tags. `stack deploy
+        # --resolve-image never` keeps the service's existing image reference,
+        # and a bare `service update --force` re-runs the same task template
+        # WITHOUT re-resolving the tag — so both leave the previous image
+        # running. Pin each service to the freshly-built image by its resolved
+        # id (sha256:...) so the task template actually changes and rolls.
+        backend_image="$(docker images -q --no-trunc constancia-backend:prod)"
+        frontend_image="$(docker images -q --no-trunc constancia-frontend:prod)"
+        bot_image="$(docker images -q --no-trunc constancia-bot:prod)"
+
+        docker service update --image "$backend_image" --detach=false constancia_backend
         wait_for_service_health constancia_backend
 
-        docker service update --force --detach=false constancia_frontend
+        docker service update --image "$frontend_image" --detach=false constancia_frontend
         wait_for_service_health constancia_frontend
 
-        docker service update --force --detach=false constancia_bot
+        docker service update --image "$bot_image" --detach=false constancia_bot
 
         docker stack services constancia
         docker service ps constancia_backend --no-trunc
