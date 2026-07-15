@@ -17,6 +17,7 @@ import { uploadProtectedRoutes, uploadPublicRoutes } from './upload-routes.js';
 import adminRoutes from './admin-routes.js';
 import sessionGuardPlugin from '../plugins/session-guard-plugin.js';
 import botAuthPlugin from '../plugins/bot-auth-plugin.js';
+import campaignAdminScopePlugin from '../plugins/campaign-admin-scope-plugin.js';
 
 const apiRoutes: FastifyPluginAsync = async (app) => {
   await app.register(authPublicRoutes, { prefix: '/auth' });
@@ -30,15 +31,21 @@ const apiRoutes: FastifyPluginAsync = async (app) => {
     await protected_.register(adminRoutes, { prefix: '/admin' });
     await protected_.register(uploadProtectedRoutes, { prefix: '/uploads' });
     await protected_.register(campaignRoutes, { prefix: '/campaigns' });
-    await protected_.register(channelRoutes, { prefix: '/campaigns/:id/channels' });
-    await protected_.register(characterRoutes, { prefix: '/campaigns/:id/characters' });
     await protected_.register(playerCharacterRoutes, { prefix: '/campaigns/:id/player-character' });
-    await protected_.register(campaignNpcRoutes, { prefix: '/campaigns/:id/npcs' });
     await protected_.register(playerNpcRoutes, { prefix: '/campaigns/:id/player-npcs' });
-    await protected_.register(eventRoutes, { prefix: '/campaigns/:id/events' });
-    await protected_.register(messageRoutes, { prefix: '/campaigns/:id/messages' });
-    await protected_.register(journalRoutes, { prefix: '/campaigns/:id' });
-    await protected_.register(loreRoutes, { prefix: '/campaigns/:id/lore' });
+
+    await protected_.register(async (campaignAdminScope) => {
+      await campaignAdminScope.register(campaignAdminScopePlugin);
+      await campaignAdminScope.register(channelRoutes, { prefix: '/campaigns/:id/channels' });
+      await campaignAdminScope.register(characterRoutes, {
+        prefix: '/campaigns/:id/characters',
+      });
+      await campaignAdminScope.register(campaignNpcRoutes, { prefix: '/campaigns/:id/npcs' });
+      await campaignAdminScope.register(eventRoutes, { prefix: '/campaigns/:id/events' });
+      await campaignAdminScope.register(messageRoutes, { prefix: '/campaigns/:id/messages' });
+      await campaignAdminScope.register(journalRoutes, { prefix: '/campaigns/:id' });
+      await campaignAdminScope.register(loreRoutes, { prefix: '/campaigns/:id/lore' });
+    });
   });
 
   // Bot-to-backend routes (API key protected). /auth/magic-link lives here so

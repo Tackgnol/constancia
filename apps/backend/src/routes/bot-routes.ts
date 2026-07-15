@@ -1,8 +1,5 @@
-import type { BlockInstance } from '@constancia/contracts';
-import { PipelineRunner } from '@constancia/core';
 import type { FastifyPluginAsync } from 'fastify';
 import { getPrismaClient } from '../auth/prisma.js';
-import { buildBlockRegistry } from '../blocks.js';
 import { deleted, isPrismaNotFoundError, ok, sendNotFound } from '../http-responses.js';
 import {
   botTestResultBodySchema,
@@ -31,14 +28,14 @@ import {
 } from '../services/player-visible-npcs.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
 import { getPlayerJournal } from '../services/player-journal.js';
-import { filterManualTestResolutionPipeline } from '../services/test-instance.js';
+import { createAppEventExecution } from '../services/app-event-execution.js';
 
 interface BotTestResultBody {
   eventId: string;
-  campaignId: string;
-  channelId: string;
   discordUserId: string;
+  discordChannelId: string;
   playerScore: number;
+  idempotencyKey: string;
 }
 
 interface BotMessageReportBody {
@@ -177,38 +174,18 @@ const botRoutes: FastifyPluginAsync = async (app) => {
         },
       },
     },
-    async (request, reply) => {
-      const { eventId, campaignId, channelId, discordUserId, playerScore } = request.body;
+    async (request) => {
+      const { eventId, discordUserId, discordChannelId, playerScore, idempotencyKey } =
+        request.body;
       const prisma = getPrismaClient();
-
-      const event = await prisma.event.findUnique({
-        where: { id: eventId },
-        select: { id: true, type: true, pipeline: true, channelId: true, campaignId: true },
-      });
-      if (!event) {
-        return sendNotFound(reply, 'Event not found');
-      }
-
-      const character = await prisma.character.findUnique({
-        where: { discordUserId_campaignId: { discordUserId, campaignId } },
-        select: { systemData: true },
-      });
-
-      const registry = buildBlockRegistry();
-      const runner = new PipelineRunner(registry);
-      const pipeline =
-        event.type === 'test'
-          ? filterManualTestResolutionPipeline(event.pipeline as unknown as BlockInstance[])
-          : (event.pipeline as unknown as BlockInstance[]);
-      const result = await runner.run(pipeline, {
-        campaignId,
-        channelId,
-        playerId: discordUserId,
+      const receipt = await createAppEventExecution(prisma, app.config).submitTestResult({
+        eventId,
+        discordUserId,
+        discordChannelId,
         playerScore,
-        characterData: (character?.systemData ?? {}) as Record<string, unknown>,
+        idempotencyKey,
       });
-
-      return ok({ eventId, campaignId, messages: result.messages, halted: result.halted });
+      return ok(receipt);
     },
   );
 

@@ -6,6 +6,7 @@ import betterAuthPlugin from './plugins/better-auth-plugin.js';
 import configPlugin from './plugins/config-plugin.js';
 import openApiPlugin from './plugins/openapi-plugin.js';
 import requestErrorPlugin from './plugins/request-error-plugin.js';
+import eventDeliveryDispatcherPlugin from './plugins/event-delivery-dispatcher-plugin.js';
 import rootRoutes from './routes/root-routes.js';
 import healthRoutes from './routes/health-routes.js';
 import apiRoutes from './routes/api-routes.js';
@@ -24,6 +25,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
   await app.register(configPlugin, { config });
   await app.register(requestErrorPlugin);
+  await app.register(eventDeliveryDispatcherPlugin);
   await app.register(multipart, {
     limits: {
       fileSize: config.uploadMaxBytes,

@@ -526,12 +526,21 @@ export const botTestResultBodySchema = {
   additionalProperties: false,
   properties: {
     eventId: { type: 'string' },
-    campaignId: { type: 'string' },
-    channelId: { type: 'string' },
     discordUserId: { type: 'string' },
+    discordChannelId: { type: 'string' },
     playerScore: { type: 'number' },
+    idempotencyKey: { type: 'string', minLength: 1 },
   },
-  required: ['eventId', 'campaignId', 'channelId', 'discordUserId', 'playerScore'],
+  required: ['eventId', 'discordUserId', 'discordChannelId', 'playerScore', 'idempotencyKey'],
+} as const;
+
+export const idempotencyKeyHeaderSchema = {
+  type: 'object',
+  additionalProperties: true,
+  properties: {
+    'idempotency-key': { type: 'string', minLength: 1 },
+  },
+  required: ['idempotency-key'],
 } as const;
 
 export const botMessageReportBodySchema = {
@@ -905,11 +914,54 @@ export const fireEventResultSchema = {
   type: 'object',
   additionalProperties: false,
   properties: {
+    id: { type: 'string' },
+    idempotencyKey: { type: 'string' },
+    kind: { type: 'string', enum: ['fire', 'test-result'] },
     eventId: { type: 'string' },
+    campaignId: { type: 'string' },
+    status: { type: 'string', enum: ['completed', 'failed'] },
     messages: { type: 'array', items: blockMessageSchema },
     halted: { type: 'boolean' },
+    deliveries: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          id: { type: 'string' },
+          status: { type: 'string', enum: ['pending', 'delivered', 'failed'] },
+          attempts: { type: 'number' },
+          lastError: { type: 'string' },
+          deliveredAt: { type: 'string', format: 'date-time' },
+        },
+        required: ['id', 'status', 'attempts'],
+      },
+    },
+    error: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        code: { type: 'string' },
+        message: { type: 'string' },
+      },
+      required: ['code', 'message'],
+    },
+    createdAt: { type: 'string', format: 'date-time' },
+    completedAt: { type: 'string', format: 'date-time' },
   },
-  required: ['eventId', 'messages', 'halted'],
+  required: [
+    'id',
+    'idempotencyKey',
+    'kind',
+    'eventId',
+    'campaignId',
+    'status',
+    'messages',
+    'halted',
+    'deliveries',
+    'createdAt',
+    'completedAt',
+  ],
 } as const;
 
 export const playerMessageResultSchema = {
@@ -923,17 +975,7 @@ export const playerMessageResultSchema = {
   required: ['campaignId', 'channelId', 'deliveredTo'],
 } as const;
 
-export const botTestResultResponseSchema = {
-  type: 'object',
-  additionalProperties: false,
-  properties: {
-    eventId: { type: 'string' },
-    campaignId: { type: 'string' },
-    messages: { type: 'array', items: blockMessageSchema },
-    halted: { type: 'boolean' },
-  },
-  required: ['eventId', 'campaignId', 'messages', 'halted'],
-} as const;
+export const botTestResultResponseSchema = fireEventResultSchema;
 
 export const messageReportSchema = {
   type: 'object',

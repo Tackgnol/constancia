@@ -18,6 +18,7 @@ import {
   updateCharacterSheetForActor,
 } from '../services/character-sheets.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
+import { createCampaignAccess } from '../services/campaign-access.js';
 
 interface CampaignParams {
   id: string;
@@ -79,8 +80,10 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request) => {
       const prisma = getPrismaClient();
-      const { id } = request.params;
-      const characters = await prisma.character.findMany({ where: { campaignId: id }, select });
+      const characters = await prisma.character.findMany({
+        where: { campaignId: request.campaignScope.campaignId },
+        select,
+      });
       return ok(characters);
     },
   );
@@ -102,11 +105,10 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
-      const { id } = request.params;
       const { name, discordUserId, backstory, notes, systemData } = request.body;
       const character = await prisma.character.create({
         data: {
-          campaignId: id,
+          campaignId: request.campaignScope.campaignId,
           name,
           discordUserId,
           backstory: backstory ?? '',
@@ -137,6 +139,10 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
       const { charId } = request.params;
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'character',
+        id: charId,
+      });
       const character = await prisma.character.findUnique({ where: { id: charId }, select });
       if (character === null) {
         return sendNotFound(reply, 'Character not found');
@@ -162,6 +168,10 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const prisma = getPrismaClient();
       const { charId } = request.params;
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'character',
+        id: charId,
+      });
       const { name, gameName, backstory, notes, systemData } = request.body;
       const data: Partial<{
         name: string;
@@ -209,8 +219,13 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
 
       await moderatePayloadText(app.config, request.body);
       const prisma = getPrismaClient();
-      const { id, charId } = request.params;
-      const sheet = await getCharacterSheetForActor(prisma, id, charId, discordUserId);
+      const { charId } = request.params;
+      const sheet = await getCharacterSheetForActor(
+        prisma,
+        request.campaignScope.campaignId,
+        charId,
+        discordUserId,
+      );
       if (sheet === null) {
         return sendNotFound(reply, 'Character sheet not found');
       }
@@ -241,10 +256,10 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
       }
 
       const prisma = getPrismaClient();
-      const { id, charId } = request.params;
+      const { charId } = request.params;
       const sheet = await updateCharacterSheetForActor(
         prisma,
-        id,
+        request.campaignScope.campaignId,
         charId,
         discordUserId,
         request.body,

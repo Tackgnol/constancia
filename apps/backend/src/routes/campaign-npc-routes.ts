@@ -18,6 +18,7 @@ import {
 import { getPrismaClient } from '../auth/prisma.js';
 import { isPrismaNotFoundError, ok, sendNotFound, deleted } from '../http-responses.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
+import { createCampaignAccess } from '../services/campaign-access.js';
 
 interface CampaignParams {
   id: string;
@@ -275,9 +276,8 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request) => {
       const prisma = getPrismaClient();
-      const { id } = request.params;
       const npcs = await prisma.npc.findMany({
-        where: { campaignId: id },
+        where: { campaignId: request.campaignScope.campaignId },
         orderBy: { name: 'asc' },
         select: npcWithKnowledgeSelect,
       });
@@ -303,13 +303,12 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
-      const { id } = request.params;
       const { name, imageUrl, description, systemBlocks, facts } = request.body;
 
       const npc = await prisma.$transaction(async (transaction) => {
         const createdNpc = await transaction.npc.create({
           data: {
-            campaignId: id,
+            campaignId: request.campaignScope.campaignId,
             name,
             imageUrl,
             description: description ?? '',
@@ -357,6 +356,10 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
       const { npcId } = request.params;
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'npc',
+        id: npcId,
+      });
       const { name, imageUrl, description, systemBlocks } = request.body;
       const data: Partial<{
         name: string;
@@ -408,6 +411,10 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
       const { npcId } = request.params;
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'npc',
+        id: npcId,
+      });
       const { content, sortOrder } = request.body;
       const fact = await prisma.npcFact.create({
         data: { npcId, content, sortOrder: sortOrder ?? 0 },
@@ -434,11 +441,25 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
-      const { id, npcId } = request.params;
+      const { npcId } = request.params;
       const { npcFactIds, discordUserIds } = request.body;
+      const campaignAccess = createCampaignAccess(prisma);
+      await campaignAccess.requireResource(request.campaignScope, { kind: 'npc', id: npcId });
+      await Promise.all(
+        [...new Set(npcFactIds)].map((npcFactId) =>
+          campaignAccess.requireResource(request.campaignScope, {
+            kind: 'npc-fact',
+            id: npcFactId,
+            npcId,
+          }),
+        ),
+      );
 
       const characters = await prisma.character.findMany({
-        where: { campaignId: id, discordUserId: { in: discordUserIds } },
+        where: {
+          campaignId: request.campaignScope.campaignId,
+          discordUserId: { in: discordUserIds },
+        },
         select: { id: true },
       });
 
@@ -478,6 +499,10 @@ const npcRoutes: FastifyPluginAsync = async (app) => {
     async (request) => {
       const prisma = getPrismaClient();
       const { npcId } = request.params;
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'npc',
+        id: npcId,
+      });
       try {
         await prisma.npc.delete({ where: { id: npcId } });
         return deleted(true);

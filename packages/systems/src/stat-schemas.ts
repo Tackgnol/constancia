@@ -1,6 +1,5 @@
 import type { StatField, StatSchema } from '@constancia/contracts';
-import { MB_STAT_SCHEMA } from './mork-borg/data.js';
-import { VTM_STAT_SCHEMA } from './vtm-v5/data.js';
+import { gameSystemRegistry } from './game-system-registry.js';
 
 export interface GameSystemSummary {
   id: string;
@@ -10,46 +9,12 @@ export interface GameSystemSummary {
 
 type SystemStatValue = number | string | boolean;
 
-const DEFAULT_SYSTEM_SUMMARY_VERSION = '0.1.0';
-const GAME_SYSTEM_ID_ALIASES: Record<string, string> = {
-  'vtm-5': 'vtm-v5',
-  vtm5: 'vtm-v5',
-  'vtm-v5': 'vtm-v5',
-  'vampire-the-masquerade-5e': 'vtm-v5',
-  'vampire-the-masquerade-v5': 'vtm-v5',
-  'vampire-the-masquerade-5th-edition': 'vtm-v5',
-  morkborg: 'mork-borg',
-  'mork-borg': 'mork-borg',
-};
-
-export const GAME_SYSTEM_SUMMARIES: readonly GameSystemSummary[] = [
-  {
-    id: 'vtm-v5',
-    name: 'Vampire: The Masquerade 5th Edition',
-    version: DEFAULT_SYSTEM_SUMMARY_VERSION,
-  },
-  {
-    id: 'mork-borg',
-    name: 'Mork Borg',
-    version: DEFAULT_SYSTEM_SUMMARY_VERSION,
-  },
-] as const;
-
-const GAME_SYSTEM_STAT_SCHEMAS: Record<string, StatSchema> = {
-  'vtm-v5': VTM_STAT_SCHEMA,
-  'mork-borg': MB_STAT_SCHEMA,
-};
-
-function normalizeGameSystemLookupKey(systemId: string): string {
-  return systemId
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_:]+/g, '-');
-}
+export const GAME_SYSTEM_SUMMARIES: readonly GameSystemSummary[] = gameSystemRegistry
+  .list()
+  .map(({ id, name, version }) => ({ id, name, version }));
 
 export function resolveGameSystemId(systemId: string): string {
-  const lookupKey = normalizeGameSystemLookupKey(systemId);
-  return GAME_SYSTEM_ID_ALIASES[lookupKey] ?? systemId;
+  return gameSystemRegistry.resolveId(systemId) ?? systemId;
 }
 
 function coerceStatValue(field: StatField, rawValue: unknown): SystemStatValue {
@@ -95,7 +60,7 @@ export function getGameSystemSummary(systemId: string): GameSystemSummary | null
 }
 
 export function getStatSchemaForSystem(systemId: string): StatSchema {
-  return GAME_SYSTEM_STAT_SCHEMAS[resolveGameSystemId(systemId)] ?? { groups: [] };
+  return gameSystemRegistry.get(systemId)?.statSchema ?? { groups: [] };
 }
 
 export function extractSystemStats(

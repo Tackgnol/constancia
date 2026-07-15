@@ -128,11 +128,85 @@ describe('bot HTTP server', () => {
       );
       expect(sentPayload.embeds[0].data).not.toHaveProperty('fields');
       expect(sentPayload.components[0].components[0].data.custom_id).toBe(
-        'test-instance:submit:event-7:campaign-3',
+        'test-instance:submit:event-7',
       );
       expect(sentPayload.components[0].components[0].data.label).toBe('Submit Result');
       expect(sentPayload.components[0].components[1].data.custom_id).toBe('message-report:event-7');
       expect(sentPayload.components[0].components[1].data.label).toBe('Report');
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('replays a completed delivery id without sending a duplicate Discord message', async () => {
+    process.env.BOT_API_KEY = 'test-key';
+    const { client, send } = createClientMock();
+    const app = buildBotHttpApp(client);
+    const request = {
+      method: 'POST' as const,
+      url: '/send-messages',
+      headers: { 'x-bot-key': 'test-key', 'x-delivery-id': 'delivery-1' },
+      payload: {
+        kind: 'messages',
+        eventId: 'event-1',
+        discordChannelId: 'channel-1',
+        messages: [{ target: 'channel', content: 'Only once.' }],
+      },
+    };
+
+    try {
+      const first = await app.inject(request);
+      const replay = await app.inject(request);
+
+      expect(first.statusCode).toBe(200);
+      expect(replay.statusCode).toBe(200);
+      expect(first.json().data).toMatchObject({ deliveryId: 'delivery-1', deduplicated: false });
+      expect(replay.json().data).toMatchObject({ deliveryId: 'delivery-1', deduplicated: true });
+      expect(send).toHaveBeenCalledTimes(1);
+      expect(send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          enforceNonce: true,
+          nonce: expect.stringMatching(/^[A-Za-z0-9_-]{25}$/),
+        }),
+      );
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('rejects a delivery id reused for a different payload', async () => {
+    process.env.BOT_API_KEY = 'test-key';
+    const { client, send } = createClientMock();
+    const app = buildBotHttpApp(client);
+    const headers = { 'x-bot-key': 'test-key', 'x-delivery-id': 'delivery-1' };
+
+    try {
+      await app.inject({
+        method: 'POST',
+        url: '/send-messages',
+        headers,
+        payload: {
+          kind: 'messages',
+          eventId: 'event-1',
+          discordChannelId: 'channel-1',
+          messages: [{ target: 'channel', content: 'Original.' }],
+        },
+      });
+      const conflict = await app.inject({
+        method: 'POST',
+        url: '/send-messages',
+        headers,
+        payload: {
+          kind: 'messages',
+          eventId: 'event-1',
+          discordChannelId: 'channel-1',
+          messages: [{ target: 'channel', content: 'Different.' }],
+        },
+      });
+
+      expect(conflict.statusCode).toBe(409);
+      expect(conflict.json().data.code).toBe('DELIVERY_ID_CONFLICT');
+      expect(send).toHaveBeenCalledTimes(1);
     } finally {
       await app.close();
     }

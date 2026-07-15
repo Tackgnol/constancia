@@ -144,6 +144,7 @@ model Campaign {
   quests     Quest[]
   summaries  SessionSummary[]
   loreEntries LoreEntry[]
+  eventExecutions EventExecution[]
 
   @@map("campaigns")
 }
@@ -272,6 +273,7 @@ model Event {
   channel      Channel       @relation(fields: [channelId], references: [id], onDelete: Cascade)
   campaign     Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   uploadAssets UploadAsset[]
+  executions   EventExecution[]
 
   @@map("events")
 }
@@ -281,6 +283,50 @@ enum EventStatus {
   ready
   fired
   archived
+}
+
+model EventExecution {
+  id                 String   @id @default(cuid())
+  kind               String
+  idempotencyKey     String
+  commandFingerprint String
+  eventId            String
+  campaignId         String
+  status             String   @default("completed")
+  halted             Boolean  @default(false)
+  messages           Json     @default("[]")
+  errorCode          String?
+  errorMessage       String?
+  createdAt          DateTime @default(now())
+  completedAt        DateTime @default(now())
+
+  event      Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  campaign   Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  deliveries EventDelivery[]
+
+  @@unique([kind, idempotencyKey])
+  @@index([eventId, createdAt])
+  @@index([campaignId, createdAt])
+  @@map("event_executions")
+}
+
+model EventDelivery {
+  id            String   @id @default(cuid())
+  executionId   String
+  payload       Json
+  status        String   @default("pending")
+  attempts      Int      @default(0)
+  lastError     String?
+  deliveredAt   DateTime?
+  nextAttemptAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  execution EventExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextAttemptAt])
+  @@index([executionId])
+  @@map("event_deliveries")
 }
 
 model Quest {

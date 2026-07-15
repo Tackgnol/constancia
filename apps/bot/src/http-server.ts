@@ -3,6 +3,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import type { Client } from 'discord.js';
 import { loadBotConfig, type BotConfig } from './config.js';
 import { deliverMessages } from './delivery.js';
+import { DeliveryDeduplicator, DeliveryIdConflictError } from './delivery-deduplicator.js';
 import { deliverTestInstance } from './discord/test-instances.js';
 
 export { deliverMessages } from './delivery.js';
@@ -14,6 +15,7 @@ export function buildBotHttpApp(
   const app = Fastify({
     logger: config.httpLoggerEnabled ? { level: 'info' } : false,
   });
+  const deliveries = new DeliveryDeduplicator<{ delivered: number; skipped: number }>();
 
   app.addHook('onRequest', async (request, reply) => {
     const key = request.headers['x-bot-key'];
@@ -30,26 +32,58 @@ export function buildBotHttpApp(
       return reply.code(400).send({ status: 'error', data: { message: 'Invalid payload' } });
     }
 
+    const rawDeliveryId = request.headers['x-delivery-id'];
+    const deliveryId = Array.isArray(rawDeliveryId) ? rawDeliveryId[0] : rawDeliveryId;
     app.log.info(
-      { eventId: parsedBody.data.eventId, kind: parsedBody.data.kind },
+      { eventId: parsedBody.data.eventId, kind: parsedBody.data.kind, deliveryId },
       'Received bot delivery request',
     );
-    const result =
+    const deliver = () =>
       parsedBody.data.kind === 'messages'
-        ? await deliverMessages(client, parsedBody.data as SendMessagesPayload)
-        : await deliverTestInstance(client, parsedBody.data);
+        ? deliverMessages(client, parsedBody.data as SendMessagesPayload, deliveryId)
+        : deliverTestInstance(client, parsedBody.data, deliveryId);
+    let result: { delivered: number; skipped: number };
+    let deduplicated = false;
+    try {
+      if (typeof deliveryId === 'string' && deliveryId.trim().length > 0) {
+        const delivery = await deliveries.execute(
+          deliveryId,
+          JSON.stringify(parsedBody.data),
+          deliver,
+        );
+        result = delivery.value;
+        deduplicated = delivery.replayed;
+      } else {
+        result = await deliver();
+      }
+    } catch (error) {
+      if (error instanceof DeliveryIdConflictError) {
+        return reply.code(409).send({
+          status: 'error',
+          data: { message: error.message, code: 'DELIVERY_ID_CONFLICT' },
+        });
+      }
+      throw error;
+    }
     app.log.info(
       {
         eventId: parsedBody.data.eventId,
         kind: parsedBody.data.kind,
         delivered: result.delivered,
         skipped: result.skipped,
+        deliveryId,
+        deduplicated,
       },
       'Completed bot delivery request',
     );
-    return reply
-      .code(200)
-      .send({ status: 'ok', data: { eventId: parsedBody.data.eventId, ...result } });
+    return reply.code(200).send({
+      status: 'ok',
+      data: {
+        eventId: parsedBody.data.eventId,
+        ...result,
+        ...(deliveryId ? { deliveryId, deduplicated } : {}),
+      },
+    });
   });
 
   return app;

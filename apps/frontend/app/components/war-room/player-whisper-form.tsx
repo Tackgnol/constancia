@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { MessageSquare, Send, X } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -52,6 +52,7 @@ function sentPlayerLabel(sentCount: number) {
 export function PlayerWhisperForm({ warRoom }: PlayerWhisperFormProps) {
   const [open, setOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const idempotencyKeyRef = useRef<string | null>(null);
   const recipientOptions = useMemo(
     () => buildRecipientOptions(warRoom.rawCharacters, warRoom.players),
     [warRoom.rawCharacters, warRoom.players],
@@ -83,6 +84,8 @@ export function PlayerWhisperForm({ warRoom }: PlayerWhisperFormProps) {
       clearErrors('root');
 
       if (!isDemoMode) {
+        const idempotencyKey = idempotencyKeyRef.current ?? crypto.randomUUID();
+        idempotencyKeyRef.current = idempotencyKey;
         const result = await postRouteAction(actionPath, {
           intent: 'send-player-message',
           campaignId: warRoom.campaign.id,
@@ -90,6 +93,7 @@ export function PlayerWhisperForm({ warRoom }: PlayerWhisperFormProps) {
           playerIds: JSON.stringify(values.playerIds),
           content: values.content.trim(),
           imageUrl: imageUrl || '',
+          idempotencyKey,
         });
 
         if (result.status !== 'success') {
@@ -100,6 +104,7 @@ export function PlayerWhisperForm({ warRoom }: PlayerWhisperFormProps) {
       const sentLabel = sentPlayerLabel(values.playerIds.length);
       warRoom.recordActivity?.(sentLabel);
       setNotice(sentLabel);
+      idempotencyKeyRef.current = null;
       reset({
         channelId: values.channelId,
         playerIds: [],

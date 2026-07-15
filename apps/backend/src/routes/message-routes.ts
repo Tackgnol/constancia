@@ -1,12 +1,13 @@
-import { randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import type { FastifyPluginAsync } from 'fastify';
 import type { BlockMessage } from '@constancia/contracts';
 import { getPrismaClient } from '../auth/prisma.js';
 import { ok, sendError, sendNotFound } from '../http-responses.js';
-import { sendMessagesToBotAsync } from '../services/bot-client.js';
+import { createHttpBotDeliveryPort } from '../services/bot-delivery-port.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
 import {
   campaignParamsSchema,
+  idempotencyKeyHeaderSchema,
   playerMessageBodySchema,
   playerMessageResultSchema,
   singleResponseSchema,
@@ -24,12 +25,20 @@ interface PlayerMessageBody {
   imageUrl?: string;
 }
 
+interface IdempotencyHeaders {
+  'idempotency-key': string;
+}
+
 function uniqueTrimmedIds(ids: string[]): string[] {
   return Array.from(new Set(ids.map((id) => id.trim()).filter(Boolean)));
 }
 
 const messageRoutes: FastifyPluginAsync = async (app) => {
-  app.post<{ Params: CampaignParams; Body: PlayerMessageBody }>(
+  app.post<{
+    Params: CampaignParams;
+    Body: PlayerMessageBody;
+    Headers: IdempotencyHeaders;
+  }>(
     '/players',
     {
       schema: {
@@ -37,18 +46,20 @@ const messageRoutes: FastifyPluginAsync = async (app) => {
         summary: 'Send an ad-hoc message to selected players',
         operationId: 'sendPlayerMessage',
         params: campaignParamsSchema,
+        headers: idempotencyKeyHeaderSchema,
         body: playerMessageBodySchema,
         response: {
           200: singleResponseSchema(playerMessageResultSchema),
           400: standardResponseSchema,
           404: standardResponseSchema,
+          503: standardResponseSchema,
         },
       },
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
-      const { id: campaignId } = request.params;
+      const campaignId = request.campaignScope.campaignId;
       const { channelId, content, imageUrl } = request.body;
       const discordUserIds = uniqueTrimmedIds(request.body.discordUserIds);
 
@@ -80,12 +91,31 @@ const messageRoutes: FastifyPluginAsync = async (app) => {
               ...(imageUrl ? { imageUrl } : {}),
             };
 
-      await sendMessagesToBotAsync(app.config.botInternalUrl, app.config.botApiKey, {
-        kind: 'messages',
-        eventId: `ad-hoc-${randomUUID()}`,
-        discordChannelId: channel.discordChannelId,
-        messages: [message],
+      const idempotencyKey = request.headers['idempotency-key'];
+      const deliveryId = createHash('sha256')
+        .update(`ad-hoc:${campaignId}:${idempotencyKey}`)
+        .digest('base64url')
+        .slice(0, 25);
+      const delivery = await createHttpBotDeliveryPort({
+        botInternalUrl: app.config.botInternalUrl,
+        botApiKey: app.config.botApiKey,
+      }).deliver({
+        deliveryId,
+        payload: {
+          kind: 'messages',
+          eventId: `ad-hoc-${deliveryId}`,
+          discordChannelId: channel.discordChannelId,
+          messages: [message],
+        },
       });
+
+      if (delivery.status === 'failed') {
+        return sendError(
+          reply,
+          503,
+          'Discord delivery is temporarily unavailable. Retry the same whisper.',
+        );
+      }
 
       return ok({
         campaignId,

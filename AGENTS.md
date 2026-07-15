@@ -22,6 +22,20 @@ Use official documentation to choose the implementation shape. Do not rely on me
 - Use `.claude/skills/tell-me-why/SKILL.md` when `tell me why` is invoked or when a task needs a per-session rationale log; when routed there, create one new session log file automatically and record why each change was made, alternatives considered, and why the chosen file/layer is the right place for the change.
 - `AGENTS.md` remains authoritative if the skill and this file ever disagree.
 
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs are tracked in GitHub Issues for `Tackgnol/constancia`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five canonical agent-workflow labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Constancia uses a single-context domain layout. See `docs/agents/domain.md`.
+
 ## Execution Order
 
 Plan 1 (Foundation) is complete. The repo has moved beyond the plan into app scaffolding.

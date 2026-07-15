@@ -1,5 +1,5 @@
 import type { ChatInputCommandInteraction } from 'discord.js';
-import { getChannelEvents, submitBotTestResult } from '@constancia/api-client/endpoints/bot/bot';
+import { getChannelEvents } from '@constancia/api-client/endpoints/bot/bot';
 import { botRequestOptions } from '../config.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
@@ -22,35 +22,9 @@ export async function handleRoll(interaction: ChatInputCommandInteraction): Prom
     return;
   }
 
-  const result = await submitBotTestResult(
-    {
-      eventId: event.id,
-      campaignId: event.campaignId,
-      channelId: interaction.channelId,
-      discordUserId: interaction.user.id,
-      playerScore: 0,
-    },
-    botRequestOptions(),
+  await interaction.editReply(
+    'The active event is not a player test. Fire it from the GM Play View.',
   );
-
-  const playerMessages: string[] = [];
-
-  for (const msg of result.data.messages) {
-    const target = msg['target'];
-    const content = msg['content'];
-    if (typeof content !== 'string') continue;
-
-    if (target === 'channel') {
-      const ch = interaction.channel;
-      if (ch && ch.isTextBased() && !ch.isDMBased()) {
-        await ch.send(content);
-      }
-    } else if (target === 'player') {
-      playerMessages.push(content);
-    }
-  }
-
-  await interaction.editReply(playerMessages.join('\n') || 'Roll complete.');
 }
 
 export const rollCommand: BotChatCommand = {

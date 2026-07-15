@@ -27,6 +27,13 @@ type TriggerView = {
 };
 
 type ArtifactSize = 'standard' | 'wide' | 'tall';
+type DeliveryViewState = 'not-required' | 'pending' | 'delivered' | 'failed';
+type FireReceiptView = {
+  eventId: string;
+  executionId: string;
+  executionStatus: 'completed' | 'failed';
+  deliveryStatus: DeliveryViewState;
+};
 type PendingUndo = {
   id: string;
   name: string;
@@ -47,6 +54,56 @@ function asStringArray(input: FormDataEntryValue | null): string[] {
   } catch {
     return [];
   }
+}
+
+function toFireReceiptView(input: unknown): FireReceiptView | null {
+  if (typeof input !== 'object' || input === null) {
+    return null;
+  }
+
+  const receipt = input as Record<string, unknown>;
+  if (
+    typeof receipt.id !== 'string' ||
+    typeof receipt.eventId !== 'string' ||
+    (receipt.status !== 'completed' && receipt.status !== 'failed') ||
+    !Array.isArray(receipt.deliveries)
+  ) {
+    return null;
+  }
+
+  const deliveryStatuses = receipt.deliveries.flatMap((delivery) => {
+    if (
+      typeof delivery !== 'object' ||
+      delivery === null ||
+      !('status' in delivery) ||
+      (delivery.status !== 'pending' &&
+        delivery.status !== 'delivered' &&
+        delivery.status !== 'failed')
+    ) {
+      return [];
+    }
+
+    return [delivery.status];
+  });
+  if (deliveryStatuses.length !== receipt.deliveries.length) {
+    return null;
+  }
+
+  const deliveryStatus: DeliveryViewState =
+    deliveryStatuses.length === 0
+      ? 'not-required'
+      : deliveryStatuses.every((status) => status === 'delivered')
+        ? 'delivered'
+        : deliveryStatuses.some((status) => status === 'pending')
+          ? 'pending'
+          : 'failed';
+
+  return {
+    eventId: receipt.eventId,
+    executionId: receipt.id,
+    executionStatus: receipt.status,
+    deliveryStatus,
+  };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -70,14 +127,40 @@ export async function action({ request }: ActionFunctionArgs) {
   try {
     if (intent === 'fire-event') {
       const eventId = formData.get('eventId');
+      const idempotencyKey = formData.get('idempotencyKey');
 
-      if (typeof eventId !== 'string' || eventId.length === 0) {
-        return Response.json({ status: 'error', message: 'Event id is missing.' }, { status: 400 });
+      if (
+        typeof eventId !== 'string' ||
+        eventId.length === 0 ||
+        typeof idempotencyKey !== 'string' ||
+        idempotencyKey.length === 0
+      ) {
+        return Response.json(
+          { status: 'error', message: 'Event execution context is incomplete.' },
+          { status: 400 },
+        );
       }
 
-      const response = await fireEvent({ id: campaignId, eventId }, apiOptions);
+      const response = await fireEvent(
+        { id: campaignId, eventId },
+        {
+          ...apiOptions,
+          headers: {
+            ...apiOptions.headers,
+            'idempotency-key': idempotencyKey,
+          },
+        },
+      );
       assertApiOk(response, 'The live trigger did not fire cleanly. Try again.');
-      return Response.json({ status: 'success' });
+      const receipt = toFireReceiptView(response.data);
+      if (receipt === null) {
+        return Response.json(
+          { status: 'error', message: 'The backend returned an invalid execution receipt.' },
+          { status: 502 },
+        );
+      }
+
+      return Response.json({ status: 'success', data: receipt });
     }
 
     if (intent === 'send-player-message') {
@@ -85,13 +168,16 @@ export async function action({ request }: ActionFunctionArgs) {
       const content = formData.get('content');
       const imageUrl = formData.get('imageUrl');
       const discordUserIds = asStringArray(formData.get('playerIds'));
+      const idempotencyKey = formData.get('idempotencyKey');
 
       if (
         typeof channelId !== 'string' ||
         channelId.length === 0 ||
         typeof content !== 'string' ||
         content.length === 0 ||
-        discordUserIds.length === 0
+        discordUserIds.length === 0 ||
+        typeof idempotencyKey !== 'string' ||
+        idempotencyKey.length === 0
       ) {
         return Response.json(
           { status: 'error', message: 'Whisper payload is incomplete.' },
@@ -107,7 +193,13 @@ export async function action({ request }: ActionFunctionArgs) {
           discordUserIds,
           ...(typeof imageUrl === 'string' && imageUrl.length > 0 ? { imageUrl } : {}),
         },
-        apiOptions,
+        {
+          ...apiOptions,
+          headers: {
+            ...apiOptions.headers,
+            'idempotency-key': idempotencyKey,
+          },
+        },
       );
       assertApiOk(response, 'The whisper did not leave the board. Try again.');
 
@@ -247,11 +339,13 @@ export default function PlayRoute() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [pendingUndo, setPendingUndo] = useState<PendingUndo | null>(null);
   const [undoCountdownMs, setUndoCountdownMs] = useState(0);
+  const [deliveryByEventId, setDeliveryByEventId] = useState<Record<string, DeliveryViewState>>({});
 
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const armedItemRef = useRef<string | null>(null);
   const pendingUndoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fireIdempotencyKeysRef = useRef(new Map<string, string>());
 
   const channelById = new Map(warRoom.channels.map((c) => [c.id, c]));
   const tagLabelById = new Map(warRoom.tags.map((t) => [t.id, t.label]));
@@ -290,7 +384,11 @@ export default function PlayRoute() {
   }
 
   const visibleItems = sections.flatMap((section) => section.items);
-  const firedItems = new Set(warRoom.firedEventIds ?? []);
+  const firedItems = new Set([
+    ...(warRoom.firedEventIds ?? []),
+    ...liveEvents.filter((event) => event.status === 'fired').map((event) => event.id),
+    ...Object.keys(deliveryByEventId),
+  ]);
   const nextUpItem = visibleItems.find((item) => !firedItems.has(item.id)) ?? null;
   const commandEcho =
     lastAction ??
@@ -357,23 +455,42 @@ export default function PlayRoute() {
     }
 
     try {
+      let firedDeliveryStatus: DeliveryViewState | undefined;
       if (!isDemoMode) {
-        const result = await postRouteAction(actionPath, {
+        const idempotencyKey = fireIdempotencyKeysRef.current.get(itemId) ?? crypto.randomUUID();
+        fireIdempotencyKeysRef.current.set(itemId, idempotencyKey);
+        const result = await postRouteAction<FireReceiptView>(actionPath, {
           intent: 'fire-event',
           campaignId: warRoom.campaign.id,
           eventId: itemId,
+          idempotencyKey,
         });
 
         if (result.status !== 'success') {
           throw new Error(result.message);
         }
+        if (result.data === undefined) {
+          throw new Error('The frontend action omitted the execution receipt.');
+        }
+
+        firedDeliveryStatus = result.data.deliveryStatus;
+        setDeliveryByEventId((current) => ({
+          ...current,
+          [itemId]: result.data?.deliveryStatus ?? 'failed',
+        }));
       }
 
       warRoom.setEventFiredState?.(itemId, true);
       warRoom.recordActivity?.(`${item.name} fired${item.target ? ` ${item.target}` : ''}`);
 
       startTransition(() => {
-        setLastAction(`${item.name} fired.`);
+        setLastAction(
+          firedDeliveryStatus === 'pending'
+            ? `${item.name} fired; awaiting Discord delivery.`
+            : firedDeliveryStatus === 'failed'
+              ? `${item.name} fired; Discord delivery will be retried.`
+              : `${item.name} fired.`,
+        );
         setSelectedItemId(itemId);
       });
 
@@ -613,6 +730,7 @@ export default function PlayRoute() {
             <div className="board-grid">
               {section.items.map((item) => {
                 const isFired = firedItems.has(item.id);
+                const deliveryStatus = deliveryByEventId[item.id];
                 const isArmed = armedItemId === item.id && !isFired;
                 const hasError = errorItemId === item.id && !isFired;
                 const isNextUp = nextUpItem?.id === item.id && !isArmed && !isFired && !hasError;
@@ -649,7 +767,15 @@ export default function PlayRoute() {
                       <span className="trigger-meta">{item.meta}</span>
                     )}
                     {isFired ? (
-                      <span className="trigger-flag">Fired</span>
+                      <span className="trigger-flag">
+                        {deliveryStatus === 'pending'
+                          ? 'Awaiting Discord'
+                          : deliveryStatus === 'failed'
+                            ? 'Delivery retrying'
+                            : deliveryStatus === 'delivered'
+                              ? 'Delivered'
+                              : 'Fired'}
+                      </span>
                     ) : isNextUp ? (
                       <span className="trigger-flag is-next-up-flag">Next up</span>
                     ) : isArmed ? (

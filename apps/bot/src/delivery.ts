@@ -4,6 +4,7 @@ import {
   type SendMessagesPayload,
 } from '@constancia/contracts';
 import type { Client } from 'discord.js';
+import { createHash } from 'node:crypto';
 import { buildMessageReportRow } from './discord/message-reports.js';
 
 function formatMessageContent(message: Pick<BlockMessage, 'content' | 'imageUrl'>): string {
@@ -15,6 +16,8 @@ export async function deliverMessage(
   discordChannelId: string,
   message: BlockMessage,
   eventId: string,
+  deliveryId?: string,
+  messageIndex = 0,
 ): Promise<{ delivered: number; skipped: number }> {
   const content = formatMessageContent(message);
   if (!content) {
@@ -41,6 +44,7 @@ export async function deliverMessage(
     await channel.send({
       content,
       components: [buildMessageReportRow(eventId)],
+      ...nonceOptions(deliveryId, messageIndex, resolvedRecipients.channelId),
     });
     return { delivered: 1, skipped: 0 };
   }
@@ -51,6 +55,7 @@ export async function deliverMessage(
       await user.send({
         content,
         components: [buildMessageReportRow(eventId)],
+        ...nonceOptions(deliveryId, messageIndex, resolvedRecipients.userIds[0]),
       });
       return { delivered: 1, skipped: 0 };
     } catch (error) {
@@ -69,6 +74,7 @@ export async function deliverMessage(
         await user.send({
           content,
           components: [buildMessageReportRow(eventId)],
+          ...nonceOptions(deliveryId, messageIndex, targetId),
         });
         return true;
       } catch (error) {
@@ -85,15 +91,39 @@ export async function deliverMessage(
 export async function deliverMessages(
   client: Client,
   body: SendMessagesPayload,
+  deliveryId?: string,
 ): Promise<{ delivered: number; skipped: number }> {
   let delivered = 0;
   let skipped = 0;
 
-  for (const message of body.messages) {
-    const result = await deliverMessage(client, body.discordChannelId, message, body.eventId);
+  for (const [messageIndex, message] of body.messages.entries()) {
+    const result = await deliverMessage(
+      client,
+      body.discordChannelId,
+      message,
+      body.eventId,
+      deliveryId,
+      messageIndex,
+    );
     delivered += result.delivered;
     skipped += result.skipped;
   }
 
   return { delivered, skipped };
+}
+
+function nonceOptions(
+  deliveryId: string | undefined,
+  messageIndex: number,
+  targetId: string,
+): { nonce: string; enforceNonce: true } | Record<string, never> {
+  if (!deliveryId) return {};
+
+  return {
+    nonce: createHash('sha256')
+      .update(`${deliveryId}:${messageIndex}:${targetId}`)
+      .digest('base64url')
+      .slice(0, 25),
+    enforceNonce: true,
+  };
 }

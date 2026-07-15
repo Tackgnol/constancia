@@ -1,4 +1,10 @@
 import { z } from 'zod';
+import {
+  PIPELINE_BLOCK_SPECS,
+  PIPELINE_BLOCK_TYPES,
+  createDefaultPipelineBlock,
+  type PipelineBlockType,
+} from '@constancia/block-catalogue';
 
 // ── Per-block config schemas ──────────────────────────────────────────────────
 
@@ -73,45 +79,22 @@ export const vtmInsightResolverConfigSchema = z.object({
 
 // ── Block types ───────────────────────────────────────────────────────────────
 
-export const BLOCK_TYPES = [
-  'message-player',
-  'message-channel',
-  'message-group',
-  'display-image',
-  'conditional-gate',
-  'outcome-map',
-  'retrieve-data',
-  'vtm-pool-resolver',
-  'vtm-insight-resolver',
-] as const;
+export const BLOCK_TYPES = PIPELINE_BLOCK_TYPES as readonly [
+  PipelineBlockType,
+  ...PipelineBlockType[],
+];
 
-export type BlockType = (typeof BLOCK_TYPES)[number];
+export type BlockType = PipelineBlockType;
 export const EVENT_TYPES = ['test', 'narration', 'insight', 'message'] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
-export const BLOCK_LABELS: Record<BlockType, string> = {
-  'message-player': 'Message Player',
-  'message-channel': 'Message Channel',
-  'message-group': 'Message Group',
-  'display-image': 'Display Image',
-  'conditional-gate': 'Conditional Gate',
-  'outcome-map': 'Outcome Map',
-  'retrieve-data': 'Retrieve Data',
-  'vtm-pool-resolver': 'VTM V5 Dice Pool Resolver',
-  'vtm-insight-resolver': 'VTM V5 Insight Resolver',
-};
+export const BLOCK_LABELS = Object.fromEntries(
+  PIPELINE_BLOCK_SPECS.map((spec) => [spec.blockType, spec.label]),
+) as Record<BlockType, string>;
 
-export const defaultBlockConfigs: Record<BlockType, Record<string, unknown>> = {
-  'message-player': { content: '', imageUrl: '', playerIds: [] },
-  'message-channel': { content: '', imageUrl: '' },
-  'message-group': { content: '', imageUrl: '', groupPlayerIds: [] },
-  'display-image': { imageUrl: '', caption: '' },
-  'conditional-gate': { statPath: '', operator: 'gte', threshold: 1 },
-  'outcome-map': { outcomes: [{ threshold: 0, text: '' }], shortCircuit: true },
-  'retrieve-data': { dataType: '', query: {} },
-  'vtm-pool-resolver': { attribute: '', skill: '' },
-  'vtm-insight-resolver': { attribute: '', skill: '' },
-};
+export const defaultBlockConfigs = new Map<BlockType, Record<string, unknown>>(
+  PIPELINE_BLOCK_SPECS.map((spec) => [spec.blockType, spec.defaultConfig]),
+);
 
 const DEFAULT_PIPELINE_BLOCKS_BY_EVENT_TYPE: Record<EventType, readonly BlockType[]> = {
   test: ['vtm-pool-resolver', 'outcome-map'],
@@ -162,7 +145,7 @@ const SUGGESTED_BLOCK_TYPES_BY_EVENT_TYPE: Record<EventType, readonly BlockType[
 };
 
 function cloneDefaultBlockConfig(blockType: BlockType): Record<string, unknown> {
-  return JSON.parse(JSON.stringify(defaultBlockConfigs[blockType])) as Record<string, unknown>;
+  return createDefaultPipelineBlock(blockType).config;
 }
 
 export function createPipelineBlock(blockType: BlockType): PipelineBlock {

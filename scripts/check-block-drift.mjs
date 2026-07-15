@@ -8,6 +8,7 @@ const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 
 const backendBlocksFile = path.join(repoRoot, 'apps', 'backend', 'src', 'blocks.ts');
+const blockCatalogueFile = path.join(repoRoot, 'packages', 'block-catalogue', 'src', 'index.ts');
 const frontendEventSchemaFile = path.join(
   repoRoot,
   'apps',
@@ -398,8 +399,24 @@ function getFrontendEventSchemaFacts() {
   const defaultConfigsNode = getConstObjectLiteral(sourceFile, 'defaultBlockConfigs');
   const normalizersNode = getConstObjectLiteral(sourceFile, 'pipelineBlockConfigNormalizers');
 
-  if (!blockTypesNode || !blockLabelsNode || !defaultConfigsNode || !normalizersNode) {
-    throw new Error('Could not parse one or more frontend event schema constants');
+  if (!normalizersNode) {
+    throw new Error('Could not parse frontend pipeline config normalizers');
+  }
+
+  if (!blockTypesNode || !blockLabelsNode || !defaultConfigsNode) {
+    if (!readText(frontendEventSchemaFile).includes('@constancia/block-catalogue')) {
+      throw new Error('Frontend block metadata is neither literal nor catalogue-backed');
+    }
+
+    const catalogue = getBlockCatalogueFacts();
+    return {
+      ...catalogue,
+      normalizerTypes: normalizersNode.properties
+        .map((property) =>
+          ts.isPropertyAssignment(property) ? getPropertyNameText(property.name) : null,
+        )
+        .filter((value) => typeof value === 'string'),
+    };
   }
 
   const blockTypes = blockTypesNode.elements
@@ -449,6 +466,52 @@ function getFrontendEventSchemaFacts() {
     defaultConfigKeysByType,
     normalizerTypes,
   };
+}
+
+function getBlockCatalogueFacts() {
+  const sourceFile = readSourceFile(blockCatalogueFile);
+  const specsNode = getConstArrayLiteral(sourceFile, 'PIPELINE_BLOCK_SPECS');
+  if (!specsNode) {
+    throw new Error('Could not parse PIPELINE_BLOCK_SPECS from shared catalogue');
+  }
+
+  const blockTypes = [];
+  const blockLabels = {};
+  const defaultConfigKeysByType = {};
+
+  for (const rawElement of specsNode.elements) {
+    const element = unwrapExpression(rawElement);
+    if (!ts.isObjectLiteralExpression(element)) {
+      throw new Error('Shared catalogue contains a non-object descriptor');
+    }
+
+    const blockTypeProperty = getObjectProperty(element, 'blockType');
+    const labelProperty = getObjectProperty(element, 'label');
+    const defaultConfigProperty = getObjectProperty(element, 'defaultConfig');
+    if (
+      !blockTypeProperty ||
+      !ts.isPropertyAssignment(blockTypeProperty) ||
+      !labelProperty ||
+      !ts.isPropertyAssignment(labelProperty) ||
+      !defaultConfigProperty ||
+      !ts.isPropertyAssignment(defaultConfigProperty) ||
+      !ts.isObjectLiteralExpression(defaultConfigProperty.initializer)
+    ) {
+      throw new Error('Shared catalogue descriptor is missing required metadata');
+    }
+
+    const blockType = getStringLiteralText(blockTypeProperty.initializer);
+    const label = getStringLiteralText(labelProperty.initializer);
+    if (!blockType || !label) {
+      throw new Error('Shared catalogue block type and label must be string literals');
+    }
+
+    blockTypes.push(blockType);
+    blockLabels[blockType] = label;
+    defaultConfigKeysByType[blockType] = getObjectKeys(defaultConfigProperty.initializer);
+  }
+
+  return { blockTypes, blockLabels, defaultConfigKeysByType };
 }
 
 function getBlockConfigFieldBranchTypes() {

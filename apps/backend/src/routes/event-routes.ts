@@ -1,14 +1,11 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { Prisma } from '@constancia/db';
-import type { BlockInstance, BlockMessage, EventStatus } from '@constancia/contracts';
-import { PipelineRunner } from '@constancia/core';
+import type { EventStatus } from '@constancia/contracts';
 import { getPrismaClient } from '../auth/prisma.js';
-import { buildBlockRegistry } from '../blocks.js';
 import { deleted, isPrismaNotFoundError, ok, sendNotFound } from '../http-responses.js';
-import { sendMessagesToBotAsync } from '../services/bot-client.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
-import { filterInsightResolutionPipeline, resolveInsightScore } from '../services/insight-event.js';
-import { buildTestInstancePayload } from '../services/test-instance.js';
+import { createCampaignAccess } from '../services/campaign-access.js';
+import { createAppEventExecution } from '../services/app-event-execution.js';
 import {
   campaignParamsSchema,
   deleteResponseSchema,
@@ -16,6 +13,7 @@ import {
   eventParamsSchema,
   eventPatchBodySchema,
   fireEventResultSchema,
+  idempotencyKeyHeaderSchema,
   gameEventSchema,
   listResponseSchema,
   singleResponseSchema,
@@ -35,6 +33,10 @@ interface CampaignParams {
 interface EventParams {
   id: string;
   eventId: string;
+}
+
+interface IdempotencyHeaders {
+  'idempotency-key': string;
 }
 
 interface EventBlockInput {
@@ -86,9 +88,8 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request) => {
       const prisma = getPrismaClient();
-      const { id } = request.params;
       const events = await prisma.event.findMany({
-        where: { campaignId: id },
+        where: { campaignId: request.campaignScope.campaignId },
         select: eventSelect,
       });
       return ok(events);
@@ -112,8 +113,11 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
-      const { id } = request.params;
       const { name, type, channelId, shortCircuit, pipeline } = request.body;
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'channel',
+        id: channelId,
+      });
       const userId = getSessionUserId(request.access);
       const assetIds = extractUploadAssetIdsFromPipeline(pipeline);
       await assertPipelineUploadAssetsAttachable(prisma, { assetIds, userId });
@@ -122,7 +126,7 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
           name,
           type,
           channelId,
-          campaignId: id,
+          campaignId: request.campaignScope.campaignId,
           shortCircuit: shortCircuit ?? false,
           pipeline: pipeline as unknown as Prisma.InputJsonValue,
           status: 'draft',
@@ -152,6 +156,10 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
       const { eventId } = request.params;
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'event',
+        id: eventId,
+      });
       const event = await prisma.event.findUnique({ where: { id: eventId }, select: eventSelect });
       if (event === null) {
         return sendNotFound(reply, 'Event not found');
@@ -179,6 +187,14 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
       await moderatePayloadText(app.config, request.body);
       const { eventId } = request.params;
       const { name, type, channelId, status, shortCircuit, pipeline } = request.body;
+      const campaignAccess = createCampaignAccess(prisma);
+      await campaignAccess.requireResource(request.campaignScope, { kind: 'event', id: eventId });
+      if (channelId !== undefined) {
+        await campaignAccess.requireResource(request.campaignScope, {
+          kind: 'channel',
+          id: channelId,
+        });
+      }
       const userId = getSessionUserId(request.access);
       const assetIds =
         pipeline !== undefined ? extractUploadAssetIdsFromPipeline(pipeline) : undefined;
@@ -231,13 +247,10 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
     async (request) => {
       const prisma = getPrismaClient();
       const { eventId } = request.params;
-      const event = await prisma.event.findUnique({
-        where: { id: eventId },
-        select: { id: true },
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'event',
+        id: eventId,
       });
-      if (event === null) {
-        return deleted(false);
-      }
 
       await deleteEventUploadAssets(app.config, prisma, eventId);
       await prisma.event.delete({ where: { id: eventId } });
@@ -245,7 +258,7 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.post<{ Params: EventParams }>(
+  app.post<{ Params: EventParams; Headers: IdempotencyHeaders }>(
     '/:eventId/fire',
     {
       schema: {
@@ -253,132 +266,25 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
         summary: 'Fire an event pipeline',
         operationId: 'fireEvent',
         params: eventParamsSchema,
+        headers: idempotencyKeyHeaderSchema,
         response: {
           200: singleResponseSchema(fireEventResultSchema),
         },
       },
     },
-    async (request, reply) => {
+    async (request) => {
       const prisma = getPrismaClient();
       const { eventId } = request.params;
-      const event = await prisma.event.findUnique({ where: { id: eventId }, select: eventSelect });
-      if (event === null) {
-        return sendNotFound(reply, 'Event not found');
-      }
-
-      const channel = await prisma.channel.findUnique({
-        where: { id: event.channelId },
-        select: { discordChannelId: true },
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'event',
+        id: eventId,
       });
-      if (channel === null) {
-        request.log.warn(
-          { eventId, channelId: event.channelId },
-          'Skipping bot delivery: channel not found',
-        );
-      } else if (event.type === 'test') {
-        const testInstance = buildTestInstancePayload(event, channel.discordChannelId);
-        if (testInstance === null) {
-          request.log.warn(
-            { eventId },
-            'Skipping test-instance delivery: no threshold mapping found',
-          );
-        } else {
-          const config = app.config;
-          void sendMessagesToBotAsync(config.botInternalUrl, config.botApiKey, testInstance);
-        }
-      } else if (event.type === 'insight') {
-        const characters = await prisma.character.findMany({
-          where: { campaignId: event.campaignId },
-          select: {
-            discordUserId: true,
-            systemData: true,
-          },
-        });
-
-        const registry = buildBlockRegistry();
-        const runner = new PipelineRunner(registry);
-        const eventPipeline = event.pipeline as unknown as BlockInstance[];
-        const filteredPipeline = filterInsightResolutionPipeline(eventPipeline);
-        const insightMessages: BlockMessage[] = [];
-
-        if (filteredPipeline.length === eventPipeline.length) {
-          request.log.warn(
-            { eventId },
-            'Skipping insight delivery: no supported insight resolver found',
-          );
-          return ok({
-            eventId,
-            messages: [],
-            halted: false,
-          });
-        }
-
-        for (const character of characters) {
-          const characterData = (character.systemData ?? {}) as Record<string, unknown>;
-          const scoreResult = resolveInsightScore(eventPipeline, characterData);
-
-          if (scoreResult === null) {
-            continue;
-          }
-
-          const result = await runner.run(filteredPipeline, {
-            campaignId: event.campaignId,
-            channelId: event.channelId,
-            playerId: character.discordUserId,
-            playerScore: scoreResult.score,
-            characterData,
-          });
-
-          insightMessages.push(...result.messages);
-        }
-
-        if (insightMessages.length > 0) {
-          const config = app.config;
-          void sendMessagesToBotAsync(config.botInternalUrl, config.botApiKey, {
-            kind: 'messages',
-            eventId,
-            discordChannelId: channel.discordChannelId,
-            messages: insightMessages,
-          });
-        }
-
-        return ok({
-          eventId,
-          messages: insightMessages,
-          halted: false,
-        });
-      } else {
-        const registry = buildBlockRegistry();
-        const runner = new PipelineRunner(registry);
-        const result = await runner.run(event.pipeline as unknown as BlockInstance[], {
-          campaignId: event.campaignId,
-          channelId: event.channelId,
-          playerId: 'system',
-          characterData: {},
-        });
-
-        if (result.messages.length > 0) {
-          const config = app.config;
-          void sendMessagesToBotAsync(config.botInternalUrl, config.botApiKey, {
-            kind: 'messages',
-            eventId,
-            discordChannelId: channel.discordChannelId,
-            messages: result.messages,
-          });
-        }
-
-        return ok({
-          eventId,
-          messages: result.messages,
-          halted: result.halted,
-        });
-      }
-
-      return ok({
+      const receipt = await createAppEventExecution(prisma, app.config).fire({
+        idempotencyKey: request.headers['idempotency-key'],
+        campaignId: request.campaignScope.campaignId,
         eventId,
-        messages: [],
-        halted: false,
       });
+      return ok(receipt);
     },
   );
 };

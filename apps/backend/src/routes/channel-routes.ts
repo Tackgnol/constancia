@@ -13,6 +13,7 @@ import {
   singleResponseSchema,
 } from '../schemas.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
+import { createCampaignAccess } from '../services/campaign-access.js';
 import { deleteEventUploadAssets } from '../services/upload-assets.js';
 
 interface CampaignParams {
@@ -59,8 +60,10 @@ const channelRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request) => {
       const prisma = getPrismaClient();
-      const { id } = request.params;
-      const channels = await prisma.channel.findMany({ where: { campaignId: id }, select });
+      const channels = await prisma.channel.findMany({
+        where: { campaignId: request.campaignScope.campaignId },
+        select,
+      });
       return ok(channels);
     },
   );
@@ -82,10 +85,14 @@ const channelRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
-      const { id } = request.params;
       const { name, discordChannelId, type } = request.body;
       const channel = await prisma.channel.create({
-        data: { name, discordChannelId, campaignId: id, type: type ?? 'main' },
+        data: {
+          name,
+          discordChannelId,
+          campaignId: request.campaignScope.campaignId,
+          type: type ?? 'main',
+        },
         select,
       });
       reply.code(201);
@@ -111,6 +118,10 @@ const channelRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
       const { chanId } = request.params;
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'channel',
+        id: chanId,
+      });
       const { name, type } = request.body;
       const data: { name?: string; type?: ChannelType } = {};
       if (name !== undefined) data.name = name;
@@ -143,9 +154,13 @@ const channelRoutes: FastifyPluginAsync = async (app) => {
     async (request) => {
       const prisma = getPrismaClient();
       const { chanId } = request.params;
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'channel',
+        id: chanId,
+      });
       try {
         const events = await prisma.event.findMany({
-          where: { channelId: chanId },
+          where: { channelId: chanId, campaignId: request.campaignScope.campaignId },
           select: { id: true },
         });
         for (const event of events) {

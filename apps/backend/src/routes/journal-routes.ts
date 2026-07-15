@@ -21,6 +21,7 @@ import {
 import { getPrismaClient } from '../auth/prisma.js';
 import { deleted, isPrismaNotFoundError, ok, sendError, sendNotFound } from '../http-responses.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
+import { createCampaignAccess } from '../services/campaign-access.js';
 import {
   getPlayerJournal,
   questEntrySelect,
@@ -95,10 +96,9 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request) => {
-      const { id } = request.params;
       const prisma = getPrismaClient();
       const quests = await prisma.quest.findMany({
-        where: { campaignId: id },
+        where: { campaignId: request.campaignScope.campaignId },
         select: { ...questSelect, entries: { select: questEntrySelect } },
         orderBy: { sortOrder: 'asc' },
       });
@@ -122,12 +122,16 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       await moderatePayloadText(app.config, request.body);
-      const { id } = request.params;
       const { name, description, visible } = request.body;
       const prisma = getPrismaClient();
       reply.code(201);
       const quest = await prisma.quest.create({
-        data: { name, description: description ?? '', campaignId: id, visible: visible ?? false },
+        data: {
+          name,
+          description: description ?? '',
+          campaignId: request.campaignScope.campaignId,
+          visible: visible ?? false,
+        },
         select: questSelect,
       });
       return ok({ ...quest, entries: [] });
@@ -153,6 +157,10 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
       const { questId } = request.params;
       const { name, description, status, visible } = request.body;
       const prisma = getPrismaClient();
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'quest',
+        id: questId,
+      });
       const data: Record<string, unknown> = {};
       if (name !== undefined) data['name'] = name;
       if (description !== undefined) data['description'] = description;
@@ -193,6 +201,10 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
       const { questId } = request.params;
       const { content, status, sortOrder } = request.body;
       const prisma = getPrismaClient();
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'quest',
+        id: questId,
+      });
       reply.code(201);
       const entry = await prisma.questEntry.create({
         data: {
@@ -223,9 +235,14 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       await moderatePayloadText(app.config, request.body);
-      const { entryId } = request.params;
+      const { questId, entryId } = request.params;
       const { content, status, sortOrder } = request.body;
       const prisma = getPrismaClient();
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'quest-entry',
+        id: entryId,
+        questId,
+      });
       const data: Record<string, unknown> = {};
       if (content !== undefined) data['content'] = content;
       if (status !== undefined) data['status'] = status as QuestEntryStatus;
@@ -262,6 +279,11 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
     async (request) => {
       const params = request.params as QuestEntryParams;
       const prisma = getPrismaClient();
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'quest-entry',
+        id: params.entryId,
+        questId: params.questId,
+      });
       try {
         await prisma.questEntry.delete({ where: { id: params.entryId } });
         return deleted(true);
@@ -290,6 +312,10 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
     async (request) => {
       const params = request.params as QuestParams;
       const prisma = getPrismaClient();
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'quest',
+        id: params.questId,
+      });
       try {
         await prisma.quest.delete({ where: { id: params.questId } });
         return deleted(true);
@@ -316,10 +342,9 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request) => {
-      const { id } = request.params;
       const prisma = getPrismaClient();
       const summaries = await prisma.sessionSummary.findMany({
-        where: { campaignId: id },
+        where: { campaignId: request.campaignScope.campaignId },
         select: summarySelect,
         orderBy: { sessionDate: 'desc' },
       });
@@ -343,15 +368,20 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       await moderatePayloadText(app.config, request.body);
-      const { id } = request.params;
       const { title, content, sessionDate, visible, channelId } = request.body;
       const prisma = getPrismaClient();
+      if (channelId !== undefined) {
+        await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+          kind: 'channel',
+          id: channelId,
+        });
+      }
       reply.code(201);
       const summary = await prisma.sessionSummary.create({
         data: {
           title,
           content,
-          campaignId: id,
+          campaignId: request.campaignScope.campaignId,
           sessionDate: new Date(sessionDate),
           visible: visible ?? false,
           channelId,
@@ -381,6 +411,17 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
       const { sumId } = request.params;
       const { title, content, sessionDate, visible, channelId } = request.body;
       const prisma = getPrismaClient();
+      const campaignAccess = createCampaignAccess(prisma);
+      await campaignAccess.requireResource(request.campaignScope, {
+        kind: 'session-summary',
+        id: sumId,
+      });
+      if (channelId !== undefined) {
+        await campaignAccess.requireResource(request.campaignScope, {
+          kind: 'channel',
+          id: channelId,
+        });
+      }
       const data: Record<string, unknown> = {};
       if (title !== undefined) data['title'] = title;
       if (content !== undefined) data['content'] = content;
@@ -417,9 +458,9 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request) => {
-      const { id, discordId } = request.params;
+      const { discordId } = request.params;
       const prisma = getPrismaClient();
-      return ok(await getPlayerJournal(prisma, id, discordId));
+      return ok(await getPlayerJournal(prisma, request.campaignScope.campaignId, discordId));
     },
   );
 
@@ -442,9 +483,8 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         return sendError(reply, 403, 'Discord identity required');
       }
 
-      const { id } = request.params;
       const prisma = getPrismaClient();
-      return ok(await getPlayerJournal(prisma, id, discordUserId));
+      return ok(await getPlayerJournal(prisma, request.campaignScope.campaignId, discordUserId));
     },
   );
 };

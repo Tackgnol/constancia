@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
+import type { Prisma } from '@constancia/db';
 import { getPrismaClient } from '../auth/prisma.js';
-import { isPrismaNotFoundError, ok, sendNotFound } from '../http-responses.js';
+import { isPrismaNotFoundError, ok, sendError, sendNotFound } from '../http-responses.js';
 import {
   campaignBodySchema,
   campaignParamsSchema,
@@ -10,6 +11,7 @@ import {
   singleResponseSchema,
 } from '../schemas.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
+import { createCampaignAccess } from '../services/campaign-access.js';
 
 interface CampaignParams {
   id: string;
@@ -41,9 +43,16 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
         },
       },
     },
-    async () => {
+    async (request) => {
       const prisma = getPrismaClient();
+      const where: Prisma.CampaignWhereInput =
+        request.access.kind === 'session' && request.access.isSuperUser
+          ? {}
+          : request.access.kind === 'session' && request.access.discordUserId !== null
+            ? { admins: { some: { discordUserId: request.access.discordUserId } } }
+            : { id: { in: [] } };
       const campaigns = await prisma.campaign.findMany({
+        where,
         select,
         orderBy: { updatedAt: 'desc' },
       });
@@ -67,9 +76,18 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
+      const discordUserId = request.access.kind === 'session' ? request.access.discordUserId : null;
+      if (discordUserId === null) {
+        return sendError(reply, 403, 'A linked Discord account is required to create a campaign');
+      }
       const { name, discordGuildId, gameSystemId } = request.body;
       const campaign = await prisma.campaign.create({
-        data: { name, discordGuildId, gameSystemId },
+        data: {
+          name,
+          discordGuildId,
+          gameSystemId,
+          admins: { create: { discordUserId, role: 'owner' } },
+        },
         select,
       });
       reply.code(201);
@@ -94,6 +112,7 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
       const { id } = request.params;
+      await createCampaignAccess(prisma).requireAdmin(request.access, id);
       const campaign = await prisma.campaign.findUnique({ where: { id }, select });
       if (campaign === null) {
         return sendNotFound(reply, 'Campaign not found');
@@ -119,6 +138,7 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const prisma = getPrismaClient();
       const { id } = request.params;
+      await createCampaignAccess(prisma).requireAdmin(request.access, id);
       const { name, gameSystemId } = request.body;
       const data: { name?: string; gameSystemId?: string } = {};
       if (name !== undefined) data.name = name;

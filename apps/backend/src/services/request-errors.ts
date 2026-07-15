@@ -76,13 +76,22 @@ export class UploadQuotaExceededError extends Error {
   }
 }
 
+function isServiceRequestError(error: unknown): error is HandledRequestError {
+  if (!(error instanceof Error) || !('code' in error) || !('statusCode' in error)) {
+    return false;
+  }
+
+  return typeof error.code === 'string' && typeof error.statusCode === 'number';
+}
+
 export function isHandledRequestError(error: unknown): error is HandledRequestError {
   return (
     error instanceof ModerationBlockedError ||
     error instanceof ModerationUnavailableError ||
     error instanceof UploadPermissionError ||
     error instanceof UploadQuotaExceededError ||
-    error instanceof UploadValidationError
+    error instanceof UploadValidationError ||
+    isServiceRequestError(error)
   );
 }
 
