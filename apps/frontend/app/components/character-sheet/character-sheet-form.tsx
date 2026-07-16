@@ -66,7 +66,15 @@ export function CharacterSheetForm({
 }) {
   const [saveState, setSaveState] = useState<'idle' | 'success' | 'error'>('idle');
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [hideZeros, setHideZeros] = useState(false);
+  const [hideZeros, setHideZeros] = useState(audience === 'player');
+  const [openGroups, setOpenGroups] = useState(
+    () =>
+      new Set(
+        audience === 'gm'
+          ? sheet.system.statSchema.groups.map((group) => group.key)
+          : ['attributes'],
+      ),
+  );
   const archetypeLabel = getArchetypeLabel(sheet);
 
   const {
@@ -75,7 +83,7 @@ export function CharacterSheetForm({
     handleSubmit,
     reset,
     setError,
-    formState: { errors, isSubmitting, submitCount },
+    formState: { errors, isDirty, isSubmitting, submitCount },
   } = useForm<CharacterSheetFormValues>({
     resolver: zodResolver(sheetFormSchema),
     defaultValues: buildDefaultValues(sheet),
@@ -288,10 +296,27 @@ export function CharacterSheetForm({
           ) : (
             <div className="sheet-groups">
               {visibleGroups.map(({ group, fields }) => (
-                <section key={group.key} className="sheet-stat-group">
-                  <div className="sheet-stat-group-header">
-                    <p className="detail-label">{group.label}</p>
-                  </div>
+                <details
+                  key={group.key}
+                  className="sheet-stat-group"
+                  open={openGroups.has(group.key)}
+                  onToggle={(event) => {
+                    const isOpen = event.currentTarget.open;
+                    setOpenGroups((current) => {
+                      const next = new Set(current);
+                      if (isOpen) {
+                        next.add(group.key);
+                      } else {
+                        next.delete(group.key);
+                      }
+                      return next;
+                    });
+                  }}
+                >
+                  <summary className="sheet-stat-group-header">
+                    <span className="detail-label">{group.label}</span>
+                    <span className="sheet-stat-group-count">{fields.length} shown</span>
+                  </summary>
 
                   <div className="sheet-stat-grid">
                     {fields.map((field) => {
@@ -340,14 +365,21 @@ export function CharacterSheetForm({
                       );
                     })}
                   </div>
-                </section>
+                </details>
               ))}
             </div>
           )}
         </section>
 
-        <div className="form-actions">
-          <Button type="submit" disabled={isSubmitting}>
+        <div className="form-actions form-action-dock sheet-save-bar">
+          <span className="sheet-save-state" aria-live="polite">
+            {isDirty
+              ? 'Unsaved changes'
+              : saveState === 'success'
+                ? 'All changes saved'
+                : 'No unsaved changes'}
+          </span>
+          <Button type="submit" disabled={isSubmitting || !isDirty}>
             {isSubmitting
               ? 'Saving Sheet…'
               : audience === 'player'

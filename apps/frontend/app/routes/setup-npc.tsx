@@ -396,7 +396,7 @@ export default function SetupNpcRoute() {
               type="button"
               onClick={() => void removeNpc()}
             >
-              Delete NPC
+              Delete dossier
             </button>
           </div>
 

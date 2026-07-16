@@ -139,12 +139,11 @@ export default function PlayerSheetRoute() {
   const loaderSheet = useLoaderData<typeof loader>();
   const location = useLocation();
   const [sheet, setSheet] = useState<CharacterSheetData>(loaderSheet);
-  const playerBasePath = sheet.campaign.id.startsWith('demo-')
-    ? '/demo/player'
-    : `/player/campaigns/${sheet.campaign.id}`;
+  const isDemo = sheet.campaign.id.startsWith('demo-');
+  const playerBasePath = isDemo ? '/demo/player' : `/player/campaigns/${sheet.campaign.id}`;
 
   const handleSave = async (payload: CharacterSheetPatchBody) => {
-    if (sheet.campaign.id.startsWith('demo-')) {
+    if (isDemo) {
       const updated: CharacterSheetData = {
         ...sheet,
         character: {
@@ -175,7 +174,7 @@ export default function PlayerSheetRoute() {
   };
 
   const handleProgenyImport = async (source: ProgenyVtmCharacterExport) => {
-    if (sheet.campaign.id.startsWith('demo-')) {
+    if (isDemo) {
       const imported = parseProgenyVtmCharacter(source);
       const systemData = {
         ...sheet.character.systemData,
@@ -217,12 +216,17 @@ export default function PlayerSheetRoute() {
     <main className="player-dossier-shell">
       <article className="player-dossier-sheet">
         <div className="player-dossier-strip">
-          <span>PLAYER SHEET</span>
+          <span>Player sheet</span>
           <span>{sheet.campaign.name}</span>
-          <span>{sheet.system.id}</span>
+          <span>{sheet.system.name}</span>
         </div>
 
         <div className="player-journal-nav">
+          {isDemo ? (
+            <Link className="ghost-action ghost-action-inline" to="/demo">
+              Return to war room
+            </Link>
+          ) : null}
           <Link className="ghost-action ghost-action-inline" to={`${playerBasePath}/journal`}>
             Open journal
           </Link>

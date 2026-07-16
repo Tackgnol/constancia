@@ -83,9 +83,8 @@ export default function PlayerJournalRoute() {
   const journal = useLoaderData<typeof loader>();
   const params = useParams();
   const campaignId = params.campaignId ?? 'demo-crimson-dynasty';
-  const playerBasePath = campaignId.startsWith('demo-')
-    ? '/demo/player'
-    : `/player/campaigns/${campaignId}`;
+  const isDemo = campaignId.startsWith('demo-');
+  const playerBasePath = isDemo ? '/demo/player' : `/player/campaigns/${campaignId}`;
   const visibleItems =
     journal.quests.length + journal.summaries.length + journal.npcs.length + journal.lore.length;
 
@@ -93,13 +92,18 @@ export default function PlayerJournalRoute() {
     <main className="player-dossier-shell">
       <article className="player-dossier-sheet player-journal-sheet">
         <div className="player-dossier-strip">
-          <span>PLAYER JOURNAL</span>
+          <span>Player journal</span>
           <span>{journal.quests.length} QUESTS</span>
           <span>{journal.npcs.length} DOSSIERS</span>
           <span>{journal.lore.length} LORE</span>
         </div>
 
         <div className="player-journal-nav">
+          {isDemo ? (
+            <Link className="ghost-action ghost-action-inline" to="/demo">
+              Return to war room
+            </Link>
+          ) : null}
           <Link className="ghost-action ghost-action-inline" to={`${playerBasePath}/sheet`}>
             Open sheet
           </Link>

@@ -1,4 +1,3 @@
-````markdown
 # Design System Document: The Nocturnal Strategist
 
 ## 1. Overview & Creative North Star: The Sovereign Grimoire
@@ -48,12 +47,13 @@ Our typography is the primary driver of hierarchy, replacing the need for "rainb
 
 ### Type-Based Block Differentiation
 
-Instead of coloring blocks, use typographic signatures:
+Use typography, a written type label, and restrained system-color tints together. Color speeds up
+live scanning, but it must never be the only state signal:
 
-- **Tests:** `label-md` (Mono) + `outline` (#a98984) color.
-- **Narrations:** `body-lg` (Sans) + Italic + `on_surface` color.
-- **Insights:** `title-sm` (Sans) + `secondary` (#ffb4aa) color.
-- **DMs:** `body-sm` (Sans) + Uppercase + `on_tertiary_container` color.
+- **Tests:** `label-md` (Mono) + blue (#58a6ff).
+- **Narrations:** `body-lg` (Sans) + Italic + purple (#d2a8ff).
+- **Insights:** `title-sm` (Sans) + green (#3fb950).
+- **DMs:** `body-sm` (Sans) + Uppercase + orange (#f0883e).
 
 ---
 
@@ -122,7 +122,7 @@ Avoid a standard square grid. Use variable card sizes (1x1, 2x1, 1x2) to create 
 
 ### Don't
 
-- **Don't use Rainbow Colors:** Do not use green for "Success" or blue for "Information." Use ivory (`on_surface`), oxblood (`primary`), and gold-grey (`tertiary`).
+- **Don't use decorative rainbow colors:** Reserve blue, purple, green, and orange for the four event classes above. Use ivory (`on_surface`), oxblood (`primary`), and gold-grey (`tertiary`) elsewhere.
 - **Don't use Rounded Corners:** Avoid `xl` or `full` roundedness. Stick to `none` or `sm`. This is a war room, not a social media app.
 - **Don't use Dividers:** If you feel the need to draw a line, increase the padding and change the background color of the next section instead.
 
@@ -136,5 +136,42 @@ The Player Panel should be a permanent "Glass" fixture on the right margin.
 - **Hierarchy:** Health and Willpower tracks should use `primary` (Oxblood) and `tertiary` (Gold-Grey) segments respectively.
 - **Typography:** Names in `headline-sm` (Newsreader). Stat labels in `label-sm` (Mono).
 
-This system is designed to be felt as much as it is used. Every interaction should feel like a calculated move in a high-stakes shadow war.```
-````
+This system is designed to be felt as much as it is used. Every interaction should feel like a calculated move in a high-stakes shadow war.
+
+---
+
+## 8. Product Workbenches
+
+### NPC Dossier
+
+Use an index-and-canvas master-detail layout for GM-owned records. The index stays compact and
+identifies the selected record through surface contrast and an explicit pressed state. The focused
+canvas leads with identity, classification, and one operational summary. Do not duplicate the same
+biography in a second panel.
+
+Evidence counts belong in one compact definition ledger, not three independent statistic cards.
+Player access belongs in full-width rows containing identity, access count, and one action. On small
+screens, the portrait is capped at 17rem and access rows stack without horizontal scrolling.
+
+### Editorial Forms
+
+Setup forms use a two-column editorial canvas above 860px and collapse to one column below it.
+Every cell must contain an editable field, a short explanation, or an action; long-form inputs span
+the full grid. Use object-specific labels such as “Create quest,” “Save lore entry,” and “Delete
+dossier.” Avoid generic “Add,” “Save,” “Delete,” and “Close” when the affected object is not obvious.
+
+### Action Dock
+
+Primary form actions live in a tonal dock at the end of the document flow. The dock must never
+overlay editable content. Pair one primary submit action with optional secondary or destructive
+actions, keeping the primary control highest contrast. Save-state text uses `aria-live` and remains
+adjacent to the submit control.
+
+### Responsive Editor Rules
+
+- Block headers use `minmax(0, 1fr)` for the selector and a 44px icon action on narrow screens.
+- Multi-field outcome rows stack their inputs before allowing horizontal overflow.
+- All interactive controls retain a minimum 44px target.
+- Product motion is limited to 120–200ms state feedback and respects reduced-motion preferences.
+- Demo routes must expose the same core records as the surrounding demo shell; empty states are
+  reserved for genuinely empty campaign data.

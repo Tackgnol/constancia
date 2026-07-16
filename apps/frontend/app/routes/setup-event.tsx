@@ -360,7 +360,7 @@ export default function SetupEventRoute() {
             methods={eventMethods}
             channels={warRoom.channels}
             onSubmit={onSubmitEvent}
-            submitLabel={isEditing ? 'Update Event' : 'Save Event'}
+            submitLabel={isEditing ? 'Save event' : 'Create event'}
           />
           {isEditing ? (
             <div className="form-actions">
@@ -369,7 +369,7 @@ export default function SetupEventRoute() {
                 type="button"
                 onClick={() => void removeEvent()}
               >
-                Delete Event
+                Delete event
               </button>
             </div>
           ) : null}

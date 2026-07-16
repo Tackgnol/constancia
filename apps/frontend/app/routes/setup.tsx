@@ -72,7 +72,6 @@ export default function SetupRoute() {
     >
       <section className="setup-command-grid" aria-label="Setup workspaces">
         <Link className="setup-command-card" to={`${setupBase}/events/new`}>
-          <span className="setup-step-index">01</span>
           <div>
             <p className="detail-label">Events</p>
             <h2>Stage an event</h2>
@@ -81,7 +80,6 @@ export default function SetupRoute() {
         </Link>
 
         <Link className="setup-command-card" to={`${setupBase}/npcs/new`}>
-          <span className="setup-step-index">02</span>
           <div>
             <p className="detail-label">NPCs</p>
             <h2>Pin a dossier</h2>
@@ -90,7 +88,6 @@ export default function SetupRoute() {
         </Link>
 
         <Link className="setup-command-card" to={`${setupBase}/quests/new`}>
-          <span className="setup-step-index">03</span>
           <div>
             <p className="detail-label">Quests</p>
             <h2>Bind a task thread</h2>
@@ -99,7 +96,6 @@ export default function SetupRoute() {
         </Link>
 
         <Link className="setup-command-card" to={`${setupBase}/lore/new`}>
-          <span className="setup-step-index">04</span>
           <div>
             <p className="detail-label">Lore</p>
             <h2>File world knowledge</h2>
@@ -112,8 +108,7 @@ export default function SetupRoute() {
         <section className="setup-panel">
           <div className="setup-panel-header">
             <div>
-              <p className="eyebrow">Existing files</p>
-              <h2>Open a record by URL</h2>
+              <h2>Open an existing record</h2>
             </div>
             <p className="form-hint">
               Boards stay read-focused; edits happen through these setup routes.

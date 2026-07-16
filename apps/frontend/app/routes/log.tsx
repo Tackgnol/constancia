@@ -122,13 +122,8 @@ function QuestCard({ quest, setupBase }: { quest: ListQuests200DataItem; setupBa
         <div className="setup-subsection-header">
           <div>
             <p className="detail-label">Steps</p>
-            <p className="form-hint">
-              Quest steps are read-only here so the board stays scannable.
-            </p>
+            <p className="form-hint">Read-only here. Use Edit in setup to change the thread.</p>
           </div>
-          <Link className="ghost-action ghost-action-inline" to={`${setupBase}/quests/${quest.id}`}>
-            Manage thread
-          </Link>
         </div>
 
         {entries.length > 0 ? (

@@ -26,7 +26,7 @@ type TriggerView = {
   preview: string | null;
 };
 
-type ArtifactSize = 'standard' | 'wide' | 'tall';
+type ArtifactSize = 'standard' | 'half' | 'wide' | 'tall';
 type DeliveryViewState = 'not-required' | 'pending' | 'delivered' | 'failed';
 type FireReceiptView = {
   eventId: string;
@@ -286,6 +286,10 @@ function extractTargetAndPreview(
 function getArtifactSize(kind: TriggerKind, index: number, length: number): ArtifactSize {
   if (length < 2) {
     return 'standard';
+  }
+
+  if (length === 2) {
+    return 'half';
   }
 
   if (kind === 'narration' && index === 0) {
@@ -766,6 +770,9 @@ export default function PlayRoute() {
                     ) : (
                       <span className="trigger-meta">{item.meta}</span>
                     )}
+                    {!isFired && !isArmed ? (
+                      <span className="trigger-gesture-hint">Hold 1s · Enter twice</span>
+                    ) : null}
                     {isFired ? (
                       <span className="trigger-flag">
                         {deliveryStatus === 'pending'

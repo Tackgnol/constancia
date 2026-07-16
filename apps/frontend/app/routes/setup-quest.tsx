@@ -604,6 +604,17 @@ export default function SetupQuestRoute() {
       {!isEditing || quest ? (
         <section className="setup-panel">
           <form className="quest-create-panel" onSubmit={onSubmit} noValidate>
+            <div className="form-workbench-heading">
+              <div>
+                <p className="detail-label">Quest record</p>
+                <h2>{isEditing ? 'Edit the objective' : 'Define the objective'}</h2>
+              </div>
+              <p className="form-hint">
+                Keep the brief operational. Individual beats belong in quest steps after the quest
+                exists.
+              </p>
+            </div>
+
             {errors.root?.serverError?.message ? (
               <div className="form-status form-status-error" role="alert">
                 {errors.root.serverError.message}
@@ -611,8 +622,8 @@ export default function SetupQuestRoute() {
             ) : null}
 
             <div className="quest-create-grid">
-              <div className="grid gap-1.5">
-                <Label htmlFor="setup-quest-name">Quest Name</Label>
+              <div className={`grid gap-1.5${isEditing ? '' : ' setup-field-wide'}`}>
+                <Label htmlFor="setup-quest-name">Quest name</Label>
                 <Input
                   id="setup-quest-name"
                   placeholder="Recover the blood ledger"
@@ -645,7 +656,7 @@ export default function SetupQuestRoute() {
                 </div>
               ) : null}
 
-              <div className="grid gap-1.5">
+              <div className="grid gap-1.5 setup-field-wide">
                 <Label htmlFor="setup-quest-description">Brief</Label>
                 <Textarea
                   id="setup-quest-description"
@@ -673,9 +684,9 @@ export default function SetupQuestRoute() {
               />
             </div>
 
-            <div className="form-actions">
+            <div className="form-actions form-action-dock">
               <button className="form-submit" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : isEditing ? 'Save Quest' : 'Add Quest'}
+                {isSubmitting ? 'Saving…' : isEditing ? 'Save quest' : 'Create quest'}
               </button>
               {isEditing ? (
                 <button
@@ -683,7 +694,7 @@ export default function SetupQuestRoute() {
                   type="button"
                   onClick={() => void removeQuest()}
                 >
-                  Delete Quest
+                  Delete quest
                 </button>
               ) : null}
             </div>

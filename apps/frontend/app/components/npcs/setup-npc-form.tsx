@@ -252,9 +252,9 @@ export function SetupNpcForm({
         {factRootError ? <span className="form-error">{factRootError}</span> : null}
       </div>
 
-      <div className="form-actions">
+      <div className="form-actions form-action-dock">
         <button className="form-submit" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Binding dossier…' : 'Add NPC'}
+          {isSubmitting ? 'Creating dossier…' : 'Create dossier'}
         </button>
       </div>
     </form>

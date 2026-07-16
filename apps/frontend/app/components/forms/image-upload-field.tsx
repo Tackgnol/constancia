@@ -27,6 +27,7 @@ export function ImageUploadField({
   caption,
   placeholder = 'https://...',
   disabled = false,
+  disabledReason = 'Uploads are unavailable in demo mode.',
 }: {
   id: string;
   value: string;
@@ -35,6 +36,7 @@ export function ImageUploadField({
   caption?: string;
   placeholder?: string;
   disabled?: boolean;
+  disabledReason?: string;
 }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'done' | 'error'>('idle');
@@ -96,7 +98,9 @@ export function ImageUploadField({
           type="file"
           className="sr-only"
         />
-        {uploadMessage ? (
+        {disabled ? (
+          <span className="image-upload-status image-upload-status-disabled">{disabledReason}</span>
+        ) : uploadMessage ? (
           <span className={`image-upload-status image-upload-status-${uploadState}`}>
             {uploadMessage}
           </span>

@@ -11,6 +11,7 @@ import { getServiceHealth } from '@constancia/api-client/endpoints/meta/meta';
 import { listGameSystems } from '@constancia/api-client/endpoints/systems/systems';
 import { PlayerWhisperForm } from '@/components/war-room/player-whisper-form';
 import { SceneRailExtras } from '@/components/war-room/scene-rail-extras';
+import { WarRoomModeTabs } from '@/components/war-room/mode-tabs';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import { buildServerApiOptions } from '@/lib/api-proxy.server';
 import type { PlayerPresence } from '@/lib/war-room-data';
@@ -27,7 +28,6 @@ import { useEffect, useState } from 'react';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import {
   Form,
-  NavLink,
   Outlet,
   redirect,
   useFetcher,
@@ -149,6 +149,7 @@ export default function WarRoomLayout() {
 
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
+  const [mobilePlayersOpen, setMobilePlayersOpen] = useState(false);
 
   const liveCampaign = normalizeCampaigns(campaigns).at(0) ?? fallbackCampaign;
   const liveSystem = normalizeSystems(systems).at(0) ?? fallbackSystem;
@@ -283,8 +284,8 @@ export default function WarRoomLayout() {
             </button>
           )}
           <span className="system-badge">{outletContext.system.name}</span>
-          <span className="channel-name">{outletContext.campaign.channel}</span>
-          <span className="channel-name">GM: authenticated</span>
+          <span className="channel-name campaign-channel">{outletContext.campaign.channel}</span>
+          <span className="channel-name gm-name">GM: authenticated</span>
         </div>
 
         <div className="topbar-group topbar-status">
@@ -295,9 +296,7 @@ export default function WarRoomLayout() {
           <span className={outletContext.apiOnline ? 'status-live' : 'status-stale'}>
             {outletContext.apiOnline ? 'Live' : 'Offline'}
           </span>
-          <span className="status-meta">
-            {outletContext.campaign.connectedPlayers} players connected
-          </span>
+          <span className="status-meta">{outletContext.campaign.connectedPlayers} online</span>
           <Form action="/logout" method="post">
             <button className="signout-button" type="submit">
               Sign Out
@@ -306,18 +305,7 @@ export default function WarRoomLayout() {
         </div>
       </header>
 
-      <nav className="mode-tabs" aria-label="War room modes">
-        {tabs.map((tab) => (
-          <NavLink
-            key={tab.to}
-            className={({ isActive }) => `mode-tab${isActive ? ' is-active' : ''}`}
-            end={tab.end}
-            to={tab.to}
-          >
-            {tab.label}
-          </NavLink>
-        ))}
-      </nav>
+      <WarRoomModeTabs tabs={tabs} />
 
       <div className="war-room-grid">
         {isPlayRoute ? (
@@ -362,36 +350,49 @@ export default function WarRoomLayout() {
         </main>
 
         {isPlayRoute ? (
-          <aside className="players-panel">
-            <div className="panel-title">Players</div>
+          <aside className={`players-panel${mobilePlayersOpen ? ' is-mobile-open' : ''}`}>
+            <button
+              className="mobile-panel-toggle"
+              type="button"
+              aria-controls="live-players-panel-content"
+              aria-expanded={mobilePlayersOpen}
+              onClick={() => setMobilePlayersOpen((current) => !current)}
+            >
+              <span>Players and activity</span>
+              <span>{mobilePlayersOpen ? 'Close' : `${outletContext.players.length} players`}</span>
+            </button>
 
-            <div className="player-list">
-              {outletContext.players.map((player) => (
-                <button key={player.id} className="player-row" type="button">
-                  <span className="player-avatar" aria-hidden="true">
-                    {player.name.charAt(0)}
-                  </span>
-                  <span className="player-copy">
-                    <span className="player-name">{player.name}</span>
-                    <span className="player-meta">
-                      {player.character} · {player.player}
+            <div className="players-panel-content" id="live-players-panel-content">
+              <div className="panel-title">Players</div>
+
+              <div className="player-list">
+                {outletContext.players.map((player) => (
+                  <button key={player.id} className="player-row" type="button">
+                    <span className="player-avatar" aria-hidden="true">
+                      {player.name.charAt(0)}
                     </span>
-                  </span>
-                  <span className={`player-status ${player.status}`} aria-label={player.status} />
-                </button>
-              ))}
-            </div>
+                    <span className="player-copy">
+                      <span className="player-name">{player.name}</span>
+                      <span className="player-meta">
+                        {player.character} · {player.player}
+                      </span>
+                    </span>
+                    <span className={`player-status ${player.status}`} aria-label={player.status} />
+                  </button>
+                ))}
+              </div>
 
-            <PlayerWhisperForm warRoom={outletContext} />
+              <PlayerWhisperForm warRoom={outletContext} />
 
-            <div className="panel-title panel-title-secondary">Recent Activity</div>
-            <div className="activity-feed">
-              {outletContext.activity.map((entry) => (
-                <p key={entry.id}>
-                  <span>{entry.time}</span>
-                  {entry.label}
-                </p>
-              ))}
+              <div className="panel-title panel-title-secondary">Recent activity</div>
+              <div className="activity-feed">
+                {outletContext.activity.map((entry) => (
+                  <p key={entry.id}>
+                    <span>{entry.time}</span>
+                    {entry.label}
+                  </p>
+                ))}
+              </div>
             </div>
           </aside>
         ) : null}
@@ -402,7 +403,7 @@ export default function WarRoomLayout() {
           <input
             aria-label="Quick narration"
             className="quick-input"
-            placeholder="Quick narration... type and press Enter to broadcast to channel"
+            placeholder="Broadcast a quick narration..."
             type="text"
           />
           <button className="quick-send" type="button">

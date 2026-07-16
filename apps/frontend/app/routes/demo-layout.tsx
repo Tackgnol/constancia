@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { NavLink, Outlet, useLoaderData, useLocation } from 'react-router';
+import { Outlet, useLoaderData, useLocation } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { PlayerWhisperForm } from '@/components/war-room/player-whisper-form';
 import { SceneRailExtras } from '@/components/war-room/scene-rail-extras';
+import { WarRoomModeTabs } from '@/components/war-room/mode-tabs';
 import { demoContext, demoCampaigns, demoHealth, demoSystems } from '@/lib/demo-data';
 import { triggerSections } from '@/lib/war-room-data';
 
@@ -25,6 +26,7 @@ const tabs = [
   { to: '/demo/setup', label: 'Setup' },
   { to: '/demo', label: 'Play', end: true },
   { to: '/demo/npcs', label: 'NPCs' },
+  { to: '/demo/participants', label: 'Roster' },
   { to: '/demo/lore', label: 'Lore' },
   { to: '/demo/log', label: 'Quests' },
   { to: '/demo/player/sheet', label: 'Player' },
@@ -67,11 +69,12 @@ export default function DemoLayout() {
   useLoaderData<typeof loader>();
 
   const location = useLocation();
-  const isPlayRoute = location.pathname === '/demo';
+  const isPlayRoute = location.pathname === '/demo' || location.pathname === '/demo/';
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [activity, setActivity] = useState(demoContext.activity);
   const [firedEventIds, setFiredEventIds] = useState<string[]>([]);
   const [quickBarNotice, setQuickBarNotice] = useState<string | null>(null);
+  const [mobilePlayersOpen, setMobilePlayersOpen] = useState(false);
   const [pulseEntries, setPulseEntries] = useState(() => activity.slice(0, 3));
   const quickBarForm = useForm<QuickNarrationValues>({
     resolver: zodResolver(quickNarrationSchema),
@@ -155,31 +158,18 @@ export default function DemoLayout() {
         <div className="topbar-group">
           <span className="campaign-name">{outletContext.campaign.name}</span>
           <span className="system-badge">{outletContext.system.name}</span>
-          <span className="channel-name">{outletContext.campaign.channel}</span>
-          <span className="channel-name">GM: Demo GM</span>
+          <span className="channel-name campaign-channel">{outletContext.campaign.channel}</span>
+          <span className="channel-name gm-name">GM: Demo GM</span>
         </div>
 
         <div className="topbar-group topbar-status">
           <span className="status-dot is-live" aria-hidden="true" />
           <span className="status-live">Live</span>
-          <span className="status-meta">
-            {outletContext.campaign.connectedPlayers} players connected
-          </span>
+          <span className="status-meta">{outletContext.campaign.connectedPlayers} online</span>
         </div>
       </header>
 
-      <nav className="mode-tabs" aria-label="War room modes">
-        {tabs.map((tab) => (
-          <NavLink
-            key={tab.to}
-            className={({ isActive }) => `mode-tab${isActive ? ' is-active' : ''}`}
-            end={tab.end}
-            to={tab.to}
-          >
-            {tab.label}
-          </NavLink>
-        ))}
-      </nav>
+      <WarRoomModeTabs tabs={tabs} />
 
       <div className="war-room-grid">
         {isPlayRoute ? (
@@ -224,51 +214,64 @@ export default function DemoLayout() {
         </main>
 
         {isPlayRoute ? (
-          <aside className="players-panel">
-            <div className="panel-title">Players</div>
+          <aside className={`players-panel${mobilePlayersOpen ? ' is-mobile-open' : ''}`}>
+            <button
+              className="mobile-panel-toggle"
+              type="button"
+              aria-controls="demo-players-panel-content"
+              aria-expanded={mobilePlayersOpen}
+              onClick={() => setMobilePlayersOpen((current) => !current)}
+            >
+              <span>Players and pulse</span>
+              <span>{mobilePlayersOpen ? 'Close' : `${outletContext.players.length} players`}</span>
+            </button>
 
-            <div className="player-list">
-              {outletContext.players.map((player) => (
-                <button
-                  key={player.id}
-                  className="player-row"
-                  data-clan={getClanTone(player.character)}
-                  type="button"
-                >
-                  <span className="player-avatar" aria-hidden="true">
-                    {player.name.charAt(0)}
-                  </span>
-                  <span className="player-copy">
-                    <span className="player-name">{player.name}</span>
-                    <span className="player-meta">
-                      {player.character} · {player.player}
+            <div className="players-panel-content" id="demo-players-panel-content">
+              <div className="panel-title">Players</div>
+
+              <div className="player-list">
+                {outletContext.players.map((player) => (
+                  <button
+                    key={player.id}
+                    className="player-row"
+                    data-clan={getClanTone(player.character)}
+                    type="button"
+                  >
+                    <span className="player-avatar" aria-hidden="true">
+                      {player.name.charAt(0)}
                     </span>
-                  </span>
-                  <span className={`player-status ${player.status}`} aria-label={player.status} />
-                </button>
-              ))}
-            </div>
-
-            <PlayerWhisperForm warRoom={outletContext} />
-
-            <div className="panel-title panel-title-secondary">Pulse</div>
-            <p className="panel-copy">
-              Three fresh beats only. The rail clears itself when the room moves on.
-            </p>
-            {pulseEntries.length > 0 ? (
-              <div className="activity-feed">
-                {pulseEntries.map((entry) => (
-                  <p key={entry.id}>
-                    <span>{entry.time}</span>
-                    {entry.label}
-                  </p>
+                    <span className="player-copy">
+                      <span className="player-name">{player.name}</span>
+                      <span className="player-meta">
+                        {player.character} · {player.player}
+                      </span>
+                    </span>
+                    <span className={`player-status ${player.status}`} aria-label={player.status} />
+                  </button>
                 ))}
               </div>
-            ) : (
-              <p className="panel-empty">
-                No fresh pulses on this route. The full timeline lives in Log.
+
+              <PlayerWhisperForm warRoom={outletContext} />
+
+              <div className="panel-title panel-title-secondary">Pulse</div>
+              <p className="panel-copy">
+                Three fresh beats only. The rail clears itself when the room moves on.
               </p>
-            )}
+              {pulseEntries.length > 0 ? (
+                <div className="activity-feed">
+                  {pulseEntries.map((entry) => (
+                    <p key={entry.id}>
+                      <span>{entry.time}</span>
+                      {entry.label}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="panel-empty">
+                  No fresh pulses on this route. The full timeline lives in Log.
+                </p>
+              )}
+            </div>
           </aside>
         ) : null}
       </div>
@@ -280,7 +283,7 @@ export default function DemoLayout() {
               <input
                 aria-label="Quick narration"
                 className="quick-input"
-                placeholder="Quick narration... type and press Enter to broadcast to channel"
+                placeholder="Broadcast a quick narration..."
                 type="text"
                 {...register('message')}
               />

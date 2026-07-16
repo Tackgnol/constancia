@@ -166,7 +166,7 @@ export default function NpcsRoute() {
   const [pendingAssignments, setPendingAssignments] = useState<Record<string, string[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [assigningFactId, setAssigningFactId] = useState<string | null>(null);
-  const [activeDossierTab, setActiveDossierTab] = useState<'bio' | 'stats' | 'facts'>('bio');
+  const [activeDossierTab, setActiveDossierTab] = useState<'access' | 'system' | 'facts'>('access');
   const [copiedLinkRecipientId, setCopiedLinkRecipientId] = useState<string | null>(null);
   const setupBase = getSetupBase(warRoom);
 
@@ -190,7 +190,7 @@ export default function NpcsRoute() {
   }, [npcs, selectedNpcId]);
 
   useEffect(() => {
-    setActiveDossierTab('bio');
+    setActiveDossierTab('access');
     setCopiedLinkRecipientId(null);
   }, [selectedNpcId]);
 
@@ -356,6 +356,10 @@ export default function NpcsRoute() {
       ) : selectedNpc ? (
         <div className="npc-workbench">
           <aside className="npc-rail">
+            <div className="npc-rail-header">
+              <p className="detail-label">Dossier index</p>
+              <span>{npcs.length} active</span>
+            </div>
             {npcs.map((npc) => {
               const knownCount = npc.facts.filter((fact) => fact.knownTo.length > 0).length;
               const primaryBlock = readPrimarySystemBlock(npc);
@@ -364,6 +368,7 @@ export default function NpcsRoute() {
                   key={npc.id}
                   className={`npc-rail-card${selectedNpcId === npc.id ? ' is-active' : ''}`}
                   type="button"
+                  aria-pressed={selectedNpcId === npc.id}
                   onClick={() => setSelectedNpcId(npc.id)}
                 >
                   <div>
@@ -386,9 +391,9 @@ export default function NpcsRoute() {
           <section className="npc-focus detail-card">
             <div className="npc-dossier-sheet">
               <div className="npc-dossier-strip">
-                <span>FILE // {selectedNpc.id.slice(0, 12).toUpperCase()}</span>
-                <span>CAMPAIGN // {warRoom.campaign.name}</span>
-                <span>CLEARANCE // GM</span>
+                <span>GM dossier</span>
+                <span>{warRoom.campaign.name}</span>
+                <span>Private workspace</span>
               </div>
 
               <div className="npc-focus-header npc-focus-header-dossier">
@@ -402,7 +407,6 @@ export default function NpcsRoute() {
                   ) : (
                     <NpcPortraitFallback name={selectedNpc.name} />
                   )}
-                  <div className="npc-portrait-stamp">verified</div>
                 </div>
 
                 <div className="npc-focus-copy npc-focus-copy-dossier">
@@ -423,24 +427,22 @@ export default function NpcsRoute() {
                     </Link>
                   </div>
 
-                  <div className="npc-identity-grid">
-                    <div className="npc-identity-cell">
-                      <span className="detail-label">Known facts</span>
-                      <strong>{selectedNpc.facts.length}</strong>
+                  <dl className="npc-evidence-ledger">
+                    <div>
+                      <dt>Facts on file</dt>
+                      <dd>{selectedNpc.facts.length}</dd>
                     </div>
-                    <div className="npc-identity-cell">
-                      <span className="detail-label">Revealed facts</span>
-                      <strong>
-                        {selectedNpc.facts.filter((fact) => fact.knownTo.length > 0).length}
-                      </strong>
+                    <div>
+                      <dt>Facts in the wild</dt>
+                      <dd>{selectedNpc.facts.filter((fact) => fact.knownTo.length > 0).length}</dd>
                     </div>
-                    <div className="npc-identity-cell">
-                      <span className="detail-label">Player links</span>
-                      <strong>
+                    <div>
+                      <dt>Players with access</dt>
+                      <dd>
                         {playerDossierRecipients.filter((entry) => entry.knownFacts > 0).length}
-                      </strong>
+                      </dd>
                     </div>
-                  </div>
+                  </dl>
 
                   <p>{selectedNpc.description || 'No narrative summary has been written yet.'}</p>
                 </div>
@@ -448,8 +450,8 @@ export default function NpcsRoute() {
 
               <div className="npc-tab-row" role="tablist" aria-label="NPC dossier panels">
                 {[
-                  { id: 'bio', label: 'Bio' },
-                  { id: 'stats', label: 'Stats' },
+                  { id: 'access', label: 'Access' },
+                  { id: 'system', label: 'System' },
                   { id: 'facts', label: 'Facts' },
                 ].map((tab) => (
                   <button
@@ -457,32 +459,23 @@ export default function NpcsRoute() {
                     className={`npc-tab${activeDossierTab === tab.id ? ' is-active' : ''}`}
                     type="button"
                     role="tab"
+                    id={`npc-tab-${tab.id}`}
+                    aria-controls={`npc-panel-${tab.id}`}
                     aria-selected={activeDossierTab === tab.id}
-                    onClick={() => setActiveDossierTab(tab.id as 'bio' | 'stats' | 'facts')}
+                    onClick={() => setActiveDossierTab(tab.id as 'access' | 'system' | 'facts')}
                   >
                     {tab.label}
                   </button>
                 ))}
               </div>
 
-              {activeDossierTab === 'bio' ? (
-                <div className="npc-dossier-panel">
-                  <section className="npc-panel-section">
-                    <div className="setup-subsection-header">
-                      <div>
-                        <p className="detail-label">Background summary</p>
-                        <p className="form-hint">
-                          Use the description for what the GM needs at a glance; revealable truths
-                          stay in the facts panel.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="npc-dossier-summary">
-                      <p>{selectedNpc.description || 'No background summary on file.'}</p>
-                    </div>
-                  </section>
-
+              {activeDossierTab === 'access' ? (
+                <div
+                  className="npc-dossier-panel"
+                  id="npc-panel-access"
+                  role="tabpanel"
+                  aria-labelledby="npc-tab-access"
+                >
                   <section className="npc-panel-section">
                     <div className="setup-subsection-header">
                       <div>
@@ -495,14 +488,14 @@ export default function NpcsRoute() {
                     </div>
 
                     {playerDossierRecipients.length > 0 ? (
-                      <div className="npc-share-grid">
+                      <div className="npc-share-list">
                         {playerDossierRecipients.map((recipient) => (
-                          <article key={recipient.id} className="npc-share-card">
-                            <div>
+                          <article key={recipient.id} className="npc-share-row">
+                            <div className="npc-share-identity">
                               <p className="detail-label">{recipient.secondaryLabel}</p>
                               <strong>{recipient.displayName}</strong>
                             </div>
-                            <span>
+                            <span className="npc-share-count">
                               {recipient.knownFacts} known fact
                               {recipient.knownFacts === 1 ? '' : 's'}
                             </span>
@@ -544,8 +537,13 @@ export default function NpcsRoute() {
                 </div>
               ) : null}
 
-              {activeDossierTab === 'stats' ? (
-                <div className="npc-dossier-panel">
+              {activeDossierTab === 'system' ? (
+                <div
+                  className="npc-dossier-panel"
+                  id="npc-panel-system"
+                  role="tabpanel"
+                  aria-labelledby="npc-tab-system"
+                >
                   <section className="npc-panel-section">
                     <div className="setup-subsection-header">
                       <div>
@@ -575,7 +573,12 @@ export default function NpcsRoute() {
               ) : null}
 
               {activeDossierTab === 'facts' ? (
-                <div className="npc-dossier-panel">
+                <div
+                  className="npc-dossier-panel"
+                  id="npc-panel-facts"
+                  role="tabpanel"
+                  aria-labelledby="npc-tab-facts"
+                >
                   <div className="npc-facts-panel">
                     <div className="setup-subsection-header">
                       <div>

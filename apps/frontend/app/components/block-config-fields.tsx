@@ -429,23 +429,23 @@ function OutcomeMapConfig({ index }: { index: number }) {
       <Label className="text-muted-foreground text-[0.65rem] tracking-[0.18em] uppercase font-mono font-semibold">
         Outcomes
       </Label>
-      <div className="grid gap-2">
+      <div className="outcome-list">
         {fields.map((field, outcomeIndex) => (
-          <div key={field.id} className="flex items-center gap-2">
+          <div key={field.id} className="outcome-row">
             <Input
               type="number"
               placeholder="Threshold"
-              className="w-28 shrink-0"
+              className="outcome-score"
               {...register(`pipeline.${index}.config.outcomes.${outcomeIndex}.threshold` as never)}
             />
             <Input
               type="text"
               placeholder="Outcome text…"
-              className="flex-1"
+              className="outcome-text"
               {...register(`pipeline.${index}.config.outcomes.${outcomeIndex}.text` as never)}
             />
             <button
-              className="shrink-0 text-muted-foreground hover:text-destructive-foreground font-mono text-base w-6 h-6 flex items-center justify-center transition-colors"
+              className="outcome-remove"
               onClick={() => remove(outcomeIndex)}
               type="button"
               aria-label="Remove outcome"
@@ -456,7 +456,7 @@ function OutcomeMapConfig({ index }: { index: number }) {
         ))}
       </div>
       <button
-        className="text-left text-muted-foreground hover:text-foreground font-mono text-[0.68rem] tracking-[0.14em] uppercase transition-colors"
+        className="outcome-add"
         onClick={() => append({ threshold: 0, text: '' })}
         type="button"
       >

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { Tag } from '@/lib/war-room-data';
 
+const INITIAL_SESSION_ELAPSED_MS = 47 * 60_000 + 12_000;
+
 type SceneRailExtrasProps = {
   tags: Tag[];
   activeTag: string | null;
@@ -26,13 +28,12 @@ export function SceneRailExtras({
   eventCount,
   activeEventCount,
 }: SceneRailExtrasProps) {
-  const [startedAt] = useState(() => Date.now() - 47 * 60_000 - 12_000);
-  const [elapsedMs, setElapsedMs] = useState(() => Date.now() - startedAt);
+  const [elapsedMs, setElapsedMs] = useState(INITIAL_SESSION_ELAPSED_MS);
 
   useEffect(() => {
-    const id = setInterval(() => setElapsedMs(Date.now() - startedAt), 1000);
-    return () => clearInterval(id);
-  }, [startedAt]);
+    const id = window.setInterval(() => setElapsedMs((current) => current + 1000), 1000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const activeLabel = activeTag ? (tags.find((t) => t.id === activeTag)?.label ?? null) : null;
 

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useFetcher, useOutletContext } from 'react-router';
@@ -18,6 +18,8 @@ import { VTM_CLANS, MB_CLASSES } from '@constancia/systems';
 import type { WarRoomContext } from '@/lib/war-room-data';
 import type { ActionFunctionArgs } from 'react-router';
 import type { ListCharacters200DataItem } from '@constancia/api-client/model';
+import { ManagementWorkspace } from '@/components/layout/management-workspace';
+import { formFieldLabelClassName } from '@/components/forms/field-label';
 
 const participantFormSchema = z.object({
   gameName: z.string().trim().max(80, 'Keep the in-game name concise.'),
@@ -29,16 +31,26 @@ type ParticipantFormValues = z.infer<typeof participantFormSchema>;
 export async function action({ request }: ActionFunctionArgs) {
   const cookie = request.headers.get('Cookie') || '';
   const formData = await request.formData();
-  const campaignId = formData.get('campaignId') as string;
-  const charId = formData.get('charId') as string;
-  const gameName = formData.get('gameName') as string;
-  const archetype = formData.get('archetype') as string;
-  const systemDataRaw = formData.get('systemData') as string;
+  const readString = (key: string) => {
+    const value = formData.get(key);
+    return typeof value === 'string' ? value : '';
+  };
+  const campaignId = readString('campaignId');
+  const charId = readString('charId');
+  const gameName = readString('gameName');
+  const archetype = readString('archetype');
+  const systemDataRaw = readString('systemData');
 
   if (!campaignId || !charId) return null;
 
   try {
-    const systemData = systemDataRaw ? JSON.parse(systemDataRaw) : {};
+    const parsedSystemData: unknown = systemDataRaw ? JSON.parse(systemDataRaw) : {};
+    const systemData: Record<string, unknown> =
+      typeof parsedSystemData === 'object' &&
+      parsedSystemData !== null &&
+      !Array.isArray(parsedSystemData)
+        ? { ...parsedSystemData }
+        : {};
     if (archetype) {
       systemData.clan = archetype;
     }
@@ -63,23 +75,28 @@ export default function ParticipantsRoute() {
   };
 
   return (
-    <div className="mode-route">
-      <section className="hero-strip hero-strip-compact">
-        <div>
-          <p className="eyebrow">Participants</p>
-          <h1>Campaign Roster</h1>
-          <p className="hero-copy">
-            Manage the participants connected via Discord. Set their in-game name to overwrite their
-            Discord handle in the sidebar.
-          </p>
+    <ManagementWorkspace
+      eyebrow="Participants"
+      title="Campaign roster"
+      description="Match Discord identities to their in-game names and system archetypes."
+      meta={
+        <div className="participant-roster-meta">
+          <p className="detail-label">Roster state</p>
+          <strong>{warRoom.rawCharacters.length} connected</strong>
+          <span>
+            {warRoom.players.filter((player) => player.status === 'online').length} online now
+          </span>
         </div>
-      </section>
-
-      <section className="detail-stack flex flex-col gap-4 max-w-2xl px-6">
+      }
+    >
+      <section className="participant-roster">
         {warRoom.rawCharacters.length === 0 ? (
-          <p className="text-muted-foreground p-4">
-            No participants connected yet. Run <code>/participants add @user</code> in Discord.
-          </p>
+          <div className="detail-card participant-empty-state">
+            <p className="detail-label">No participants connected</p>
+            <p>
+              Run <code>/participants add @user</code> in Discord to add the first player.
+            </p>
+          </div>
         ) : (
           warRoom.rawCharacters.map((char) => {
             const discordName = getFallbackName(char);
@@ -94,12 +111,13 @@ export default function ParticipantsRoute() {
                 campaignId={warRoom.campaign.id}
                 gameSystemId={warRoom.system.id}
                 actionPath={warRoom.demoMode ? '/demo/participants' : '/participants'}
+                demoMode={warRoom.demoMode === true}
               />
             );
           })
         )}
       </section>
-    </div>
+    </ManagementWorkspace>
   );
 }
 
@@ -110,6 +128,7 @@ function ParticipantRow({
   campaignId,
   gameSystemId,
   actionPath,
+  demoMode,
 }: {
   char: ListCharacters200DataItem;
   discordName: string;
@@ -117,13 +136,15 @@ function ParticipantRow({
   campaignId: string;
   gameSystemId: string;
   actionPath: string;
+  demoMode: boolean;
 }) {
-  const fetcher = useFetcher();
-  const isSaving = fetcher.state !== 'idle';
+  const fetcher = useFetcher<typeof action>();
+  const [demoMessage, setDemoMessage] = useState<string | null>(null);
+  const isSaving = !demoMode && fetcher.state !== 'idle';
 
   const archetypes = gameSystemId === 'mork-borg' ? MB_CLASSES : VTM_CLANS;
-  const systemData = (char.systemData as Record<string, unknown>) || {};
-  const currentArchetype = (systemData.clan as string) || '';
+  const systemData: Record<string, unknown> = { ...(char.systemData ?? {}) };
+  const currentArchetype = typeof systemData.clan === 'string' ? systemData.clan : '';
 
   const {
     register,
@@ -151,6 +172,13 @@ function ParticipantRow({
   const selectedArchetype = archetypes.find((a) => a.name === selectedArchetypeName);
 
   const onSubmit = (values: ParticipantFormValues) => {
+    if (demoMode) {
+      reset(values);
+      setDemoMessage(`${values.gameName.trim() || discordName} updated locally for this demo.`);
+      return;
+    }
+
+    setDemoMessage(null);
     fetcher.submit(
       {
         charId: char.id,
@@ -163,43 +191,41 @@ function ParticipantRow({
     );
   };
 
+  const saveMessage = demoMessage
+    ? demoMessage
+    : fetcher.data?.status === 'success'
+      ? 'Participant updated.'
+      : fetcher.data?.status === 'error'
+        ? 'The participant update did not hold. Try again.'
+        : null;
+
   return (
-    <article className="detail-card flex flex-col gap-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <p className="detail-label">Discord User</p>
-          <h2 className="text-xl font-bold">{discordName}</h2>
-          <p className="text-[0.65rem] text-muted-foreground font-mono">{char.discordUserId}</p>
+    <article className="detail-card participant-card">
+      <header className="participant-card-header">
+        <div className="participant-identity">
+          <p className="detail-label">Discord identity</p>
+          <h2>{discordName}</h2>
+          <p>{char.discordUserId}</p>
         </div>
 
         {selectedArchetype && (
-          <div className="flex items-center gap-3 bg-surface-high/50 p-2 rounded-lg border border-border/50">
-            <div className="w-10 h-10 flex items-center justify-center bg-black/20 rounded overflow-hidden">
-              <img
-                src={`/icons/${selectedArchetype.icon}`}
-                alt=""
-                className="w-8 h-8 object-contain opacity-80"
-                onError={(e) => (e.currentTarget.style.display = 'none')}
-              />
+          <div className="participant-archetype">
+            <div className="participant-archetype-icon">
+              <span aria-hidden="true">{selectedArchetype.name.slice(0, 2).toUpperCase()}</span>
             </div>
             <div>
-              <p className="text-[0.6rem] uppercase tracking-widest text-muted-foreground font-bold">
-                {gameSystemId === 'mork-borg' ? 'Class' : 'Clan'}
-              </p>
-              <p className="text-sm font-bold text-primary-glow">{selectedArchetype.name}</p>
+              <p className="detail-label">{gameSystemId === 'mork-borg' ? 'Class' : 'Clan'}</p>
+              <strong>{selectedArchetype.name}</strong>
             </div>
           </div>
         )}
-      </div>
+      </header>
 
-      <form className="grid gap-6" onSubmit={handleSubmit(onSubmit)} noValidate>
-        <div className="grid sm:grid-cols-2 gap-4">
+      <form className="participant-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+        <div className="participant-form-grid">
           <div className="grid gap-1.5">
-            <Label
-              htmlFor={`game-name-${char.id}`}
-              className="text-muted-foreground text-[0.65rem] tracking-[0.18em] uppercase font-mono font-semibold"
-            >
-              In-Game Name
+            <Label htmlFor={`game-name-${char.id}`} className={formFieldLabelClassName}>
+              In-game name
             </Label>
             <Input
               id={`game-name-${char.id}`}
@@ -211,11 +237,8 @@ function ParticipantRow({
           </div>
 
           <div className="grid gap-1.5">
-            <Label
-              htmlFor={`archetype-${char.id}`}
-              className="text-muted-foreground text-[0.65rem] tracking-[0.18em] uppercase font-mono font-semibold"
-            >
-              {gameSystemId === 'mork-borg' ? 'Character Class' : 'Vampire Clan'}
+            <Label htmlFor={`archetype-${char.id}`} className={formFieldLabelClassName}>
+              {gameSystemId === 'mork-borg' ? 'Character class' : 'Vampire clan'}
             </Label>
             <Controller
               control={control}
@@ -223,7 +246,7 @@ function ParticipantRow({
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id={`archetype-${char.id}`} className="w-full">
-                    <SelectValue placeholder="Select Archetype" />
+                    <SelectValue placeholder="Select archetype" />
                   </SelectTrigger>
                   <SelectContent>
                     {archetypes.map((a) => (
@@ -242,20 +265,32 @@ function ParticipantRow({
         </div>
 
         {selectedArchetype && (
-          <div className="bg-muted/30 p-4 rounded-md border border-border/20">
-            <p className="text-xs leading-relaxed text-muted-foreground italic">
-              &ldquo;{selectedArchetype.description}&rdquo;
-            </p>
+          <div className="participant-archetype-note">
+            <p>{selectedArchetype.description}</p>
           </div>
         )}
 
-        <div className="flex justify-end">
+        <div className="participant-form-footer">
+          {saveMessage ? (
+            <p
+              className={`participant-save-message${fetcher.data?.status === 'error' ? ' is-error' : ''}`}
+              role="status"
+            >
+              {saveMessage}
+            </p>
+          ) : (
+            <span />
+          )}
           <div className="sheet-row-actions">
-            <Button asChild variant="ghost">
-              <Link to={`/participants/${char.id}`}>Open Sheet</Link>
-            </Button>
+            {!demoMode || char.id === 'aleksei' ? (
+              <Button asChild variant="ghost">
+                <Link to={demoMode ? '/demo/player/sheet' : `/participants/${char.id}`}>
+                  {demoMode ? 'Preview player view' : 'Open sheet'}
+                </Link>
+              </Button>
+            ) : null}
             <Button variant="outline" type="submit" disabled={isSaving} className="min-w-25">
-              {isSaving ? 'Saving...' : 'Update Participant'}
+              {isSaving ? 'Saving…' : 'Update participant'}
             </Button>
           </div>
         </div>

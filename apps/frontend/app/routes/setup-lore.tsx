@@ -340,6 +340,17 @@ export default function SetupLoreRoute() {
       {!isEditing || loreEntry ? (
         <section className="setup-panel">
           <form className="quest-create-panel" onSubmit={onSubmit} noValidate>
+            <div className="form-workbench-heading">
+              <div>
+                <p className="detail-label">Lore record</p>
+                <h2>{isEditing ? 'Edit the canonical entry' : 'Record what is true'}</h2>
+              </div>
+              <p className="form-hint">
+                Write the durable truth here. Player access is managed separately from the Lore
+                board.
+              </p>
+            </div>
+
             {errors.root?.serverError?.message ? (
               <div className="form-status form-status-error" role="alert">
                 {errors.root.serverError.message}
@@ -358,7 +369,7 @@ export default function SetupLoreRoute() {
               </div>
 
               <div className="grid gap-1.5">
-                <Label htmlFor="setup-lore-sort">Sort Order</Label>
+                <Label htmlFor="setup-lore-sort">Sort order</Label>
                 <Input
                   id="setup-lore-sort"
                   min={0}
@@ -370,7 +381,7 @@ export default function SetupLoreRoute() {
                 ) : null}
               </div>
 
-              <div className="grid gap-1.5 form-field-grow">
+              <div className="grid gap-1.5 form-field-grow setup-field-wide">
                 <Label htmlFor="setup-lore-content">Lore</Label>
                 <Textarea
                   id="setup-lore-content"
@@ -383,9 +394,9 @@ export default function SetupLoreRoute() {
               </div>
             </div>
 
-            <div className="form-actions">
+            <div className="form-actions form-action-dock">
               <button className="form-submit" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : isEditing ? 'Save Lore' : 'Add Lore'}
+                {isSubmitting ? 'Saving…' : isEditing ? 'Save lore entry' : 'Create lore entry'}
               </button>
               {isEditing ? (
                 <button
@@ -393,7 +404,7 @@ export default function SetupLoreRoute() {
                   type="button"
                   onClick={() => void removeLoreEntry()}
                 >
-                  Delete
+                  Delete lore entry
                 </button>
               ) : null}
             </div>

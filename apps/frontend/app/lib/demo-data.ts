@@ -1,5 +1,6 @@
 import type {
   GetServiceHealth200,
+  ListCharacters200DataItem,
   ListCampaigns200,
   ListGameSystems200,
 } from '@constancia/api-client/model';
@@ -32,8 +33,20 @@ export const demoSystems: ListGameSystems200 = {
   ],
 };
 
+const demoCharacters: ListCharacters200DataItem[] = players.map((player) => ({
+  id: player.id,
+  name: player.player,
+  discordUserId: player.id,
+  discordName: player.player,
+  gameName: player.name,
+  campaignId: 'demo-crimson-dynasty',
+  backstory: '',
+  notes: '',
+  systemData: { clan: player.character },
+}));
+
 export const demoContext: WarRoomContext = {
-  rawCharacters: [],
+  rawCharacters: demoCharacters,
   campaign: {
     id: 'demo-crimson-dynasty',
     name: 'Crimson Dynasty',

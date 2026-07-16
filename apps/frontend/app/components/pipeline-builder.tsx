@@ -1,4 +1,6 @@
+import type { ReactNode } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
+import { Trash2 } from 'lucide-react';
 import {
   BLOCK_TYPES,
   BLOCK_LABELS,
@@ -11,7 +13,13 @@ import {
 import { BlockConfigFields } from './block-config-fields.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select.js';
 
-export function PipelineBuilder({ eventType }: { eventType?: EventType }) {
+export function PipelineBuilder({
+  eventType,
+  footer,
+}: {
+  eventType?: EventType;
+  footer?: ReactNode;
+}) {
   const {
     control,
     register,
@@ -63,8 +71,6 @@ export function PipelineBuilder({ eventType }: { eventType?: EventType }) {
           return (
             <div key={field.id} className="pipeline-block">
               <div className="pipeline-block-header">
-                <span className="pipeline-block-index">{String(index + 1).padStart(2, '0')}</span>
-
                 {/* Shadcn Select replaces native <select> */}
                 <Select
                   value={currentType ?? ''}
@@ -91,7 +97,8 @@ export function PipelineBuilder({ eventType }: { eventType?: EventType }) {
                   type="button"
                   aria-label={`Remove action ${index + 1}`}
                 >
-                  ×
+                  <Trash2 size={14} aria-hidden="true" />
+                  <span>Remove action</span>
                 </button>
               </div>
 
@@ -105,18 +112,21 @@ export function PipelineBuilder({ eventType }: { eventType?: EventType }) {
         })}
       </div>
 
-      <Select onValueChange={addBlock} value="">
-        <SelectTrigger className="pipeline-add-trigger">
-          <SelectValue placeholder="+ Add Action" />
-        </SelectTrigger>
-        <SelectContent>
-          {addableBlockTypes.map((type) => (
-            <SelectItem key={type} value={type} className="text-xs font-mono">
-              {BLOCK_LABELS[type]}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="pipeline-action-dock">
+        <Select onValueChange={addBlock} value="">
+          <SelectTrigger className="pipeline-add-trigger">
+            <SelectValue placeholder="Add action" />
+          </SelectTrigger>
+          <SelectContent>
+            {addableBlockTypes.map((type) => (
+              <SelectItem key={type} value={type} className="text-xs font-mono">
+                {BLOCK_LABELS[type]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {footer}
+      </div>
     </div>
   );
 }

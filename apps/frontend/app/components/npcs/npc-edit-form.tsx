@@ -140,7 +140,7 @@ export function NpcEditForm({
           <p className="form-hint">Refit the block stack without leaving the board.</p>
         </div>
         <Button type="button" variant="ghost" onClick={onCancel}>
-          Close
+          Cancel changes
         </Button>
       </div>
 
@@ -198,7 +198,7 @@ export function NpcEditForm({
         />
       </div>
 
-      <div className="form-actions">
+      <div className="form-actions form-action-dock">
         <button className="form-submit" type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Saving dossier…' : 'Save dossier'}
         </button>

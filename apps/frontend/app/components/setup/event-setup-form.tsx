@@ -24,7 +24,7 @@ export function EventSetupForm({
   methods,
   channels,
   onSubmit,
-  submitLabel = 'Save Event',
+  submitLabel = 'Save event',
 }: {
   methods: UseFormReturn<EventFormValues>;
   channels: ChannelEntry[];
@@ -178,13 +178,14 @@ export function EventSetupForm({
           </div>
         </div>
 
-        <PipelineBuilder eventType={eventType} />
-
-        <div className="form-actions">
-          <button className="form-submit" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving…' : submitLabel}
-          </button>
-        </div>
+        <PipelineBuilder
+          eventType={eventType}
+          footer={
+            <button className="form-submit" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving…' : submitLabel}
+            </button>
+          }
+        />
       </form>
     </FormProvider>
   );
