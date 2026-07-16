@@ -39,6 +39,13 @@ import { postRouteAction } from '@/lib/route-action-client';
 import { handleUploadImageAction } from '@/lib/upload-image-action.server';
 import type { WarRoomContext } from '@/lib/war-room-data';
 
+const npcSaveError =
+  "We couldn't save this dossier. Your entries are still in the form; review the highlighted fields and try again.";
+const npcDeleteError =
+  "We couldn't delete this dossier. It is still on the NPC board; reopen it and try again.";
+const npcFactSaveError =
+  "We couldn't save this fact. Your text is still in the form; review it and try again.";
+
 type ApiKnownPlayer = {
   characterId: string;
   discordUserId: string;
@@ -146,7 +153,10 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (typeof campaignId !== 'string' || campaignId.length === 0) {
     return Response.json(
-      { status: 'error', message: 'Campaign context is missing.' },
+      {
+        status: 'error',
+        message: "We couldn't identify this campaign. Return to Setup and reopen the dossier.",
+      },
       { status: 400 },
     );
   }
@@ -156,13 +166,17 @@ export async function action({ request }: ActionFunctionArgs) {
       const payload = parsePayload<CreateNpcBody>(formData.get('payload'));
       if (!payload) {
         return Response.json(
-          { status: 'error', message: 'NPC payload is missing.' },
+          {
+            status: 'error',
+            message:
+              "We couldn't read this dossier draft. Review the highlighted fields and retry.",
+          },
           { status: 400 },
         );
       }
 
       const response = await createNpc({ id: campaignId }, payload, apiOptions);
-      assertApiOk(response, 'The dossier did not bind cleanly. Check the fields and try again.');
+      assertApiOk(response, npcSaveError);
       return Response.json({
         status: 'success',
         data: {
@@ -176,13 +190,17 @@ export async function action({ request }: ActionFunctionArgs) {
       const payload = parsePayload<UpdateNpcBody>(formData.get('payload'));
       if (typeof npcId !== 'string' || npcId.length === 0 || !payload) {
         return Response.json(
-          { status: 'error', message: 'NPC update is incomplete.' },
+          {
+            status: 'error',
+            message:
+              "We couldn't identify this dossier. Return to the NPC board and open it again.",
+          },
           { status: 400 },
         );
       }
 
       const response = await updateNpc({ id: campaignId, npcId }, payload, apiOptions);
-      assertApiOk(response, 'The dossier update did not hold. Check the fields and try again.');
+      assertApiOk(response, npcSaveError);
       return Response.json({ status: 'success', data: response.data });
     }
 
@@ -190,23 +208,33 @@ export async function action({ request }: ActionFunctionArgs) {
       const payload = parsePayload<CreateNpcFactBody>(formData.get('payload'));
       if (typeof npcId !== 'string' || npcId.length === 0 || !payload) {
         return Response.json(
-          { status: 'error', message: 'NPC fact payload is incomplete.' },
+          {
+            status: 'error',
+            message: "We couldn't identify this fact. Reopen the dossier and enter it again.",
+          },
           { status: 400 },
         );
       }
 
       const response = await createNpcFact({ id: campaignId, npcId }, payload, apiOptions);
-      assertApiOk(response, 'The new fact would not file cleanly. Try again.');
+      assertApiOk(response, npcFactSaveError);
       return Response.json({ status: 'success', data: { ...response.data, knownTo: [] } });
     }
 
     if (intent === 'delete-npc') {
       if (typeof npcId !== 'string' || npcId.length === 0) {
-        return Response.json({ status: 'error', message: 'NPC id is missing.' }, { status: 400 });
+        return Response.json(
+          {
+            status: 'error',
+            message:
+              "We couldn't identify this dossier. Return to the NPC board and open it again.",
+          },
+          { status: 400 },
+        );
       }
 
       const response = await deleteNpc({ id: campaignId, npcId }, apiOptions);
-      assertApiOk(response, 'The dossier did not delete cleanly. Try again.');
+      assertApiOk(response, npcDeleteError);
       return Response.json({ status: 'success' });
     }
 
@@ -214,12 +242,10 @@ export async function action({ request }: ActionFunctionArgs) {
   } catch (caught) {
     const fallbackMessage =
       intent === 'delete-npc'
-        ? 'The dossier did not delete cleanly. Try again.'
-        : intent === 'update-npc'
-          ? 'The dossier update did not hold. Check the fields and try again.'
-          : intent === 'create-npc-fact'
-            ? 'The new fact would not file cleanly. Try again.'
-            : 'The dossier did not bind cleanly. Check the fields and try again.';
+        ? npcDeleteError
+        : intent === 'create-npc-fact'
+          ? npcFactSaveError
+          : npcSaveError;
 
     return Response.json(
       { status: 'error', message: getApiErrorMessage(caught, fallbackMessage) },
@@ -300,7 +326,7 @@ export default function SetupNpcRoute() {
       warRoom.recordActivity?.(message);
     } catch (caught) {
       console.error('Delete NPC error:', caught);
-      setError(getApiErrorMessage(caught, 'The dossier did not delete cleanly. Try again.'));
+      setError(getApiErrorMessage(caught, npcDeleteError));
     }
   };
 

@@ -26,7 +26,7 @@ const tabs = [
   { to: '/demo/setup', label: 'Setup' },
   { to: '/demo', label: 'Play', end: true },
   { to: '/demo/npcs', label: 'NPCs' },
-  { to: '/demo/participants', label: 'Roster' },
+  { to: '/demo/participants', label: 'Participants' },
   { to: '/demo/lore', label: 'Lore' },
   { to: '/demo/log', label: 'Quests' },
   { to: '/demo/player/sheet', label: 'Player' },
@@ -36,8 +36,8 @@ const quickNarrationSchema = z.object({
   message: z
     .string()
     .trim()
-    .min(8, 'Write at least a short beat before broadcasting to the room.')
-    .max(240, 'Keep the quick narration under 240 characters.'),
+    .min(8, 'Enter at least 8 characters so the room gets a complete narration cue.')
+    .max(240, 'Shorten this narration to 240 characters or fewer, then broadcast it.'),
 });
 
 type QuickNarrationValues = z.infer<typeof quickNarrationSchema>;
@@ -142,16 +142,19 @@ export default function DemoLayout() {
       console.error('Quick narration error:', error);
       setError('root.serverError', {
         type: 'manual',
-        message: 'The quick narration did not clear the board. Try again.',
+        message:
+          "We couldn't broadcast this narration. Your text is still here; review it and try again.",
       });
       setQuickBarNotice(null);
     }
   });
 
+  const quickBarError = errors.message?.message ?? errors.root?.serverError?.message;
+
   return (
     <div className={`war-room-shell ${isPlayRoute ? 'is-live-play' : 'is-management'}`}>
       <div className="demo-banner" role="status">
-        Demo Mode — no auth required, all data is local
+        Demo mode: no auth required. Data stays local, and state resets on refresh.
       </div>
 
       <header className="topbar">
@@ -268,7 +271,7 @@ export default function DemoLayout() {
                 </div>
               ) : (
                 <p className="panel-empty">
-                  No fresh pulses on this route. The full timeline lives in Log.
+                  No fresh pulses on this route. Quest history stays in Quests.
                 </p>
               )}
             </div>
@@ -281,6 +284,8 @@ export default function DemoLayout() {
           <form className="quick-form" onSubmit={onSubmitQuickBar} noValidate>
             <div className="quick-form-row">
               <input
+                aria-describedby="quick-bar-feedback"
+                aria-invalid={quickBarError ? true : undefined}
                 aria-label="Quick narration"
                 className="quick-input"
                 placeholder="Broadcast a quick narration..."
@@ -291,18 +296,24 @@ export default function DemoLayout() {
                 {isSubmitting ? 'Broadcasting…' : 'Broadcast'}
               </button>
             </div>
-            {errors.message ? (
-              <p className="quick-bar-feedback quick-bar-error">{errors.message.message}</p>
-            ) : null}
-            {errors.root?.serverError?.message ? (
-              <p className="quick-bar-feedback quick-bar-error">
-                {errors.root.serverError.message}
+            {quickBarError ? (
+              <p
+                className="quick-bar-feedback quick-bar-error"
+                id="quick-bar-feedback"
+                role="alert"
+              >
+                {quickBarError}
               </p>
-            ) : null}
-            {!errors.message && !errors.root?.serverError?.message && quickBarNotice ? (
-              <p className="quick-bar-feedback quick-bar-success">{quickBarNotice}</p>
+            ) : quickBarNotice ? (
+              <p
+                className="quick-bar-feedback quick-bar-success"
+                id="quick-bar-feedback"
+                role="status"
+              >
+                {quickBarNotice}
+              </p>
             ) : (
-              <p className="quick-bar-feedback quick-bar-hint">
+              <p className="quick-bar-feedback quick-bar-hint" id="quick-bar-feedback">
                 Press Enter to send. Keep it short enough to play like a live cue.
               </p>
             )}

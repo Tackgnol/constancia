@@ -80,7 +80,6 @@ export default function LogRoute() {
         </section>
       ) : (
         <section className="detail-card board-empty-state">
-          <p className="eyebrow">No quests</p>
           <h2>No player work is on the board yet.</h2>
           <p>Create a hidden task in Setup, then reveal it when the table has earned the lead.</p>
           <Link className="ghost-action ghost-action-inline" to={`${setupBase}/quests/new`}>

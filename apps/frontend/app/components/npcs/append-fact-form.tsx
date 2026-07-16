@@ -75,7 +75,9 @@ export function AppendFactForm({
       reset();
     } catch (error) {
       console.error('Create NPC fact error:', error);
-      onError('The new fact would not file cleanly. Try again.');
+      onError(
+        "We couldn't save this fact. Your text is still in the form; review it and try again.",
+      );
     }
   };
 

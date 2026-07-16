@@ -58,7 +58,11 @@ export function ImageUploadField({
 
     if (!hasUploadImageData(response)) {
       setUploadState('error');
-      setUploadMessage(response.status === 'error' ? response.message : 'Upload failed.');
+      setUploadMessage(
+        response.status === 'error'
+          ? response.message
+          : "We couldn't upload this image. Check the file and try again.",
+      );
       return;
     }
 

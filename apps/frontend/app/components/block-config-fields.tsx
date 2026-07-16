@@ -53,7 +53,7 @@ function ConfigField({
 }) {
   return (
     <div className="grid gap-1.5">
-      <Label className="text-muted-foreground text-[0.65rem] tracking-[0.18em] uppercase font-mono font-semibold">
+      <Label className="text-muted-foreground text-[0.7rem] tracking-[0.16em] uppercase font-mono font-semibold">
         {label}
         {optional && (
           <span className="ml-1 font-normal normal-case tracking-normal opacity-60">optional</span>
@@ -61,9 +61,7 @@ function ConfigField({
       </Label>
       {children}
       {hint && (
-        <span className="text-[0.65rem] text-muted-foreground font-mono opacity-70 leading-snug">
-          {hint}
-        </span>
+        <span className="text-[0.7rem] text-muted-foreground font-mono leading-snug">{hint}</span>
       )}
       <FieldError message={error} />
     </div>
@@ -426,7 +424,7 @@ function OutcomeMapConfig({ index }: { index: number }) {
 
   return (
     <div className="grid gap-3">
-      <Label className="text-muted-foreground text-[0.65rem] tracking-[0.18em] uppercase font-mono font-semibold">
+      <Label className="text-muted-foreground text-[0.7rem] tracking-[0.16em] uppercase font-mono font-semibold">
         Outcomes
       </Label>
       <div className="outcome-list">

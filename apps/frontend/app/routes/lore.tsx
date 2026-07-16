@@ -22,6 +22,9 @@ type LoreEntry = ListLoreEntries200DataItem;
 type ApiLoreEntry = ListLoreEntries200DataItem | RevealLoreEntry200Data;
 type KnownPlayer = ListLoreEntries200DataItem['knownTo'][number];
 
+const loreRevealError =
+  "We couldn't reveal this lore. No player access changed; keep your selection and try again.";
+
 function getSetupBase(warRoom: WarRoomContext) {
   return warRoom.demoMode ? '/demo/setup' : '/setup';
 }
@@ -85,7 +88,11 @@ export async function action({ request }: ActionFunctionArgs) {
     discordUserIds.length === 0
   ) {
     return Response.json(
-      { status: 'error', message: 'Lore reveal payload is incomplete.' },
+      {
+        status: 'error',
+        message:
+          "We couldn't identify this lore entry and its audience. Reopen Lore, select the players again, and retry.",
+      },
       { status: 400 },
     );
   }
@@ -97,13 +104,13 @@ export async function action({ request }: ActionFunctionArgs) {
       buildServerApiOptions(request),
     );
 
-    assertApiOk(response, 'Lore reveal failed. Try the assignment again.');
+    assertApiOk(response, loreRevealError);
     return Response.json({ status: 'success', data: normalizeLoreEntry(response.data) });
   } catch (caught) {
     return Response.json(
       {
         status: 'error',
-        message: getApiErrorMessage(caught, 'Lore reveal failed. Try the assignment again.'),
+        message: getApiErrorMessage(caught, loreRevealError),
       },
       { status: 500 },
     );
@@ -192,7 +199,7 @@ export default function LoreRoute() {
       warRoom.recordActivity?.(`Lore revealed: ${loreEntry.title}`);
     } catch (caught) {
       console.error('Reveal lore error:', caught);
-      setError(getApiErrorMessage(caught, 'Lore reveal failed. Try the assignment again.'));
+      setError(getApiErrorMessage(caught, loreRevealError));
     } finally {
       setAssigningLoreId(null);
     }
@@ -248,7 +255,6 @@ export default function LoreRoute() {
         </section>
       ) : (
         <section className="detail-card board-empty-state">
-          <p className="eyebrow">No lore</p>
           <h2>No hidden world knowledge is on file yet.</h2>
           <p>Create lore in Setup, then reveal it to players when they earn it.</p>
           <Link className="ghost-action ghost-action-inline" to={`${setupBase}/lore/new`}>
@@ -303,28 +309,31 @@ function LoreCard({
       <div className="quest-entry-section">
         <div className="setup-subsection-header">
           <div>
-            <p className="detail-label">Known to</p>
+            <p className="detail-label">Player knowledge</p>
             <p className="form-hint">
-              Lore reveal is additive; this screen does not retract memory.
+              Reveals only add knowledge. Existing access is never removed here.
             </p>
           </div>
         </div>
 
-        {loreEntry.knownTo.length > 0 ? (
-          <div className="npc-chip-row">
-            {loreEntry.knownTo.map((knownPlayer) => (
-              <span
-                key={`${loreEntry.id}-${knownPlayer.discordUserId}`}
-                className="npc-chip is-known"
-                title={knownPlayer.secondaryLabel}
-              >
-                {knownPlayer.displayName}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="quest-empty">Hidden from every player.</p>
-        )}
+        <div className="lore-audience-group lore-audience-known">
+          <p className="detail-label">Already knows</p>
+          {loreEntry.knownTo.length > 0 ? (
+            <div className="npc-chip-row">
+              {loreEntry.knownTo.map((knownPlayer) => (
+                <span
+                  key={`${loreEntry.id}-${knownPlayer.discordUserId}`}
+                  className="npc-chip is-known"
+                  title={knownPlayer.secondaryLabel}
+                >
+                  {knownPlayer.displayName}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="quest-empty">No players know this lore yet.</p>
+          )}
+        </div>
 
         <LoreRevealPicker
           loreEntry={loreEntry}
@@ -373,28 +382,25 @@ function LoreRevealPicker({
 
   return (
     <>
-      <div className="npc-chip-row">
-        {recipientOptions.map((option) => {
-          const isKnown = isKnownToPlayer(loreEntry, option);
-          const isPending = pending.includes(option.id);
-          return (
-            <button
-              key={option.id}
-              className={`npc-chip-button${isKnown ? ' is-known' : ''}${isPending ? ' is-pending' : ''}`}
-              type="button"
-              onClick={() => {
-                if (!isKnown) {
-                  onToggle(option.id);
-                }
-              }}
-              aria-pressed={isKnown ? undefined : isPending}
-              disabled={isKnown}
-              title={option.secondaryLabel}
-            >
-              {option.displayName}
-            </button>
-          );
-        })}
+      <div className="lore-audience-group lore-audience-selectable">
+        <p className="detail-label">Select players to reveal</p>
+        <div className="npc-chip-row">
+          {unrevealedRecipients.map((option) => {
+            const isPending = pending.includes(option.id);
+            return (
+              <button
+                key={option.id}
+                className={`npc-chip-button is-selectable${isPending ? ' is-pending' : ''}`}
+                type="button"
+                onClick={() => onToggle(option.id)}
+                aria-pressed={isPending}
+                title={option.secondaryLabel}
+              >
+                {option.displayName}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="npc-fact-actions">
@@ -404,13 +410,13 @@ function LoreRevealPicker({
           disabled={pending.length === 0 || assigning}
           onClick={onApply}
         >
-          {assigning
-            ? 'Revealing...'
-            : pending.length > 0
-              ? `Mark known to ${pending.length}`
-              : 'Select players'}
+          {assigning ? 'Revealing…' : 'Reveal to selected players'}
         </button>
-        <span className="form-hint">This only grants knowledge; it does not retract it.</span>
+        <span className="form-hint">
+          {pending.length > 0
+            ? `Selected players: ${pending.length}`
+            : 'Choose one or more available players.'}
+        </span>
       </div>
     </>
   );

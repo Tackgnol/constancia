@@ -34,7 +34,10 @@ export function SystemBlockEditor({
   blocks: NpcEditorBlock[];
   onChange: (blocks: NpcEditorBlock[]) => void;
 }) {
-  const addableDefinitions = useMemo(() => availableBlockTypes(systemId, blocks), [blocks, systemId]);
+  const addableDefinitions = useMemo(
+    () => availableBlockTypes(systemId, blocks),
+    [blocks, systemId],
+  );
 
   const updateBlock = (key: string, valueText: string) => {
     onChange(blocks.map((block) => (block.key === key ? { ...block, valueText } : block)));
@@ -80,7 +83,9 @@ export function SystemBlockEditor({
       {blocks.length === 0 ? (
         <div className="npc-block-empty">
           <p className="detail-label">No blocks staged</p>
-          <p className="form-hint">Start with a clan or title block, then add any richer system data.</p>
+          <p className="form-hint">
+            Start with a clan or title block, then add any richer system data.
+          </p>
         </div>
       ) : (
         <div className="npc-block-stack">
@@ -94,9 +99,14 @@ export function SystemBlockEditor({
             const field = (() => {
               if (definition.editor === 'select') {
                 return (
-                  <Select value={block.valueText} onValueChange={(value) => updateBlock(block.key, value)}>
+                  <Select
+                    value={block.valueText}
+                    onValueChange={(value) => updateBlock(block.key, value)}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder={definition.placeholder ?? `Select ${definition.label}`} />
+                      <SelectValue
+                        placeholder={definition.placeholder ?? `Select ${definition.label}`}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {definition.options?.map((option: { value: string; label: string }) => (
@@ -134,12 +144,17 @@ export function SystemBlockEditor({
               <article key={block.key} className="npc-block-row detail-card">
                 <div className="npc-block-row-header">
                   <div>
-                    <Label className="text-muted-foreground text-[0.65rem] tracking-[0.18em] uppercase font-mono font-semibold">
+                    <Label className="text-muted-foreground text-[0.7rem] tracking-[0.16em] uppercase font-mono font-semibold">
                       {definition.label}
                     </Label>
                     <p className="form-hint">{definition.description}</p>
                   </div>
-                  <Button type="button" variant="ghost" className="ghost-action-inline" onClick={() => removeBlock(block.key)}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="ghost-action-inline"
+                    onClick={() => removeBlock(block.key)}
+                  >
                     Remove
                   </Button>
                 </div>
@@ -152,4 +167,3 @@ export function SystemBlockEditor({
     </div>
   );
 }
-

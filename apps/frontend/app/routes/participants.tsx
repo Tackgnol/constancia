@@ -77,11 +77,11 @@ export default function ParticipantsRoute() {
   return (
     <ManagementWorkspace
       eyebrow="Participants"
-      title="Campaign roster"
+      title="Campaign participants"
       description="Match Discord identities to their in-game names and system archetypes."
       meta={
         <div className="participant-roster-meta">
-          <p className="detail-label">Roster state</p>
+          <p className="detail-label">Participant state</p>
           <strong>{warRoom.rawCharacters.length} connected</strong>
           <span>
             {warRoom.players.filter((player) => player.status === 'online').length} online now
@@ -196,7 +196,7 @@ function ParticipantRow({
     : fetcher.data?.status === 'success'
       ? 'Participant updated.'
       : fetcher.data?.status === 'error'
-        ? 'The participant update did not hold. Try again.'
+        ? "We couldn't update this participant. Your changes are still in the form; review them and try again."
         : null;
 
   return (
@@ -282,13 +282,11 @@ function ParticipantRow({
             <span />
           )}
           <div className="sheet-row-actions">
-            {!demoMode || char.id === 'aleksei' ? (
-              <Button asChild variant="ghost">
-                <Link to={demoMode ? '/demo/player/sheet' : `/participants/${char.id}`}>
-                  {demoMode ? 'Preview player view' : 'Open sheet'}
-                </Link>
-              </Button>
-            ) : null}
+            <Button asChild variant="ghost">
+              <Link to={demoMode ? '/demo/player/sheet' : `/participants/${char.id}`}>
+                {demoMode ? 'Preview player view' : 'Open sheet'}
+              </Link>
+            </Button>
             <Button variant="outline" type="submit" disabled={isSaving} className="min-w-25">
               {isSaving ? 'Saving…' : 'Update participant'}
             </Button>

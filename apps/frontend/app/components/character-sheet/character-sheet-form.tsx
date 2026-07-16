@@ -130,7 +130,9 @@ export function CharacterSheetForm({
       );
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'The sheet could not be saved. Try again.';
+        error instanceof Error
+          ? error.message
+          : "We couldn't save this sheet. Your changes are still in the form; review the highlighted fields and try again.";
       setError('root.serverError', { type: 'manual', message });
       setSaveState('error');
       setSaveMessage(message);

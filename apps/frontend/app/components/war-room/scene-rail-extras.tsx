@@ -47,7 +47,7 @@ export function SceneRailExtras({
             <p className="rail-scene-meta">
               {activeEventCount} staged beat{activeEventCount !== 1 ? 's' : ''}
             </p>
-            <p className="rail-scene-hint">Play and Log are scoped to this thread.</p>
+            <p className="rail-scene-hint">Play and Quests are scoped to this thread.</p>
           </>
         ) : (
           <>

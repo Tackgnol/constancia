@@ -31,6 +31,11 @@ import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import { postRouteAction } from '@/lib/route-action-client';
 import type { WarRoomContext } from '@/lib/war-room-data';
 
+const loreSaveError =
+  "We couldn't save this lore entry. Your draft is still in the form; review the highlighted fields and try again.";
+const loreDeleteError =
+  "We couldn't delete this lore entry. It is still on the Lore board; reopen it and try again.";
+
 const loreEditSchema = z.object({
   title: z.string().trim().min(1, 'Give the lore entry a title.'),
   content: z.string().trim().min(1, 'Lore content cannot be blank.'),
@@ -95,7 +100,10 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (typeof campaignId !== 'string' || campaignId.length === 0) {
     return Response.json(
-      { status: 'error', message: 'Campaign context is missing.' },
+      {
+        status: 'error',
+        message: "We couldn't identify this campaign. Return to Setup and reopen the lore entry.",
+      },
       { status: 400 },
     );
   }
@@ -104,7 +112,10 @@ export async function action({ request }: ActionFunctionArgs) {
     if (intent === 'save-lore') {
       if (!payload) {
         return Response.json(
-          { status: 'error', message: 'Lore payload is missing.' },
+          {
+            status: 'error',
+            message: "We couldn't read this lore draft. Review the highlighted fields and retry.",
+          },
           { status: 400 },
         );
       }
@@ -115,14 +126,14 @@ export async function action({ request }: ActionFunctionArgs) {
           payload as UpdateLoreEntryBody,
           apiOptions,
         );
-        assertApiOk(response, 'The lore entry update did not clear. Try again.');
+        assertApiOk(response, loreSaveError);
       } else {
         const response = await createLoreEntry(
           { id: campaignId },
           payload as CreateLoreEntryBody,
           apiOptions,
         );
-        assertApiOk(response, 'The lore entry did not file cleanly. Try again.');
+        assertApiOk(response, loreSaveError);
       }
 
       return Response.json({ status: 'success' });
@@ -130,22 +141,23 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (intent === 'delete-lore') {
       if (typeof loreId !== 'string' || loreId.length === 0) {
-        return Response.json({ status: 'error', message: 'Lore id is missing.' }, { status: 400 });
+        return Response.json(
+          {
+            status: 'error',
+            message: "We couldn't identify this lore entry. Return to Lore and open it again.",
+          },
+          { status: 400 },
+        );
       }
 
       const response = await deleteLoreEntry({ id: campaignId, loreId }, apiOptions);
-      assertApiOk(response, 'The lore entry did not delete cleanly. Try again.');
+      assertApiOk(response, loreDeleteError);
       return Response.json({ status: 'success' });
     }
 
     return Response.json({ status: 'error', message: 'Unsupported lore action.' }, { status: 400 });
   } catch (caught) {
-    const fallbackMessage =
-      intent === 'delete-lore'
-        ? 'The lore entry did not delete cleanly. Try again.'
-        : typeof loreId === 'string' && loreId.length > 0
-          ? 'The lore entry update did not clear. Try again.'
-          : 'The lore entry did not file cleanly. Try again.';
+    const fallbackMessage = intent === 'delete-lore' ? loreDeleteError : loreSaveError;
 
     return Response.json(
       { status: 'error', message: getApiErrorMessage(caught, fallbackMessage) },
@@ -247,12 +259,7 @@ export default function SetupLoreRoute() {
       warRoom.recordActivity?.(message);
     } catch (caught) {
       console.error('Save lore error:', caught);
-      const message = getApiErrorMessage(
-        caught,
-        isEditing
-          ? 'The lore entry update did not clear. Try again.'
-          : 'The lore entry did not file cleanly. Try again.',
-      );
+      const message = getApiErrorMessage(caught, loreSaveError);
       setNotice(null);
       setError(message);
       setFormError('root.serverError', { type: 'manual', message });
@@ -290,7 +297,7 @@ export default function SetupLoreRoute() {
     } catch (caught) {
       console.error('Delete lore error:', caught);
       setNotice(null);
-      setError(getApiErrorMessage(caught, 'The lore entry did not delete cleanly. Try again.'));
+      setError(getApiErrorMessage(caught, loreDeleteError));
     }
   };
 

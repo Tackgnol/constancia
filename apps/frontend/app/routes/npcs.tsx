@@ -128,7 +128,11 @@ export async function action({ request }: ActionFunctionArgs) {
     discordUserIds.length === 0
   ) {
     return Response.json(
-      { status: 'error', message: 'NPC reveal payload is incomplete.' },
+      {
+        status: 'error',
+        message:
+          "We couldn't identify this fact and its audience. Reopen the dossier, select the players again, and retry.",
+      },
       { status: 400 },
     );
   }
@@ -142,7 +146,11 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (response.status !== 'ok' || !response.data) {
       return Response.json(
-        { status: 'error', message: 'Knowledge assignment failed. Try the reveal again.' },
+        {
+          status: 'error',
+          message:
+            "We couldn't reveal this fact. No player access changed; keep your selection and try again.",
+        },
         { status: 502 },
       );
     }
@@ -150,7 +158,11 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ status: 'success', data: normalizeApiNpc(response.data) });
   } catch {
     return Response.json(
-      { status: 'error', message: 'Knowledge assignment failed. Try the reveal again.' },
+      {
+        status: 'error',
+        message:
+          "We couldn't reveal this fact. No player access changed; keep your selection and try again.",
+      },
       { status: 500 },
     );
   }
@@ -291,7 +303,9 @@ export default function NpcsRoute() {
       setPendingAssignments((current) => ({ ...current, [fact.id]: [] }));
     } catch (revealError) {
       console.error('Reveal NPC facts error:', revealError);
-      setError('Knowledge assignment failed. Try the reveal again.');
+      setError(
+        "We couldn't reveal this fact. No player access changed; keep your selection and try again.",
+      );
     } finally {
       setAssigningFactId(null);
     }
@@ -343,7 +357,6 @@ export default function NpcsRoute() {
 
       {npcs.length === 0 ? (
         <section className="detail-card npc-empty-state">
-          <p className="eyebrow">No dossiers yet</p>
           <h2>Start in Setup.</h2>
           <p>
             Add an NPC from the setup panel, shape it through system blocks, and come back here to

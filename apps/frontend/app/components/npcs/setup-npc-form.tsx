@@ -118,7 +118,8 @@ export function SetupNpcForm({
       reset(createDefaultValues());
     } catch (error) {
       console.error('Create NPC error:', error);
-      const message = 'The dossier did not bind cleanly. Check the fields and try again.';
+      const message =
+        "We couldn't save this dossier. Your entries are still in the form; review the highlighted fields and try again.";
       setError('root.serverError', { type: 'manual', message });
       onError(message);
     }

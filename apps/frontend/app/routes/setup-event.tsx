@@ -38,6 +38,11 @@ import {
 } from '@/lib/event-schema';
 import type { WarRoomContext } from '@/lib/war-room-data';
 
+const eventSaveError =
+  "We couldn't save this event. Your pipeline is still in the editor; review the highlighted fields and try again.";
+const eventDeleteError =
+  "We couldn't delete this event. It remains on the board; reopen it from Setup and try again.";
+
 function getSetupBase(warRoom: WarRoomContext) {
   return warRoom.demoMode ? '/demo/setup' : '/setup';
 }
@@ -160,24 +165,36 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (typeof campaignId !== 'string' || campaignId.length === 0) {
       return Response.json(
-        { status: 'error', message: 'Campaign context is missing.' },
+        {
+          status: 'error',
+          message: "We couldn't identify this campaign. Return to Setup and reopen the event.",
+        },
         { status: 400 },
       );
     }
 
     if (intent === 'delete-event') {
       if (typeof eventId !== 'string' || eventId.length === 0) {
-        return Response.json({ status: 'error', message: 'Event id is missing.' }, { status: 400 });
+        return Response.json(
+          {
+            status: 'error',
+            message: "We couldn't identify this event. Return to Setup and open it again.",
+          },
+          { status: 400 },
+        );
       }
 
       const response = await deleteEvent({ id: campaignId, eventId }, apiOptions);
-      assertApiOk(response, 'The event dossier did not delete cleanly. Try again.');
+      assertApiOk(response, eventDeleteError);
       return Response.json({ status: 'success' });
     }
 
     if (!payload) {
       return Response.json(
-        { status: 'error', message: 'Event payload is incomplete.' },
+        {
+          status: 'error',
+          message: "We couldn't read this event draft. Review the highlighted fields and retry.",
+        },
         { status: 400 },
       );
     }
@@ -188,14 +205,14 @@ export async function action({ request }: ActionFunctionArgs) {
         payload as UpdateEventBody,
         apiOptions,
       );
-      assertApiOk(response, 'The event dossier did not update cleanly. Try again in a moment.');
+      assertApiOk(response, eventSaveError);
     } else {
       const response = await createEvent(
         { id: campaignId },
         payload as CreateEventBody,
         apiOptions,
       );
-      assertApiOk(response, 'The event dossier did not stage cleanly. Try again in a moment.');
+      assertApiOk(response, eventSaveError);
     }
 
     return Response.json({ status: 'success' });
@@ -203,12 +220,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json(
       {
         status: 'error',
-        message: getApiErrorMessage(
-          caught,
-          typeof eventId === 'string' && eventId.length > 0
-            ? 'The event dossier did not update cleanly. Try again in a moment.'
-            : 'The event dossier did not stage cleanly. Try again in a moment.',
-        ),
+        message: getApiErrorMessage(caught, eventSaveError),
       },
       { status: 500 },
     );
@@ -262,10 +274,7 @@ export default function SetupEventRoute() {
       }
     } catch (err) {
       console.error('Save event error:', err);
-      const fallbackMessage = isEditing
-        ? 'The event dossier did not update cleanly. Try again in a moment.'
-        : 'The event dossier did not stage cleanly. Try again in a moment.';
-      const message = getApiErrorMessage(err, fallbackMessage);
+      const message = getApiErrorMessage(err, eventSaveError);
       eventMethods.setError('root.serverError', { type: 'manual', message });
       setEventError(message);
     }
@@ -299,10 +308,7 @@ export default function SetupEventRoute() {
       navigate(setupBase);
     } catch (err) {
       console.error('Delete event error:', err);
-      const message = getApiErrorMessage(
-        err,
-        'The event dossier did not delete cleanly. Try again.',
-      );
+      const message = getApiErrorMessage(err, eventDeleteError);
       eventMethods.setError('root.serverError', { type: 'manual', message });
       setEventError(message);
     }

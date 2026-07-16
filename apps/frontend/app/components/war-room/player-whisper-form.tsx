@@ -116,7 +116,8 @@ export function PlayerWhisperForm({ warRoom }: PlayerWhisperFormProps) {
       setNotice(null);
       setError('root.serverError', {
         type: 'manual',
-        message: 'The whisper did not leave the board. Try again.',
+        message:
+          "We couldn't send this whisper. Your message and recipients are still selected; review them and try again.",
       });
     }
   });
@@ -195,7 +196,7 @@ export function PlayerWhisperForm({ warRoom }: PlayerWhisperFormProps) {
           </div>
 
           <div className="form-field form-field-full">
-            <Label className={formFieldLabelClassName}>Channel Context</Label>
+            <Label className={formFieldLabelClassName}>Channel context</Label>
             <Controller
               control={control}
               name="channelId"
@@ -244,15 +245,19 @@ export function PlayerWhisperForm({ warRoom }: PlayerWhisperFormProps) {
           </div>
 
           {errors.root?.serverError?.message ? (
-            <p className="whisper-feedback is-error">{errors.root.serverError.message}</p>
+            <p className="whisper-feedback is-error" role="alert">
+              {errors.root.serverError.message}
+            </p>
           ) : null}
           {notice && !errors.root?.serverError?.message ? (
-            <p className="whisper-feedback is-success">{notice}</p>
+            <p className="whisper-feedback is-success" role="status">
+              {notice}
+            </p>
           ) : null}
 
           <button className="form-submit whisper-submit" type="submit" disabled={isSubmitting}>
             <Send size={14} aria-hidden="true" />
-            <span>{isSubmitting ? 'Sending...' : 'Send Whisper'}</span>
+            <span>{isSubmitting ? 'Sending…' : 'Send whisper'}</span>
           </button>
         </form>
       ) : null}

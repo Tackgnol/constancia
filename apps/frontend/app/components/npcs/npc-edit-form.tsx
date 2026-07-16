@@ -128,7 +128,9 @@ export function NpcEditForm({
       });
     } catch (error) {
       console.error('Update NPC error:', error);
-      onError('The dossier update did not hold. Check the fields and try again.');
+      onError(
+        "We couldn't save this dossier. Your entries are still in the form; review the highlighted fields and try again.",
+      );
     }
   };
 

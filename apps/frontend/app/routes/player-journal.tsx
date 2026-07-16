@@ -120,7 +120,6 @@ export default function PlayerJournalRoute() {
 
         {visibleItems === 0 ? (
           <section className="detail-card board-empty-state">
-            <p className="eyebrow">No entries</p>
             <h2>Your journal is empty.</h2>
             <p>When the GM reveals quests, summaries, or NPC facts, they will appear here.</p>
           </section>

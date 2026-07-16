@@ -107,7 +107,10 @@ export async function action({ request }: ActionFunctionArgs) {
     name.trim().length === 0
   ) {
     return Response.json(
-      { status: 'error', message: 'Campaign name is incomplete.' },
+      {
+        status: 'error',
+        message: "We couldn't read the campaign name. Keep editing it, then try again.",
+      },
       { status: 400 },
     );
   }
@@ -118,13 +121,19 @@ export async function action({ request }: ActionFunctionArgs) {
       { name: name.trim() },
       buildServerApiOptions(request),
     );
-    assertApiOk(response, 'The campaign name did not update cleanly. Try again.');
+    assertApiOk(
+      response,
+      "We couldn't update the campaign name. Your text is still in the field; review it and try again.",
+    );
     return Response.json({ status: 'success' });
   } catch (caught) {
     return Response.json(
       {
         status: 'error',
-        message: getApiErrorMessage(caught, 'The campaign name did not update cleanly. Try again.'),
+        message: getApiErrorMessage(
+          caught,
+          "We couldn't update the campaign name. Your text is still in the field; review it and try again.",
+        ),
       },
       { status: 500 },
     );

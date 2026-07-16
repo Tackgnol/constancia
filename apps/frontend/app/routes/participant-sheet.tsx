@@ -29,7 +29,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     { id: campaignId, charId },
     buildServerApiOptions(request),
   );
-  assertApiOk(response, 'This character sheet could not be loaded.');
+  assertApiOk(
+    response,
+    "We couldn't load this character sheet. Return to Participants and reopen it.",
+  );
 
   return { sheet: readCharacterSheetData(response.data) };
 }
@@ -50,7 +53,10 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const payload = parseCharacterSheetPatchPayload(formData.get('payload'));
   if (!campaignId || !charId || !payload) {
     return Response.json(
-      { status: 'error', message: 'Character sheet update is incomplete.' },
+      {
+        status: 'error',
+        message: "We couldn't identify this character sheet. Return to Participants and reopen it.",
+      },
       { status: 400 },
     );
   }
@@ -61,13 +67,19 @@ export async function action({ request, params }: ActionFunctionArgs) {
       payload,
       buildServerApiOptions(request),
     );
-    assertApiOk(response, 'The sheet could not be saved. Try again.');
+    assertApiOk(
+      response,
+      "We couldn't save this sheet. Your changes are still in the form; review the highlighted fields and try again.",
+    );
     return Response.json({ status: 'success', data: readCharacterSheetData(response.data) });
   } catch (caught) {
     return Response.json(
       {
         status: 'error',
-        message: getApiErrorMessage(caught, 'The sheet could not be saved. Try again.'),
+        message: getApiErrorMessage(
+          caught,
+          "We couldn't save this sheet. Your changes are still in the form; review the highlighted fields and try again.",
+        ),
       },
       { status: 500 },
     );
@@ -91,7 +103,9 @@ export default function ParticipantSheetRoute() {
 
     if (response.status !== 'success' || !response.data) {
       throw new Error(
-        response.status === 'error' ? response.message : 'The sheet could not be saved. Try again.',
+        response.status === 'error'
+          ? response.message
+          : "We couldn't save this sheet. Your changes are still in the form; review the highlighted fields and try again.",
       );
     }
 
@@ -112,7 +126,7 @@ export default function ParticipantSheetRoute() {
           </p>
         </div>
         <Button asChild variant="outline">
-          <Link to="/participants">Back To Roster</Link>
+          <Link to="/participants">Back to participants</Link>
         </Button>
       </section>
 

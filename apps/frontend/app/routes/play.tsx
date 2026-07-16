@@ -119,7 +119,10 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (typeof campaignId !== 'string' || campaignId.length === 0) {
     return Response.json(
-      { status: 'error', message: 'Campaign context is missing.' },
+      {
+        status: 'error',
+        message: "We couldn't identify this campaign. Reload Play before firing another event.",
+      },
       { status: 400 },
     );
   }
@@ -136,7 +139,10 @@ export async function action({ request }: ActionFunctionArgs) {
         idempotencyKey.length === 0
       ) {
         return Response.json(
-          { status: 'error', message: 'Event execution context is incomplete.' },
+          {
+            status: 'error',
+            message: "We couldn't identify this event. Refresh Play, then arm it again.",
+          },
           { status: 400 },
         );
       }
@@ -151,11 +157,18 @@ export async function action({ request }: ActionFunctionArgs) {
           },
         },
       );
-      assertApiOk(response, 'The live trigger did not fire cleanly. Try again.');
+      assertApiOk(
+        response,
+        "We couldn't confirm this trigger. Check Discord for the result before firing it again.",
+      );
       const receipt = toFireReceiptView(response.data);
       if (receipt === null) {
         return Response.json(
-          { status: 'error', message: 'The backend returned an invalid execution receipt.' },
+          {
+            status: 'error',
+            message:
+              "We couldn't confirm the trigger receipt. Check Discord for the result before firing it again.",
+          },
           { status: 502 },
         );
       }
@@ -180,7 +193,11 @@ export async function action({ request }: ActionFunctionArgs) {
         idempotencyKey.length === 0
       ) {
         return Response.json(
-          { status: 'error', message: 'Whisper payload is incomplete.' },
+          {
+            status: 'error',
+            message:
+              "We couldn't read this whisper. Keep the panel open, review the recipient and message, then try again.",
+          },
           { status: 400 },
         );
       }
@@ -201,7 +218,10 @@ export async function action({ request }: ActionFunctionArgs) {
           },
         },
       );
-      assertApiOk(response, 'The whisper did not leave the board. Try again.');
+      assertApiOk(
+        response,
+        "We couldn't send this whisper. Your message is still in the panel; review it and try again.",
+      );
 
       return Response.json({ status: 'success' });
     }
@@ -211,7 +231,12 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json(
       {
         status: 'error',
-        message: getApiErrorMessage(caught, 'The live play action failed. Try again.'),
+        message: getApiErrorMessage(
+          caught,
+          intent === 'send-player-message'
+            ? "We couldn't send this whisper. Your message is still in the panel; review it and try again."
+            : "We couldn't confirm this trigger. Check Discord for the result before firing it again.",
+        ),
       },
       { status: 500 },
     );
@@ -715,7 +740,6 @@ export default function PlayRoute() {
 
       {visibleItems.length === 0 ? (
         <section className="detail-card board-empty-state">
-          <p className="eyebrow">Scene filter</p>
           <h2>No staged beats for this thread.</h2>
           <p>
             This scene does not have a ready trigger yet. Clear the filter or stage a fresh beat in

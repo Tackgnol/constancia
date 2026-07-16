@@ -48,6 +48,14 @@ import type { WarRoomContext } from '@/lib/war-room-data';
 
 const QUEST_STATUSES = ['active', 'completed', 'failed'] as const;
 const ENTRY_STATUSES = ['pending', 'done'] as const;
+const questSaveError =
+  "We couldn't save this quest. Your draft is still in the form; review the highlighted fields and try again.";
+const questStepSaveError =
+  "We couldn't save this quest step. Your text is still in the form; review it and try again.";
+const questDeleteError =
+  "We couldn't delete this quest. It is still on the Quests board; reopen it and try again.";
+const questStepDeleteError =
+  "We couldn't delete this quest step. It is still in the quest; reopen the step and try again.";
 
 type QuestStatus = (typeof QUEST_STATUSES)[number];
 type QuestEntryStatus = (typeof ENTRY_STATUSES)[number];
@@ -132,7 +140,10 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (typeof campaignId !== 'string' || campaignId.length === 0) {
     return Response.json(
-      { status: 'error', message: 'Campaign context is missing.' },
+      {
+        status: 'error',
+        message: "We couldn't identify this campaign. Return to Setup and reopen the quest.",
+      },
       { status: 400 },
     );
   }
@@ -142,7 +153,10 @@ export async function action({ request }: ActionFunctionArgs) {
       const payload = parseQuestPayload<CreateQuestBody | UpdateQuestBody>(formData.get('payload'));
       if (!payload) {
         return Response.json(
-          { status: 'error', message: 'Quest payload is missing.' },
+          {
+            status: 'error',
+            message: "We couldn't read this quest draft. Review the highlighted fields and retry.",
+          },
           { status: 400 },
         );
       }
@@ -153,14 +167,14 @@ export async function action({ request }: ActionFunctionArgs) {
           payload as UpdateQuestBody,
           apiOptions,
         );
-        assertApiOk(response, 'The quest update did not clear. Try again.');
+        assertApiOk(response, questSaveError);
       } else {
         const response = await createQuest(
           { id: campaignId },
           payload as CreateQuestBody,
           apiOptions,
         );
-        assertApiOk(response, 'The quest did not bind cleanly. Try again.');
+        assertApiOk(response, questSaveError);
       }
 
       return Response.json({ status: 'success' });
@@ -170,13 +184,16 @@ export async function action({ request }: ActionFunctionArgs) {
       const payload = parseQuestPayload<CreateQuestEntryBody>(formData.get('payload'));
       if (typeof questId !== 'string' || questId.length === 0 || !payload) {
         return Response.json(
-          { status: 'error', message: 'Quest step payload is incomplete.' },
+          {
+            status: 'error',
+            message: "We couldn't read this quest step. Reopen the quest and enter the step again.",
+          },
           { status: 400 },
         );
       }
 
       const response = await createQuestEntry({ id: campaignId, questId }, payload, apiOptions);
-      assertApiOk(response, 'The quest step did not file cleanly. Try again.');
+      assertApiOk(response, questStepSaveError);
       return Response.json({ status: 'success' });
     }
 
@@ -190,7 +207,10 @@ export async function action({ request }: ActionFunctionArgs) {
         !payload
       ) {
         return Response.json(
-          { status: 'error', message: 'Quest step update is incomplete.' },
+          {
+            status: 'error',
+            message: "We couldn't identify this quest step. Reopen it from the quest and retry.",
+          },
           { status: 400 },
         );
       }
@@ -200,7 +220,7 @@ export async function action({ request }: ActionFunctionArgs) {
         payload,
         apiOptions,
       );
-      assertApiOk(response, 'The quest step update did not clear. Try again.');
+      assertApiOk(response, questStepSaveError);
       return Response.json({ status: 'success' });
     }
 
@@ -212,23 +232,32 @@ export async function action({ request }: ActionFunctionArgs) {
         entryId.length === 0
       ) {
         return Response.json(
-          { status: 'error', message: 'Quest step delete is incomplete.' },
+          {
+            status: 'error',
+            message: "We couldn't identify this quest step. Reopen it from the quest and retry.",
+          },
           { status: 400 },
         );
       }
 
       const response = await deleteQuestEntry({ id: campaignId, questId, entryId }, apiOptions);
-      assertApiOk(response, 'The quest step did not delete cleanly. Try again.');
+      assertApiOk(response, questStepDeleteError);
       return Response.json({ status: 'success' });
     }
 
     if (intent === 'delete-quest') {
       if (typeof questId !== 'string' || questId.length === 0) {
-        return Response.json({ status: 'error', message: 'Quest id is missing.' }, { status: 400 });
+        return Response.json(
+          {
+            status: 'error',
+            message: "We couldn't identify this quest. Return to Quests and open it again.",
+          },
+          { status: 400 },
+        );
       }
 
       const response = await deleteQuest({ id: campaignId, questId }, apiOptions);
-      assertApiOk(response, 'The quest did not delete cleanly. Try again.');
+      assertApiOk(response, questDeleteError);
       return Response.json({ status: 'success' });
     }
 
@@ -239,16 +268,12 @@ export async function action({ request }: ActionFunctionArgs) {
   } catch (caught) {
     const fallbackMessage =
       intent === 'delete-quest'
-        ? 'The quest did not delete cleanly. Try again.'
-        : intent === 'create-quest-entry'
-          ? 'The quest step did not file cleanly. Try again.'
-          : intent === 'update-quest-entry'
-            ? 'The quest step update did not clear. Try again.'
-            : intent === 'delete-quest-entry'
-              ? 'The quest step did not delete cleanly. Try again.'
-              : typeof questId === 'string' && questId.length > 0
-                ? 'The quest update did not clear. Try again.'
-                : 'The quest did not bind cleanly. Try again.';
+        ? questDeleteError
+        : intent === 'delete-quest-entry'
+          ? questStepDeleteError
+          : intent === 'create-quest-entry' || intent === 'update-quest-entry'
+            ? questStepSaveError
+            : questSaveError;
 
     return Response.json(
       { status: 'error', message: getApiErrorMessage(caught, fallbackMessage) },
@@ -355,12 +380,7 @@ export default function SetupQuestRoute() {
       warRoom.recordActivity?.(message);
     } catch (caught) {
       console.error('Save quest error:', caught);
-      const message = getApiErrorMessage(
-        caught,
-        isEditing
-          ? 'The quest update did not clear. Try again.'
-          : 'The quest did not bind cleanly. Try again.',
-      );
+      const message = getApiErrorMessage(caught, questSaveError);
       setNotice(null);
       setError(message);
       setFormError('root.serverError', { type: 'manual', message });
@@ -417,7 +437,7 @@ export default function SetupQuestRoute() {
     } catch (caught) {
       console.error('Create quest entry error:', caught);
       setNotice(null);
-      setError(getApiErrorMessage(caught, 'The quest step did not file cleanly. Try again.'));
+      setError(getApiErrorMessage(caught, questStepSaveError));
       throw caught;
     }
   };
@@ -473,7 +493,7 @@ export default function SetupQuestRoute() {
     } catch (caught) {
       console.error('Update quest entry error:', caught);
       setNotice(null);
-      setError(getApiErrorMessage(caught, 'The quest step update did not clear. Try again.'));
+      setError(getApiErrorMessage(caught, questStepSaveError));
       throw caught;
     }
   };
@@ -519,7 +539,7 @@ export default function SetupQuestRoute() {
     } catch (caught) {
       console.error('Delete quest entry error:', caught);
       setNotice(null);
-      setError(getApiErrorMessage(caught, 'The quest step did not delete cleanly. Try again.'));
+      setError(getApiErrorMessage(caught, questStepDeleteError));
     }
   };
 
@@ -554,7 +574,7 @@ export default function SetupQuestRoute() {
     } catch (caught) {
       console.error('Delete quest error:', caught);
       setNotice(null);
-      setError(getApiErrorMessage(caught, 'The quest did not delete cleanly. Try again.'));
+      setError(getApiErrorMessage(caught, questDeleteError));
     }
   };
 
@@ -808,7 +828,7 @@ function QuestEntryCreateForm({
     } catch {
       setError('root.serverError', {
         type: 'manual',
-        message: 'The quest step did not file cleanly. Try again.',
+        message: questStepSaveError,
       });
     }
   });
@@ -939,7 +959,7 @@ function QuestEntryEditForm({
     } catch {
       setError('root.serverError', {
         type: 'manual',
-        message: 'The quest step update did not clear. Try again.',
+        message: questStepSaveError,
       });
     }
   });

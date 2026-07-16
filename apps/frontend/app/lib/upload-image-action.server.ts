@@ -28,7 +28,10 @@ export async function handleUploadImageAction(
       },
       buildServerApiOptions(request),
     );
-    assertApiOk(response, 'The image upload did not complete. Try again.');
+    assertApiOk(
+      response,
+      "We couldn't upload this image. Check the file and your connection, then try again.",
+    );
     return Response.json({
       status: 'success',
       data: response.data satisfies UploadImage201Data,
@@ -37,7 +40,10 @@ export async function handleUploadImageAction(
     return Response.json(
       {
         status: 'error',
-        message: getApiErrorMessage(caught, 'The image upload did not complete. Try again.'),
+        message: getApiErrorMessage(
+          caught,
+          "We couldn't upload this image. Check the file and your connection, then try again.",
+        ),
       },
       { status: 500 },
     );
