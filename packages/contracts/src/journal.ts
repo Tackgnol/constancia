@@ -1,3 +1,5 @@
+import type { GameDate } from './game-date.js';
+
 export type QuestStatus = 'active' | 'completed' | 'failed';
 export type QuestEntryStatus = 'pending' | 'done';
 
@@ -28,6 +30,7 @@ export interface SessionSummary {
   content: string;
   campaignId: string;
   sessionDate: Date;
+  gameDate: GameDate | null;
   visible: boolean;
   channelId?: string;
   createdAt: Date;

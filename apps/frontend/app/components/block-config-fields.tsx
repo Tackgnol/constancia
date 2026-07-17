@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useFieldArray, useFormContext } from 'react-hook-form';
+import { Controller, useFieldArray, useFormContext } from 'react-hook-form';
 import { useLocation, useOutletContext } from 'react-router';
 import { VTM_ATTRIBUTES, VTM_SKILLS, type VtmStatOption } from '@constancia/systems';
 import { ImageUploadField } from '@/components/forms/image-upload-field';
@@ -8,6 +8,7 @@ import { RecipientMultiValueField } from './recipient-multi-value-field.js';
 import { Label } from './ui/label.js';
 import { Textarea } from './ui/textarea.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select.js';
+import { Checkbox } from './ui/checkbox.js';
 import {
   Command,
   CommandEmpty,
@@ -176,6 +177,50 @@ export function BlockConfigFields({ index, blockType }: Props) {
     );
   }
 
+  if (blockType === 'add-journal-entry') {
+    return (
+      <div className="grid gap-3">
+        <ConfigField label="Title" error={blockErrors.title?.message}>
+          <Input
+            type="text"
+            placeholder="What players will recognize in their journal…"
+            {...register(`pipeline.${index}.config.title` as const)}
+          />
+        </ConfigField>
+        <ConfigField label="Entry" error={blockErrors.content?.message}>
+          <Textarea
+            rows={3}
+            placeholder="The event detail worth preserving…"
+            {...register(`pipeline.${index}.config.content` as const)}
+          />
+        </ConfigField>
+        <JournalVisibilityField index={index} idPrefix="journal-entry" />
+      </div>
+    );
+  }
+
+  if (blockType === 'add-quest') {
+    return (
+      <div className="grid gap-3">
+        <ConfigField label="Quest name" error={blockErrors.name?.message}>
+          <Input
+            type="text"
+            placeholder="The objective added when this event fires…"
+            {...register(`pipeline.${index}.config.name` as const)}
+          />
+        </ConfigField>
+        <ConfigField label="Description" optional error={blockErrors.description?.message}>
+          <Textarea
+            rows={3}
+            placeholder="What the players need to do and why it matters…"
+            {...register(`pipeline.${index}.config.description` as const)}
+          />
+        </ConfigField>
+        <JournalVisibilityField index={index} idPrefix="quest" />
+      </div>
+    );
+  }
+
   if (blockType === 'conditional-gate') {
     return (
       <div className="grid grid-cols-3 gap-3">
@@ -285,6 +330,28 @@ export function BlockConfigFields({ index, blockType }: Props) {
   }
 
   return null;
+}
+
+function JournalVisibilityField({ index, idPrefix }: { index: number; idPrefix: string }) {
+  const { control } = useFormContext<EventFormValues>();
+  const id = `${idPrefix}-visible-${index}`;
+
+  return (
+    <Controller
+      control={control}
+      name={`pipeline.${index}.config.visible`}
+      render={({ field }) => (
+        <label className="quest-toggle-row" htmlFor={id}>
+          <Checkbox
+            id={id}
+            checked={field.value === true}
+            onCheckedChange={(checked) => field.onChange(checked === true)}
+          />
+          <span>Reveal in player journals when this event fires</span>
+        </label>
+      )}
+    />
+  );
 }
 
 type ImageUrlPath = `pipeline.${number}.config.imageUrl`;

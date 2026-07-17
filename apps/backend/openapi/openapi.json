@@ -244,9 +244,102 @@
                           },
                           "version": {
                             "type": "string"
+                          },
+                          "defaultCalendarId": {
+                            "type": "string"
+                          },
+                          "calendars": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "months": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "shortName": {
+                                        "type": "string"
+                                      },
+                                      "days": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                      },
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": ["month", "intercalary"]
+                                      }
+                                    },
+                                    "required": ["name", "shortName", "days"]
+                                  }
+                                },
+                                "monthOrder": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "weekdays": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "leapYearRules": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "monthId": {
+                                        "type": "string"
+                                      },
+                                      "extraDays": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                      },
+                                      "interval": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                      },
+                                      "offset": {
+                                        "type": "integer"
+                                      },
+                                      "excludeIntervals": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "integer",
+                                          "minimum": 1
+                                        }
+                                      },
+                                      "includeIntervals": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "integer",
+                                          "minimum": 1
+                                        }
+                                      }
+                                    },
+                                    "required": ["monthId", "extraDays", "interval"]
+                                  }
+                                }
+                              },
+                              "required": ["id", "name", "months", "monthOrder"]
+                            }
                           }
                         },
-                        "required": ["id", "name", "version"]
+                        "required": ["id", "name", "version", "defaultCalendarId", "calendars"]
                       }
                     }
                   },
@@ -296,9 +389,102 @@
                         },
                         "version": {
                           "type": "string"
+                        },
+                        "defaultCalendarId": {
+                          "type": "string"
+                        },
+                        "calendars": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "months": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "shortName": {
+                                      "type": "string"
+                                    },
+                                    "days": {
+                                      "type": "integer",
+                                      "minimum": 1
+                                    },
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": ["month", "intercalary"]
+                                    }
+                                  },
+                                  "required": ["name", "shortName", "days"]
+                                }
+                              },
+                              "monthOrder": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "weekdays": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "leapYearRules": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "monthId": {
+                                      "type": "string"
+                                    },
+                                    "extraDays": {
+                                      "type": "integer",
+                                      "minimum": 1
+                                    },
+                                    "interval": {
+                                      "type": "integer",
+                                      "minimum": 1
+                                    },
+                                    "offset": {
+                                      "type": "integer"
+                                    },
+                                    "excludeIntervals": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                      }
+                                    },
+                                    "includeIntervals": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                      }
+                                    }
+                                  },
+                                  "required": ["monthId", "extraDays", "interval"]
+                                }
+                              }
+                            },
+                            "required": ["id", "name", "months", "monthOrder"]
+                          }
                         }
                       },
-                      "required": ["id", "name", "version"]
+                      "required": ["id", "name", "version", "defaultCalendarId", "calendars"]
                     }
                   },
                   "required": ["status", "data"]
@@ -714,9 +900,31 @@
                           },
                           "gameSystemId": {
                             "type": "string"
+                          },
+                          "gameDate": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "calendarId": {
+                                "type": "string"
+                              },
+                              "year": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "monthId": {
+                                "type": "string"
+                              },
+                              "day": {
+                                "type": "integer",
+                                "minimum": 1
+                              }
+                            },
+                            "required": ["calendarId", "year", "monthId", "day"],
+                            "nullable": true
                           }
                         },
-                        "required": ["id", "name", "discordGuildId", "gameSystemId"]
+                        "required": ["id", "name", "discordGuildId", "gameSystemId", "gameDate"]
                       }
                     }
                   },
@@ -780,9 +988,31 @@
                         },
                         "gameSystemId": {
                           "type": "string"
+                        },
+                        "gameDate": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "calendarId": {
+                              "type": "string"
+                            },
+                            "year": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "monthId": {
+                              "type": "string"
+                            },
+                            "day": {
+                              "type": "integer",
+                              "minimum": 1
+                            }
+                          },
+                          "required": ["calendarId", "year", "monthId", "day"],
+                          "nullable": true
                         }
                       },
-                      "required": ["id", "name", "discordGuildId", "gameSystemId"]
+                      "required": ["id", "name", "discordGuildId", "gameSystemId", "gameDate"]
                     }
                   },
                   "required": ["status", "data"]
@@ -834,9 +1064,31 @@
                         },
                         "gameSystemId": {
                           "type": "string"
+                        },
+                        "gameDate": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "calendarId": {
+                              "type": "string"
+                            },
+                            "year": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "monthId": {
+                              "type": "string"
+                            },
+                            "day": {
+                              "type": "integer",
+                              "minimum": 1
+                            }
+                          },
+                          "required": ["calendarId", "year", "monthId", "day"],
+                          "nullable": true
                         }
                       },
-                      "required": ["id", "name", "discordGuildId", "gameSystemId"]
+                      "required": ["id", "name", "discordGuildId", "gameSystemId", "gameDate"]
                     }
                   },
                   "required": ["status", "data"]
@@ -863,6 +1115,28 @@
                   },
                   "gameSystemId": {
                     "type": "string"
+                  },
+                  "gameDate": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "calendarId": {
+                        "type": "string"
+                      },
+                      "year": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "monthId": {
+                        "type": "string"
+                      },
+                      "day": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    },
+                    "required": ["calendarId", "year", "monthId", "day"],
+                    "nullable": true
                   }
                 }
               }
@@ -905,9 +1179,31 @@
                         },
                         "gameSystemId": {
                           "type": "string"
+                        },
+                        "gameDate": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "calendarId": {
+                              "type": "string"
+                            },
+                            "year": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "monthId": {
+                              "type": "string"
+                            },
+                            "day": {
+                              "type": "integer",
+                              "minimum": 1
+                            }
+                          },
+                          "required": ["calendarId", "year", "monthId", "day"],
+                          "nullable": true
                         }
                       },
-                      "required": ["id", "name", "discordGuildId", "gameSystemId"]
+                      "required": ["id", "name", "discordGuildId", "gameSystemId", "gameDate"]
                     }
                   },
                   "required": ["status", "data"]
@@ -2930,6 +3226,60 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
+                                      "enum": ["add-journal-entry"]
+                                    },
+                                    "config": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "title": {
+                                          "type": "string"
+                                        },
+                                        "content": {
+                                          "type": "string"
+                                        },
+                                        "visible": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": ["title", "content"]
+                                    }
+                                  },
+                                  "required": ["blockType", "config"]
+                                },
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "blockType": {
+                                      "type": "string",
+                                      "enum": ["add-quest"]
+                                    },
+                                    "config": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "description": {
+                                          "type": "string"
+                                        },
+                                        "visible": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": ["name"]
+                                    }
+                                  },
+                                  "required": ["blockType", "config"]
+                                },
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "blockType": {
+                                      "type": "string",
                                       "enum": ["conditional-gate"]
                                     },
                                     "config": {
@@ -3226,6 +3576,60 @@
                                 }
                               },
                               "required": ["imageUrl"]
+                            }
+                          },
+                          "required": ["blockType", "config"]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "blockType": {
+                              "type": "string",
+                              "enum": ["add-journal-entry"]
+                            },
+                            "config": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "type": "string"
+                                },
+                                "content": {
+                                  "type": "string"
+                                },
+                                "visible": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": ["title", "content"]
+                            }
+                          },
+                          "required": ["blockType", "config"]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "blockType": {
+                              "type": "string",
+                              "enum": ["add-quest"]
+                            },
+                            "config": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "visible": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": ["name"]
                             }
                           },
                           "required": ["blockType", "config"]
@@ -3540,6 +3944,60 @@
                                       }
                                     },
                                     "required": ["imageUrl"]
+                                  }
+                                },
+                                "required": ["blockType", "config"]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "blockType": {
+                                    "type": "string",
+                                    "enum": ["add-journal-entry"]
+                                  },
+                                  "config": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "content": {
+                                        "type": "string"
+                                      },
+                                      "visible": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": ["title", "content"]
+                                  }
+                                },
+                                "required": ["blockType", "config"]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "blockType": {
+                                    "type": "string",
+                                    "enum": ["add-quest"]
+                                  },
+                                  "config": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "description": {
+                                        "type": "string"
+                                      },
+                                      "visible": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": ["name"]
                                   }
                                 },
                                 "required": ["blockType", "config"]
@@ -3892,6 +4350,60 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
+                                    "enum": ["add-journal-entry"]
+                                  },
+                                  "config": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "content": {
+                                        "type": "string"
+                                      },
+                                      "visible": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": ["title", "content"]
+                                  }
+                                },
+                                "required": ["blockType", "config"]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "blockType": {
+                                    "type": "string",
+                                    "enum": ["add-quest"]
+                                  },
+                                  "config": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "description": {
+                                        "type": "string"
+                                      },
+                                      "visible": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": ["name"]
+                                  }
+                                },
+                                "required": ["blockType", "config"]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "blockType": {
+                                    "type": "string",
                                     "enum": ["conditional-gate"]
                                   },
                                   "config": {
@@ -4191,6 +4703,60 @@
                                 }
                               },
                               "required": ["imageUrl"]
+                            }
+                          },
+                          "required": ["blockType", "config"]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "blockType": {
+                              "type": "string",
+                              "enum": ["add-journal-entry"]
+                            },
+                            "config": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "type": "string"
+                                },
+                                "content": {
+                                  "type": "string"
+                                },
+                                "visible": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": ["title", "content"]
+                            }
+                          },
+                          "required": ["blockType", "config"]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "blockType": {
+                              "type": "string",
+                              "enum": ["add-quest"]
+                            },
+                            "config": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "visible": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": ["name"]
                             }
                           },
                           "required": ["blockType", "config"]
@@ -4512,6 +5078,60 @@
                                       }
                                     },
                                     "required": ["imageUrl"]
+                                  }
+                                },
+                                "required": ["blockType", "config"]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "blockType": {
+                                    "type": "string",
+                                    "enum": ["add-journal-entry"]
+                                  },
+                                  "config": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "content": {
+                                        "type": "string"
+                                      },
+                                      "visible": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": ["title", "content"]
+                                  }
+                                },
+                                "required": ["blockType", "config"]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "blockType": {
+                                    "type": "string",
+                                    "enum": ["add-quest"]
+                                  },
+                                  "config": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "description": {
+                                        "type": "string"
+                                      },
+                                      "visible": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": ["name"]
                                   }
                                 },
                                 "required": ["blockType", "config"]
@@ -5908,6 +6528,28 @@
                             "type": "string",
                             "format": "date-time"
                           },
+                          "gameDate": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "calendarId": {
+                                "type": "string"
+                              },
+                              "year": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "monthId": {
+                                "type": "string"
+                              },
+                              "day": {
+                                "type": "integer",
+                                "minimum": 1
+                              }
+                            },
+                            "required": ["calendarId", "year", "monthId", "day"],
+                            "nullable": true
+                          },
                           "visible": {
                             "type": "boolean"
                           },
@@ -5921,6 +6563,7 @@
                           "content",
                           "campaignId",
                           "sessionDate",
+                          "gameDate",
                           "visible"
                         ]
                       }
@@ -5954,6 +6597,28 @@
                   "sessionDate": {
                     "type": "string",
                     "format": "date-time"
+                  },
+                  "gameDate": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "calendarId": {
+                        "type": "string"
+                      },
+                      "year": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "monthId": {
+                        "type": "string"
+                      },
+                      "day": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    },
+                    "required": ["calendarId", "year", "monthId", "day"],
+                    "nullable": true
                   },
                   "visible": {
                     "type": "boolean"
@@ -6008,6 +6673,28 @@
                           "type": "string",
                           "format": "date-time"
                         },
+                        "gameDate": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "calendarId": {
+                              "type": "string"
+                            },
+                            "year": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "monthId": {
+                              "type": "string"
+                            },
+                            "day": {
+                              "type": "integer",
+                              "minimum": 1
+                            }
+                          },
+                          "required": ["calendarId", "year", "monthId", "day"],
+                          "nullable": true
+                        },
                         "visible": {
                           "type": "boolean"
                         },
@@ -6015,7 +6702,15 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "title", "content", "campaignId", "sessionDate", "visible"]
+                      "required": [
+                        "id",
+                        "title",
+                        "content",
+                        "campaignId",
+                        "sessionDate",
+                        "gameDate",
+                        "visible"
+                      ]
                     }
                   },
                   "required": ["status", "data"]
@@ -6049,14 +6744,35 @@
                     "type": "string",
                     "format": "date-time"
                   },
+                  "gameDate": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "calendarId": {
+                        "type": "string"
+                      },
+                      "year": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "monthId": {
+                        "type": "string"
+                      },
+                      "day": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    },
+                    "required": ["calendarId", "year", "monthId", "day"],
+                    "nullable": true
+                  },
                   "visible": {
                     "type": "boolean"
                   },
                   "channelId": {
                     "type": "string"
                   }
-                },
-                "required": ["title", "content", "sessionDate"]
+                }
               }
             }
           }
@@ -6110,6 +6826,28 @@
                           "type": "string",
                           "format": "date-time"
                         },
+                        "gameDate": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "calendarId": {
+                              "type": "string"
+                            },
+                            "year": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "monthId": {
+                              "type": "string"
+                            },
+                            "day": {
+                              "type": "integer",
+                              "minimum": 1
+                            }
+                          },
+                          "required": ["calendarId", "year", "monthId", "day"],
+                          "nullable": true
+                        },
                         "visible": {
                           "type": "boolean"
                         },
@@ -6117,7 +6855,15 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "title", "content", "campaignId", "sessionDate", "visible"]
+                      "required": [
+                        "id",
+                        "title",
+                        "content",
+                        "campaignId",
+                        "sessionDate",
+                        "gameDate",
+                        "visible"
+                      ]
                     }
                   },
                   "required": ["status", "data"]
@@ -6252,6 +6998,28 @@
                                 "type": "string",
                                 "format": "date-time"
                               },
+                              "gameDate": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "calendarId": {
+                                    "type": "string"
+                                  },
+                                  "year": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  },
+                                  "monthId": {
+                                    "type": "string"
+                                  },
+                                  "day": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  }
+                                },
+                                "required": ["calendarId", "year", "monthId", "day"],
+                                "nullable": true
+                              },
                               "visible": {
                                 "type": "boolean"
                               },
@@ -6265,6 +7033,7 @@
                               "content",
                               "campaignId",
                               "sessionDate",
+                              "gameDate",
                               "visible"
                             ]
                           }
@@ -6466,6 +7235,28 @@
                                 "type": "string",
                                 "format": "date-time"
                               },
+                              "gameDate": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "calendarId": {
+                                    "type": "string"
+                                  },
+                                  "year": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  },
+                                  "monthId": {
+                                    "type": "string"
+                                  },
+                                  "day": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  }
+                                },
+                                "required": ["calendarId", "year", "monthId", "day"],
+                                "nullable": true
+                              },
                               "visible": {
                                 "type": "boolean"
                               },
@@ -6479,6 +7270,7 @@
                               "content",
                               "campaignId",
                               "sessionDate",
+                              "gameDate",
                               "visible"
                             ]
                           }
@@ -7488,9 +8280,31 @@
                         },
                         "gameSystemId": {
                           "type": "string"
+                        },
+                        "gameDate": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "calendarId": {
+                              "type": "string"
+                            },
+                            "year": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "monthId": {
+                              "type": "string"
+                            },
+                            "day": {
+                              "type": "integer",
+                              "minimum": 1
+                            }
+                          },
+                          "required": ["calendarId", "year", "monthId", "day"],
+                          "nullable": true
                         }
                       },
-                      "required": ["id", "name", "discordGuildId", "gameSystemId"]
+                      "required": ["id", "name", "discordGuildId", "gameSystemId", "gameDate"]
                     }
                   },
                   "required": ["status", "data"]
@@ -7712,6 +8526,28 @@
                                 "type": "string",
                                 "format": "date-time"
                               },
+                              "gameDate": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "calendarId": {
+                                    "type": "string"
+                                  },
+                                  "year": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  },
+                                  "monthId": {
+                                    "type": "string"
+                                  },
+                                  "day": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  }
+                                },
+                                "required": ["calendarId", "year", "monthId", "day"],
+                                "nullable": true
+                              },
                               "visible": {
                                 "type": "boolean"
                               },
@@ -7725,6 +8561,7 @@
                               "content",
                               "campaignId",
                               "sessionDate",
+                              "gameDate",
                               "visible"
                             ]
                           }
@@ -7982,6 +8819,60 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
+                                      "enum": ["add-journal-entry"]
+                                    },
+                                    "config": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "title": {
+                                          "type": "string"
+                                        },
+                                        "content": {
+                                          "type": "string"
+                                        },
+                                        "visible": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": ["title", "content"]
+                                    }
+                                  },
+                                  "required": ["blockType", "config"]
+                                },
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "blockType": {
+                                      "type": "string",
+                                      "enum": ["add-quest"]
+                                    },
+                                    "config": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "description": {
+                                          "type": "string"
+                                        },
+                                        "visible": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": ["name"]
+                                    }
+                                  },
+                                  "required": ["blockType", "config"]
+                                },
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "blockType": {
+                                      "type": "string",
                                       "enum": ["conditional-gate"]
                                     },
                                     "config": {
@@ -8221,9 +9112,31 @@
                             },
                             "gameSystemId": {
                               "type": "string"
+                            },
+                            "gameDate": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "calendarId": {
+                                  "type": "string"
+                                },
+                                "year": {
+                                  "type": "integer",
+                                  "minimum": 1
+                                },
+                                "monthId": {
+                                  "type": "string"
+                                },
+                                "day": {
+                                  "type": "integer",
+                                  "minimum": 1
+                                }
+                              },
+                              "required": ["calendarId", "year", "monthId", "day"],
+                              "nullable": true
                             }
                           },
-                          "required": ["id", "name", "discordGuildId", "gameSystemId"]
+                          "required": ["id", "name", "discordGuildId", "gameSystemId", "gameDate"]
                         },
                         "channel": {
                           "type": "object",

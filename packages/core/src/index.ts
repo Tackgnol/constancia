@@ -9,3 +9,5 @@ export { messageChannelBlock } from './blocks/message-channel.js';
 export { messageGroupBlock } from './blocks/message-group.js';
 export { displayImageBlock } from './blocks/display-image.js';
 export { retrieveDataBlock } from './blocks/retrieve-data.js';
+export { addJournalEntryBlock } from './blocks/add-journal-entry.js';
+export { addQuestBlock } from './blocks/add-quest.js';

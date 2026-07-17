@@ -1,17 +1,25 @@
-import type { StatField, StatSchema } from '@constancia/contracts';
+import type { GameCalendarDefinition, StatField, StatSchema } from '@constancia/contracts';
 import { gameSystemRegistry } from './game-system-registry.js';
 
 export interface GameSystemSummary {
   id: string;
   name: string;
   version: string;
+  defaultCalendarId: string;
+  calendars: Record<string, GameCalendarDefinition>;
 }
 
 type SystemStatValue = number | string | boolean;
 
 export const GAME_SYSTEM_SUMMARIES: readonly GameSystemSummary[] = gameSystemRegistry
   .list()
-  .map(({ id, name, version }) => ({ id, name, version }));
+  .map(({ id, name, version, defaultCalendarId, calendars }) => ({
+    id,
+    name,
+    version,
+    defaultCalendarId,
+    calendars,
+  }));
 
 export function resolveGameSystemId(systemId: string): string {
   return gameSystemRegistry.resolveId(systemId) ?? systemId;

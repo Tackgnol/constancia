@@ -9,6 +9,38 @@ import {
   CAMPAIGN_RENAME_ERROR,
   QUICK_NARRATION_ERROR,
 } from '../../apps/frontend/app/lib/war-room-feedback.js';
+import type { GameDate } from '../../packages/contracts/src/game-date.js';
+import {
+  GREGORIAN_CALENDAR,
+  formatGameDate,
+  validateGameDate,
+} from '../../packages/systems/src/calendar.js';
+
+function parseGregorianDate(label: string): GameDate {
+  const match = /^(\d+) (.+) (\d+)$/.exec(label);
+  if (!match) {
+    throw new Error(`Invalid game date label: ${label}`);
+  }
+
+  const monthId = Object.entries(GREGORIAN_CALENDAR.months).find(
+    ([, month]) => month.name.toLowerCase() === match[2]?.toLowerCase(),
+  )?.[0];
+  if (!monthId) {
+    throw new Error(`Unknown Gregorian month in: ${label}`);
+  }
+
+  const date: GameDate = {
+    calendarId: GREGORIAN_CALENDAR.id,
+    day: Number(match[1]),
+    monthId,
+    year: Number(match[3]),
+  };
+  const validation = validateGameDate(GREGORIAN_CALENDAR, date);
+  if (!validation.valid) {
+    throw new Error(validation.message);
+  }
+  return date;
+}
 
 class WarRoomParityWorld {
   readonly bot = new InMemoryBotDeliveryPort();
@@ -24,6 +56,9 @@ class WarRoomParityWorld {
   campaignUpdatesUnavailable = false;
   campaignNameDraft = '';
   renameError: string | null = null;
+  gameSystemId = '';
+  gameDate: GameDate | null = null;
+  readonly journalDates = new Map<string, GameDate>();
   private attempt: { idempotencyKey: string; message: string } | null = null;
   private attemptSequence = 0;
 
@@ -86,6 +121,24 @@ class WarRoomParityWorld {
     this.campaignName = this.campaignNameDraft;
     this.renameError = null;
   }
+
+  setGameDate(label: string): void {
+    this.gameDate = parseGregorianDate(label);
+  }
+
+  addJournalEntry(title: string): void {
+    if (this.gameDate === null) {
+      throw new Error('Set the campaign game date before adding this journal entry.');
+    }
+    this.journalDates.set(title, structuredClone(this.gameDate));
+  }
+
+  changeJournalDate(title: string, label: string): void {
+    if (!this.journalDates.has(title)) {
+      throw new Error(`Journal entry not found: ${title}`);
+    }
+    this.journalDates.set(title, parseGregorianDate(label));
+  }
 }
 
 export const test = base.extend<{ world: WarRoomParityWorld }>({
@@ -99,6 +152,59 @@ const { Given, When, Then } = createBdd(test, { worldFixture: 'world' });
 
 Given('a game master administers the campaign {string}', function (name: string) {
   this.campaignName = name;
+});
+
+Given('a game master administers the VTM V5 campaign {string}', function (name: string) {
+  this.campaignName = name;
+  this.gameSystemId = 'vtm-v5';
+});
+
+Given('the campaign game date has not been set', function () {
+  this.gameDate = null;
+});
+
+Given('the campaign game date is {string}', function (label: string) {
+  this.setGameDate(label);
+});
+
+Given('a journal entry {string} was tagged {string}', function (title: string, label: string) {
+  this.journalDates.set(title, parseGregorianDate(label));
+});
+
+When('the game master sets the game date to {string} from the top bar', function (label: string) {
+  this.setGameDate(label);
+});
+
+When(
+  'the event {string} adds the journal entry {string}',
+  function (_eventName: string, title: string) {
+    this.addJournalEntry(title);
+  },
+);
+
+When('the game master changes that journal entry date to {string}', function (label: string) {
+  const title = [...this.journalDates.keys()].at(-1);
+  if (!title) {
+    throw new Error('No journal entry is available to edit.');
+  }
+  this.changeJournalDate(title, label);
+});
+
+Then('the top bar shows the game date {string}', function (label: string) {
+  expect(this.gameSystemId).toBe('vtm-v5');
+  expect(this.gameDate).not.toBeNull();
+  expect(formatGameDate(this.gameDate!, GREGORIAN_CALENDAR)).toBe(label);
+});
+
+Then('the top bar still shows the game date {string}', function (label: string) {
+  expect(this.gameDate).not.toBeNull();
+  expect(formatGameDate(this.gameDate!, GREGORIAN_CALENDAR)).toBe(label);
+});
+
+Then('the journal entry {string} is tagged {string}', function (title: string, label: string) {
+  const date = this.journalDates.get(title);
+  expect(date).toBeDefined();
+  expect(formatGameDate(date!, GREGORIAN_CALENDAR)).toBe(label);
 });
 
 Given('the campaign is connected to the Discord channel {string}', function (channel: string) {

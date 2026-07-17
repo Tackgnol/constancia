@@ -1,10 +1,20 @@
-import { useMemo } from 'react';
-import { Link, useOutletContext } from 'react-router';
+import { useMemo, useState } from 'react';
+import type { ActionFunctionArgs } from 'react-router';
+import { Link, useLocation, useOutletContext, useRevalidator } from 'react-router';
+import { updateSessionSummary } from '@constancia/api-client/endpoints/journal/journal';
 import type {
   ListQuests200DataItem,
   ListQuests200DataItemEntriesItem,
+  ListSessionSummaries200DataItem,
 } from '@constancia/api-client/model';
+import type { GameDate } from '@constancia/contracts';
+import { parseGameDate } from '@constancia/systems';
+import { GameDateControl } from '@/components/war-room/game-date-control';
 import { ManagementWorkspace } from '@/components/layout/management-workspace';
+import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
+import { buildServerApiOptions } from '@/lib/api-proxy.server';
+import { postRouteAction } from '@/lib/route-action-client';
+import { GAME_DATE_UPDATE_ERROR } from '@/lib/war-room-feedback';
 import type { WarRoomContext } from '@/lib/war-room-data';
 
 const QUEST_STATUSES = ['active', 'completed', 'failed'] as const;
@@ -12,6 +22,55 @@ const ENTRY_STATUSES = ['pending', 'done'] as const;
 
 type QuestStatus = (typeof QUEST_STATUSES)[number];
 type QuestEntryStatus = (typeof ENTRY_STATUSES)[number];
+
+function parseSubmittedGameDate(value: FormDataEntryValue | null): GameDate | null {
+  if (typeof value !== 'string' || value.length === 0) {
+    return null;
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return parseGameDate(parsed);
+  } catch {
+    return null;
+  }
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const campaignId = formData.get('campaignId');
+  const summaryId = formData.get('summaryId');
+  const gameDate = parseSubmittedGameDate(formData.get('gameDate'));
+
+  if (
+    formData.get('intent') !== 'update-summary-game-date' ||
+    typeof campaignId !== 'string' ||
+    campaignId.length === 0 ||
+    typeof summaryId !== 'string' ||
+    summaryId.length === 0 ||
+    gameDate === null
+  ) {
+    return Response.json(
+      { status: 'error', message: 'Choose a complete journal date and try again.' },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const response = await updateSessionSummary(
+      { id: campaignId, sumId: summaryId },
+      { gameDate },
+      buildServerApiOptions(request),
+    );
+    assertApiOk(response, GAME_DATE_UPDATE_ERROR);
+    return Response.json({ status: 'success' });
+  } catch (caught) {
+    return Response.json(
+      { status: 'error', message: getApiErrorMessage(caught, GAME_DATE_UPDATE_ERROR) },
+      { status: 500 },
+    );
+  }
+}
 
 function getSetupBase(warRoom: WarRoomContext) {
   return warRoom.demoMode ? '/demo/setup' : '/setup';
@@ -35,8 +94,13 @@ function sortQuestEntries(
 
 export default function LogRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
+  const location = useLocation();
+  const revalidator = useRevalidator();
   const quests = warRoom.quests;
+  const summaries = warRoom.summaries;
   const setupBase = getSetupBase(warRoom);
+  const [savingSummaryId, setSavingSummaryId] = useState<string | null>(null);
+  const [summaryErrors, setSummaryErrors] = useState<Record<string, string>>({});
 
   const questStats = useMemo(() => {
     const visible = quests.filter((quest) => quest.visible).length;
@@ -46,19 +110,56 @@ export default function LogRoute() {
     return { visible, completed, steps };
   }, [quests]);
 
+  const saveSummaryGameDate = async (
+    summary: ListSessionSummaries200DataItem,
+    gameDate: GameDate,
+  ) => {
+    setSavingSummaryId(summary.id);
+    setSummaryErrors((current) => {
+      const next = { ...current };
+      delete next[summary.id];
+      return next;
+    });
+
+    try {
+      if (warRoom.demoMode) {
+        warRoom.updateSummaryGameDate?.(summary.id, gameDate);
+        return;
+      }
+
+      const response = await postRouteAction(location.pathname, {
+        intent: 'update-summary-game-date',
+        campaignId: warRoom.campaign.id,
+        summaryId: summary.id,
+        gameDate: JSON.stringify(gameDate),
+      });
+      if (response.status !== 'success') {
+        throw new Error(response.message);
+      }
+      revalidator.revalidate();
+    } catch (caught) {
+      setSummaryErrors((current) => ({
+        ...current,
+        [summary.id]: getApiErrorMessage(caught, GAME_DATE_UPDATE_ERROR),
+      }));
+    } finally {
+      setSavingSummaryId(null);
+    }
+  };
+
   return (
     <ManagementWorkspace
-      eyebrow="Quests"
-      title="Quest control"
-      description="Read the campaign ledger at speed. Creation and edits now live in Setup."
+      eyebrow="Campaign log"
+      title="Journal and quest control"
+      description="Read the campaign record at speed. Journal dates stay editable when the table needs a correction."
       meta={
         <div className="log-hero-meta">
-          <p className="detail-label">Quest scope</p>
+          <p className="detail-label">Campaign record</p>
           <strong>
-            {quests.length} quest{quests.length === 1 ? '' : 's'}
+            {summaries.length} journal entr{summaries.length === 1 ? 'y' : 'ies'}
           </strong>
           <span>
-            {questStats.visible} visible · {questStats.completed} closed · {questStats.steps} steps
+            {quests.length} quests · {questStats.completed} closed · {questStats.steps} steps
           </span>
         </div>
       }
@@ -71,6 +172,64 @@ export default function LogRoute() {
           Open setup
         </Link>
       </div>
+
+      <section className="journal-record" aria-label="Journal entries">
+        <div className="setup-subsection-header">
+          <div>
+            <p className="detail-label">Journal record</p>
+            <p className="form-hint">
+              Entries keep the game date from the moment they were created. Correcting one does not
+              move the campaign clock.
+            </p>
+          </div>
+          <span className="quest-count">{summaries.length} entries</span>
+        </div>
+
+        {summaries.length > 0 ? (
+          <div className="journal-entry-list">
+            {summaries.map((summary) => {
+              const gameDate = parseGameDate(summary.gameDate);
+              const calendarId = gameDate?.calendarId ?? warRoom.system.defaultCalendarId;
+              const calendar = warRoom.system.calendars[calendarId];
+
+              return (
+                <article className="journal-entry-row" key={summary.id}>
+                  <div className="journal-entry-copy">
+                    <p className="detail-label">
+                      Journal entry · {summary.visible ? 'player visible' : 'gm hidden'}
+                    </p>
+                    <h2>{summary.title}</h2>
+                    <p>{summary.content}</p>
+                  </div>
+                  {calendar ? (
+                    <GameDateControl
+                      busy={savingSummaryId === summary.id}
+                      calendar={calendar}
+                      error={summaryErrors[summary.id] ?? null}
+                      onDraftChange={() =>
+                        setSummaryErrors((current) => {
+                          const next = { ...current };
+                          delete next[summary.id];
+                          return next;
+                        })
+                      }
+                      onSave={(date) => void saveSummaryGameDate(summary, date)}
+                      value={gameDate}
+                    />
+                  ) : (
+                    <span className="form-error">Calendar definition unavailable.</span>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="detail-card board-empty-state">
+            <h2>No journal entries have been recorded yet.</h2>
+            <p>Fire an event with an Add Journal Entry block to begin the campaign record.</p>
+          </div>
+        )}
+      </section>
 
       {quests.length > 0 ? (
         <section className="quest-board" aria-label="Quest board">

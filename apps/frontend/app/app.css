@@ -256,6 +256,181 @@ h3 {
   outline: 1px dashed var(--outline-variant);
 }
 
+.game-date-trigger {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 7.5rem;
+  padding: 0.24rem 0.6rem;
+  background: transparent;
+  color: var(--text-primary);
+  border: 0;
+  border-inline: 1px solid var(--outline-variant);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  text-transform: uppercase;
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.game-date-trigger:hover,
+.game-date-trigger:focus-visible {
+  background: var(--surface-high);
+  outline: 0;
+}
+
+.game-date-trigger:active {
+  transform: translateY(1px);
+}
+
+.game-date-trigger span,
+.game-date-field label {
+  color: var(--muted);
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+}
+
+.game-date-trigger strong {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.game-date-trigger.is-unset strong {
+  color: var(--primary-glow);
+}
+
+.game-date-form {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, 1fr) 3.6rem 4.8rem auto;
+  align-items: end;
+  gap: 0.35rem;
+  padding-inline: 0.55rem;
+  border-inline: 1px solid var(--outline-variant);
+}
+
+.game-date-field {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.game-date-field input,
+.game-date-field select {
+  width: 100%;
+  height: 1.9rem;
+  padding: 0.25rem 0.4rem;
+  background: var(--surface-high);
+  color: var(--text-primary);
+  border: 1px solid transparent;
+  border-radius: 0;
+  font:
+    600 0.68rem/1 'IBM Plex Mono',
+    monospace;
+}
+
+.game-date-field input:focus,
+.game-date-field select:focus {
+  border-color: var(--outline);
+  outline: 0;
+  background: var(--surface-bright);
+}
+
+.game-date-actions {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.game-date-actions button {
+  height: 1.9rem;
+  padding-inline: 0.45rem;
+  background: var(--surface-highest);
+  color: var(--text-secondary);
+  border: 0;
+  cursor: pointer;
+  font:
+    600 0.62rem/1 'IBM Plex Mono',
+    monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.game-date-actions button:hover:not(:disabled),
+.game-date-actions button:focus-visible {
+  color: var(--primary-glow);
+  outline: 1px solid var(--outline);
+}
+
+.game-date-actions button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.game-date-actions button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.game-date-error {
+  grid-column: 1 / -1;
+  max-width: 24rem;
+  color: var(--error);
+  font:
+    600 0.62rem/1.35 'IBM Plex Mono',
+    monospace;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.journal-record {
+  display: grid;
+  gap: 0.85rem;
+  padding-block: 0.25rem 1.25rem;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.journal-entry-list {
+  display: grid;
+  border-top: 1px solid var(--outline-variant);
+}
+
+.journal-entry-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.journal-entry-copy {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.journal-entry-copy h2 {
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.journal-entry-copy > p:last-child {
+  max-width: 72ch;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.journal-entry-row .game-date-trigger {
+  min-width: 9.5rem;
+  background: var(--surface-low);
+}
+
+.journal-entry-row .game-date-form {
+  min-width: 22rem;
+}
+
 .channel-name,
 .status-meta {
   color: var(--muted);
@@ -4048,6 +4223,34 @@ h3 {
 
   .campaign-channel {
     flex-basis: 100%;
+  }
+
+  .game-date-trigger,
+  .game-date-form {
+    order: 4;
+    flex-basis: 100%;
+  }
+
+  .game-date-form {
+    grid-template-columns: minmax(4.5rem, 1fr) 3.6rem 4.8rem;
+    width: 100%;
+    padding: 0.45rem 0;
+    border-inline: 0;
+    border-top: 1px solid var(--outline-variant);
+  }
+
+  .game-date-actions,
+  .game-date-error {
+    grid-column: 1 / -1;
+  }
+
+  .journal-entry-row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .journal-entry-row .game-date-form {
+    min-width: 0;
   }
 
   .gm-name {

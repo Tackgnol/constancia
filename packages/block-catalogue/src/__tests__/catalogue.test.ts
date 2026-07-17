@@ -34,6 +34,8 @@ describe('pipeline block catalogue contract', () => {
     expect(morkBorgTypes).not.toContain('vtm-pool-resolver');
     expect(morkBorgTypes).not.toContain('vtm-insight-resolver');
     expect(morkBorgTypes).toContain('message-channel');
+    expect(morkBorgTypes).toContain('add-journal-entry');
+    expect(morkBorgTypes).toContain('add-quest');
   });
 
   it('clones default configs instead of sharing mutable editor state', () => {

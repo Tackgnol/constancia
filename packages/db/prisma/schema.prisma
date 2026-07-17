@@ -19,9 +19,9 @@ model User {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
-  sessions     Session[]
-  accounts     Account[]
-  uploadAssets UploadAsset[]
+  sessions       Session[]
+  accounts       Account[]
+  uploadAssets   UploadAsset[]
   messageReports MessageReport[]
 
   @@map("user")
@@ -133,17 +133,18 @@ model Campaign {
   name           String
   discordGuildId String   @unique
   gameSystemId   String
+  gameDate       Json?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  channels   Channel[]
-  characters Character[]
-  npcs       Npc[]
-  admins     CampaignAdmin[]
-  events     Event[]
-  quests     Quest[]
-  summaries  SessionSummary[]
-  loreEntries LoreEntry[]
+  channels        Channel[]
+  characters      Character[]
+  npcs            Npc[]
+  admins          CampaignAdmin[]
+  events          Event[]
+  quests          Quest[]
+  summaries       SessionSummary[]
+  loreEntries     LoreEntry[]
   eventExecutions EventExecution[]
 
   @@map("campaigns")
@@ -183,8 +184,8 @@ model Character {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  campaign     Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  npcKnowledge NpcKnowledge[]
+  campaign      Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  npcKnowledge  NpcKnowledge[]
   loreKnowledge LoreKnowledge[]
 
   @@unique([discordUserId, campaignId])
@@ -270,8 +271,8 @@ model Event {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
-  channel      Channel       @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  campaign     Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  channel      Channel          @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  campaign     Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   uploadAssets UploadAsset[]
   executions   EventExecution[]
 
@@ -311,16 +312,16 @@ model EventExecution {
 }
 
 model EventDelivery {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   executionId   String
   payload       Json
-  status        String   @default("pending")
-  attempts      Int      @default(0)
+  status        String    @default("pending")
+  attempts      Int       @default(0)
   lastError     String?
   deliveredAt   DateTime?
-  nextAttemptAt DateTime @default(now())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  nextAttemptAt DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   execution EventExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
 
@@ -376,6 +377,7 @@ model SessionSummary {
   content     String
   campaignId  String
   sessionDate DateTime
+  gameDate    Json?
   visible     Boolean  @default(false)
   channelId   String?
   createdAt   DateTime @default(now())

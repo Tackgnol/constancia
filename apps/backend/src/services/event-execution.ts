@@ -1,4 +1,4 @@
-import type { BlockMessage, BotDeliveryPayload } from '@constancia/contracts';
+import type { BlockEffect, BlockMessage, BotDeliveryPayload } from '@constancia/contracts';
 
 export type EventExecutionKind = 'fire' | 'test-result';
 export type EventExecutionStatus = 'completed' | 'failed';
@@ -24,6 +24,7 @@ export interface PlannedEventExecution {
   eventId: string;
   campaignId: string;
   messages: BlockMessage[];
+  effects: BlockEffect[];
   halted: boolean;
   deliveries: BotDeliveryPayload[];
 }
@@ -307,6 +308,7 @@ interface StoredExecution {
 }
 
 export class InMemoryEventExecutionStore implements EventExecutionStore {
+  readonly committedEffects: BlockEffect[] = [];
   private sequence = 0;
   private executionsById = new Map<string, StoredExecution>();
   private executionIdByKey = new Map<string, string>();
@@ -384,6 +386,7 @@ export class InMemoryEventExecutionStore implements EventExecutionStore {
     if (draft.markEventFired) {
       this.firedEvents.add(`${draft.campaignId}:${draft.eventId}`);
     }
+    this.committedEffects.push(...structuredClone(draft.effects));
 
     return { created: true, receipt: cloneReceipt(receipt) };
   }

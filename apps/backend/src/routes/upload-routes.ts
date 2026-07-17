@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { FastifyPluginAsync } from 'fastify';
+import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
 import { getPrismaClient } from '../auth/prisma.js';
 import { ok, sendNotFound } from '../http-responses.js';
 import {
@@ -17,6 +17,70 @@ import {
   isValidUploadAssetId,
   readUploadObject,
 } from '../services/upload-storage.js';
+
+interface UploadImageBody {
+  file: string;
+  caption?: string;
+}
+
+interface ParsedImageUpload {
+  caption: string;
+  fileBuffer: Buffer;
+  mimeType: string;
+}
+
+const parsedImageUploads = new WeakMap<FastifyRequest, ParsedImageUpload>();
+
+async function parseImageUploadBody(
+  request: FastifyRequest<{ Body: UploadImageBody }>,
+  uploadMaxBytes: number,
+): Promise<void> {
+  if (!request.isMultipart()) {
+    throw new UploadValidationError('Upload an image using multipart/form-data.');
+  }
+
+  let caption = '';
+  let fileBuffer: Buffer | null = null;
+  let filename = '';
+  let mimeType: string | null = null;
+
+  for await (const part of request.parts({
+    limits: {
+      files: 1,
+      fileSize: uploadMaxBytes,
+      fields: 10,
+    },
+  })) {
+    if (part.type === 'file') {
+      if (fileBuffer !== null) {
+        throw new UploadValidationError('Submit only one image per upload.');
+      }
+
+      try {
+        fileBuffer = await part.toBuffer();
+      } catch {
+        throw new UploadValidationError(`Uploads must be ${uploadMaxBytes} bytes or smaller.`);
+      }
+      filename = part.filename || 'upload';
+      mimeType = part.mimetype;
+      continue;
+    }
+
+    if (part.fieldname === 'caption' && typeof part.value === 'string') {
+      caption = part.value;
+    }
+  }
+
+  if (fileBuffer === null || mimeType === null) {
+    throw new UploadValidationError('Choose an image file before uploading.');
+  }
+
+  request.body = {
+    file: filename,
+    ...(caption ? { caption } : {}),
+  };
+  parsedImageUploads.set(request, { caption, fileBuffer, mimeType });
+}
 
 const uploadPublicRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: { assetId: string } }>(
@@ -61,7 +125,7 @@ const uploadPublicRoutes: FastifyPluginAsync = async (app) => {
 };
 
 const uploadProtectedRoutes: FastifyPluginAsync = async (app) => {
-  app.post(
+  app.post<{ Body: UploadImageBody }>(
     '/image',
     {
       schema: {
@@ -79,8 +143,17 @@ const uploadProtectedRoutes: FastifyPluginAsync = async (app) => {
           503: standardResponseSchema,
         },
       },
+      preValidation: async (request) => {
+        await parseImageUploadBody(request, app.config.uploadMaxBytes);
+      },
     },
     async (request, reply) => {
+      const parsedUpload = parsedImageUploads.get(request);
+      parsedImageUploads.delete(request);
+      if (!parsedUpload) {
+        throw new UploadValidationError('Choose an image file before uploading.');
+      }
+
       const userId = request.access.kind === 'session' ? request.access.userId : null;
       if (!userId) {
         throw new UploadPermissionError('Session required to upload files.');
@@ -98,48 +171,12 @@ const uploadProtectedRoutes: FastifyPluginAsync = async (app) => {
         throw new UploadPermissionError();
       }
 
-      let caption = '';
-      let fileBuffer: Buffer | null = null;
-      let mimeType: string | null = null;
-
-      for await (const part of request.parts({
-        limits: {
-          files: 1,
-          fileSize: app.config.uploadMaxBytes,
-          fields: 10,
-        },
-      })) {
-        if (part.type === 'file') {
-          if (fileBuffer !== null) {
-            throw new UploadValidationError('Submit only one image per upload.');
-          }
-
-          try {
-            fileBuffer = await part.toBuffer();
-          } catch {
-            throw new UploadValidationError(
-              `Uploads must be ${app.config.uploadMaxBytes} bytes or smaller.`,
-            );
-          }
-          mimeType = part.mimetype;
-          continue;
-        }
-
-        if (part.fieldname === 'caption' && typeof part.value === 'string') {
-          caption = part.value;
-        }
-      }
-
-      if (fileBuffer === null || mimeType === null) {
-        throw new UploadValidationError('Choose an image file before uploading.');
-      }
-
       const assetId = randomUUID();
       const stored = await processImageUpload(app.config, {
         assetId,
-        buffer: fileBuffer,
-        mimeType,
-        caption,
+        buffer: parsedUpload.fileBuffer,
+        mimeType: parsedUpload.mimeType,
+        caption: parsedUpload.caption,
       });
       let quota: UploadQuotaSnapshot;
       try {
@@ -163,7 +200,7 @@ const uploadProtectedRoutes: FastifyPluginAsync = async (app) => {
           publicUrl: stored.storage.publicUrl,
           mimeType: stored.mimeType,
           sizeBytes: stored.sizeBytes,
-          originalMimeType: mimeType,
+          originalMimeType: parsedUpload.mimeType,
         },
         select: {
           id: true,

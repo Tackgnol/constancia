@@ -28,6 +28,7 @@ export const summarySelect = {
   content: true,
   campaignId: true,
   sessionDate: true,
+  gameDate: true,
   visible: true,
   channelId: true,
 } satisfies Prisma.SessionSummarySelect;

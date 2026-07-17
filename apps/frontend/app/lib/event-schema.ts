@@ -46,6 +46,18 @@ export const displayImageConfigSchema = z.object({
   caption: z.string().optional(),
 });
 
+export const addJournalEntryConfigSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  content: z.string().min(1, 'Journal entry is required'),
+  visible: z.boolean().optional(),
+});
+
+export const addQuestConfigSchema = z.object({
+  name: z.string().min(1, 'Quest name is required'),
+  description: z.string().optional(),
+  visible: z.boolean().optional(),
+});
+
 export const conditionalGateConfigSchema = z.object({
   statPath: z.string().min(1, 'Stat path is required'),
   operator: z.enum(['gte', 'gt', 'lte', 'lt', 'eq']),
@@ -116,6 +128,8 @@ const SUGGESTED_BLOCK_TYPES_BY_EVENT_TYPE: Record<EventType, readonly BlockType[
   ],
   narration: [
     'message-channel',
+    'add-journal-entry',
+    'add-quest',
     'display-image',
     'message-player',
     'message-group',
@@ -180,10 +194,36 @@ export function isPipelineEqualToEventDefault(
 
 // ── Event form schema ─────────────────────────────────────────────────────────
 
-export const pipelineBlockSchema = z.object({
-  blockType: z.enum(BLOCK_TYPES),
-  config: z.record(z.string(), z.unknown()),
-});
+export const pipelineBlockSchema = z
+  .object({
+    blockType: z.enum(BLOCK_TYPES),
+    config: z.record(z.string(), z.unknown()),
+  })
+  .superRefine((block, context) => {
+    const schema =
+      block.blockType === 'add-journal-entry'
+        ? addJournalEntryConfigSchema
+        : block.blockType === 'add-quest'
+          ? addQuestConfigSchema
+          : null;
+
+    if (!schema) {
+      return;
+    }
+
+    const parsed = schema.safeParse(block.config);
+    if (parsed.success) {
+      return;
+    }
+
+    for (const issue of parsed.error.issues) {
+      context.addIssue({
+        code: 'custom',
+        message: issue.message,
+        path: ['config', ...issue.path],
+      });
+    }
+  });
 
 export const eventFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),

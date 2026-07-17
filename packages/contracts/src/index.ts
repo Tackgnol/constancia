@@ -1,8 +1,16 @@
 export type { StatField, StatGroup, StatSchema } from './stat-schema.js';
 
 export type {
+  CalendarLeapYearRule,
+  CalendarMonthDefinition,
+  GameCalendarDefinition,
+  GameDate,
+} from './game-date.js';
+
+export type {
   BlockContext,
   BlockDefinition,
+  BlockEffect,
   BlockResult,
   BlockMessage,
   SendMessagesPayload,

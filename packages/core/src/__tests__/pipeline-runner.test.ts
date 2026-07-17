@@ -42,6 +42,41 @@ describe('PipelineRunner', () => {
     expect(result.messages[1].content).toBe('World');
   });
 
+  it('collects persistence effects without executing app-specific writes', async () => {
+    const registry = new BlockRegistry();
+    const block: BlockDefinition = {
+      type: 'write-quest',
+      label: 'Write Quest',
+      configSchema: { type: 'object' },
+      execute: async () => ({
+        output: null,
+        effects: [
+          {
+            kind: 'add-quest' as const,
+            name: 'Trace the signal',
+            description: '',
+            visible: true,
+          },
+        ],
+      }),
+    };
+
+    registry.register(block);
+    const result = await new PipelineRunner(registry).run(
+      [{ blockType: 'write-quest', config: {} }],
+      createContext(),
+    );
+
+    expect(result.effects).toEqual([
+      {
+        kind: 'add-quest',
+        name: 'Trace the signal',
+        description: '',
+        visible: true,
+      },
+    ]);
+  });
+
   it('halts pipeline when a block sets halt: true', async () => {
     const registry = new BlockRegistry();
 

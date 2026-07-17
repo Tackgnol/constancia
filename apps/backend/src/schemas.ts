@@ -227,12 +227,30 @@ export const campaignBodySchema = {
   required: ['name', 'discordGuildId', 'gameSystemId'],
 } as const;
 
+export const gameDateSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    calendarId: { type: 'string' },
+    year: { type: 'integer', minimum: 1 },
+    monthId: { type: 'string' },
+    day: { type: 'integer', minimum: 1 },
+  },
+  required: ['calendarId', 'year', 'monthId', 'day'],
+} as const;
+
+export const nullableGameDateSchema = {
+  ...gameDateSchema,
+  nullable: true,
+} as const;
+
 export const campaignPatchBodySchema = {
   type: 'object',
   additionalProperties: false,
   properties: {
     name: { type: 'string' },
     gameSystemId: { type: 'string' },
+    gameDate: nullableGameDateSchema,
   },
 } as const;
 
@@ -526,10 +544,17 @@ export const summaryBodySchema = {
     title: { type: 'string' },
     content: { type: 'string' },
     sessionDate: { type: 'string', format: 'date-time' },
+    gameDate: nullableGameDateSchema,
     visible: { type: 'boolean' },
     channelId: { type: 'string' },
   },
   required: ['title', 'content', 'sessionDate'],
+} as const;
+
+export const summaryPatchBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: summaryBodySchema.properties,
 } as const;
 
 export const botTestResultBodySchema = {
@@ -601,8 +626,9 @@ export const campaignSchema = {
     name: { type: 'string' },
     discordGuildId: { type: 'string' },
     gameSystemId: { type: 'string' },
+    gameDate: nullableGameDateSchema,
   },
-  required: ['id', 'name', 'discordGuildId', 'gameSystemId'],
+  required: ['id', 'name', 'discordGuildId', 'gameSystemId', 'gameDate'],
 } as const;
 
 export const userUploadSettingsSchema = {
@@ -840,10 +866,11 @@ export const sessionSummarySchema = {
     content: { type: 'string' },
     campaignId: { type: 'string' },
     sessionDate: { type: 'string', format: 'date-time' },
+    gameDate: nullableGameDateSchema,
     visible: { type: 'boolean' },
     channelId: { type: 'string' },
   },
-  required: ['id', 'title', 'content', 'campaignId', 'sessionDate', 'visible'],
+  required: ['id', 'title', 'content', 'campaignId', 'sessionDate', 'gameDate', 'visible'],
 } as const;
 
 export const channelSchema = {
@@ -859,6 +886,46 @@ export const channelSchema = {
   required: ['id', 'name', 'discordChannelId', 'campaignId', 'type'],
 } as const;
 
+export const calendarMonthSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    name: { type: 'string' },
+    shortName: { type: 'string' },
+    days: { type: 'integer', minimum: 1 },
+    kind: { type: 'string', enum: ['month', 'intercalary'] },
+  },
+  required: ['name', 'shortName', 'days'],
+} as const;
+
+export const calendarLeapYearRuleSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    monthId: { type: 'string' },
+    extraDays: { type: 'integer', minimum: 1 },
+    interval: { type: 'integer', minimum: 1 },
+    offset: { type: 'integer' },
+    excludeIntervals: { type: 'array', items: { type: 'integer', minimum: 1 } },
+    includeIntervals: { type: 'array', items: { type: 'integer', minimum: 1 } },
+  },
+  required: ['monthId', 'extraDays', 'interval'],
+} as const;
+
+export const gameCalendarSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    months: { type: 'object', additionalProperties: calendarMonthSchema },
+    monthOrder: { type: 'array', items: { type: 'string' } },
+    weekdays: { type: 'array', items: { type: 'string' } },
+    leapYearRules: { type: 'array', items: calendarLeapYearRuleSchema },
+  },
+  required: ['id', 'name', 'months', 'monthOrder'],
+} as const;
+
 export const gameSystemSchema = {
   type: 'object',
   additionalProperties: false,
@@ -866,8 +933,10 @@ export const gameSystemSchema = {
     id: { type: 'string' },
     name: { type: 'string' },
     version: { type: 'string' },
+    defaultCalendarId: { type: 'string' },
+    calendars: { type: 'object', additionalProperties: gameCalendarSchema },
   },
-  required: ['id', 'name', 'version'],
+  required: ['id', 'name', 'version', 'defaultCalendarId', 'calendars'],
 } as const;
 
 export const journalForPlayerSchema = {

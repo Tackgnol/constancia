@@ -34,10 +34,14 @@ describe('insight-event helpers', () => {
     ).toBeNull();
   });
 
-  it('removes the resolver block before threshold mapping runs', () => {
+  it('keeps event-level writes out of each player resolution run', () => {
     expect(
       filterInsightResolutionPipeline([
         { blockType: 'vtm-insight-resolver', config: { attribute: 'wits', skill: 'awareness' } },
+        {
+          blockType: 'add-quest',
+          config: { name: 'Trace the signal', description: '', visible: true },
+        },
         {
           blockType: 'outcome-map',
           config: { outcomes: [{ threshold: 0, text: 'You catch it.' }] },

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet, useLoaderData, useLocation } from 'react-router';
 import { WarRoomModeTabs } from '@/components/war-room/mode-tabs';
+import { GameDateControl } from '@/components/war-room/game-date-control';
 import { PlayerRail } from '@/components/war-room/player-rail';
 import { QuickNarrationForm } from '@/components/war-room/quick-narration-form';
 import { quickNarrationActivityLabel } from '@/components/war-room/quick-narration';
@@ -8,6 +9,7 @@ import { buildWarRoomModeTabs } from '@/components/war-room/war-room-navigation'
 import { SceneRailExtras } from '@/components/war-room/scene-rail-extras';
 import { demoContext, demoCampaigns, demoHealth, demoSystems } from '@/lib/demo-data';
 import { triggerSections } from '@/lib/war-room-data';
+import type { GameDate } from '@constancia/contracts';
 
 const tagEventCounts = new Map<string, number>();
 for (const section of triggerSections) {
@@ -41,6 +43,8 @@ export default function DemoLayout() {
   const [activity, setActivity] = useState(demoContext.activity);
   const [firedEventIds, setFiredEventIds] = useState<string[]>([]);
   const [mobilePlayersOpen, setMobilePlayersOpen] = useState(false);
+  const [gameDate, setGameDate] = useState<GameDate | null>(demoContext.campaign.gameDate);
+  const [summaries, setSummaries] = useState(demoContext.summaries);
 
   const recordActivity = (label: string) => {
     setActivity((current) => [
@@ -65,12 +69,21 @@ export default function DemoLayout() {
 
   const outletContext = {
     ...demoContext,
+    campaign: { ...demoContext.campaign, gameDate },
+    summaries,
     activeTag,
     activity,
     demoMode: true,
     firedEventIds,
     recordActivity,
     setEventFiredState,
+    updateSummaryGameDate: (summaryId: string, nextGameDate: GameDate) => {
+      setSummaries((current) =>
+        current.map((summary) =>
+          summary.id === summaryId ? { ...summary, gameDate: nextGameDate } : summary,
+        ),
+      );
+    },
   };
 
   return (
@@ -83,6 +96,11 @@ export default function DemoLayout() {
         <div className="topbar-group">
           <span className="campaign-name">{outletContext.campaign.name}</span>
           <span className="system-badge">{outletContext.system.name}</span>
+          <GameDateControl
+            calendar={outletContext.system.calendars[outletContext.system.defaultCalendarId]}
+            onSave={setGameDate}
+            value={outletContext.campaign.gameDate}
+          />
           <span className="channel-name campaign-channel">{outletContext.campaign.channel}</span>
           <span className="channel-name gm-name">GM: Demo GM</span>
         </div>

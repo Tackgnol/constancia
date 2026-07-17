@@ -5,12 +5,13 @@ import {
 import { listChannels } from '@constancia/api-client/endpoints/channels/channels';
 import { listCharacters } from '@constancia/api-client/endpoints/characters/characters';
 import { listEvents } from '@constancia/api-client/endpoints/events/events';
-import { listQuests } from '@constancia/api-client/endpoints/journal/journal';
+import { listQuests, listSessionSummaries } from '@constancia/api-client/endpoints/journal/journal';
 import { listLoreEntries } from '@constancia/api-client/endpoints/lore/lore';
 import { sendChannelMessage } from '@constancia/api-client/endpoints/messages/messages';
 import { getServiceHealth } from '@constancia/api-client/endpoints/meta/meta';
 import { listGameSystems } from '@constancia/api-client/endpoints/systems/systems';
 import { WarRoomModeTabs } from '@/components/war-room/mode-tabs';
+import { GameDateControl } from '@/components/war-room/game-date-control';
 import { PlayerRail } from '@/components/war-room/player-rail';
 import { QuickNarrationForm } from '@/components/war-room/quick-narration-form';
 import { quickNarrationActivityLabel } from '@/components/war-room/quick-narration';
@@ -19,7 +20,13 @@ import { buildWarRoomModeTabs } from '@/components/war-room/war-room-navigation'
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import { buildServerApiOptions } from '@/lib/api-proxy.server';
 import { postRouteAction } from '@/lib/route-action-client';
-import { CAMPAIGN_RENAME_ERROR, QUICK_NARRATION_ERROR } from '@/lib/war-room-feedback';
+import {
+  CAMPAIGN_RENAME_ERROR,
+  GAME_DATE_UPDATE_ERROR,
+  QUICK_NARRATION_ERROR,
+} from '@/lib/war-room-feedback';
+import type { GameDate } from '@constancia/contracts';
+import { parseGameDate } from '@constancia/systems';
 import type { PlayerPresence } from '@/lib/war-room-data';
 import {
   activityFeed,
@@ -61,12 +68,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   const campaignId = campaigns.data[0]?.id;
-  const [channels, events, characters, quests, lore] = campaignId
+  const [channels, events, characters, quests, summaries, lore] = campaignId
     ? await Promise.all([
         listChannels({ id: campaignId }, fetchOpts),
         listEvents({ id: campaignId }, fetchOpts),
         listCharacters({ id: campaignId }, fetchOpts),
         listQuests({ id: campaignId }, fetchOpts),
+        listSessionSummaries({ id: campaignId }, fetchOpts),
         listLoreEntries({ id: campaignId }, fetchOpts),
       ])
     : [
@@ -75,14 +83,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
         { status: 'error', data: [] },
         { status: 'error', data: [] },
         { status: 'error', data: [] },
+        { status: 'error', data: [] },
       ];
 
-  return { health, campaigns, systems, channels, events, characters, quests, lore };
+  return { health, campaigns, systems, channels, events, characters, quests, summaries, lore };
 }
 
-type RenameCampaignActionData = { status: 'success' } | { status: 'error'; message: string };
+type CampaignActionData = { status: 'success' } | { status: 'error'; message: string };
 
-function isRenameCampaignActionData(value: unknown): value is RenameCampaignActionData {
+function isCampaignActionData(value: unknown): value is CampaignActionData {
   return (
     typeof value === 'object' &&
     value !== null &&
@@ -93,10 +102,48 @@ function isRenameCampaignActionData(value: unknown): value is RenameCampaignActi
   );
 }
 
+function parseSubmittedGameDate(value: FormDataEntryValue | null): GameDate | null {
+  if (typeof value !== 'string' || value.length === 0) {
+    return null;
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return parseGameDate(parsed);
+  } catch {
+    return null;
+  }
+}
+
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const intent = formData.get('intent');
   const campaignId = formData.get('campaignId');
+
+  if (intent === 'set-game-date') {
+    const gameDate = parseSubmittedGameDate(formData.get('gameDate'));
+    if (typeof campaignId !== 'string' || campaignId.length === 0 || gameDate === null) {
+      return Response.json(
+        { status: 'error', message: 'Choose a complete, valid game date and try again.' },
+        { status: 400 },
+      );
+    }
+
+    try {
+      const response = await updateCampaign(
+        { id: campaignId },
+        { gameDate },
+        buildServerApiOptions(request),
+      );
+      assertApiOk(response, GAME_DATE_UPDATE_ERROR);
+      return Response.json({ status: 'success' });
+    } catch (caught) {
+      return Response.json(
+        { status: 'error', message: getApiErrorMessage(caught, GAME_DATE_UPDATE_ERROR) },
+        { status: 500 },
+      );
+    }
+  }
 
   if (intent === 'send-channel-message') {
     const channelId = formData.get('channelId');
@@ -202,9 +249,10 @@ function formatActivityTime() {
 
 export default function WarRoomLayout() {
   const location = useLocation();
-  const { health, campaigns, systems, channels, events, characters, quests, lore } =
+  const { health, campaigns, systems, channels, events, characters, quests, summaries, lore } =
     useLoaderData<typeof loader>();
-  const renameFetcher = useFetcher<RenameCampaignActionData>();
+  const renameFetcher = useFetcher<CampaignActionData>();
+  const gameDateFetcher = useFetcher<CampaignActionData>();
   const revalidator = useRevalidator();
 
   const [activeTag, setActiveTag] = useState<string | null>(null);
@@ -213,7 +261,11 @@ export default function WarRoomLayout() {
   const [mobilePlayersOpen, setMobilePlayersOpen] = useState(false);
 
   const liveCampaign = normalizeCampaigns(campaigns).at(0) ?? fallbackCampaign;
-  const liveSystem = normalizeSystems(systems).at(0) ?? fallbackSystem;
+  const normalizedSystems = normalizeSystems(systems);
+  const liveSystem =
+    normalizedSystems.find((system) => system.id === liveCampaign.gameSystemId) ??
+    normalizedSystems.at(0) ??
+    fallbackSystem;
   const [editNameValue, setEditNameValue] = useState(liveCampaign.name);
 
   const liveChannels = (channels.status === 'ok' ? channels.data : []).map((ch) => ({
@@ -224,6 +276,7 @@ export default function WarRoomLayout() {
 
   const liveEvents = events.status === 'ok' ? events.data : [];
   const liveQuests = quests.status === 'ok' ? quests.data : [];
+  const liveSummaries = summaries.status === 'ok' ? summaries.data : [];
   const liveLore = lore.status === 'ok' ? lore.data : [];
   const isPlayRoute = location.pathname === '/';
   const tagEventCounts = new Map<string, number>();
@@ -247,10 +300,16 @@ export default function WarRoomLayout() {
     };
   });
 
-  const renameActionData = isRenameCampaignActionData(renameFetcher.data)
+  const renameActionData = isCampaignActionData(renameFetcher.data)
     ? renameFetcher.data
     : undefined;
   const renameError = renameActionData?.status === 'error' ? renameActionData.message : null;
+  const gameDateActionData = isCampaignActionData(gameDateFetcher.data)
+    ? gameDateFetcher.data
+    : undefined;
+  const gameDateError = gameDateActionData?.status === 'error' ? gameDateActionData.message : null;
+  const activeCalendarId = liveCampaign.gameDate?.calendarId ?? liveSystem.defaultCalendarId;
+  const activeCalendar = liveSystem.calendars[activeCalendarId];
 
   const recordActivity = (label: string) => {
     setActivity((current) => [
@@ -310,6 +369,7 @@ export default function WarRoomLayout() {
     apiOnline: health.status === 'ok',
     events: liveEvents,
     quests: liveQuests,
+    summaries: liveSummaries,
     lore: liveLore,
     recordActivity,
   };
@@ -368,6 +428,29 @@ export default function WarRoomLayout() {
             </button>
           )}
           <span className="system-badge">{outletContext.system.name}</span>
+          {activeCalendar ? (
+            <GameDateControl
+              busy={gameDateFetcher.state !== 'idle'}
+              calendar={activeCalendar}
+              error={gameDateError}
+              onDraftChange={() => {
+                if (gameDateError) {
+                  gameDateFetcher.reset();
+                }
+              }}
+              onSave={(gameDate) => {
+                gameDateFetcher.submit(
+                  {
+                    intent: 'set-game-date',
+                    campaignId: liveCampaign.id,
+                    gameDate: JSON.stringify(gameDate),
+                  },
+                  { method: 'post' },
+                );
+              }}
+              value={liveCampaign.gameDate}
+            />
+          ) : null}
           <span className="channel-name campaign-channel">{outletContext.campaign.channel}</span>
           <span className="channel-name gm-name">GM: authenticated</span>
         </div>

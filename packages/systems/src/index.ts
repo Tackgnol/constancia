@@ -4,6 +4,7 @@ export * from './vtm-v5/data.js';
 export * from './vtm-v5/progeny.js';
 export * from './mork-borg/data.js';
 export * from './stat-schemas.js';
+export * from './calendar.js';
 export {
   DuplicateGameSystemKeyError,
   GAME_SYSTEM_ADAPTERS,

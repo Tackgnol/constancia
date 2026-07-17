@@ -146,6 +146,7 @@ export const demoPlayerJournal: GetJournalForCurrentPlayer200Data = {
         'The ledger vanished during the prince’s reception. The coterie left with one boon, two enemies, and a name nobody wanted spoken aloud.',
       campaignId: 'demo-crimson-dynasty',
       sessionDate: '2026-04-28T20:00:00.000Z',
+      gameDate: { calendarId: 'gregorian', year: 2026, monthId: 'july', day: 17 },
       visible: true,
       channelId: undefined,
     },

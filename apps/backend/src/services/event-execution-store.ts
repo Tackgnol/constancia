@@ -1,9 +1,11 @@
 import {
   blockMessageSchema,
   botDeliveryPayloadSchema,
+  type BlockEffect,
   type BlockMessage,
 } from '@constancia/contracts';
 import type { Prisma, PrismaClient } from '@constancia/db';
+import { parseGameDate } from '@constancia/systems';
 import type {
   BotDeliveryResult,
   EventDeliveryStatus,
@@ -14,6 +16,7 @@ import type {
   EventExecutionStore,
   RetryableDelivery,
 } from './event-execution.js';
+import { toGameDateJson } from './game-date.js';
 
 const executionInclude = {
   deliveries: { orderBy: { createdAt: 'asc' as const } },
@@ -44,18 +47,7 @@ export function createPrismaEventExecutionStore(prisma: PrismaClient): EventExec
     async createOnce(draft: EventExecutionDraft) {
       try {
         const execution = await prisma.$transaction(async (tx) => {
-          if (draft.markEventFired) {
-            const updated = await tx.event.updateMany({
-              where: { id: draft.eventId, campaignId: draft.campaignId },
-              data: { status: 'fired' },
-            });
-
-            if (updated.count !== 1) {
-              throw new Error('The Event no longer belongs to the Campaign.');
-            }
-          }
-
-          return tx.eventExecution.create({
+          const createdExecution = await tx.eventExecution.create({
             data: {
               kind: draft.kind,
               idempotencyKey: draft.idempotencyKey,
@@ -73,6 +65,23 @@ export function createPrismaEventExecutionStore(prisma: PrismaClient): EventExec
             },
             include: executionInclude,
           });
+
+          if (draft.markEventFired) {
+            const updated = await tx.event.updateMany({
+              where: { id: draft.eventId, campaignId: draft.campaignId },
+              data: { status: 'fired' },
+            });
+
+            if (updated.count !== 1) {
+              throw new Error('The Event no longer belongs to the Campaign.');
+            }
+          }
+
+          for (const effect of draft.effects) {
+            await applyBlockEffect(tx, draft.campaignId, effect);
+          }
+
+          return createdExecution;
         });
 
         return { created: true, receipt: mapExecution(execution) };
@@ -143,6 +152,55 @@ export function createPrismaEventExecutionStore(prisma: PrismaClient): EventExec
       return mapExecution(execution);
     },
   };
+}
+
+interface BlockEffectTransaction {
+  campaign: {
+    findUniqueOrThrow(args: Prisma.CampaignFindUniqueOrThrowArgs): PromiseLike<{
+      gameDate: Prisma.JsonValue;
+    }>;
+  };
+  quest: {
+    create(args: Prisma.QuestCreateArgs): PromiseLike<{ id: string }>;
+  };
+  sessionSummary: {
+    create(args: Prisma.SessionSummaryCreateArgs): PromiseLike<{ id: string }>;
+  };
+}
+
+export async function applyBlockEffect(
+  tx: BlockEffectTransaction,
+  campaignId: string,
+  effect: BlockEffect,
+): Promise<void> {
+  if (effect.kind === 'add-journal-entry') {
+    const campaign = await tx.campaign.findUniqueOrThrow({
+      where: { id: campaignId },
+      select: { gameDate: true },
+    });
+    const gameDate = parseGameDate(campaign.gameDate);
+    await tx.sessionSummary.create({
+      data: {
+        title: effect.title,
+        content: effect.content,
+        campaignId,
+        sessionDate: new Date(),
+        ...(gameDate === null ? {} : { gameDate: toGameDateJson(gameDate) }),
+        visible: effect.visible,
+        channelId: effect.channelId,
+      },
+    });
+    return;
+  }
+
+  await tx.quest.create({
+    data: {
+      name: effect.name,
+      description: effect.description,
+      campaignId,
+      visible: effect.visible,
+    },
+  });
 }
 
 function mapExecution(execution: StoredExecution): EventExecutionReceipt {

@@ -208,7 +208,13 @@ const botRoutes: FastifyPluginAsync = async (app) => {
 
       const campaign = await prisma.campaign.findUnique({
         where: { discordGuildId: guildId },
-        select: { id: true, name: true, discordGuildId: true, gameSystemId: true },
+        select: {
+          id: true,
+          name: true,
+          discordGuildId: true,
+          gameSystemId: true,
+          gameDate: true,
+        },
       });
       if (!campaign) {
         return sendNotFound(reply, 'Campaign not found');
@@ -326,7 +332,13 @@ const botRoutes: FastifyPluginAsync = async (app) => {
         where: { discordGuildId: guildId },
         create: { name: campaignName, discordGuildId: guildId, gameSystemId },
         update: {},
-        select: { id: true, name: true, discordGuildId: true, gameSystemId: true },
+        select: {
+          id: true,
+          name: true,
+          discordGuildId: true,
+          gameSystemId: true,
+          gameDate: true,
+        },
       });
 
       const existingChannel = await prisma.channel.findUnique({

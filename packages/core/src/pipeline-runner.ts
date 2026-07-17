@@ -2,6 +2,7 @@ import { Ajv, type ErrorObject, type ValidateFunction } from 'ajv';
 import type {
   BlockContext,
   BlockDefinition,
+  BlockEffect,
   BlockInstance,
   BlockMessage,
 } from '@constancia/contracts';
@@ -9,6 +10,7 @@ import type { BlockRegistry } from './block-registry.js';
 
 export interface PipelineResult {
   messages: BlockMessage[];
+  effects: BlockEffect[];
   outputs: unknown[];
   halted: boolean;
 }
@@ -99,6 +101,7 @@ export class PipelineRunner {
 
   async run(blocks: BlockInstance[], ctx: BlockContext): Promise<PipelineResult> {
     const messages: BlockMessage[] = [];
+    const effects: BlockEffect[] = [];
     const outputs: unknown[] = [];
 
     for (const [index, instance] of blocks.entries()) {
@@ -116,11 +119,15 @@ export class PipelineRunner {
         messages.push(...normalizeMessages(result.messages, ctx));
       }
 
+      if (result.effects) {
+        effects.push(...result.effects);
+      }
+
       if (result.halt) {
-        return { messages, outputs, halted: true };
+        return { messages, effects, outputs, halted: true };
       }
     }
 
-    return { messages, outputs, halted: false };
+    return { messages, effects, outputs, halted: false };
   }
 }

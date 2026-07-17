@@ -4,6 +4,7 @@ import type {
   ListCampaigns200,
   ListGameSystems200,
 } from '@constancia/api-client/model';
+import { GREGORIAN_CALENDAR } from '@constancia/systems';
 import { activityFeed, players, sessionTags } from './war-room-data.js';
 import type { WarRoomContext } from './war-room-data.js';
 
@@ -21,6 +22,7 @@ export const demoCampaigns: ListCampaigns200 = {
       name: 'Crimson Dynasty',
       discordGuildId: 'demo-guild-1',
       gameSystemId: 'vtm-v5',
+      gameDate: { calendarId: 'gregorian', year: 2026, monthId: 'july', day: 17 },
     },
   ],
 };
@@ -28,8 +30,20 @@ export const demoCampaigns: ListCampaigns200 = {
 export const demoSystems: ListGameSystems200 = {
   status: 'ok',
   data: [
-    { id: 'vtm-v5', name: 'Vampire: The Masquerade V5', version: '0.1.0' },
-    { id: 'mork-borg', name: 'Mörk Borg', version: '0.1.0' },
+    {
+      id: 'vtm-v5',
+      name: 'Vampire: The Masquerade V5',
+      version: '0.1.0',
+      defaultCalendarId: GREGORIAN_CALENDAR.id,
+      calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
+    },
+    {
+      id: 'mork-borg',
+      name: 'Mörk Borg',
+      version: '0.1.0',
+      defaultCalendarId: GREGORIAN_CALENDAR.id,
+      calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
+    },
   ],
 };
 
@@ -50,6 +64,8 @@ export const demoContext: WarRoomContext = {
   campaign: {
     id: 'demo-crimson-dynasty',
     name: 'Crimson Dynasty',
+    gameSystemId: 'vtm-v5',
+    gameDate: { calendarId: 'gregorian', year: 2026, monthId: 'july', day: 17 },
     channel: '# the-elysium',
     connectedPlayers: players.filter((p) => p.status === 'online').length,
   },
@@ -58,7 +74,12 @@ export const demoContext: WarRoomContext = {
     { id: 'ch-2', discordId: '2', name: 'harpy-court' },
     { id: 'ch-3', discordId: '3', name: 'basement' },
   ],
-  system: { id: 'vtm-v5', name: 'VTM V5' },
+  system: {
+    id: 'vtm-v5',
+    name: 'VTM V5',
+    defaultCalendarId: GREGORIAN_CALENDAR.id,
+    calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
+  },
   tags: sessionTags,
   activeTag: null,
   players,
@@ -135,6 +156,18 @@ export const demoContext: WarRoomContext = {
           sortOrder: 0,
         },
       ],
+    },
+  ],
+  summaries: [
+    {
+      id: 'demo-summary-elysium',
+      title: 'Elysium fractures',
+      content:
+        'The ledger vanished during the prince’s reception. The coterie left with one boon, two enemies, and a name nobody wanted spoken aloud.',
+      campaignId: 'demo-crimson-dynasty',
+      sessionDate: '2026-07-17T20:00:00.000Z',
+      gameDate: { calendarId: 'gregorian', year: 2026, monthId: 'july', day: 17 },
+      visible: true,
     },
   ],
   events: [

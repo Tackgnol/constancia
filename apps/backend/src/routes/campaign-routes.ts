@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
-import type { Prisma } from '@constancia/db';
+import type { GameDate } from '@constancia/contracts';
+import { Prisma } from '@constancia/db';
 import { getPrismaClient } from '../auth/prisma.js';
 import { isPrismaNotFoundError, ok, sendError, sendNotFound } from '../http-responses.js';
 import {
@@ -12,6 +13,8 @@ import {
 } from '../schemas.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
 import { createCampaignAccess } from '../services/campaign-access.js';
+import { getGameDateValidationError, toGameDateJson } from '../services/game-date.js';
+import { parseGameDate } from '@constancia/systems';
 
 interface CampaignParams {
   id: string;
@@ -26,9 +29,16 @@ interface CampaignBody {
 interface CampaignPatchBody {
   name?: string;
   gameSystemId?: string;
+  gameDate?: GameDate | null;
 }
 
-const select = { id: true, name: true, discordGuildId: true, gameSystemId: true } as const;
+const select = {
+  id: true,
+  name: true,
+  discordGuildId: true,
+  gameSystemId: true,
+  gameDate: true,
+} as const;
 
 const campaignRoutes: FastifyPluginAsync = async (app) => {
   app.get(
@@ -139,10 +149,30 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrismaClient();
       const { id } = request.params;
       await createCampaignAccess(prisma).requireAdmin(request.access, id);
-      const { name, gameSystemId } = request.body;
-      const data: { name?: string; gameSystemId?: string } = {};
+      const { name, gameSystemId, gameDate } = request.body;
+      const current = await prisma.campaign.findUnique({
+        where: { id },
+        select: { gameSystemId: true, gameDate: true },
+      });
+      if (current === null) {
+        return sendNotFound(reply, 'Campaign not found');
+      }
+
+      const targetSystemId = gameSystemId ?? current.gameSystemId;
+      const targetGameDate = gameDate === undefined ? parseGameDate(current.gameDate) : gameDate;
+      if (targetGameDate !== null) {
+        const validationError = getGameDateValidationError(targetSystemId, targetGameDate);
+        if (validationError !== null) {
+          return sendError(reply, 400, validationError);
+        }
+      }
+
+      const data: Prisma.CampaignUpdateInput = {};
       if (name !== undefined) data.name = name;
       if (gameSystemId !== undefined) data.gameSystemId = gameSystemId;
+      if (gameDate !== undefined) {
+        data.gameDate = gameDate === null ? Prisma.DbNull : toGameDateJson(gameDate);
+      }
       try {
         const campaign = await prisma.campaign.update({ where: { id }, data, select });
         return ok(campaign);

@@ -1,5 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
-import type { QuestEntryStatus } from '@constancia/db';
+import type { GameDate } from '@constancia/contracts';
+import { Prisma, type QuestEntryStatus } from '@constancia/db';
+import { parseGameDate } from '@constancia/systems';
 import {
   campaignParamsSchema,
   deleteResponseSchema,
@@ -16,6 +18,7 @@ import {
   singleResponseSchema,
   listResponseSchema,
   summaryBodySchema,
+  summaryPatchBodySchema,
   summaryParamsSchema,
 } from '../schemas.js';
 import { getPrismaClient } from '../auth/prisma.js';
@@ -28,6 +31,7 @@ import {
   questSelect,
   summarySelect,
 } from '../services/player-journal.js';
+import { getGameDateValidationError, toGameDateJson } from '../services/game-date.js';
 
 interface CampaignParams {
   id: string;
@@ -77,6 +81,16 @@ interface SummaryBody {
   title: string;
   content: string;
   sessionDate: string;
+  gameDate?: GameDate | null;
+  visible?: boolean;
+  channelId?: string;
+}
+
+interface SummaryPatchBody {
+  title?: string;
+  content?: string;
+  sessionDate?: string;
+  gameDate?: GameDate | null;
   visible?: boolean;
   channelId?: string;
 }
@@ -368,13 +382,24 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       await moderatePayloadText(app.config, request.body);
-      const { title, content, sessionDate, visible, channelId } = request.body;
+      const { title, content, sessionDate, gameDate, visible, channelId } = request.body;
       const prisma = getPrismaClient();
       if (channelId !== undefined) {
         await createCampaignAccess(prisma).requireResource(request.campaignScope, {
           kind: 'channel',
           id: channelId,
         });
+      }
+      const campaign = await prisma.campaign.findUniqueOrThrow({
+        where: { id: request.campaignScope.campaignId },
+        select: { gameSystemId: true, gameDate: true },
+      });
+      const resolvedGameDate = gameDate === undefined ? parseGameDate(campaign.gameDate) : gameDate;
+      if (resolvedGameDate !== null) {
+        const validationError = getGameDateValidationError(campaign.gameSystemId, resolvedGameDate);
+        if (validationError !== null) {
+          return sendError(reply, 400, validationError);
+        }
       }
       reply.code(201);
       const summary = await prisma.sessionSummary.create({
@@ -383,6 +408,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
           content,
           campaignId: request.campaignScope.campaignId,
           sessionDate: new Date(sessionDate),
+          ...(resolvedGameDate === null ? {} : { gameDate: toGameDateJson(resolvedGameDate) }),
           visible: visible ?? false,
           channelId,
         },
@@ -392,7 +418,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.patch<{ Params: SummaryParams; Body: SummaryBody }>(
+  app.patch<{ Params: SummaryParams; Body: SummaryPatchBody }>(
     '/summaries/:sumId',
     {
       schema: {
@@ -400,7 +426,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
         summary: 'Update a session summary',
         operationId: 'updateSessionSummary',
         params: summaryParamsSchema,
-        body: summaryBodySchema,
+        body: summaryPatchBodySchema,
         response: {
           200: singleResponseSchema(sessionSummarySchema),
         },
@@ -409,7 +435,7 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       await moderatePayloadText(app.config, request.body);
       const { sumId } = request.params;
-      const { title, content, sessionDate, visible, channelId } = request.body;
+      const { title, content, sessionDate, gameDate, visible, channelId } = request.body;
       const prisma = getPrismaClient();
       const campaignAccess = createCampaignAccess(prisma);
       await campaignAccess.requireResource(request.campaignScope, {
@@ -422,12 +448,25 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
           id: channelId,
         });
       }
-      const data: Record<string, unknown> = {};
-      if (title !== undefined) data['title'] = title;
-      if (content !== undefined) data['content'] = content;
-      if (sessionDate !== undefined) data['sessionDate'] = new Date(sessionDate);
-      if (visible !== undefined) data['visible'] = visible;
-      if (channelId !== undefined) data['channelId'] = channelId;
+      if (gameDate !== undefined && gameDate !== null) {
+        const campaign = await prisma.campaign.findUniqueOrThrow({
+          where: { id: request.campaignScope.campaignId },
+          select: { gameSystemId: true },
+        });
+        const validationError = getGameDateValidationError(campaign.gameSystemId, gameDate);
+        if (validationError !== null) {
+          return sendError(reply, 400, validationError);
+        }
+      }
+      const data: Prisma.SessionSummaryUpdateInput = {};
+      if (title !== undefined) data.title = title;
+      if (content !== undefined) data.content = content;
+      if (sessionDate !== undefined) data.sessionDate = new Date(sessionDate);
+      if (gameDate !== undefined) {
+        data.gameDate = gameDate === null ? Prisma.DbNull : toGameDateJson(gameDate);
+      }
+      if (visible !== undefined) data.visible = visible;
+      if (channelId !== undefined) data.channel = { connect: { id: channelId } };
       try {
         const summary = await prisma.sessionSummary.update({
           where: { id: sumId },

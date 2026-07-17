@@ -3,6 +3,7 @@ import { MB_NPC_BLOCKS, MB_STAT_SCHEMA } from './mork-borg/data.js';
 import { VTM_NPC_BLOCKS, VTM_STAT_SCHEMA } from './vtm-v5/data.js';
 import { vtmInsightResolverBlock } from './vtm-v5/insight-resolver.js';
 import { vtmPoolResolverBlock } from './vtm-v5/pool-resolver.js';
+import { GREGORIAN_CALENDAR } from './calendar.js';
 
 export interface GameSystemAdapter extends Omit<GameSystem, 'blocks'> {
   aliases: readonly string[];
@@ -91,6 +92,8 @@ export const vtmV5GameSystem: GameSystemAdapter = {
   ],
   name: 'Vampire: The Masquerade 5th Edition',
   version: '0.1.0',
+  defaultCalendarId: GREGORIAN_CALENDAR.id,
+  calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
   statSchema: VTM_STAT_SCHEMA,
   testConfig: {
     label: 'VTM V5 Test',
@@ -109,6 +112,8 @@ export const morkBorgGameSystem: GameSystemAdapter = {
   aliases: ['morkborg'],
   name: 'Mork Borg',
   version: '0.1.0',
+  defaultCalendarId: GREGORIAN_CALENDAR.id,
+  calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
   statSchema: MB_STAT_SCHEMA,
   testConfig: { label: 'Mork Borg Test', fields: [] },
   npcBlocks: MB_NPC_BLOCKS,

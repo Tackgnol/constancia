@@ -3,7 +3,10 @@ import type {
   ListCharacters200DataItem,
   ListLoreEntries200DataItem,
   ListQuests200DataItem,
+  ListSessionSummaries200DataItem,
 } from '@constancia/api-client/model';
+import type { GameCalendarDefinition, GameDate } from '@constancia/contracts';
+import { GREGORIAN_CALENDAR, parseGameDate } from '@constancia/systems';
 
 export type TriggerKind = 'test' | 'narration' | 'insight' | 'message';
 export type Presence = 'online' | 'offline';
@@ -52,6 +55,8 @@ export type ChannelEntry = {
 export type CampaignSummary = {
   id: string;
   name: string;
+  gameSystemId: string;
+  gameDate: GameDate | null;
   channel: string;
   connectedPlayers: number;
 };
@@ -59,6 +64,8 @@ export type CampaignSummary = {
 export type SystemSummary = {
   id: string;
   name: string;
+  defaultCalendarId: string;
+  calendars: Record<string, GameCalendarDefinition>;
 };
 
 export type RecipientOption = {
@@ -81,16 +88,20 @@ export type WarRoomContext = {
   apiOnline: boolean;
   events: ListEvents200DataItem[];
   quests: ListQuests200DataItem[];
+  summaries: ListSessionSummaries200DataItem[];
   lore: ListLoreEntries200DataItem[];
   demoMode?: boolean;
   firedEventIds?: string[];
   recordActivity?: (label: string) => void;
   setEventFiredState?: (eventId: string, fired: boolean) => void;
+  updateSummaryGameDate?: (summaryId: string, gameDate: GameDate) => void;
 };
 
 export const fallbackCampaign: CampaignSummary = {
   id: 'local-crimson-dynasty',
   name: 'Crimson Dynasty',
+  gameSystemId: 'vtm-v5',
+  gameDate: null,
   channel: '# the-elysium',
   connectedPlayers: 4,
 };
@@ -98,6 +109,8 @@ export const fallbackCampaign: CampaignSummary = {
 export const fallbackSystem: SystemSummary = {
   id: 'vtm-v5',
   name: 'VTM V5',
+  defaultCalendarId: GREGORIAN_CALENDAR.id,
+  calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
 };
 
 export const sessionTags: Tag[] = [
@@ -314,6 +327,8 @@ export function normalizeCampaigns(input: unknown): CampaignSummary[] {
     return {
       id: readString(record, ['id', 'campaignId', 'slug'], `campaign-${index + 1}`),
       name: readString(record, ['name', 'title'], `Campaign ${index + 1}`),
+      gameSystemId: readString(record, ['gameSystemId'], fallbackCampaign.gameSystemId),
+      gameDate: parseGameDate(record?.gameDate),
       channel: readString(
         record,
         ['channelName', 'channel', 'discordChannel'],
@@ -328,9 +343,23 @@ export function normalizeSystems(input: unknown): SystemSummary[] {
   return extractArray(input).map((entry, index) => {
     const record = asRecord(entry);
 
+    const calendarsValue = record?.calendars;
+    const calendars =
+      typeof calendarsValue === 'object' &&
+      calendarsValue !== null &&
+      !Array.isArray(calendarsValue)
+        ? (calendarsValue as Record<string, GameCalendarDefinition>)
+        : fallbackSystem.calendars;
+
     return {
       id: readString(record, ['id', 'slug', 'key'], `system-${index + 1}`),
       name: readString(record, ['name', 'label', 'displayName'], `System ${index + 1}`),
+      defaultCalendarId: readString(
+        record,
+        ['defaultCalendarId'],
+        fallbackSystem.defaultCalendarId,
+      ),
+      calendars,
     };
   });
 }

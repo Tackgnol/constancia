@@ -93,9 +93,25 @@ export interface BlockDefinition<TConfig = unknown> {
   execute: (config: TConfig, ctx: BlockContext) => Promise<BlockResult>;
 }
 
+export type BlockEffect =
+  | {
+      kind: 'add-journal-entry';
+      title: string;
+      content: string;
+      visible: boolean;
+      channelId: string;
+    }
+  | {
+      kind: 'add-quest';
+      name: string;
+      description: string;
+      visible: boolean;
+    };
+
 export interface BlockResult {
   output: unknown;
   messages?: BlockMessage[];
+  effects?: BlockEffect[];
   halt?: boolean;
 }
 

@@ -1,4 +1,9 @@
-import type { BlockInstance, BlockMessage, BotDeliveryPayload } from '@constancia/contracts';
+import type {
+  BlockEffect,
+  BlockInstance,
+  BlockMessage,
+  BotDeliveryPayload,
+} from '@constancia/contracts';
 import { PipelineRunner } from '@constancia/core';
 import type { PrismaClient } from '@constancia/db';
 import { buildBlockRegistry } from '../blocks.js';
@@ -51,7 +56,7 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
           { ...event, pipeline },
           event.channel.discordChannelId,
         );
-        return plan(event, [], false, payload ? [payload] : []);
+        return plan(event, [], [], false, payload ? [payload] : []);
       }
 
       if (event.type === 'insight') {
@@ -61,6 +66,12 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
         });
         const resolutionPipeline = filterInsightResolutionPipeline(pipeline);
         const messages: BlockMessage[] = [];
+        const eventEffects = await createRunner().run(filterEventEffectPipeline(pipeline), {
+          campaignId: event.campaignId,
+          channelId: event.channelId,
+          playerId: 'system',
+          characterData: {},
+        });
 
         for (const character of characters) {
           const characterData = parseCharacterData(character.systemData);
@@ -77,7 +88,13 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
           messages.push(...result.messages);
         }
 
-        return plan(event, messages, false, messageDeliveries(event, messages));
+        return plan(
+          event,
+          messages,
+          eventEffects.effects,
+          false,
+          messageDeliveries(event, messages),
+        );
       }
 
       const result = await createRunner().run(pipeline, {
@@ -86,7 +103,13 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
         playerId: 'system',
         characterData: {},
       });
-      return plan(event, result.messages, result.halted, messageDeliveries(event, result.messages));
+      return plan(
+        event,
+        result.messages,
+        result.effects,
+        result.halted,
+        messageDeliveries(event, result.messages),
+      );
     },
 
     async planTestResult(command: SubmitTestResultCommand): Promise<PlannedEventExecution> {
@@ -151,7 +174,13 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
         },
       );
 
-      return plan(event, result.messages, result.halted, messageDeliveries(event, result.messages));
+      return plan(
+        event,
+        result.messages,
+        result.effects,
+        result.halted,
+        messageDeliveries(event, result.messages),
+      );
     },
   };
 }
@@ -165,6 +194,7 @@ interface EventPlanSource {
 function plan(
   event: EventPlanSource,
   messages: BlockMessage[],
+  effects: BlockEffect[],
   halted: boolean,
   deliveries: BotDeliveryPayload[],
 ): PlannedEventExecution {
@@ -172,6 +202,7 @@ function plan(
     eventId: event.id,
     campaignId: event.campaignId,
     messages,
+    effects,
     halted,
     deliveries,
   };
@@ -188,6 +219,12 @@ function messageDeliveries(event: EventPlanSource, messages: BlockMessage[]): Bo
           messages,
         },
       ];
+}
+
+const EVENT_EFFECT_BLOCK_TYPES = new Set(['add-journal-entry', 'add-quest']);
+
+function filterEventEffectPipeline(blocks: BlockInstance[]): BlockInstance[] {
+  return blocks.filter((block) => EVENT_EFFECT_BLOCK_TYPES.has(block.blockType));
 }
 
 function parsePipeline(value: unknown): BlockInstance[] {

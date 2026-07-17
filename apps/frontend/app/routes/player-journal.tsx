@@ -8,6 +8,7 @@ import type {
   GetJournalForCurrentPlayer200DataQuestsItemEntriesItem,
   GetJournalForCurrentPlayer200DataSummariesItem,
 } from '@constancia/api-client/model';
+import { formatGameDate, gameSystemRegistry, parseGameDate } from '@constancia/systems';
 import { demoPlayerJournal } from '@/lib/demo-player-data';
 
 const QUEST_STATUSES = ['active', 'completed', 'failed'] as const;
@@ -77,6 +78,22 @@ function formatSessionDate(value: string) {
     month: 'short',
     year: 'numeric',
   }).format(new Date(value));
+}
+
+function formatJournalGameDate(value: unknown): string | null {
+  const gameDate = parseGameDate(value);
+  if (gameDate === null) {
+    return null;
+  }
+
+  const calendar = gameSystemRegistry
+    .list()
+    .map((system) => system.calendars[gameDate.calendarId])
+    .find((candidate) => candidate !== undefined);
+
+  return calendar
+    ? formatGameDate(gameDate, calendar)
+    : `${gameDate.day} ${gameDate.monthId} ${gameDate.year}`;
 }
 
 export default function PlayerJournalRoute() {
@@ -260,11 +277,15 @@ function PlayerSummaryCard({
 }: {
   summary: GetJournalForCurrentPlayer200DataSummariesItem;
 }) {
+  const gameDate = formatJournalGameDate(summary.gameDate);
+
   return (
     <article className="npc-fact-card player-summary-card">
       <div className="npc-fact-card-header">
-        <span className="npc-fact-number">{formatSessionDate(summary.sessionDate)}</span>
-        <p className="detail-label">Session summary</p>
+        <span className="npc-fact-number">
+          {gameDate ?? formatSessionDate(summary.sessionDate)}
+        </span>
+        <p className="detail-label">{gameDate ? 'Game date' : 'Session summary'}</p>
       </div>
       <h2>{summary.title}</h2>
       <p className="npc-fact-copy">{summary.content}</p>

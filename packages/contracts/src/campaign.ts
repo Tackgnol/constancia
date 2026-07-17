@@ -1,3 +1,5 @@
+import type { GameDate } from './game-date.js';
+
 export type ChannelType = 'main' | 'scene' | 'temp';
 
 export interface Campaign {
@@ -5,6 +7,7 @@ export interface Campaign {
   name: string;
   discordGuildId: string;
   gameSystemId: string;
+  gameDate: GameDate | null;
   createdAt: Date;
   updatedAt: Date;
 }

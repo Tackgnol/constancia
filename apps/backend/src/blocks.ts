@@ -7,6 +7,8 @@ import {
   messageGroupBlock,
   displayImageBlock,
   retrieveDataBlock,
+  addJournalEntryBlock,
+  addQuestBlock,
 } from '@constancia/core';
 import { vtmInsightResolverBlock, vtmPoolResolverBlock } from '@constancia/systems';
 import { PIPELINE_BLOCK_SPECS } from '@constancia/block-catalogue';
@@ -18,6 +20,8 @@ const registeredBlocks = [
   messageChannelBlock,
   messageGroupBlock,
   displayImageBlock,
+  addJournalEntryBlock,
+  addQuestBlock,
   retrieveDataBlock,
   vtmPoolResolverBlock,
   vtmInsightResolverBlock,

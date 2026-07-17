@@ -1,6 +1,7 @@
 import type { StatSchema } from './stat-schema.js';
 import type { BlockDefinition } from './block.js';
 import type { NpcSystemBlockValue } from './npc.js';
+import type { GameCalendarDefinition } from './game-date.js';
 
 export interface TestConfig {
   label: string;
@@ -37,6 +38,8 @@ export interface GameSystem {
   id: string;
   name: string;
   version: string;
+  defaultCalendarId: string;
+  calendars: Record<string, GameCalendarDefinition>;
   statSchema: StatSchema;
   testConfig: TestConfig;
   npcBlocks?: NpcSystemBlockDefinition[];

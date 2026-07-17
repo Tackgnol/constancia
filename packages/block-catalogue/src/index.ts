@@ -171,6 +171,54 @@ export const PIPELINE_BLOCK_SPECS = [
     },
   },
   {
+    blockType: 'add-journal-entry',
+    version: 1,
+    label: 'Add Journal Entry',
+    availability: { kind: 'common' },
+    configSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        title: { type: 'string' },
+        content: { type: 'string' },
+        visible: { type: 'boolean' },
+      },
+      required: ['title', 'content'],
+    },
+    defaultConfig: { title: '', content: '', visible: true },
+    editor: {
+      fields: [
+        { kind: 'text', path: 'title', label: 'Title' },
+        { kind: 'textarea', path: 'content', label: 'Entry' },
+        { kind: 'boolean', path: 'visible', label: 'Reveal in player journals' },
+      ],
+    },
+  },
+  {
+    blockType: 'add-quest',
+    version: 1,
+    label: 'Add Quest',
+    availability: { kind: 'common' },
+    configSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        name: { type: 'string' },
+        description: { type: 'string' },
+        visible: { type: 'boolean' },
+      },
+      required: ['name'],
+    },
+    defaultConfig: { name: '', description: '', visible: true },
+    editor: {
+      fields: [
+        { kind: 'text', path: 'name', label: 'Quest name' },
+        { kind: 'textarea', path: 'description', label: 'Description', optional: true },
+        { kind: 'boolean', path: 'visible', label: 'Reveal in player journals' },
+      ],
+    },
+  },
+  {
     blockType: 'conditional-gate',
     version: 1,
     label: 'Conditional Gate',

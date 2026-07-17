@@ -7,6 +7,7 @@ import {
   UnknownGameSystemError,
   gameSystemRegistry,
 } from '../game-system-registry.js';
+import { GREGORIAN_CALENDAR } from '../calendar.js';
 
 describe('GameSystemRegistry', () => {
   it('registers the concrete VTM V5 and Mork Borg adapters', () => {
@@ -39,6 +40,8 @@ describe('GameSystemRegistry', () => {
       aliases: ['vtm5'],
       name: 'Another System',
       version: '0.1.0',
+      defaultCalendarId: GREGORIAN_CALENDAR.id,
+      calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
       statSchema: { groups: [] },
       testConfig: { label: 'Test', fields: [] },
       blocks: [],

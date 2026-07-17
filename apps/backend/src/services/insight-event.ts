@@ -29,5 +29,6 @@ export function resolveInsightScore(
 }
 
 export function filterInsightResolutionPipeline(blocks: BlockInstance[]): BlockInstance[] {
-  return blocks.filter((block) => block.blockType !== 'vtm-insight-resolver');
+  const eventLevelBlocks = new Set(['vtm-insight-resolver', 'add-journal-entry', 'add-quest']);
+  return blocks.filter((block) => !eventLevelBlocks.has(block.blockType));
 }

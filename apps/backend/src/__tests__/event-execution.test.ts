@@ -29,6 +29,14 @@ describe('EventExecution', () => {
       eventId: command.eventId,
       campaignId: command.campaignId,
       messages: [{ target: 'channel' as const, content: 'The Prince arrives.' }],
+      effects: [
+        {
+          kind: 'add-quest' as const,
+          name: 'Find the missing Harpy',
+          description: '',
+          visible: true,
+        },
+      ],
       halted: false,
       deliveries: [messageDelivery(command.eventId)],
     }));
@@ -52,6 +60,14 @@ describe('EventExecution', () => {
     expect(planFire).toHaveBeenCalledTimes(1);
     expect(delivery.commands).toHaveLength(1);
     expect(store.isEventFired('campaign-1', 'event-1')).toBe(true);
+    expect(store.committedEffects).toEqual([
+      {
+        kind: 'add-quest',
+        name: 'Find the missing Harpy',
+        description: '',
+        visible: true,
+      },
+    ]);
     expect(first.deliveries).toMatchObject([{ status: 'delivered', attempts: 1 }]);
   });
 
@@ -64,6 +80,7 @@ describe('EventExecution', () => {
         eventId: command.eventId,
         campaignId: command.campaignId,
         messages: [{ target: 'channel' as const, content: 'Only once.' }],
+        effects: [],
         halted: false,
         deliveries: [messageDelivery(command.eventId)],
       };
@@ -99,6 +116,7 @@ describe('EventExecution', () => {
       eventId: command.eventId,
       campaignId: command.campaignId,
       messages: [{ target: 'channel' as const, content: 'A door slams.' }],
+      effects: [],
       halted: false,
       deliveries: [messageDelivery(command.eventId)],
     }));
@@ -143,6 +161,7 @@ describe('EventExecution', () => {
           content: 'You read the Sheriff successfully.',
         },
       ],
+      effects: [],
       halted: false,
       deliveries: [
         {
