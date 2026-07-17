@@ -18,7 +18,9 @@
 #   discord_client_secret      # Better Auth Discord OAuth in the backend/frontend
 #   discord_guild_id           # Faster per-guild slash-command registration
 #   openai_api_key             # Required when CONTENT_MODERATION_ENABLED=true
-#   upload_public_base_url     # Public R2/custom-domain prefix for direct object serving
+#   upload_public_base_url     # Public R2/custom-domain prefix for direct object serving.
+#                              # Re-add the secret AND its from_secret entries in both steps
+#                              # below when enabling; Woodpecker fails on missing secrets.
 #   r2_endpoint                # Required when UPLOAD_STORAGE_DRIVER=r2
 #   r2_access_key_id           #   "
 #   r2_secret_access_key       #   "
@@ -87,8 +89,6 @@ steps:
         from_secret: r2_secret_access_key
       R2_BUCKET:
         from_secret: r2_bucket
-      UPLOAD_PUBLIC_BASE_URL:
-        from_secret: upload_public_base_url
     commands:
       - |
         set -e
@@ -163,8 +163,6 @@ steps:
         from_secret: r2_secret_access_key
       R2_BUCKET:
         from_secret: r2_bucket
-      UPLOAD_PUBLIC_BASE_URL:
-        from_secret: upload_public_base_url
     commands:
       - |
         set -e
