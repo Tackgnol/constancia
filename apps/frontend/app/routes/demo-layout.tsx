@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState } from 'react';
 import { Outlet, useLoaderData, useLocation } from 'react-router';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { PlayerWhisperForm } from '@/components/war-room/player-whisper-form';
-import { SceneRailExtras } from '@/components/war-room/scene-rail-extras';
 import { WarRoomModeTabs } from '@/components/war-room/mode-tabs';
+import { PlayerRail } from '@/components/war-room/player-rail';
+import { QuickNarrationForm } from '@/components/war-room/quick-narration-form';
+import { quickNarrationActivityLabel } from '@/components/war-room/quick-narration';
+import { buildWarRoomModeTabs } from '@/components/war-room/war-room-navigation';
+import { SceneRailExtras } from '@/components/war-room/scene-rail-extras';
 import { demoContext, demoCampaigns, demoHealth, demoSystems } from '@/lib/demo-data';
 import { triggerSections } from '@/lib/war-room-data';
 
@@ -22,36 +22,7 @@ export function loader() {
   return { health: demoHealth, campaigns: demoCampaigns, systems: demoSystems };
 }
 
-const tabs = [
-  { to: '/demo/setup', label: 'Setup' },
-  { to: '/demo', label: 'Play', end: true },
-  { to: '/demo/npcs', label: 'NPCs' },
-  { to: '/demo/participants', label: 'Participants' },
-  { to: '/demo/lore', label: 'Lore' },
-  { to: '/demo/log', label: 'Quests' },
-  { to: '/demo/player/sheet', label: 'Player' },
-];
-
-const quickNarrationSchema = z.object({
-  message: z
-    .string()
-    .trim()
-    .min(8, 'Enter at least 8 characters so the room gets a complete narration cue.')
-    .max(240, 'Shorten this narration to 240 characters or fewer, then broadcast it.'),
-});
-
-type QuickNarrationValues = z.infer<typeof quickNarrationSchema>;
-
-const clanToneByCharacter: Record<string, string> = {
-  Brujah: 'brujah',
-  Toreador: 'toreador',
-  Nosferatu: 'nosferatu',
-  Malkavian: 'malkavian',
-};
-
-function getClanTone(character: string) {
-  return clanToneByCharacter[character] ?? 'neutral';
-}
+const tabs = buildWarRoomModeTabs('/demo', { includePlayer: true });
 
 function formatActivityTime() {
   return new Intl.DateTimeFormat('en-GB', {
@@ -59,10 +30,6 @@ function formatActivityTime() {
     minute: '2-digit',
     hour12: false,
   }).format(new Date());
-}
-
-function truncateActivityLabel(message: string) {
-  return message.length > 60 ? `${message.slice(0, 59)}…` : message;
 }
 
 export default function DemoLayout() {
@@ -73,21 +40,7 @@ export default function DemoLayout() {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [activity, setActivity] = useState(demoContext.activity);
   const [firedEventIds, setFiredEventIds] = useState<string[]>([]);
-  const [quickBarNotice, setQuickBarNotice] = useState<string | null>(null);
   const [mobilePlayersOpen, setMobilePlayersOpen] = useState(false);
-  const [pulseEntries, setPulseEntries] = useState(() => activity.slice(0, 3));
-  const quickBarForm = useForm<QuickNarrationValues>({
-    resolver: zodResolver(quickNarrationSchema),
-    defaultValues: { message: '' },
-  });
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setError,
-    clearErrors,
-    formState: { errors, isSubmitting },
-  } = quickBarForm;
 
   const recordActivity = (label: string) => {
     setActivity((current) => [
@@ -119,37 +72,6 @@ export default function DemoLayout() {
     recordActivity,
     setEventFiredState,
   };
-
-  useEffect(() => {
-    setPulseEntries(activity.slice(0, 3));
-
-    const timer = window.setTimeout(() => {
-      setPulseEntries([]);
-    }, 12_000);
-
-    return () => window.clearTimeout(timer);
-  }, [activity, location.pathname]);
-
-  const onSubmitQuickBar = handleSubmit(async (values) => {
-    try {
-      clearErrors('root');
-      const message = values.message.trim();
-
-      recordActivity(`Broadcast queued · ${truncateActivityLabel(message)}`);
-      setQuickBarNotice('Narration pulse pushed to the room.');
-      reset({ message: '' });
-    } catch (error) {
-      console.error('Quick narration error:', error);
-      setError('root.serverError', {
-        type: 'manual',
-        message:
-          "We couldn't broadcast this narration. Your text is still here; review it and try again.",
-      });
-      setQuickBarNotice(null);
-    }
-  });
-
-  const quickBarError = errors.message?.message ?? errors.root?.serverError?.message;
 
   return (
     <div className={`war-room-shell ${isPlayRoute ? 'is-live-play' : 'is-management'}`}>
@@ -217,108 +139,23 @@ export default function DemoLayout() {
         </main>
 
         {isPlayRoute ? (
-          <aside className={`players-panel${mobilePlayersOpen ? ' is-mobile-open' : ''}`}>
-            <button
-              className="mobile-panel-toggle"
-              type="button"
-              aria-controls="demo-players-panel-content"
-              aria-expanded={mobilePlayersOpen}
-              onClick={() => setMobilePlayersOpen((current) => !current)}
-            >
-              <span>Players and pulse</span>
-              <span>{mobilePlayersOpen ? 'Close' : `${outletContext.players.length} players`}</span>
-            </button>
-
-            <div className="players-panel-content" id="demo-players-panel-content">
-              <div className="panel-title">Players</div>
-
-              <div className="player-list">
-                {outletContext.players.map((player) => (
-                  <button
-                    key={player.id}
-                    className="player-row"
-                    data-clan={getClanTone(player.character)}
-                    type="button"
-                  >
-                    <span className="player-avatar" aria-hidden="true">
-                      {player.name.charAt(0)}
-                    </span>
-                    <span className="player-copy">
-                      <span className="player-name">{player.name}</span>
-                      <span className="player-meta">
-                        {player.character} · {player.player}
-                      </span>
-                    </span>
-                    <span className={`player-status ${player.status}`} aria-label={player.status} />
-                  </button>
-                ))}
-              </div>
-
-              <PlayerWhisperForm warRoom={outletContext} />
-
-              <div className="panel-title panel-title-secondary">Pulse</div>
-              <p className="panel-copy">
-                Three fresh beats only. The rail clears itself when the room moves on.
-              </p>
-              {pulseEntries.length > 0 ? (
-                <div className="activity-feed">
-                  {pulseEntries.map((entry) => (
-                    <p key={entry.id}>
-                      <span>{entry.time}</span>
-                      {entry.label}
-                    </p>
-                  ))}
-                </div>
-              ) : (
-                <p className="panel-empty">
-                  No fresh pulses on this route. Quest history stays in Quests.
-                </p>
-              )}
-            </div>
-          </aside>
+          <PlayerRail
+            contentId="demo-players-panel-content"
+            mobileOpen={mobilePlayersOpen}
+            onToggleMobile={() => setMobilePlayersOpen((current) => !current)}
+            resetKey={location.pathname}
+            warRoom={outletContext}
+          />
         ) : null}
       </div>
 
       {isPlayRoute ? (
-        <footer className="quick-bar">
-          <form className="quick-form" onSubmit={onSubmitQuickBar} noValidate>
-            <div className="quick-form-row">
-              <input
-                aria-describedby="quick-bar-feedback"
-                aria-invalid={quickBarError ? true : undefined}
-                aria-label="Quick narration"
-                className="quick-input"
-                placeholder="Broadcast a quick narration..."
-                type="text"
-                {...register('message')}
-              />
-              <button className="quick-send" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Broadcasting…' : 'Broadcast'}
-              </button>
-            </div>
-            {quickBarError ? (
-              <p
-                className="quick-bar-feedback quick-bar-error"
-                id="quick-bar-feedback"
-                role="alert"
-              >
-                {quickBarError}
-              </p>
-            ) : quickBarNotice ? (
-              <p
-                className="quick-bar-feedback quick-bar-success"
-                id="quick-bar-feedback"
-                role="status"
-              >
-                {quickBarNotice}
-              </p>
-            ) : (
-              <p className="quick-bar-feedback quick-bar-hint" id="quick-bar-feedback">
-                Press Enter to send. Keep it short enough to play like a live cue.
-              </p>
-            )}
-          </form>
-        </footer>
+        <QuickNarrationForm
+          onBroadcast={async ({ message }) => {
+            recordActivity(quickNarrationActivityLabel(message));
+          }}
+          successMessage="Narration pulse pushed to the room."
+        />
       ) : null}
     </div>
   );

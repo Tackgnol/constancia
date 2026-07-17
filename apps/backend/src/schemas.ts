@@ -441,6 +441,17 @@ export const playerMessageBodySchema = {
   required: ['channelId', 'discordUserIds', 'content'],
 } as const;
 
+export const channelMessageBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    channelId: { type: 'string', minLength: 1 },
+    content: { type: 'string', minLength: 8, maxLength: 240 },
+    imageUrl: { type: 'string' },
+  },
+  required: ['channelId', 'content'],
+} as const;
+
 export const questBodySchema = {
   type: 'object',
   additionalProperties: false,
@@ -973,6 +984,18 @@ export const playerMessageResultSchema = {
     deliveredTo: { type: 'array', items: { type: 'string' } },
   },
   required: ['campaignId', 'channelId', 'deliveredTo'],
+} as const;
+
+export const channelMessageResultSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    campaignId: { type: 'string' },
+    channelId: { type: 'string' },
+    delivered: { type: 'integer', minimum: 0 },
+    skipped: { type: 'integer', minimum: 0 },
+  },
+  required: ['campaignId', 'channelId', 'delivered', 'skipped'],
 } as const;
 
 export const botTestResultResponseSchema = fireEventResultSchema;

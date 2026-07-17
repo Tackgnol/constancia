@@ -205,8 +205,10 @@ h3 {
 
 .campaign-name-form {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
+  max-width: min(34rem, 70vw);
 }
 
 .campaign-name-input {
@@ -236,6 +238,15 @@ h3 {
   font: inherit;
   letter-spacing: inherit;
   text-transform: inherit;
+}
+
+.campaign-name-error {
+  flex-basis: 100%;
+  color: var(--error);
+  font:
+    600 0.7rem/1.35 'IBM Plex Mono',
+    monospace;
+  overflow-wrap: anywhere;
 }
 
 .system-badge {

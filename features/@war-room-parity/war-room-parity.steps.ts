@@ -1,0 +1,204 @@
+import { expect } from '@playwright/test';
+import { createBdd, test as base } from 'playwright-bdd';
+import { deliverAdHocChannelMessage } from '../../apps/backend/src/services/ad-hoc-channel-message.js';
+import { InMemoryBotDeliveryPort } from '../../apps/backend/src/services/event-execution.js';
+import { getClanTone } from '../../apps/frontend/app/components/war-room/player-tone.js';
+import { quickNarrationSchema } from '../../apps/frontend/app/components/war-room/quick-narration.js';
+import { buildWarRoomModeTabs } from '../../apps/frontend/app/components/war-room/war-room-navigation.js';
+import {
+  CAMPAIGN_RENAME_ERROR,
+  QUICK_NARRATION_ERROR,
+} from '../../apps/frontend/app/lib/war-room-feedback.js';
+
+class WarRoomParityWorld {
+  readonly bot = new InMemoryBotDeliveryPort();
+  readonly successfulDeliveryIds = new Set<string>();
+  campaignName = '';
+  channelName = '';
+  draft = '';
+  error: string | null = null;
+  notice: string | null = null;
+  livePlayOpen = false;
+  comparedWarRooms = false;
+  deliveryUnavailable = false;
+  campaignUpdatesUnavailable = false;
+  campaignNameDraft = '';
+  renameError: string | null = null;
+  private attempt: { idempotencyKey: string; message: string } | null = null;
+  private attemptSequence = 0;
+
+  async broadcast(message?: string): Promise<void> {
+    if (message !== undefined) {
+      if (this.draft !== message) {
+        this.attempt = null;
+      }
+      this.draft = message;
+    }
+
+    const parsed = quickNarrationSchema.safeParse({ message: this.draft });
+    if (!parsed.success) {
+      this.error = parsed.error.issues[0]?.message ?? 'Narration is invalid.';
+      this.notice = null;
+      return;
+    }
+
+    const normalized = parsed.data.message;
+    const attempt =
+      this.attempt?.message === normalized
+        ? this.attempt
+        : {
+            idempotencyKey: `quick-narration-${++this.attemptSequence}`,
+            message: normalized,
+          };
+    this.attempt = attempt;
+
+    if (this.deliveryUnavailable) {
+      this.bot.failNext('Discord unavailable');
+    }
+
+    const result = await deliverAdHocChannelMessage(this.bot, {
+      campaignId: 'campaign-midnight-chronicle',
+      channelId: 'channel-elysium',
+      discordChannelId: this.channelName,
+      content: attempt.message,
+      idempotencyKey: attempt.idempotencyKey,
+    });
+
+    if (result.delivery.status === 'failed') {
+      this.error = QUICK_NARRATION_ERROR;
+      this.notice = null;
+      return;
+    }
+
+    this.successfulDeliveryIds.add(result.deliveryId);
+    this.error = null;
+    this.notice = 'Narration broadcast to the room.';
+    this.draft = '';
+    this.attempt = null;
+  }
+
+  saveCampaignName(): void {
+    if (this.campaignUpdatesUnavailable) {
+      this.renameError = CAMPAIGN_RENAME_ERROR;
+      return;
+    }
+
+    this.campaignName = this.campaignNameDraft;
+    this.renameError = null;
+  }
+}
+
+export const test = base.extend<{ world: WarRoomParityWorld }>({
+  world: async ({ playwright }, use) => {
+    void playwright;
+    await use(new WarRoomParityWorld());
+  },
+});
+
+const { Given, When, Then } = createBdd(test, { worldFixture: 'world' });
+
+Given('a game master administers the campaign {string}', function (name: string) {
+  this.campaignName = name;
+});
+
+Given('the campaign is connected to the Discord channel {string}', function (channel: string) {
+  this.channelName = channel;
+});
+
+Given('the live Play View is open', function () {
+  this.livePlayOpen = true;
+});
+
+When(
+  'the game master tries to broadcast the incomplete narration {string}',
+  async function (message: string) {
+    await this.broadcast(message);
+  },
+);
+
+Then('the quick bar explains how to complete the narration', function () {
+  expect(this.error).toContain('at least 8 characters');
+});
+
+Then('the quick bar keeps {string} for correction', function (message: string) {
+  expect(this.draft).toBe(message);
+});
+
+When('the game master broadcasts {string}', async function (message: string) {
+  await this.broadcast(message);
+});
+
+Then('Discord receives the channel narration once', function () {
+  expect(this.successfulDeliveryIds.size).toBe(1);
+});
+
+Then('the quick bar confirms the broadcast and clears the narration', function () {
+  expect(this.notice).toBe('Narration broadcast to the room.');
+  expect(this.draft).toBe('');
+});
+
+Given('Discord delivery is temporarily unavailable', function () {
+  this.deliveryUnavailable = true;
+});
+
+Then('the quick bar explains that the broadcast failed', function () {
+  expect(this.error).toBe(QUICK_NARRATION_ERROR);
+});
+
+Then('the quick bar keeps {string} for retry', function (message: string) {
+  expect(this.draft).toBe(message);
+});
+
+When('Discord delivery becomes available', function () {
+  this.deliveryUnavailable = false;
+});
+
+When('the game master retries the quick narration', async function () {
+  await this.broadcast();
+});
+
+Given('the game master is editing the campaign name as {string}', function (name: string) {
+  this.campaignNameDraft = name;
+});
+
+Given('campaign updates are temporarily unavailable', function () {
+  this.campaignUpdatesUnavailable = true;
+});
+
+When('the game master saves the campaign name', function () {
+  this.saveCampaignName();
+});
+
+Then('the top bar explains that the campaign name was not updated', function () {
+  expect(this.renameError).toBe(CAMPAIGN_RENAME_ERROR);
+});
+
+Then('{string} remains available for correction', function (name: string) {
+  expect(this.campaignNameDraft).toBe(name);
+});
+
+Given('the demo and live War Rooms contain equivalent campaign data', function () {
+  expect(this.campaignName).toBe('Midnight Chronicle');
+  expect(this.channelName).toBe('elysium');
+});
+
+When('the game master compares their navigation and player rails', function () {
+  this.comparedWarRooms = true;
+});
+
+Then('shared modes appear in the same order with the same names', function () {
+  expect(this.comparedWarRooms).toBe(true);
+  const demoLabels = buildWarRoomModeTabs('/demo', { includePlayer: true })
+    .filter((tab) => tab.label !== 'Player')
+    .map((tab) => tab.label);
+  const liveLabels = buildWarRoomModeTabs('').map((tab) => tab.label);
+
+  expect(demoLabels).toEqual(liveLabels);
+});
+
+Then('equivalent players expose the same clan identity cues', function () {
+  expect(this.comparedWarRooms).toBe(true);
+  expect(getClanTone('Brujah')).toBe('brujah');
+  expect(getClanTone('Toreador')).toBe('toreador');
+  expect(getClanTone('Unknown')).toBe('neutral');
+});

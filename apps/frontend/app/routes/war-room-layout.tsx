@@ -7,13 +7,19 @@ import { listCharacters } from '@constancia/api-client/endpoints/characters/char
 import { listEvents } from '@constancia/api-client/endpoints/events/events';
 import { listQuests } from '@constancia/api-client/endpoints/journal/journal';
 import { listLoreEntries } from '@constancia/api-client/endpoints/lore/lore';
+import { sendChannelMessage } from '@constancia/api-client/endpoints/messages/messages';
 import { getServiceHealth } from '@constancia/api-client/endpoints/meta/meta';
 import { listGameSystems } from '@constancia/api-client/endpoints/systems/systems';
-import { PlayerWhisperForm } from '@/components/war-room/player-whisper-form';
-import { SceneRailExtras } from '@/components/war-room/scene-rail-extras';
 import { WarRoomModeTabs } from '@/components/war-room/mode-tabs';
+import { PlayerRail } from '@/components/war-room/player-rail';
+import { QuickNarrationForm } from '@/components/war-room/quick-narration-form';
+import { quickNarrationActivityLabel } from '@/components/war-room/quick-narration';
+import { SceneRailExtras } from '@/components/war-room/scene-rail-extras';
+import { buildWarRoomModeTabs } from '@/components/war-room/war-room-navigation';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import { buildServerApiOptions } from '@/lib/api-proxy.server';
+import { postRouteAction } from '@/lib/route-action-client';
+import { CAMPAIGN_RENAME_ERROR, QUICK_NARRATION_ERROR } from '@/lib/war-room-feedback';
 import type { PlayerPresence } from '@/lib/war-room-data';
 import {
   activityFeed,
@@ -91,6 +97,56 @@ export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const intent = formData.get('intent');
   const campaignId = formData.get('campaignId');
+
+  if (intent === 'send-channel-message') {
+    const channelId = formData.get('channelId');
+    const content = formData.get('content');
+    const idempotencyKey = formData.get('idempotencyKey');
+
+    if (
+      typeof campaignId !== 'string' ||
+      campaignId.length === 0 ||
+      typeof channelId !== 'string' ||
+      channelId.length === 0 ||
+      typeof content !== 'string' ||
+      content.trim().length < 8 ||
+      content.trim().length > 240 ||
+      typeof idempotencyKey !== 'string' ||
+      idempotencyKey.length === 0
+    ) {
+      return Response.json(
+        {
+          status: 'error',
+          message:
+            "We couldn't read this narration. Keep it between 8 and 240 characters, then try again.",
+        },
+        { status: 400 },
+      );
+    }
+
+    try {
+      const apiOptions = buildServerApiOptions(request);
+      const response = await sendChannelMessage(
+        { id: campaignId },
+        { channelId, content: content.trim() },
+        {
+          ...apiOptions,
+          headers: {
+            ...apiOptions.headers,
+            'idempotency-key': idempotencyKey,
+          },
+        },
+      );
+      assertApiOk(response, QUICK_NARRATION_ERROR);
+      return Response.json({ status: 'success' });
+    } catch (caught) {
+      return Response.json(
+        { status: 'error', message: getApiErrorMessage(caught, QUICK_NARRATION_ERROR) },
+        { status: 500 },
+      );
+    }
+  }
+
   const name = formData.get('name');
 
   if (intent !== 'rename-campaign') {
@@ -121,33 +177,28 @@ export async function action({ request }: ActionFunctionArgs) {
       { name: name.trim() },
       buildServerApiOptions(request),
     );
-    assertApiOk(
-      response,
-      "We couldn't update the campaign name. Your text is still in the field; review it and try again.",
-    );
+    assertApiOk(response, CAMPAIGN_RENAME_ERROR);
     return Response.json({ status: 'success' });
   } catch (caught) {
     return Response.json(
       {
         status: 'error',
-        message: getApiErrorMessage(
-          caught,
-          "We couldn't update the campaign name. Your text is still in the field; review it and try again.",
-        ),
+        message: getApiErrorMessage(caught, CAMPAIGN_RENAME_ERROR),
       },
       { status: 500 },
     );
   }
 }
 
-const tabs = [
-  { to: '/setup', label: 'Setup' },
-  { to: '/', label: 'Play', end: true },
-  { to: '/npcs', label: 'NPCs' },
-  { to: '/lore', label: 'Lore' },
-  { to: '/participants', label: 'Participants' },
-  { to: '/log', label: 'Quests' },
-];
+const tabs = buildWarRoomModeTabs('');
+
+function formatActivityTime() {
+  return new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date());
+}
 
 export default function WarRoomLayout() {
   const location = useLocation();
@@ -157,6 +208,7 @@ export default function WarRoomLayout() {
   const revalidator = useRevalidator();
 
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [activity, setActivity] = useState(activityFeed);
   const [isEditingName, setIsEditingName] = useState(false);
   const [mobilePlayersOpen, setMobilePlayersOpen] = useState(false);
 
@@ -198,6 +250,18 @@ export default function WarRoomLayout() {
   const renameActionData = isRenameCampaignActionData(renameFetcher.data)
     ? renameFetcher.data
     : undefined;
+  const renameError = renameActionData?.status === 'error' ? renameActionData.message : null;
+
+  const recordActivity = (label: string) => {
+    setActivity((current) => [
+      {
+        id: `activity-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        time: formatActivityTime(),
+        label,
+      },
+      ...current,
+    ]);
+  };
 
   useEffect(() => {
     if (!isEditingName) {
@@ -242,17 +306,16 @@ export default function WarRoomLayout() {
     activeTag,
     players: livePlayers.length > 0 ? livePlayers : players,
     rawCharacters: liveCharacters.length > 0 ? liveCharacters : [],
-    activity: activityFeed,
+    activity,
     apiOnline: health.status === 'ok',
     events: liveEvents,
     quests: liveQuests,
     lore: liveLore,
+    recordActivity,
   };
 
   return (
     <div className={`war-room-shell ${isPlayRoute ? 'is-live-play' : 'is-management'}`}>
-      <div className="design-label">A - War Room</div>
-
       <header className="topbar">
         <div className="topbar-group">
           {isEditingName ? (
@@ -264,9 +327,16 @@ export default function WarRoomLayout() {
               }}
             >
               <input
+                aria-describedby={renameError ? 'campaign-name-error' : undefined}
+                aria-invalid={renameError ? true : undefined}
                 aria-label="Campaign name"
                 className="campaign-name-input"
-                onChange={(event) => setEditNameValue(event.target.value)}
+                onChange={(event) => {
+                  setEditNameValue(event.target.value);
+                  if (renameError) {
+                    renameFetcher.reset();
+                  }
+                }}
                 onKeyDown={(event) => {
                   if (event.key === 'Escape') {
                     setEditNameValue(liveCampaign.name);
@@ -280,8 +350,13 @@ export default function WarRoomLayout() {
                 disabled={renameFetcher.state !== 'idle'}
                 type="submit"
               >
-                Save
+                {renameFetcher.state === 'idle' ? 'Save' : 'Saving…'}
               </button>
+              {renameError ? (
+                <span className="campaign-name-error" id="campaign-name-error" role="alert">
+                  {renameError}
+                </span>
+              ) : null}
             </form>
           ) : (
             <button
@@ -359,66 +434,41 @@ export default function WarRoomLayout() {
         </main>
 
         {isPlayRoute ? (
-          <aside className={`players-panel${mobilePlayersOpen ? ' is-mobile-open' : ''}`}>
-            <button
-              className="mobile-panel-toggle"
-              type="button"
-              aria-controls="live-players-panel-content"
-              aria-expanded={mobilePlayersOpen}
-              onClick={() => setMobilePlayersOpen((current) => !current)}
-            >
-              <span>Players and activity</span>
-              <span>{mobilePlayersOpen ? 'Close' : `${outletContext.players.length} players`}</span>
-            </button>
-
-            <div className="players-panel-content" id="live-players-panel-content">
-              <div className="panel-title">Players</div>
-
-              <div className="player-list">
-                {outletContext.players.map((player) => (
-                  <button key={player.id} className="player-row" type="button">
-                    <span className="player-avatar" aria-hidden="true">
-                      {player.name.charAt(0)}
-                    </span>
-                    <span className="player-copy">
-                      <span className="player-name">{player.name}</span>
-                      <span className="player-meta">
-                        {player.character} · {player.player}
-                      </span>
-                    </span>
-                    <span className={`player-status ${player.status}`} aria-label={player.status} />
-                  </button>
-                ))}
-              </div>
-
-              <PlayerWhisperForm warRoom={outletContext} />
-
-              <div className="panel-title panel-title-secondary">Recent activity</div>
-              <div className="activity-feed">
-                {outletContext.activity.map((entry) => (
-                  <p key={entry.id}>
-                    <span>{entry.time}</span>
-                    {entry.label}
-                  </p>
-                ))}
-              </div>
-            </div>
-          </aside>
+          <PlayerRail
+            contentId="live-players-panel-content"
+            mobileOpen={mobilePlayersOpen}
+            onToggleMobile={() => setMobilePlayersOpen((current) => !current)}
+            resetKey={location.pathname}
+            warRoom={outletContext}
+          />
         ) : null}
       </div>
 
       {isPlayRoute ? (
-        <footer className="quick-bar">
-          <input
-            aria-label="Quick narration"
-            className="quick-input"
-            placeholder="Broadcast a quick narration..."
-            type="text"
-          />
-          <button className="quick-send" type="button">
-            Broadcast
-          </button>
-        </footer>
+        <QuickNarrationForm
+          onBroadcast={async ({ idempotencyKey, message }) => {
+            const channelId = outletContext.channels[0]?.id;
+            if (!channelId) {
+              throw new Error(
+                "We couldn't find a campaign channel. Return to Setup, connect one, and try again.",
+              );
+            }
+
+            const response = await postRouteAction('/', {
+              intent: 'send-channel-message',
+              campaignId: outletContext.campaign.id,
+              channelId,
+              content: message,
+              idempotencyKey,
+            });
+
+            if (response.status !== 'success') {
+              throw new Error(response.message);
+            }
+
+            recordActivity(quickNarrationActivityLabel(message));
+          }}
+        />
       ) : null}
     </div>
   );

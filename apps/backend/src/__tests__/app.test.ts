@@ -112,6 +112,7 @@ describe('backend app', () => {
         '/api/v1/campaigns/{id}/events/',
         '/api/v1/campaigns/{id}/events/{eventId}',
         '/api/v1/campaigns/{id}/events/{eventId}/fire',
+        '/api/v1/campaigns/{id}/messages/channel',
         '/api/v1/campaigns/{id}/messages/players',
         '/api/v1/campaigns/{id}/quests',
         '/api/v1/campaigns/{id}/quests/{questId}',
@@ -284,6 +285,15 @@ describe('backend app', () => {
         method: 'DELETE',
         url: '/api/v1/campaigns/campaign-1/events/event-1',
         statusCode: 401,
+      },
+      {
+        method: 'POST',
+        url: '/api/v1/campaigns/campaign-1/messages/channel',
+        statusCode: 401,
+        payload: {
+          channelId: 'channel-1',
+          content: 'The prince enters the chamber.',
+        },
       },
       {
         method: 'POST',

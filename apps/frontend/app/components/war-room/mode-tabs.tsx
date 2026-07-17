@@ -1,11 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router';
-
-export interface WarRoomModeTab {
-  to: string;
-  label: string;
-  end?: boolean;
-}
+import type { WarRoomModeTab } from '@/components/war-room/war-room-navigation';
 
 function normalizePathname(pathname: string): string {
   return pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;

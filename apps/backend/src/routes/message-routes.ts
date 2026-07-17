@@ -4,9 +4,12 @@ import type { BlockMessage } from '@constancia/contracts';
 import { getPrismaClient } from '../auth/prisma.js';
 import { ok, sendError, sendNotFound } from '../http-responses.js';
 import { createHttpBotDeliveryPort } from '../services/bot-delivery-port.js';
+import { deliverAdHocChannelMessage } from '../services/ad-hoc-channel-message.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
 import {
   campaignParamsSchema,
+  channelMessageBodySchema,
+  channelMessageResultSchema,
   idempotencyKeyHeaderSchema,
   playerMessageBodySchema,
   playerMessageResultSchema,
@@ -25,6 +28,12 @@ interface PlayerMessageBody {
   imageUrl?: string;
 }
 
+interface ChannelMessageBody {
+  channelId: string;
+  content: string;
+  imageUrl?: string;
+}
+
 interface IdempotencyHeaders {
   'idempotency-key': string;
 }
@@ -34,6 +43,74 @@ function uniqueTrimmedIds(ids: string[]): string[] {
 }
 
 const messageRoutes: FastifyPluginAsync = async (app) => {
+  app.post<{
+    Params: CampaignParams;
+    Body: ChannelMessageBody;
+    Headers: IdempotencyHeaders;
+  }>(
+    '/channel',
+    {
+      schema: {
+        tags: ['messages'],
+        summary: 'Send an ad-hoc narration to a campaign channel',
+        operationId: 'sendChannelMessage',
+        params: campaignParamsSchema,
+        headers: idempotencyKeyHeaderSchema,
+        body: channelMessageBodySchema,
+        response: {
+          200: singleResponseSchema(channelMessageResultSchema),
+          400: standardResponseSchema,
+          404: standardResponseSchema,
+          503: standardResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const prisma = getPrismaClient();
+      await moderatePayloadText(app.config, request.body);
+      const campaignId = request.campaignScope.campaignId;
+      const { channelId, content, imageUrl } = request.body;
+      const channel = await prisma.channel.findFirst({
+        where: { id: channelId, campaignId },
+        select: { discordChannelId: true },
+      });
+
+      if (channel === null) {
+        return sendNotFound(reply, 'Channel not found');
+      }
+
+      const result = await deliverAdHocChannelMessage(
+        createHttpBotDeliveryPort({
+          botInternalUrl: app.config.botInternalUrl,
+          botApiKey: app.config.botApiKey,
+        }),
+        {
+          campaignId,
+          channelId,
+          discordChannelId: channel.discordChannelId,
+          content,
+          idempotencyKey: request.headers['idempotency-key'],
+          ...(imageUrl ? { imageUrl } : {}),
+        },
+      );
+
+      if (result.delivery.status === 'failed') {
+        return sendError(
+          reply,
+          503,
+          'Discord delivery is temporarily unavailable. Retry the same narration.',
+        );
+      }
+
+      return ok({
+        campaignId,
+        channelId,
+        delivered: result.delivery.delivered,
+        skipped: result.delivery.skipped,
+      });
+    },
+  );
+
   app.post<{
     Params: CampaignParams;
     Body: PlayerMessageBody;

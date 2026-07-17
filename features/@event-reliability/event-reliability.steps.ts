@@ -182,7 +182,8 @@ class ReliabilityWorld {
 }
 
 export const test = base.extend<{ world: ReliabilityWorld }>({
-  world: async (_fixtures, use) => {
+  world: async ({ playwright }, use) => {
+    void playwright;
     await use(new ReliabilityWorld());
   },
 });

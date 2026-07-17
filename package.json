@@ -16,7 +16,7 @@
     "format:check": "prettier --check .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "test:bdd": "bddgen && playwright test .features-gen/features/@event-reliability",
+    "test:bdd": "bddgen && playwright test .features-gen/features",
     "test:watch": "turbo run test:watch",
     "prepare": "husky"
   },
