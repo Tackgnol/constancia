@@ -108,7 +108,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     botApiKey,
     botInternalUrl: env.BOT_INTERNAL_URL ?? DEFAULT_BOT_INTERNAL_URL,
     backendPublicUrl: env.BACKEND_PUBLIC_URL ?? `http://localhost:${port}`,
-    openAiApiKey: env.OPENAI_API_KEY,
+    openAiApiKey: trimmedSecret(env.OPENAI_API_KEY),
     contentModerationEnabled,
     contentModerationModel: env.CONTENT_MODERATION_MODEL ?? DEFAULT_CONTENT_MODERATION_MODEL,
     contentModerationFailClosed: parseBoolean(env.CONTENT_MODERATION_FAIL_CLOSED, true),
@@ -145,11 +145,19 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
       'UPLOAD_QUOTA_WARNING_PERCENT',
     ),
     uploadPublicBaseUrl: env.UPLOAD_PUBLIC_BASE_URL,
-    r2Endpoint: env.R2_ENDPOINT,
-    r2AccessKeyId: env.R2_ACCESS_KEY_ID,
-    r2SecretAccessKey: env.R2_SECRET_ACCESS_KEY,
-    r2Bucket: env.R2_BUCKET,
+    r2Endpoint: trimmedSecret(env.R2_ENDPOINT),
+    r2AccessKeyId: trimmedSecret(env.R2_ACCESS_KEY_ID),
+    r2SecretAccessKey: trimmedSecret(env.R2_SECRET_ACCESS_KEY),
+    r2Bucket: trimmedSecret(env.R2_BUCKET),
   };
+}
+
+// Secrets pasted into CI/UI often pick up a trailing newline or CR; these values
+// end up verbatim in HTTP Authorization headers, where a control character throws
+// "Invalid character in header content".
+function trimmedSecret(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
 }
 
 function resolveAuthCookieDomain(configuredDomain: string | undefined): string | undefined {

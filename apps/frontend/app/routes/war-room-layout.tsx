@@ -350,7 +350,7 @@ export default function WarRoomLayout() {
         campaignId: liveCampaign.id,
         name: trimmed,
       },
-      { method: 'post' },
+      { method: 'post', action: '/' },
     );
   };
 
@@ -445,7 +445,7 @@ export default function WarRoomLayout() {
                     campaignId: liveCampaign.id,
                     gameDate: JSON.stringify(gameDate),
                   },
-                  { method: 'post' },
+                  { method: 'post', action: '/' },
                 );
               }}
               value={liveCampaign.gameDate}
