@@ -287,7 +287,7 @@ steps:
             return 1
           fi
 
-          docker exec -i \
+          docker exec \
             -u postgres \
             -e POSTGRES_DB="${POSTGRES_DB:-constancia}" \
             -e POSTGRES_USER="${POSTGRES_USER:-constancia}" \
