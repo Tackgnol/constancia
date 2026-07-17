@@ -1,3 +1,4 @@
+import { dateCommand } from '../commands/date.js';
 import { journalCommand, journalComponentHandler } from '../commands/journal.js';
 import { loginCommand } from '../commands/login.js';
 import { npcCommand } from '../commands/npcs.js';
@@ -15,6 +16,7 @@ import type {
 } from './command-types.js';
 
 export const chatCommands = [
+  dateCommand,
   rollCommand,
   journalCommand,
   npcCommand,

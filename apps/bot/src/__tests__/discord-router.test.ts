@@ -9,6 +9,7 @@ afterEach(() => {
 describe('command registry', () => {
   it('exposes the expected command names for registration', () => {
     expect(getChatCommandData().map((command) => command.name)).toEqual([
+      'date',
       'roll',
       'journal',
       'npc',
