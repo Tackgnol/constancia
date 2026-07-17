@@ -93,6 +93,12 @@ steps:
       - |
         set -e
 
+        deployment_tag="${CI_COMMIT_SHA:-local}-${CI_PIPELINE_NUMBER:-0}"
+        export BACKEND_IMAGE="constancia-backend:$deployment_tag"
+        export FRONTEND_IMAGE="constancia-frontend:$deployment_tag"
+        export BOT_IMAGE="constancia-bot:$deployment_tag"
+        export MIGRATE_IMAGE="constancia-migrate:$deployment_tag"
+
         # POSTGRES_PASSWORD_URLENCODED is required by compose.prod.yaml for DATABASE_URL.
         # The raw password is sufficient for structural config validation here
         # (no actual DB connection is made). The deploy step computes the proper
@@ -106,7 +112,8 @@ steps:
         echo "Config validation passed"
 
         docker compose -f compose.prod.yaml build backend frontend bot migrate
-        echo "All images built"
+        docker image inspect "$BACKEND_IMAGE" "$FRONTEND_IMAGE" "$BOT_IMAGE" "$MIGRATE_IMAGE" > /dev/null
+        echo "All images built for deployment $deployment_tag"
 
   deploy:
     image: docker:27-cli
@@ -222,12 +229,21 @@ steps:
           require_env R2_BUCKET
         fi
 
+        deployment_tag="${CI_COMMIT_SHA:-local}-${CI_PIPELINE_NUMBER:-0}"
+        export BACKEND_IMAGE="constancia-backend:$deployment_tag"
+        export FRONTEND_IMAGE="constancia-frontend:$deployment_tag"
+        export BOT_IMAGE="constancia-bot:$deployment_tag"
+        export MIGRATE_IMAGE="constancia-migrate:$deployment_tag"
+
+        docker image inspect "$BACKEND_IMAGE" "$FRONTEND_IMAGE" "$BOT_IMAGE" "$MIGRATE_IMAGE" > /dev/null
+        echo "Deploying immutable images for $deployment_tag"
+
         # URL-encode the password using Node.js from the already-built backend image
         # (reliable across all environments; avoids busybox shell encoding issues)
         echo "Encoding postgres password..."
         POSTGRES_PASSWORD_URLENCODED="$(docker run --rm \
           -e RAW_PASS="$POSTGRES_PASSWORD" \
-          constancia-backend:prod \
+          "$BACKEND_IMAGE" \
           node -e 'process.stdout.write(encodeURIComponent(process.env.RAW_PASS))')"
         if [ -z "$POSTGRES_PASSWORD_URLENCODED" ]; then
           echo "Failed to URL-encode POSTGRES_PASSWORD" >&2
@@ -301,28 +317,57 @@ steps:
           -e SUPERUSER_DISCORD_ID \
           -e SUPERUSER_NAME \
           -e SUPERUSER_UPLOAD_ALLOWANCE_BYTES \
-          constancia-migrate:prod
+          "$MIGRATE_IMAGE"
         echo "Migrations complete"
 
         docker stack deploy -c compose.prod.yaml constancia --detach=false --resolve-image never
 
-        # The runtime images use stable local :prod tags. `stack deploy
-        # --resolve-image never` keeps the service's existing image reference,
-        # and a bare `service update --force` re-runs the same task template
-        # WITHOUT re-resolving the tag — so both leave the previous image
-        # running. Pin each service to the freshly-built image by its resolved
-        # id (sha256:...) so the task template actually changes and rolls.
-        backend_image="$(docker images -q --no-trunc constancia-backend:prod)"
-        frontend_image="$(docker images -q --no-trunc constancia-frontend:prod)"
-        bot_image="$(docker images -q --no-trunc constancia-bot:prod)"
+        # A unique tag changes the Swarm task template on every deployment.
+        # Verify the actual image id of each running container as well, so a
+        # green pipeline can never silently leave the previous build serving.
+        verify_service_image() {
+          service="$1"
+          image="$2"
+          expected_id="$(docker image inspect --format '{{.Id}}' "$image")"
+          deadline=$(( $(date +%s) + 180 ))
 
-        docker service update --image "$backend_image" --detach=false constancia_backend
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            container_ids="$(docker ps --filter label=com.docker.swarm.service.name="$service" --format '{{.ID}}')"
+            all_match=true
+            running_count=0
+
+            for container_id in $container_ids; do
+              running_count=$((running_count + 1))
+              actual_id="$(docker inspect --format '{{.Image}}' "$container_id" 2>/dev/null || true)"
+              if [ "$actual_id" != "$expected_id" ]; then
+                all_match=false
+                echo "$service container $container_id is using $actual_id; expected $expected_id"
+              fi
+            done
+
+            if [ "$running_count" -gt 0 ] && [ "$all_match" = "true" ]; then
+              service_image="$(docker service inspect --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}' "$service")"
+              echo "$service verified on $service_image ($expected_id)"
+              return 0
+            fi
+
+            sleep 3
+          done
+
+          echo "Timed out verifying $service is running $image" >&2
+          return 1
+        }
+
+        docker service update --image "$BACKEND_IMAGE" --no-resolve-image --detach=false constancia_backend
         wait_for_service_health constancia_backend
+        verify_service_image constancia_backend "$BACKEND_IMAGE"
 
-        docker service update --image "$frontend_image" --detach=false constancia_frontend
+        docker service update --image "$FRONTEND_IMAGE" --no-resolve-image --detach=false constancia_frontend
         wait_for_service_health constancia_frontend
+        verify_service_image constancia_frontend "$FRONTEND_IMAGE"
 
-        docker service update --image "$bot_image" --detach=false constancia_bot
+        docker service update --image "$BOT_IMAGE" --no-resolve-image --detach=false constancia_bot
+        verify_service_image constancia_bot "$BOT_IMAGE"
 
         docker stack services constancia
         docker service ps constancia_backend --no-trunc
