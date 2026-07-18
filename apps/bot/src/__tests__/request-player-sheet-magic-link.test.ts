@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { requestPlayerSheetMagicLink } from '../auth/request-player-sheet-magic-link.js';
+import { createGeneratedBotBackend } from '../backend/bot-backend.js';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('requestPlayerSheetMagicLink', () => {
+describe('generated bot backend magic links', () => {
   it('returns the parsed backend payload for a valid response', async () => {
     vi.stubGlobal(
       'fetch',
@@ -27,7 +27,10 @@ describe('requestPlayerSheetMagicLink', () => {
     );
 
     await expect(
-      requestPlayerSheetMagicLink({ discordUserId: 'discord-user-1', guildId: 'guild-1' }),
+      createGeneratedBotBackend(() => ({ headers: {} })).requestPlayerSheetMagicLink(
+        'discord-user-1',
+        'guild-1',
+      ),
     ).resolves.toEqual({
       status: 'ok',
       url: 'http://localhost:3000/auth?token=abc&next=%2Fplayer%2Fcampaigns%2Fcampaign-1%2Fsheet',
@@ -49,7 +52,10 @@ describe('requestPlayerSheetMagicLink', () => {
     );
 
     await expect(
-      requestPlayerSheetMagicLink({ discordUserId: 'discord-user-1', guildId: 'guild-1' }),
-    ).rejects.toThrow('invalid player sheet magic link payload');
+      createGeneratedBotBackend(() => ({ headers: {} })).requestPlayerSheetMagicLink(
+        'discord-user-1',
+        'guild-1',
+      ),
+    ).rejects.toThrow('invalid magic link payload');
   });
 });

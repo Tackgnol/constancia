@@ -7,12 +7,15 @@ import configPlugin from './plugins/config-plugin.js';
 import openApiPlugin from './plugins/openapi-plugin.js';
 import requestErrorPlugin from './plugins/request-error-plugin.js';
 import eventDeliveryDispatcherPlugin from './plugins/event-delivery-dispatcher-plugin.js';
+import eventExecutionPlugin from './plugins/event-execution-plugin.js';
+import type { EventExecution } from './services/event-execution.js';
 import rootRoutes from './routes/root-routes.js';
 import healthRoutes from './routes/health-routes.js';
 import apiRoutes from './routes/api-routes.js';
 
 export interface BuildAppOptions {
   config?: BackendConfig;
+  eventExecution?: EventExecution;
 }
 
 export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyInstance> {
@@ -25,6 +28,9 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
   await app.register(configPlugin, { config });
   await app.register(requestErrorPlugin);
+  await app.register(eventExecutionPlugin, {
+    ...(options.eventExecution === undefined ? {} : { eventExecution: options.eventExecution }),
+  });
   await app.register(eventDeliveryDispatcherPlugin);
   await app.register(multipart, {
     limits: {

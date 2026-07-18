@@ -1,6 +1,11 @@
 import type { GameDate } from '@constancia/contracts';
 import type { Prisma } from '@constancia/db';
-import { gameSystemRegistry, validateGameDate } from '@constancia/systems';
+import {
+  formatGameDate,
+  gameSystemRegistry,
+  parseGameDate,
+  validateGameDate,
+} from '@constancia/systems';
 
 export function getGameDateValidationError(systemId: string, date: GameDate): string | null {
   const system = gameSystemRegistry.get(systemId);
@@ -24,4 +29,14 @@ export function toGameDateJson(date: GameDate): Prisma.InputJsonObject {
     monthId: date.monthId,
     day: date.day,
   };
+}
+
+export function formatCampaignGameDate(systemId: string, value: unknown): string | null {
+  const date = parseGameDate(value);
+  if (!date) {
+    return null;
+  }
+
+  const calendar = gameSystemRegistry.get(systemId)?.calendars[date.calendarId];
+  return calendar ? formatGameDate(date, calendar) : null;
 }

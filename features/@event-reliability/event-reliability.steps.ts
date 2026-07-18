@@ -121,6 +121,7 @@ class ReliabilityWorld {
       eventId: cue.id,
       campaignId: cue.campaignId,
       messages: [{ target: 'channel' as const, content }],
+      effects: [],
       halted: false,
       deliveries: [
         {
@@ -148,6 +149,7 @@ class ReliabilityWorld {
           content,
         },
       ],
+      effects: [],
       halted: false,
       deliveries: [
         {

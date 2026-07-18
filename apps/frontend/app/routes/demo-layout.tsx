@@ -7,44 +7,36 @@ import { QuickNarrationForm } from '@/components/war-room/quick-narration-form';
 import { quickNarrationActivityLabel } from '@/components/war-room/quick-narration';
 import { buildWarRoomModeTabs } from '@/components/war-room/war-room-navigation';
 import { SceneRailExtras } from '@/components/war-room/scene-rail-extras';
-import { demoContext, demoCampaigns, demoHealth, demoSystems } from '@/lib/demo-data';
-import { triggerSections } from '@/lib/war-room-data';
+import { loadDemoWarRoomProjection } from '@/lib/demo-war-room-projection';
 import type { GameDate } from '@constancia/contracts';
 
-const tagEventCounts = new Map<string, number>();
-for (const section of triggerSections) {
-  for (const item of section.items) {
-    for (const tag of item.tags ?? []) {
-      tagEventCounts.set(tag, (tagEventCounts.get(tag) ?? 0) + 1);
-    }
-  }
-}
-
 export function loader() {
-  return { health: demoHealth, campaigns: demoCampaigns, systems: demoSystems };
+  return loadDemoWarRoomProjection();
 }
 
 const tabs = buildWarRoomModeTabs('/demo', { includePlayer: true });
+const activityTimeFormatter = new Intl.DateTimeFormat('en-GB', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
 
 function formatActivityTime() {
-  return new Intl.DateTimeFormat('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date());
+  return activityTimeFormatter.format(new Date());
 }
 
 export default function DemoLayout() {
-  useLoaderData<typeof loader>();
+  const projection = useLoaderData<typeof loader>();
 
   const location = useLocation();
   const isPlayRoute = location.pathname === '/demo' || location.pathname === '/demo/';
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [activity, setActivity] = useState(demoContext.activity);
+  const [activity, setActivity] = useState(projection.activity);
   const [firedEventIds, setFiredEventIds] = useState<string[]>([]);
   const [mobilePlayersOpen, setMobilePlayersOpen] = useState(false);
-  const [gameDate, setGameDate] = useState<GameDate | null>(demoContext.campaign.gameDate);
-  const [summaries, setSummaries] = useState(demoContext.summaries);
+  const [gameDate, setGameDate] = useState<GameDate | null>(projection.campaign.gameDate);
+  const [summaries, setSummaries] = useState(projection.summaries);
+  const tagEventCounts = new Map(Object.entries(projection.eventCountByTag));
 
   const recordActivity = (label: string) => {
     setActivity((current) => [
@@ -68,8 +60,8 @@ export default function DemoLayout() {
   };
 
   const outletContext = {
-    ...demoContext,
-    campaign: { ...demoContext.campaign, gameDate },
+    ...projection,
+    campaign: { ...projection.campaign, gameDate },
     summaries,
     activeTag,
     activity,

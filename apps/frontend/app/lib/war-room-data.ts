@@ -6,7 +6,7 @@ import type {
   ListSessionSummaries200DataItem,
 } from '@constancia/api-client/model';
 import type { GameCalendarDefinition, GameDate } from '@constancia/contracts';
-import { GREGORIAN_CALENDAR, parseGameDate } from '@constancia/systems';
+import { GREGORIAN_CALENDAR } from '@constancia/systems';
 
 export type TriggerKind = 'test' | 'narration' | 'insight' | 'message';
 export type Presence = 'online' | 'offline';
@@ -265,130 +265,27 @@ export const activityFeed: ActivityItem[] = [
   { id: 'activity-start', time: '22:05', label: 'Session started' },
 ];
 
-function asRecord(input: unknown): Record<string, unknown> | null {
-  return typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : null;
-}
-
-function extractArray(input: unknown): unknown[] {
-  if (Array.isArray(input)) {
-    return input;
-  }
-
-  const record = asRecord(input);
-  const data = record?.data;
-
-  return Array.isArray(data) ? data : [];
-}
-
-function readString(
-  input: Record<string, unknown> | null,
-  keys: string[],
-  fallback: string,
-): string {
-  if (input === null) {
-    return fallback;
-  }
-
-  for (const key of keys) {
-    const value = input[key];
-
-    if (typeof value === 'string' && value.length > 0) {
-      return value;
-    }
-  }
-
-  return fallback;
-}
-
-function readNumber(
-  input: Record<string, unknown> | null,
-  keys: string[],
-  fallback: number,
-): number {
-  if (input === null) {
-    return fallback;
-  }
-
-  for (const key of keys) {
-    const value = input[key];
-
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      return value;
-    }
-  }
-
-  return fallback;
-}
-
-export function normalizeCampaigns(input: unknown): CampaignSummary[] {
-  return extractArray(input).map((entry, index) => {
-    const record = asRecord(entry);
-
-    return {
-      id: readString(record, ['id', 'campaignId', 'slug'], `campaign-${index + 1}`),
-      name: readString(record, ['name', 'title'], `Campaign ${index + 1}`),
-      gameSystemId: readString(record, ['gameSystemId'], fallbackCampaign.gameSystemId),
-      gameDate: parseGameDate(record?.gameDate),
-      channel: readString(
-        record,
-        ['channelName', 'channel', 'discordChannel'],
-        fallbackCampaign.channel,
-      ),
-      connectedPlayers: readNumber(record, ['connectedPlayers', 'playerCount', 'players'], 0),
-    };
-  });
-}
-
-export function normalizeSystems(input: unknown): SystemSummary[] {
-  return extractArray(input).map((entry, index) => {
-    const record = asRecord(entry);
-
-    const calendarsValue = record?.calendars;
-    const calendars =
-      typeof calendarsValue === 'object' &&
-      calendarsValue !== null &&
-      !Array.isArray(calendarsValue)
-        ? (calendarsValue as Record<string, GameCalendarDefinition>)
-        : fallbackSystem.calendars;
-
-    return {
-      id: readString(record, ['id', 'slug', 'key'], `system-${index + 1}`),
-      name: readString(record, ['name', 'label', 'displayName'], `System ${index + 1}`),
-      defaultCalendarId: readString(
-        record,
-        ['defaultCalendarId'],
-        fallbackSystem.defaultCalendarId,
-      ),
-      calendars,
-    };
-  });
-}
-
 export function buildRecipientOptions(
   rawCharacters: ListCharacters200DataItem[],
   fallbackPlayers: PlayerPresence[],
 ): RecipientOption[] {
   if (rawCharacters.length > 0) {
     const seen = new Set<string>();
+    const recipients: RecipientOption[] = [];
 
-    return rawCharacters
-      .filter((character) => {
-        if (!character.discordUserId || seen.has(character.discordUserId)) {
-          return false;
-        }
-
-        seen.add(character.discordUserId);
-        return true;
-      })
-      .map((character) => ({
+    for (const character of rawCharacters) {
+      if (!character.discordUserId || seen.has(character.discordUserId)) continue;
+      seen.add(character.discordUserId);
+      recipients.push({
         id: character.discordUserId,
         characterId: character.id,
         discordUserId: character.discordUserId,
         displayName: character.gameName || character.discordName || character.name,
-        secondaryLabel: [character.discordName || character.name, character.discordUserId]
-          .filter(Boolean)
-          .join(' · '),
-      }));
+        secondaryLabel: `${character.discordName || character.name} · ${character.discordUserId}`,
+      });
+    }
+
+    return recipients;
   }
 
   return fallbackPlayers.map((player) => ({

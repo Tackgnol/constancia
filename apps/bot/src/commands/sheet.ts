@@ -4,9 +4,12 @@ import {
   type InteractionDeferReplyOptions,
 } from 'discord.js';
 import type { BotChatCommand } from '../discord/command-types.js';
-import { requestPlayerSheetMagicLink } from '../auth/request-player-sheet-magic-link.js';
+import { botBackend, type BotBackend } from '../backend/bot-backend.js';
 
-export async function handleSheet(interaction: ChatInputCommandInteraction): Promise<void> {
+export async function handleSheet(
+  interaction: ChatInputCommandInteraction,
+  backend: BotBackend = botBackend,
+): Promise<void> {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral } as InteractionDeferReplyOptions);
 
   try {
@@ -16,10 +19,7 @@ export async function handleSheet(interaction: ChatInputCommandInteraction): Pro
       return;
     }
 
-    const result = await requestPlayerSheetMagicLink({
-      discordUserId: interaction.user.id,
-      guildId,
-    });
+    const result = await backend.requestPlayerSheetMagicLink(interaction.user.id, guildId);
 
     await interaction.editReply({
       content:

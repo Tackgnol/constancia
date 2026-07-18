@@ -1,7 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
-import { getPrismaClient } from '../auth/prisma.js';
-import { createAppEventExecution } from '../services/app-event-execution.js';
 
 const DISPATCH_INTERVAL_MS = 5_000;
 
@@ -13,7 +11,7 @@ const eventDeliveryDispatcherPlugin: FastifyPluginAsync = async (app) => {
     if (running) return;
     running = true;
 
-    void createAppEventExecution(getPrismaClient(), app.config)
+    void app.eventExecution
       .retryDeliveries({ limit: 25 })
       .catch((error: unknown) => {
         app.log.error({ error }, 'Event delivery dispatcher pass failed');
@@ -31,5 +29,5 @@ const eventDeliveryDispatcherPlugin: FastifyPluginAsync = async (app) => {
 
 export default fp(eventDeliveryDispatcherPlugin, {
   name: 'event-delivery-dispatcher-plugin',
-  dependencies: ['config-plugin'],
+  dependencies: ['config-plugin', 'event-execution-plugin'],
 });

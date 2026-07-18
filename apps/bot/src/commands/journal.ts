@@ -8,16 +8,9 @@ import {
   type ChatInputCommandInteraction,
   type InteractionDeferReplyOptions,
 } from 'discord.js';
-import {
-  getBotJournalForPlayer,
-  getCampaignByGuild,
-} from '@constancia/api-client/endpoints/bot/bot';
-import type {
-  GetBotJournalForPlayer200Data,
-  GetBotJournalForPlayer200DataQuestsItemEntriesItem,
-} from '@constancia/api-client/model';
-import { requestPlayerJournalMagicLink } from '../auth/request-player-journal-magic-link.js';
-import { botRequestOptions, loadBotConfig } from '../config.js';
+import type { BotBackend, BotJournal, BotJournalQuestEntry } from '../backend/bot-backend.js';
+import { botBackend } from '../backend/bot-backend.js';
+import { loadBotConfig } from '../config.js';
 import type { BotChatCommand, BotComponentHandler } from '../discord/command-types.js';
 
 const JOURNAL_COMPONENT_PREFIX = 'journal:';
@@ -27,14 +20,14 @@ const JOURNAL_BACK_PREFIX = `${JOURNAL_COMPONENT_PREFIX}back:`;
 const MAX_DETAIL_BUTTONS = 20;
 
 type JournalCategory = 'quests' | 'npcs' | 'lore';
-type JournalQuest = GetBotJournalForPlayer200Data['quests'][number];
-type JournalNpc = GetBotJournalForPlayer200Data['npcs'][number];
-type JournalLoreEntry = GetBotJournalForPlayer200Data['lore'][number];
+type JournalQuest = BotJournal['quests'][number];
+type JournalNpc = BotJournal['npcs'][number];
+type JournalLoreEntry = BotJournal['lore'][number];
 
 interface JournalContext {
   guildId: string;
   campaignId: string;
-  journal: GetBotJournalForPlayer200Data;
+  journal: BotJournal;
   journalUrl: string;
 }
 
@@ -54,19 +47,26 @@ function buildJournalUrlFallback(campaignId: string): string {
   ).toString();
 }
 
-async function loadJournalContext(guildId: string, discordUserId: string): Promise<JournalContext> {
-  const campaignResult = await getCampaignByGuild({ guildId }, botRequestOptions());
-  const campaignId = campaignResult.data.id;
-  const [journalResult, linkResult] = await Promise.all([
-    getBotJournalForPlayer({ id: campaignId, discordUserId }, botRequestOptions()),
-    requestPlayerJournalMagicLink({ discordUserId, guildId }),
+async function loadJournalContext(
+  guildId: string,
+  discordUserId: string,
+  backend: BotBackend = botBackend,
+): Promise<JournalContext> {
+  const campaign = await backend.getCampaign(guildId);
+  if (!campaign) {
+    throw new Error('Campaign not found');
+  }
+  const campaignId = campaign.id;
+  const [journal, link] = await Promise.all([
+    backend.getJournal(campaignId, discordUserId),
+    backend.requestPlayerJournalMagicLink(discordUserId, guildId),
   ]);
 
   return {
     guildId,
     campaignId,
-    journal: journalResult.data,
-    journalUrl: linkResult.url || buildJournalUrlFallback(campaignId),
+    journal,
+    journalUrl: link.url || buildJournalUrlFallback(campaignId),
   };
 }
 
@@ -229,9 +229,7 @@ function buildCategoryComponents(
   ];
 }
 
-function formatQuestEntries(
-  entries: GetBotJournalForPlayer200DataQuestsItemEntriesItem[] | undefined,
-): string {
+function formatQuestEntries(entries: BotJournalQuestEntry[] | undefined): string {
   const sorted = [...(entries ?? [])].sort((left, right) => left.sortOrder - right.sortOrder);
   if (sorted.length === 0) {
     return 'No visible steps filed yet.';
@@ -301,18 +299,15 @@ function buildDetailComponents(
   ];
 }
 
-function findQuest(journal: GetBotJournalForPlayer200Data, questId: string): JournalQuest | null {
+function findQuest(journal: BotJournal, questId: string): JournalQuest | null {
   return journal.quests.find((quest) => quest.id === questId) ?? null;
 }
 
-function findNpc(journal: GetBotJournalForPlayer200Data, npcId: string): JournalNpc | null {
+function findNpc(journal: BotJournal, npcId: string): JournalNpc | null {
   return journal.npcs.find((npc) => npc.id === npcId) ?? null;
 }
 
-function findLoreEntry(
-  journal: GetBotJournalForPlayer200Data,
-  loreId: string,
-): JournalLoreEntry | null {
+function findLoreEntry(journal: BotJournal, loreId: string): JournalLoreEntry | null {
   return journal.lore.find((loreEntry) => loreEntry.id === loreId) ?? null;
 }
 
@@ -367,7 +362,10 @@ function isJournalCategory(value: string | undefined): value is JournalCategory 
   return value === 'quests' || value === 'npcs' || value === 'lore';
 }
 
-export async function handleJournal(interaction: ChatInputCommandInteraction): Promise<void> {
+export async function handleJournal(
+  interaction: ChatInputCommandInteraction,
+  backend: BotBackend = botBackend,
+): Promise<void> {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral } as InteractionDeferReplyOptions);
 
   const guildId = interaction.guildId;
@@ -376,7 +374,7 @@ export async function handleJournal(interaction: ChatInputCommandInteraction): P
     return;
   }
 
-  const context = await loadJournalContext(guildId, interaction.user.id);
+  const context = await loadJournalContext(guildId, interaction.user.id, backend);
 
   await interaction.editReply({
     embeds: [createBaseEmbed(context)],

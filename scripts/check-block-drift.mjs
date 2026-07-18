@@ -23,11 +23,18 @@ const frontendBlockConfigFieldsFile = path.join(
   'frontend',
   'app',
   'components',
-  'block-config-fields.tsx',
+  'pipeline-block-editor-fields.tsx',
 );
 const pipelineRunnerFile = path.join(repoRoot, 'packages', 'core', 'src', 'pipeline-runner.ts');
 const coreIndexFile = path.join(repoRoot, 'packages', 'core', 'src', 'index.ts');
 const systemsIndexFile = path.join(repoRoot, 'packages', 'systems', 'src', 'index.ts');
+const gameSystemRegistryFile = path.join(
+  repoRoot,
+  'packages',
+  'systems',
+  'src',
+  'game-system-registry.ts',
+);
 
 function readText(filePath) {
   return fs.readFileSync(filePath, 'utf8');
@@ -270,10 +277,8 @@ function extractBlockDefinition(blockSourceFilePath, symbolName) {
   throw new Error(`Could not find exported block const ${symbolName} in ${blockSourceFilePath}`);
 }
 
-function getBackendBlocks() {
-  const sourceFile = readSourceFile(backendBlocksFile);
+function getNamedImports(sourceFile) {
   const imports = new Map();
-  let registeredBlockIdentifiers = [];
 
   for (const statement of sourceFile.statements) {
     if (
@@ -292,58 +297,82 @@ function getBackendBlocks() {
         imports.set(localName, { importedName, moduleSpecifier });
       }
     }
-
-    if (!ts.isVariableStatement(statement)) {
-      continue;
-    }
-
-    for (const declaration of statement.declarationList.declarations) {
-      if (!ts.isIdentifier(declaration.name) || declaration.name.text !== 'registeredBlocks') {
-        continue;
-      }
-
-      if (!declaration.initializer || !ts.isArrayLiteralExpression(declaration.initializer)) {
-        const initializer = declaration.initializer
-          ? unwrapExpression(declaration.initializer)
-          : null;
-        if (!initializer || !ts.isArrayLiteralExpression(initializer)) {
-          throw new Error('registeredBlocks is not an array literal');
-        }
-
-        registeredBlockIdentifiers = initializer.elements.map((element) => {
-          if (!ts.isIdentifier(element)) {
-            throw new Error('registeredBlocks contains a non-identifier element');
-          }
-
-          return element.text;
-        });
-        continue;
-      }
-
-      registeredBlockIdentifiers = declaration.initializer.elements.map((element) => {
-        if (!ts.isIdentifier(element)) {
-          throw new Error('registeredBlocks contains a non-identifier element');
-        }
-
-        return element.text;
-      });
-    }
   }
 
-  if (registeredBlockIdentifiers.length === 0) {
-    throw new Error('Could not parse registeredBlocks from backend blocks file');
+  return imports;
+}
+
+function getIdentifierArray(sourceFile, constName) {
+  const array = getConstArrayLiteral(sourceFile, constName);
+  if (!array) {
+    throw new Error(`Could not parse ${constName} as an array literal`);
   }
 
-  return registeredBlockIdentifiers.map((identifier) => {
-    const importInfo = imports.get(identifier);
-    if (!importInfo) {
-      throw new Error(`No import found for registered block identifier ${identifier}`);
+  return array.elements.map((element) => {
+    if (!ts.isIdentifier(element)) {
+      throw new Error(`${constName} contains a non-identifier element`);
     }
+    return element.text;
+  });
+}
 
+function resolveImportedBlock(sourceFilePath, imports, identifier) {
+  const importInfo = imports.get(identifier);
+  if (!importInfo) {
+    throw new Error(`No import found for registered block identifier ${identifier}`);
+  }
+
+  if (importInfo.moduleSpecifier.startsWith('@constancia/')) {
     const indexFile = resolveWorkspacePackageIndex(importInfo.moduleSpecifier);
     const resolution = resolveExportedSymbol(indexFile, importInfo.importedName);
     return extractBlockDefinition(resolution.sourceFilePath, resolution.symbolName);
+  }
+
+  return extractBlockDefinition(
+    resolveModuleFile(sourceFilePath, importInfo.moduleSpecifier),
+    importInfo.importedName,
+  );
+}
+
+function getBackendBlocks() {
+  const backendSource = readSourceFile(backendBlocksFile);
+  const backendImports = getNamedImports(backendSource);
+  const commonBlockIdentifiers = getIdentifierArray(backendSource, 'commonBlocks');
+
+  const systemSource = readSourceFile(gameSystemRegistryFile);
+  const systemImports = getNamedImports(systemSource);
+  const adapterIdentifiers = getIdentifierArray(systemSource, 'GAME_SYSTEM_ADAPTERS');
+  const systemBlockIdentifiers = adapterIdentifiers.flatMap((adapterIdentifier) => {
+    const adapter = getConstObjectLiteral(systemSource, adapterIdentifier);
+    if (!adapter) {
+      throw new Error(`Could not parse game system adapter ${adapterIdentifier}`);
+    }
+
+    const blocksProperty = getObjectProperty(adapter, 'blocks');
+    if (
+      !blocksProperty ||
+      !ts.isPropertyAssignment(blocksProperty) ||
+      !ts.isArrayLiteralExpression(blocksProperty.initializer)
+    ) {
+      throw new Error(`Game system adapter ${adapterIdentifier} has no literal blocks array`);
+    }
+
+    return blocksProperty.initializer.elements.map((element) => {
+      if (!ts.isIdentifier(element)) {
+        throw new Error(`Game system adapter ${adapterIdentifier} has a non-identifier block`);
+      }
+      return element.text;
+    });
   });
+
+  return [
+    ...commonBlockIdentifiers.map((identifier) =>
+      resolveImportedBlock(backendBlocksFile, backendImports, identifier),
+    ),
+    ...systemBlockIdentifiers.map((identifier) =>
+      resolveImportedBlock(gameSystemRegistryFile, systemImports, identifier),
+    ),
+  ];
 }
 
 function getConstObjectLiteral(sourceFile, constName) {
@@ -478,6 +507,7 @@ function getBlockCatalogueFacts() {
   const blockTypes = [];
   const blockLabels = {};
   const defaultConfigKeysByType = {};
+  const editorKinds = new Set();
 
   for (const rawElement of specsNode.elements) {
     const element = unwrapExpression(rawElement);
@@ -509,38 +539,48 @@ function getBlockCatalogueFacts() {
     blockTypes.push(blockType);
     blockLabels[blockType] = label;
     defaultConfigKeysByType[blockType] = getObjectKeys(defaultConfigProperty.initializer);
+
+    const editorProperty = getObjectProperty(element, 'editor');
+    if (!editorProperty || !ts.isPropertyAssignment(editorProperty)) {
+      throw new Error(`Shared catalogue descriptor ${blockType} has no editor metadata`);
+    }
+    const editor = unwrapExpression(editorProperty.initializer);
+    if (!ts.isObjectLiteralExpression(editor)) {
+      throw new Error(`Shared catalogue editor ${blockType} is not an object literal`);
+    }
+    const fieldsProperty = getObjectProperty(editor, 'fields');
+    if (
+      !fieldsProperty ||
+      !ts.isPropertyAssignment(fieldsProperty) ||
+      !ts.isArrayLiteralExpression(fieldsProperty.initializer)
+    ) {
+      throw new Error(`Shared catalogue editor ${blockType} has no literal fields array`);
+    }
+    for (const rawField of fieldsProperty.initializer.elements) {
+      const field = unwrapExpression(rawField);
+      if (!ts.isObjectLiteralExpression(field)) continue;
+      const kindProperty = getObjectProperty(field, 'kind');
+      if (kindProperty && ts.isPropertyAssignment(kindProperty)) {
+        const kind = getStringLiteralText(kindProperty.initializer);
+        if (kind) editorKinds.add(kind);
+      }
+    }
   }
 
-  return { blockTypes, blockLabels, defaultConfigKeysByType };
+  return { blockTypes, blockLabels, defaultConfigKeysByType, editorKinds: [...editorKinds] };
 }
 
-function getBlockConfigFieldBranchTypes() {
+function getPipelineEditorAdapterKinds() {
   const sourceFile = readSourceFile(frontendBlockConfigFieldsFile);
-  const branchTypes = new Set();
+  const adapters = getConstObjectLiteral(sourceFile, 'pipelineEditorFieldAdapters');
+  if (!adapters) {
+    throw new Error('Could not parse pipelineEditorFieldAdapters');
+  }
 
-  visit(sourceFile, (node) => {
-    if (
-      !ts.isBinaryExpression(node) ||
-      node.operatorToken.kind !== ts.SyntaxKind.EqualsEqualsEqualsToken
-    ) {
-      return;
-    }
-
-    const leftIsBlockType = ts.isIdentifier(node.left) && node.left.text === 'blockType';
-    const rightIsBlockType = ts.isIdentifier(node.right) && node.right.text === 'blockType';
-    const leftLiteral = getStringLiteralText(node.left);
-    const rightLiteral = getStringLiteralText(node.right);
-
-    if (leftIsBlockType && rightLiteral) {
-      branchTypes.add(rightLiteral);
-    }
-
-    if (rightIsBlockType && leftLiteral) {
-      branchTypes.add(leftLiteral);
-    }
-  });
-
-  return [...branchTypes].sort();
+  return adapters.properties
+    .map((property) => getPropertyNameText(property.name))
+    .filter((value) => typeof value === 'string')
+    .sort();
 }
 
 function getPipelineRunnerFacts() {
@@ -597,7 +637,8 @@ function formatList(items) {
 function main() {
   const backendBlocks = getBackendBlocks();
   const frontendFacts = getFrontendEventSchemaFacts();
-  const blockConfigFieldBranchTypes = getBlockConfigFieldBranchTypes();
+  const catalogueFacts = getBlockCatalogueFacts();
+  const editorAdapterKinds = getPipelineEditorAdapterKinds();
   const pipelineRunnerFacts = getPipelineRunnerFacts();
 
   const backendTypes = backendBlocks.map((block) => block.type);
@@ -617,16 +658,16 @@ function main() {
     );
   }
 
-  const missingFieldBranches = difference(frontendFacts.blockTypes, blockConfigFieldBranchTypes);
-  const extraFieldBranches = difference(blockConfigFieldBranchTypes, frontendFacts.blockTypes);
-  if (missingFieldBranches.length > 0) {
+  const missingEditorAdapters = difference(catalogueFacts.editorKinds, editorAdapterKinds);
+  const extraEditorAdapters = difference(editorAdapterKinds, catalogueFacts.editorKinds);
+  if (missingEditorAdapters.length > 0) {
     issues.push(
-      `\`block-config-fields.tsx\` is missing editor branches for frontend block types: ${formatList(missingFieldBranches)}`,
+      `Pipeline editor is missing field adapters required by the catalogue: ${formatList(missingEditorAdapters)}`,
     );
   }
-  if (extraFieldBranches.length > 0) {
+  if (extraEditorAdapters.length > 0) {
     issues.push(
-      `\`block-config-fields.tsx\` contains branches for unknown frontend block types: ${formatList(extraFieldBranches)}`,
+      `Pipeline editor contains adapters unused by the catalogue: ${formatList(extraEditorAdapters)}`,
     );
   }
 
@@ -690,7 +731,7 @@ function main() {
   console.log('');
   console.log(`Backend registered block types: ${backendTypes.length}`);
   console.log(`Frontend block types: ${frontendFacts.blockTypes.length}`);
-  console.log(`Frontend editor branches: ${blockConfigFieldBranchTypes.length}`);
+  console.log(`Frontend editor field adapters: ${editorAdapterKinds.length}`);
 
   if (issues.length === 0) {
     console.log('');

@@ -354,6 +354,58 @@ function isTypingTarget(target: EventTarget | null) {
   );
 }
 
+type TriggerSectionView = { id: TriggerKind; title: string; items: TriggerView[] };
+
+const TRIGGER_SECTION_DEFINITIONS: ReadonlyArray<Pick<TriggerSectionView, 'id' | 'title'>> = [
+  { id: 'test', title: 'Tests' },
+  { id: 'narration', title: 'Narrations' },
+  { id: 'insight', title: 'Stat Insights' },
+  { id: 'message', title: 'Direct Messages' },
+];
+
+function buildTriggerSections(
+  events: ListEvents200DataItem[],
+  activeTag: string | null,
+  channelById: Map<string, WarRoomContext['channels'][number]>,
+  tagLabelById: Map<string, string>,
+  playerLabelById: Map<string, string>,
+): TriggerSectionView[] {
+  const sections: TriggerSectionView[] = TRIGGER_SECTION_DEFINITIONS.map((section) => ({
+    ...section,
+    items: [],
+  }));
+  const sectionByKind = new Map(sections.map((section) => [section.id, section]));
+
+  for (const event of events) {
+    const kind = event.type as TriggerKind;
+    const section = sectionByKind.get(kind) ?? sectionByKind.get('message');
+    if (!section) continue;
+    const channel = event.channelId ? (channelById.get(event.channelId) ?? null) : null;
+    const sceneId = channel?.id ?? null;
+
+    if (activeTag && sceneId !== activeTag) continue;
+
+    const { target, preview } = extractTargetAndPreview(
+      event,
+      channel?.name ?? null,
+      playerLabelById,
+    );
+
+    section.items.push({
+      id: event.id,
+      kind,
+      name: event.name,
+      meta: event.status,
+      scene: sceneId,
+      sceneLabel: sceneId ? (tagLabelById.get(sceneId) ?? channel?.name ?? sceneId) : null,
+      target,
+      preview,
+    });
+  }
+
+  return sections;
+}
+
 export default function PlayRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
   const liveEvents = warRoom.events;
@@ -380,44 +432,19 @@ export default function PlayRoute() {
   const tagLabelById = new Map(warRoom.tags.map((t) => [t.id, t.label]));
   const playerLabelById = new Map(warRoom.players.map((p) => [p.id, p.name]));
 
-  const sections: { id: TriggerKind; title: string; items: TriggerView[] }[] = [
-    { id: 'test', title: 'Tests', items: [] },
-    { id: 'narration', title: 'Narrations', items: [] },
-    { id: 'insight', title: 'Stat Insights', items: [] },
-    { id: 'message', title: 'Direct Messages', items: [] },
-  ];
-
-  for (const event of liveEvents) {
-    const section = sections.find((s) => s.id === event.type) || sections[3];
-    const channel = event.channelId ? (channelById.get(event.channelId) ?? null) : null;
-    const sceneId = channel?.id ?? null;
-
-    if (warRoom.activeTag && sceneId !== warRoom.activeTag) continue;
-
-    const { target, preview } = extractTargetAndPreview(
-      event,
-      channel?.name ?? null,
-      playerLabelById,
-    );
-
-    section.items.push({
-      id: event.id,
-      kind: (event.type as TriggerKind) ?? 'message',
-      name: event.name,
-      meta: event.status,
-      scene: sceneId,
-      sceneLabel: sceneId ? (tagLabelById.get(sceneId) ?? channel?.name ?? sceneId) : null,
-      target,
-      preview,
-    });
-  }
+  const sections = buildTriggerSections(
+    liveEvents,
+    warRoom.activeTag,
+    channelById,
+    tagLabelById,
+    playerLabelById,
+  );
 
   const visibleItems = sections.flatMap((section) => section.items);
-  const firedItems = new Set([
-    ...(warRoom.firedEventIds ?? []),
-    ...liveEvents.filter((event) => event.status === 'fired').map((event) => event.id),
-    ...Object.keys(deliveryByEventId),
-  ]);
+  const firedItems = new Set([...(warRoom.firedEventIds ?? []), ...Object.keys(deliveryByEventId)]);
+  for (const event of liveEvents) {
+    if (event.status === 'fired') firedItems.add(event.id);
+  }
   const nextUpItem = visibleItems.find((item) => !firedItems.has(item.id)) ?? null;
   const commandEcho =
     lastAction ??
@@ -668,7 +695,7 @@ export default function PlayRoute() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleGlobalKeyDown]);
+  }, []);
 
   return (
     <div className="play-route">

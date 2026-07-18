@@ -12,13 +12,12 @@ function formatSigned(value: number): string {
 }
 
 export function MorkBorgStatRow(props: StatRowProps) {
+  const labelId = useId();
   if (props.field.type !== 'number') {
     return <FallbackStatRow {...props} />;
   }
 
   const { field, value, onChange, onBlur, disabled, error, inputId } = props;
-  const labelId = useId();
-
   const min = typeof field.min === 'number' ? field.min : DEFAULT_MIN;
   const max = typeof field.max === 'number' ? field.max : DEFAULT_MAX;
   const current = clampNumeric(toNumericValue(value, 0), min, max);

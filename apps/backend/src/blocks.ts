@@ -10,10 +10,10 @@ import {
   addJournalEntryBlock,
   addQuestBlock,
 } from '@constancia/core';
-import { vtmInsightResolverBlock, vtmPoolResolverBlock } from '@constancia/systems';
+import { gameSystemRegistry } from '@constancia/systems';
 import { PIPELINE_BLOCK_SPECS } from '@constancia/block-catalogue';
 
-const registeredBlocks = [
+const commonBlocks = [
   outcomeMapBlock,
   conditionalGateBlock,
   messagePlayerBlock,
@@ -23,9 +23,10 @@ const registeredBlocks = [
   addJournalEntryBlock,
   addQuestBlock,
   retrieveDataBlock,
-  vtmPoolResolverBlock,
-  vtmInsightResolverBlock,
 ] as const;
+
+const systemBlocks = gameSystemRegistry.list().flatMap((system) => system.blocks);
+const registeredBlocks = [...commonBlocks, ...systemBlocks];
 
 const registeredBlocksByType = new Map(registeredBlocks.map((block) => [block.type, block]));
 

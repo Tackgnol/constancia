@@ -4,6 +4,7 @@ import { deleted, isPrismaNotFoundError, ok, sendNotFound } from '../http-respon
 import {
   botTestResultBodySchema,
   botTestResultResponseSchema,
+  botCampaignDateSchema,
   campaignSchema,
   botMessageReportBodySchema,
   campaignDiscordUserParamsSchema,
@@ -28,7 +29,7 @@ import {
 } from '../services/player-visible-npcs.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
 import { getPlayerJournal } from '../services/player-journal.js';
-import { createAppEventExecution } from '../services/app-event-execution.js';
+import { formatCampaignGameDate } from '../services/game-date.js';
 
 interface BotTestResultBody {
   eventId: string;
@@ -177,8 +178,7 @@ const botRoutes: FastifyPluginAsync = async (app) => {
     async (request) => {
       const { eventId, discordUserId, discordChannelId, playerScore, idempotencyKey } =
         request.body;
-      const prisma = getPrismaClient();
-      const receipt = await createAppEventExecution(prisma, app.config).submitTestResult({
+      const receipt = await app.eventExecution.submitTestResult({
         eventId,
         discordUserId,
         discordChannelId,
@@ -221,6 +221,34 @@ const botRoutes: FastifyPluginAsync = async (app) => {
       }
 
       return ok(campaign);
+    },
+  );
+
+  app.get<{ Params: GuildParams }>(
+    '/campaign-date/:guildId',
+    {
+      schema: {
+        tags: ['bot'],
+        summary: 'Get the current campaign date formatted for Discord',
+        operationId: 'getBotCampaignDate',
+        params: guildParamsSchema,
+        response: {
+          200: singleResponseSchema(botCampaignDateSchema),
+        },
+      },
+    },
+    async (request, reply) => {
+      const campaign = await getPrismaClient().campaign.findUnique({
+        where: { discordGuildId: request.params.guildId },
+        select: { gameSystemId: true, gameDate: true },
+      });
+      if (!campaign) {
+        return sendNotFound(reply, 'Campaign not found');
+      }
+
+      return ok({
+        formatted: formatCampaignGameDate(campaign.gameSystemId, campaign.gameDate),
+      });
     },
   );
 

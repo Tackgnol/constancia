@@ -5,7 +5,7 @@ import {
   MessageFlags,
   type ButtonInteraction,
 } from 'discord.js';
-import { createBotAuthHeaders, loadBotConfig } from '../config.js';
+import { botBackend } from '../backend/bot-backend.js';
 import type { BotComponentHandler } from './command-types.js';
 
 export const MESSAGE_REPORT_PREFIX = 'message-report:';
@@ -52,28 +52,16 @@ function getMessageContent(interaction: ButtonInteraction): string {
 }
 
 async function submitMessageReport(interaction: ButtonInteraction, eventId: string): Promise<void> {
-  const config = loadBotConfig();
-  const response = await fetch(`${config.backendUrl}/api/v1/bot/message-reports`, {
-    method: 'POST',
-    headers: {
-      ...createBotAuthHeaders(config),
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      eventId,
-      discordGuildId: interaction.guildId ?? undefined,
-      discordChannelId: interaction.channelId ?? undefined,
-      discordMessageId: interaction.message.id,
-      discordUserId: interaction.user.id,
-      messageTarget: interaction.inGuild() ? 'channel' : 'dm',
-      messageContent: getMessageContent(interaction),
-      imageUrl: getEmbedImageUrl(interaction),
-    }),
+  await botBackend.submitMessageReport({
+    eventId,
+    ...(interaction.guildId ? { discordGuildId: interaction.guildId } : {}),
+    ...(interaction.channelId ? { discordChannelId: interaction.channelId } : {}),
+    discordMessageId: interaction.message.id,
+    discordUserId: interaction.user.id,
+    messageTarget: interaction.inGuild() ? 'channel' : 'dm',
+    messageContent: getMessageContent(interaction),
+    ...(getEmbedImageUrl(interaction) ? { imageUrl: getEmbedImageUrl(interaction) } : {}),
   });
-
-  if (!response.ok) {
-    throw new Error(`Backend rejected message report with status ${response.status}`);
-  }
 }
 
 export const messageReportComponentHandler: BotComponentHandler = {

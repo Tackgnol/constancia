@@ -5,7 +5,6 @@ import { getPrismaClient } from '../auth/prisma.js';
 import { deleted, isPrismaNotFoundError, ok, sendNotFound } from '../http-responses.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
 import { createCampaignAccess } from '../services/campaign-access.js';
-import { createAppEventExecution } from '../services/app-event-execution.js';
 import {
   campaignParamsSchema,
   deleteResponseSchema,
@@ -279,7 +278,7 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
         kind: 'event',
         id: eventId,
       });
-      const receipt = await createAppEventExecution(prisma, app.config).fire({
+      const receipt = await app.eventExecution.fire({
         idempotencyKey: request.headers['idempotency-key'],
         campaignId: request.campaignScope.campaignId,
         eventId,

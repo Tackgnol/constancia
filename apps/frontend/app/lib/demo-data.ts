@@ -1,51 +1,7 @@
-import type {
-  GetServiceHealth200,
-  ListCharacters200DataItem,
-  ListCampaigns200,
-  ListGameSystems200,
-} from '@constancia/api-client/model';
+import type { ListCharacters200DataItem } from '@constancia/api-client/model';
 import { GREGORIAN_CALENDAR } from '@constancia/systems';
 import { activityFeed, players, sessionTags } from './war-room-data.js';
 import type { WarRoomContext } from './war-room-data.js';
-
-export const demoHealth: GetServiceHealth200 = {
-  status: 'ok',
-  service: 'constancia-backend',
-  environment: 'demo',
-};
-
-export const demoCampaigns: ListCampaigns200 = {
-  status: 'ok',
-  data: [
-    {
-      id: 'demo-crimson-dynasty',
-      name: 'Crimson Dynasty',
-      discordGuildId: 'demo-guild-1',
-      gameSystemId: 'vtm-v5',
-      gameDate: { calendarId: 'gregorian', year: 2026, monthId: 'july', day: 17 },
-    },
-  ],
-};
-
-export const demoSystems: ListGameSystems200 = {
-  status: 'ok',
-  data: [
-    {
-      id: 'vtm-v5',
-      name: 'Vampire: The Masquerade V5',
-      version: '0.1.0',
-      defaultCalendarId: GREGORIAN_CALENDAR.id,
-      calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
-    },
-    {
-      id: 'mork-borg',
-      name: 'Mörk Borg',
-      version: '0.1.0',
-      defaultCalendarId: GREGORIAN_CALENDAR.id,
-      calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
-    },
-  ],
-};
 
 const demoCharacters: ListCharacters200DataItem[] = players.map((player) => ({
   id: player.id,

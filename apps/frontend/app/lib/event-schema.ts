@@ -10,9 +10,12 @@ import {
 
 function normalizeRecipientIds(value: unknown): string[] | undefined {
   if (Array.isArray(value)) {
-    const ids = value
-      .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
-      .filter(Boolean);
+    const ids: string[] = [];
+    for (const entry of value) {
+      if (typeof entry !== 'string') continue;
+      const id = entry.trim();
+      if (id) ids.push(id);
+    }
 
     return ids.length > 0 ? ids : undefined;
   }
@@ -82,12 +85,27 @@ export const retrieveDataConfigSchema = z.object({
 export const vtmPoolResolverConfigSchema = z.object({
   attribute: z.string().min(1, 'Attribute key is required'),
   skill: z.string().min(1, 'Skill key is required'),
+  difficulty: z.coerce.number().optional(),
 });
 
 export const vtmInsightResolverConfigSchema = z.object({
   attribute: z.string().min(1, 'Attribute key is required'),
   skill: z.string().min(1, 'Skill key is required'),
 });
+
+const pipelineBlockConfigSchemas = {
+  'message-player': messagePlayerConfigSchema,
+  'message-channel': messageContentConfigSchema,
+  'message-group': messageGroupConfigSchema,
+  'display-image': displayImageConfigSchema,
+  'add-journal-entry': addJournalEntryConfigSchema,
+  'add-quest': addQuestConfigSchema,
+  'conditional-gate': conditionalGateConfigSchema,
+  'outcome-map': outcomeMapConfigSchema,
+  'retrieve-data': retrieveDataConfigSchema,
+  'vtm-pool-resolver': vtmPoolResolverConfigSchema,
+  'vtm-insight-resolver': vtmInsightResolverConfigSchema,
+} as const satisfies Record<PipelineBlockType, z.ZodType>;
 
 // ── Block types ───────────────────────────────────────────────────────────────
 
@@ -200,18 +218,7 @@ export const pipelineBlockSchema = z
     config: z.record(z.string(), z.unknown()),
   })
   .superRefine((block, context) => {
-    const schema =
-      block.blockType === 'add-journal-entry'
-        ? addJournalEntryConfigSchema
-        : block.blockType === 'add-quest'
-          ? addQuestConfigSchema
-          : null;
-
-    if (!schema) {
-      return;
-    }
-
-    const parsed = schema.safeParse(block.config);
+    const parsed = pipelineBlockConfigSchemas[block.blockType].safeParse(block.config);
     if (parsed.success) {
       return;
     }

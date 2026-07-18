@@ -10,8 +10,7 @@ import {
   type Client,
 } from 'discord.js';
 import { type SendTestInstancePayload } from '@constancia/contracts';
-import { submitBotTestResult } from '@constancia/api-client/endpoints/bot/bot';
-import { botRequestOptions } from '../config.js';
+import { botBackend } from '../backend/bot-backend.js';
 import type { BotComponentHandler, BotModalHandler } from './command-types.js';
 import { buildMessageReportButton } from './message-reports.js';
 
@@ -154,19 +153,16 @@ export const testInstanceModalHandler: BotModalHandler = {
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    const result = await submitBotTestResult(
-      {
-        eventId,
-        discordUserId: interaction.user.id,
-        discordChannelId: interaction.channelId,
-        playerScore,
-        idempotencyKey: interaction.id,
-      },
-      botRequestOptions(),
-    );
+    const result = await botBackend.submitTestResult({
+      eventId,
+      discordUserId: interaction.user.id,
+      discordChannelId: interaction.channelId,
+      playerScore,
+      idempotencyKey: interaction.id,
+    });
 
     const summaryLines = ['Result submitted.'];
-    const deliveryStatuses = result.data.deliveries.map((delivery) => delivery.status);
+    const deliveryStatuses = result.deliveries.map((delivery) => delivery.status);
     if (deliveryStatuses.some((status) => status !== 'delivered')) {
       summaryLines.push('Follow-up delivery is queued and will retry.');
     } else if (deliveryStatuses.length > 0) {

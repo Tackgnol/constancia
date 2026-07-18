@@ -33,6 +33,15 @@ describe('GameSystemRegistry', () => {
     expect(morkBorg.npcBlocks?.map((block) => block.blockType)).toContain('creature-type');
   });
 
+  it('provides every system-specific pipeline block through the adapter seam', () => {
+    const registeredSystemBlockTypes = GAME_SYSTEM_ADAPTERS.flatMap((system) =>
+      system.blocks.map((block) => block.type),
+    );
+
+    expect(registeredSystemBlockTypes).toEqual(['vtm-pool-resolver', 'vtm-insight-resolver']);
+    expect(new Set(registeredSystemBlockTypes).size).toBe(registeredSystemBlockTypes.length);
+  });
+
   it('rejects duplicate canonical or alias lookup keys', () => {
     const registry = new GameSystemRegistry(GAME_SYSTEM_ADAPTERS);
     const duplicate: GameSystemAdapter = {

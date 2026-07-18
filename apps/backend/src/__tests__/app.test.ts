@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../app.js';
 import { loadConfig } from '../config.js';
+import type { EventExecution } from '../services/event-execution.js';
 
 const appsToClose: Array<Awaited<ReturnType<typeof buildApp>>> = [];
 
@@ -47,6 +48,22 @@ function createTestConfig() {
 }
 
 describe('backend app', () => {
+  it('shares one application-scoped Event execution module', async () => {
+    const eventExecution: EventExecution = {
+      fire: async () => {
+        throw new Error('Not called by this wiring test');
+      },
+      submitTestResult: async () => {
+        throw new Error('Not called by this wiring test');
+      },
+      retryDeliveries: async () => [],
+    };
+    const app = await buildApp({ config: createTestConfig(), eventExecution });
+    appsToClose.push(app);
+
+    expect(app.eventExecution).toBe(eventExecution);
+  });
+
   it('serves service metadata and docs endpoints', async () => {
     const app = await buildApp({ config: createTestConfig() });
     appsToClose.push(app);
@@ -126,6 +143,7 @@ describe('backend app', () => {
         '/api/v1/campaigns/{id}/journal/for/{discordId}',
         '/api/v1/bot/test-result',
         '/api/v1/bot/campaign-by-guild/{guildId}',
+        '/api/v1/bot/campaign-date/{guildId}',
         '/api/v1/bot/campaigns/{id}/visible-npcs/{discordUserId}',
         '/api/v1/bot/channel-events/{channelId}',
         '/api/v1/bot/setup-channel',

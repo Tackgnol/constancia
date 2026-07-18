@@ -3,10 +3,13 @@ import {
   type ChatInputCommandInteraction,
   type InteractionDeferReplyOptions,
 } from 'discord.js';
-import { requestAdminMagicLink } from '../auth/request-admin-magic-link.js';
+import { botBackend, type BotBackend } from '../backend/bot-backend.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
-export async function handleLogin(interaction: ChatInputCommandInteraction): Promise<void> {
+export async function handleLogin(
+  interaction: ChatInputCommandInteraction,
+  backend: BotBackend = botBackend,
+): Promise<void> {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral } as InteractionDeferReplyOptions);
 
   try {
@@ -16,10 +19,7 @@ export async function handleLogin(interaction: ChatInputCommandInteraction): Pro
       return;
     }
 
-    const result = await requestAdminMagicLink({
-      discordUserId: interaction.user.id,
-      guildId: guildId,
-    });
+    const result = await backend.requestAdminMagicLink(interaction.user.id, guildId);
 
     await interaction.editReply({
       content: `Use this link to log in to the Constancia web dashboard: <${result.url}>\n\n*Note: This link is unique to you and should not be shared.*`,

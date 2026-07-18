@@ -6,26 +6,27 @@ import {
   type GuildMember,
   type InteractionDeferReplyOptions,
 } from 'discord.js';
-import { botRequestOptions } from '../config.js';
-import { setupChannel, syncParticipants } from '@constancia/api-client/endpoints/bot/bot';
-import { listGameSystems } from '@constancia/api-client/endpoints/systems/systems';
+import { botBackend, type BotBackend } from '../backend/bot-backend.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
 const DEFAULT_GAME_SYSTEM_ID = 'vtm-v5';
 const GAME_SYSTEM_OPTION_NAME = 'game-system';
 
-export async function autocompleteSetup(interaction: AutocompleteInteraction): Promise<void> {
+export async function autocompleteSetup(
+  interaction: AutocompleteInteraction,
+  backend: BotBackend = botBackend,
+): Promise<void> {
   const focused = interaction.options.getFocused(true);
   if (focused.name !== GAME_SYSTEM_OPTION_NAME) {
     await interaction.respond([]);
     return;
   }
 
-  const systems = await listGameSystems(botRequestOptions());
+  const systems = await backend.listGameSystems();
   const query = String(focused.value ?? '')
     .trim()
     .toLowerCase();
-  const choices = systems.data
+  const choices = systems
     .filter((system) => {
       if (!query) {
         return true;
@@ -46,7 +47,10 @@ export async function autocompleteSetup(interaction: AutocompleteInteraction): P
   await interaction.respond(choices);
 }
 
-export async function handleSetup(interaction: ChatInputCommandInteraction): Promise<void> {
+export async function handleSetup(
+  interaction: ChatInputCommandInteraction,
+  backend: BotBackend = botBackend,
+): Promise<void> {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral } as InteractionDeferReplyOptions);
 
   try {
@@ -66,47 +70,38 @@ export async function handleSetup(interaction: ChatInputCommandInteraction): Pro
     const gameSystemId =
       interaction.options.getString(GAME_SYSTEM_OPTION_NAME) ?? DEFAULT_GAME_SYSTEM_ID;
 
-    const response = await setupChannel(
-      {
-        guildId,
-        guildName,
-        discordChannelId,
-        channelName,
-        campaignName: guildName,
-        gameSystemId,
-      },
-      botRequestOptions(),
-    );
+    const { campaign, channel, created } = await backend.setupChannel({
+      guildId,
+      guildName,
+      discordChannelId,
+      channelName,
+      campaignName: guildName,
+      gameSystemId,
+    });
 
-    if (response.status === 'ok') {
-      const { campaign, channel, created } = response.data;
-      let message =
-        `Successfully linked this channel to Constancia!\n` +
-        `- **Campaign**: ${campaign.name} ${created.campaign ? '(New)' : '(Existing)'}\n` +
-        `- **Channel**: ${channel.name} ${created.channel ? '(New)' : '(Existing)'}`;
+    let message =
+      `Successfully linked this channel to Constancia!\n` +
+      `- **Campaign**: ${campaign.name} ${created.campaign ? '(New)' : '(Existing)'}\n` +
+      `- **Channel**: ${channel.name} ${created.channel ? '(New)' : '(Existing)'}`;
 
-      if (created.campaign) {
-        message +=
-          '\n\nSince this is a new campaign, you might want to visit the dashboard to configure it.';
-      }
-
-      // Auto-register the GM who ran /setup as the first participant (non-fatal)
-      try {
-        const member = interaction.member as GuildMember | null;
-        const discordName =
-          member?.displayName ?? interaction.user.displayName ?? interaction.user.username;
-        await syncParticipants(
-          { guildId, participants: [{ discordUserId: interaction.user.id, discordName }] },
-          botRequestOptions(),
-        );
-      } catch (syncErr) {
-        console.error('Setup: failed to auto-register caller as participant:', syncErr);
-      }
-
-      await interaction.editReply(message);
-    } else {
-      await interaction.editReply('Failed to setup channel. Backend returned an error.');
+    if (created.campaign) {
+      message +=
+        '\n\nSince this is a new campaign, you might want to visit the dashboard to configure it.';
     }
+
+    // Auto-register the GM who ran /setup as the first participant (non-fatal)
+    try {
+      const member = interaction.member as GuildMember | null;
+      const discordName =
+        member?.displayName ?? interaction.user.displayName ?? interaction.user.username;
+      await backend.syncParticipants(guildId, [
+        { discordUserId: interaction.user.id, discordName },
+      ]);
+    } catch (syncErr) {
+      console.error('Setup: failed to auto-register caller as participant:', syncErr);
+    }
+
+    await interaction.editReply(message);
   } catch (error) {
     console.error('Setup command error:', error);
     await interaction.editReply('Failed to setup channel. Please try again later.');

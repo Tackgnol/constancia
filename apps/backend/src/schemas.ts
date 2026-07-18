@@ -1069,6 +1069,15 @@ export const channelMessageResultSchema = {
 
 export const botTestResultResponseSchema = fireEventResultSchema;
 
+export const botCampaignDateSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    formatted: { type: 'string', nullable: true },
+  },
+  required: ['formatted'],
+} as const;
+
 export const messageReportSchema = {
   type: 'object',
   additionalProperties: false,

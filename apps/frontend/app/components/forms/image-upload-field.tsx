@@ -93,6 +93,7 @@ export function ImageUploadField({
         <input
           ref={fileInputRef}
           accept="image/png,image/jpeg,image/webp"
+          aria-label="Choose image to upload"
           disabled={disabled || uploadState === 'uploading'}
           onChange={(event) => {
             const file = event.currentTarget.files?.[0] ?? null;

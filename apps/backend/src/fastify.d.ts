@@ -4,10 +4,12 @@ import type { BackendConfig } from './config.js';
 import type { AccessContext } from './auth/access-context.js';
 import type { auth } from './auth.js';
 import type { CampaignScope } from './services/campaign-access.js';
+import type { EventExecution } from './services/event-execution.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
     config: BackendConfig;
+    eventExecution: EventExecution;
   }
 
   interface FastifyRequest {

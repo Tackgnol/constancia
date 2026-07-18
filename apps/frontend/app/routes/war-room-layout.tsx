@@ -1,15 +1,5 @@
-import {
-  listCampaigns,
-  updateCampaign,
-} from '@constancia/api-client/endpoints/campaigns/campaigns';
-import { listChannels } from '@constancia/api-client/endpoints/channels/channels';
-import { listCharacters } from '@constancia/api-client/endpoints/characters/characters';
-import { listEvents } from '@constancia/api-client/endpoints/events/events';
-import { listQuests, listSessionSummaries } from '@constancia/api-client/endpoints/journal/journal';
-import { listLoreEntries } from '@constancia/api-client/endpoints/lore/lore';
+import { updateCampaign } from '@constancia/api-client/endpoints/campaigns/campaigns';
 import { sendChannelMessage } from '@constancia/api-client/endpoints/messages/messages';
-import { getServiceHealth } from '@constancia/api-client/endpoints/meta/meta';
-import { listGameSystems } from '@constancia/api-client/endpoints/systems/systems';
 import { WarRoomModeTabs } from '@/components/war-room/mode-tabs';
 import { GameDateControl } from '@/components/war-room/game-date-control';
 import { PlayerRail } from '@/components/war-room/player-rail';
@@ -19,6 +9,7 @@ import { SceneRailExtras } from '@/components/war-room/scene-rail-extras';
 import { buildWarRoomModeTabs } from '@/components/war-room/war-room-navigation';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import { buildServerApiOptions } from '@/lib/api-proxy.server';
+import { loadLiveWarRoomProjection } from '@/lib/live-war-room-projection.server';
 import { postRouteAction } from '@/lib/route-action-client';
 import {
   CAMPAIGN_RENAME_ERROR,
@@ -27,16 +18,7 @@ import {
 } from '@/lib/war-room-feedback';
 import type { GameDate } from '@constancia/contracts';
 import { parseGameDate } from '@constancia/systems';
-import type { PlayerPresence } from '@/lib/war-room-data';
-import {
-  activityFeed,
-  fallbackCampaign,
-  fallbackSystem,
-  normalizeCampaigns,
-  normalizeSystems,
-  players,
-  type WarRoomContext,
-} from '@/lib/war-room-data';
+import type { WarRoomContext } from '@/lib/war-room-data';
 import { useEffect, useState } from 'react';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import {
@@ -50,43 +32,11 @@ import {
 } from 'react-router';
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const fetchOpts: RequestInit = {
-    credentials: 'include',
-    headers: {
-      cookie: request.headers.get('Cookie') || '',
-    },
-  };
-
-  const [health, campaigns, systems] = await Promise.all([
-    getServiceHealth(fetchOpts),
-    listCampaigns(fetchOpts),
-    listGameSystems(fetchOpts),
-  ]);
-
-  if (campaigns.status !== 'ok') {
+  const result = await loadLiveWarRoomProjection(request);
+  if (result.status === 'unauthenticated') {
     throw redirect('/auth');
   }
-
-  const campaignId = campaigns.data[0]?.id;
-  const [channels, events, characters, quests, summaries, lore] = campaignId
-    ? await Promise.all([
-        listChannels({ id: campaignId }, fetchOpts),
-        listEvents({ id: campaignId }, fetchOpts),
-        listCharacters({ id: campaignId }, fetchOpts),
-        listQuests({ id: campaignId }, fetchOpts),
-        listSessionSummaries({ id: campaignId }, fetchOpts),
-        listLoreEntries({ id: campaignId }, fetchOpts),
-      ])
-    : [
-        { status: 'error', data: [] },
-        { status: 'error', data: [] },
-        { status: 'error', data: [] },
-        { status: 'error', data: [] },
-        { status: 'error', data: [] },
-        { status: 'error', data: [] },
-      ];
-
-  return { health, campaigns, systems, channels, events, characters, quests, summaries, lore };
+  return result.projection;
 }
 
 type CampaignActionData = { status: 'success' } | { status: 'error'; message: string };
@@ -238,67 +188,40 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 const tabs = buildWarRoomModeTabs('');
+const activityTimeFormatter = new Intl.DateTimeFormat('en-GB', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
 
 function formatActivityTime() {
-  return new Intl.DateTimeFormat('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date());
+  return activityTimeFormatter.format(new Date());
 }
 
 export default function WarRoomLayout() {
   const location = useLocation();
-  const { health, campaigns, systems, channels, events, characters, quests, summaries, lore } =
-    useLoaderData<typeof loader>();
+  const projection = useLoaderData<typeof loader>();
   const renameFetcher = useFetcher<CampaignActionData>();
   const gameDateFetcher = useFetcher<CampaignActionData>();
   const revalidator = useRevalidator();
 
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [activity, setActivity] = useState(activityFeed);
+  const [activity, setActivity] = useState(projection.activity);
   const [isEditingName, setIsEditingName] = useState(false);
   const [mobilePlayersOpen, setMobilePlayersOpen] = useState(false);
 
-  const liveCampaign = normalizeCampaigns(campaigns).at(0) ?? fallbackCampaign;
-  const normalizedSystems = normalizeSystems(systems);
-  const liveSystem =
-    normalizedSystems.find((system) => system.id === liveCampaign.gameSystemId) ??
-    normalizedSystems.at(0) ??
-    fallbackSystem;
+  const liveCampaign = projection.campaign;
+  const liveSystem = projection.system;
   const [editNameValue, setEditNameValue] = useState(liveCampaign.name);
-
-  const liveChannels = (channels.status === 'ok' ? channels.data : []).map((ch) => ({
-    id: ch.id,
-    discordId: ch.discordChannelId,
-    name: ch.name,
-  }));
-
-  const liveEvents = events.status === 'ok' ? events.data : [];
-  const liveQuests = quests.status === 'ok' ? quests.data : [];
-  const liveSummaries = summaries.status === 'ok' ? summaries.data : [];
-  const liveLore = lore.status === 'ok' ? lore.data : [];
+  const liveChannels = projection.channels;
+  const liveEvents = projection.events;
+  const liveQuests = projection.quests;
+  const liveSummaries = projection.summaries;
+  const liveLore = projection.lore;
   const isPlayRoute = location.pathname === '/';
-  const tagEventCounts = new Map<string, number>();
-  for (const event of liveEvents) {
-    tagEventCounts.set(event.channelId, (tagEventCounts.get(event.channelId) ?? 0) + 1);
-  }
-
-  const liveCharacters = characters.status === 'ok' ? characters.data : [];
-  const livePlayers: PlayerPresence[] = liveCharacters.map((char) => {
-    const systemData = char.systemData as Record<string, unknown> | undefined;
-    const clan = typeof systemData?.clan === 'string' ? systemData.clan : 'Unknown';
-    const discordName = (char as Record<string, unknown>).discordName as string | undefined;
-    const gameName = (char as Record<string, unknown>).gameName as string | undefined;
-
-    return {
-      id: char.id,
-      name: gameName || discordName || char.name, // game name when set, else discord name
-      character: clan,
-      player: discordName || char.name, // always the Discord display name
-      status: 'online',
-    };
-  });
+  const tagEventCounts = new Map(Object.entries(projection.eventCountByTag));
+  const liveCharacters = projection.rawCharacters;
+  const livePlayers = projection.players;
 
   const renameActionData = isCampaignActionData(renameFetcher.data)
     ? renameFetcher.data
@@ -321,12 +244,6 @@ export default function WarRoomLayout() {
       ...current,
     ]);
   };
-
-  useEffect(() => {
-    if (!isEditingName) {
-      setEditNameValue(liveCampaign.name);
-    }
-  }, [isEditingName, liveCampaign.name]);
 
   useEffect(() => {
     if (renameActionData?.status === 'success') {
@@ -363,10 +280,10 @@ export default function WarRoomLayout() {
     system: liveSystem,
     tags: liveChannels.map((ch) => ({ id: ch.id, label: `# ${ch.name}` })),
     activeTag,
-    players: livePlayers.length > 0 ? livePlayers : players,
-    rawCharacters: liveCharacters.length > 0 ? liveCharacters : [],
+    players: livePlayers,
+    rawCharacters: liveCharacters,
     activity,
-    apiOnline: health.status === 'ok',
+    apiOnline: projection.apiOnline,
     events: liveEvents,
     quests: liveQuests,
     summaries: liveSummaries,
@@ -421,7 +338,10 @@ export default function WarRoomLayout() {
           ) : (
             <button
               className="campaign-name campaign-name-button"
-              onClick={() => setIsEditingName(true)}
+              onClick={() => {
+                setEditNameValue(liveCampaign.name);
+                setIsEditingName(true);
+              }}
               type="button"
             >
               {outletContext.campaign.name}

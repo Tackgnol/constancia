@@ -5,16 +5,13 @@ import {
   type GuildMember,
   type InteractionDeferReplyOptions,
 } from 'discord.js';
-import { botRequestOptions } from '../config.js';
-import {
-  getCampaignByGuild,
-  removeParticipant,
-  syncParticipants,
-} from '@constancia/api-client/endpoints/bot/bot';
-import { listCharacters } from '@constancia/api-client/endpoints/characters/characters';
+import { botBackend, type BotBackend } from '../backend/bot-backend.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
-export async function handleParticipants(interaction: ChatInputCommandInteraction): Promise<void> {
+export async function handleParticipants(
+  interaction: ChatInputCommandInteraction,
+  backend: BotBackend = botBackend,
+): Promise<void> {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral } as InteractionDeferReplyOptions);
 
   const guildId = interaction.guildId;
@@ -31,41 +28,27 @@ export async function handleParticipants(interaction: ChatInputCommandInteractio
       const member = interaction.options.getMember('user') as GuildMember | null;
       const discordName = member?.displayName ?? user.displayName ?? user.username;
 
-      const result = await syncParticipants(
-        { guildId, participants: [{ discordUserId: user.id, discordName }] },
-        botRequestOptions(),
+      await backend.syncParticipants(guildId, [{ discordUserId: user.id, discordName }]);
+      await interaction.editReply(
+        `✓ **${discordName}** added as a participant.\nGM can set their in-game name on the dashboard.`,
       );
-
-      if (result.status === 'ok') {
-        await interaction.editReply(
-          `✓ **${discordName}** added as a participant.\nGM can set their in-game name on the dashboard.`,
-        );
-      } else {
-        await interaction.editReply('Failed to add participant. Please try again.');
-      }
     } else if (sub === 'remove') {
       const user = interaction.options.getUser('user', true);
 
-      const result = await removeParticipant(
-        { guildId, discordUserId: user.id },
-        botRequestOptions(),
-      );
+      const deleted = await backend.removeParticipant(guildId, user.id);
 
-      if (result.deleted) {
+      if (deleted) {
         await interaction.editReply(`✓ **${user.username}** removed from the campaign.`);
       } else {
         await interaction.editReply(`${user.username} is not a registered participant.`);
       }
     } else if (sub === 'list') {
-      const campaignResult = await getCampaignByGuild({ guildId }, botRequestOptions());
-      if (campaignResult.status !== 'ok') {
+      const campaign = await backend.getCampaign(guildId);
+      if (!campaign) {
         await interaction.editReply('This server has no campaign set up. Run `/setup` first.');
         return;
       }
-
-      const campaignId = campaignResult.data.id;
-      const charsResult = await listCharacters({ id: campaignId }, botRequestOptions());
-      const chars = charsResult.status === 'ok' ? charsResult.data : [];
+      const chars = await backend.listParticipants(campaign.id);
 
       if (chars.length === 0) {
         await interaction.editReply(
@@ -83,12 +66,7 @@ export async function handleParticipants(interaction: ChatInputCommandInteractio
     }
   } catch (err) {
     console.error('Participants command error:', err);
-    // Surface a clear message for the campaign-not-found case
-    const message =
-      err instanceof Error && err.message.includes('404')
-        ? 'This server has no campaign set up yet. Run `/setup` first.'
-        : 'Something went wrong. Please try again later.';
-    await interaction.editReply(message);
+    await interaction.editReply('Something went wrong. Please try again later.');
   }
 }
 

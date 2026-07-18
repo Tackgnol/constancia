@@ -1,9 +1,6 @@
 import { ApplicationCommandOptionType, type ChatInputCommandInteraction } from 'discord.js';
-import {
-  getCampaignByGuild,
-  listBotVisibleNpcsForPlayer,
-} from '@constancia/api-client/endpoints/bot/bot';
-import { botRequestOptions, loadBotConfig } from '../config.js';
+import { botBackend, type BotBackend } from '../backend/bot-backend.js';
+import { loadBotConfig } from '../config.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
 const NPC_NAME_OPTION = 'name';
@@ -20,7 +17,10 @@ function getPlayerNpcUrl(campaignId: string, npcId: string): string {
   ).toString();
 }
 
-export async function handleNpcs(interaction: ChatInputCommandInteraction): Promise<void> {
+export async function handleNpcs(
+  interaction: ChatInputCommandInteraction,
+  backend: BotBackend = botBackend,
+): Promise<void> {
   await interaction.deferReply({ ephemeral: true });
 
   const guildId = interaction.guildId;
@@ -29,17 +29,16 @@ export async function handleNpcs(interaction: ChatInputCommandInteraction): Prom
     return;
   }
 
-  const campaignResult = await getCampaignByGuild({ guildId }, botRequestOptions());
-  const campaignId = campaignResult.data.id;
+  const campaign = await backend.getCampaign(guildId);
+  if (!campaign) {
+    await interaction.editReply('This server has no campaign set up. Run `/setup` first.');
+    return;
+  }
+  const campaignId = campaign.id;
   const requestedName = interaction.options.getString(NPC_NAME_OPTION, true);
   const normalizedQuery = normalizeQuery(requestedName);
 
-  const npcsResult = await listBotVisibleNpcsForPlayer(
-    { id: campaignId, discordUserId: interaction.user.id },
-    botRequestOptions(),
-  );
-
-  const npcs = npcsResult.data;
+  const npcs = await backend.listVisibleNpcs(campaignId, interaction.user.id);
 
   if (npcs.length === 0) {
     await interaction.editReply("You haven't encountered any NPCs yet.");

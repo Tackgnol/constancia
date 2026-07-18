@@ -1,22 +1,21 @@
 import type { ChatInputCommandInteraction } from 'discord.js';
-import { getChannelEvents } from '@constancia/api-client/endpoints/bot/bot';
-import { botRequestOptions } from '../config.js';
+import { botBackend, type BotBackend } from '../backend/bot-backend.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
-export async function handleRoll(interaction: ChatInputCommandInteraction): Promise<void> {
+export async function handleRoll(
+  interaction: ChatInputCommandInteraction,
+  backend: BotBackend = botBackend,
+): Promise<void> {
   await interaction.deferReply();
 
-  const eventsResult = await getChannelEvents(
-    { channelId: interaction.channelId },
-    botRequestOptions(),
-  );
+  const events = await backend.getChannelEvents(interaction.channelId);
 
-  if (!eventsResult.data || eventsResult.data.length === 0) {
+  if (events.length === 0) {
     await interaction.editReply('No active events in this channel.');
     return;
   }
 
-  const event = eventsResult.data[0];
+  const event = events[0];
   if (event.type === 'test') {
     await interaction.editReply('Use the active test card in this channel to submit your result.');
     return;

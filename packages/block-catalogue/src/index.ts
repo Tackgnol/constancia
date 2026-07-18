@@ -8,45 +8,52 @@ export type PipelineBlockAvailability =
   | { kind: 'common' }
   | { kind: 'game-system'; gameSystemIds: readonly string[] };
 
-export type PipelineEditorField =
-  | {
-      kind: 'text' | 'textarea' | 'number' | 'boolean' | 'json';
-      path: string;
-      label: string;
-      optional?: boolean;
-      placeholder?: string;
-    }
-  | {
-      kind: 'select';
-      path: string;
-      label: string;
-      options: readonly { value: string; label: string }[];
-    }
-  | {
-      kind: 'system-stat-select';
-      path: string;
-      label: string;
-      statGroup: string;
-    }
-  | {
-      kind: 'recipients';
-      path: string;
-      label: string;
-      mode: 'player' | 'group';
-      optional?: boolean;
-    }
-  | {
-      kind: 'image';
-      path: string;
-      label: string;
-      captionPath?: string;
-      optional?: boolean;
-    }
-  | {
-      kind: 'outcome-list';
-      path: string;
-      label: string;
-    };
+export interface PipelineEditorFieldPresentation {
+  optional?: boolean;
+  placeholder?: string;
+  hint?: string;
+  rows?: number;
+  columnSpan?: 1 | 2 | 3;
+}
+
+export type PipelineEditorField = PipelineEditorFieldPresentation &
+  (
+    | {
+        kind: 'text' | 'textarea' | 'number' | 'boolean' | 'json';
+        path: string;
+        label: string;
+      }
+    | {
+        kind: 'select';
+        path: string;
+        label: string;
+        options: readonly { value: string; label: string }[];
+      }
+    | {
+        kind: 'system-stat-select';
+        path: string;
+        label: string;
+        statGroup: string;
+      }
+    | {
+        kind: 'recipients';
+        path: string;
+        label: string;
+        mode: 'player' | 'group';
+        emptyLabel?: string;
+      }
+    | {
+        kind: 'image';
+        path: string;
+        label: string;
+        captionPath?: string;
+      }
+    | {
+        kind: 'outcome-list';
+        path: string;
+        label: string;
+      }
+  );
 
 export interface PipelineBlockSpec {
   blockType: string;
@@ -56,6 +63,7 @@ export interface PipelineBlockSpec {
   configSchema: JSONSchema7;
   defaultConfig: JsonObject;
   editor: {
+    columns?: 1 | 2 | 3;
     fields: readonly PipelineEditorField[];
   };
 }
@@ -78,14 +86,25 @@ export const PIPELINE_BLOCK_SPECS = [
     },
     defaultConfig: { content: '', imageUrl: '', playerIds: [] },
     editor: {
+      columns: 2,
       fields: [
-        { kind: 'textarea', path: 'content', label: 'Content' },
+        {
+          kind: 'textarea',
+          path: 'content',
+          label: 'Content',
+          rows: 3,
+          columnSpan: 2,
+          placeholder: 'Message text sent to the player…',
+        },
         {
           kind: 'recipients',
           path: 'playerIds',
           label: 'Player IDs',
           mode: 'player',
           optional: true,
+          hint: 'Leave blank to target the triggering player. Choose one or many recipients below.',
+          emptyLabel:
+            'No specific recipients selected — the triggering player will receive the message.',
         },
         { kind: 'image', path: 'imageUrl', label: 'Image URL', optional: true },
       ],
@@ -108,7 +127,13 @@ export const PIPELINE_BLOCK_SPECS = [
     defaultConfig: { content: '', imageUrl: '' },
     editor: {
       fields: [
-        { kind: 'textarea', path: 'content', label: 'Content' },
+        {
+          kind: 'textarea',
+          path: 'content',
+          label: 'Content',
+          rows: 3,
+          placeholder: 'Message text sent to the channel…',
+        },
         { kind: 'image', path: 'imageUrl', label: 'Image URL', optional: true },
       ],
     },
@@ -130,14 +155,24 @@ export const PIPELINE_BLOCK_SPECS = [
     },
     defaultConfig: { content: '', imageUrl: '', groupPlayerIds: [] },
     editor: {
+      columns: 2,
       fields: [
-        { kind: 'textarea', path: 'content', label: 'Content' },
+        {
+          kind: 'textarea',
+          path: 'content',
+          label: 'Content',
+          rows: 3,
+          columnSpan: 2,
+          placeholder: 'Message text sent to the group…',
+        },
         {
           kind: 'recipients',
           path: 'groupPlayerIds',
           label: 'Player IDs',
           mode: 'group',
           optional: true,
+          hint: 'Pick the group recipients explicitly. Empty groups will not emit a message.',
+          emptyLabel: 'No group recipients selected yet.',
         },
         { kind: 'image', path: 'imageUrl', label: 'Image URL', optional: true },
       ],
@@ -159,6 +194,7 @@ export const PIPELINE_BLOCK_SPECS = [
     },
     defaultConfig: { imageUrl: '', caption: '' },
     editor: {
+      columns: 2,
       fields: [
         {
           kind: 'image',
@@ -166,7 +202,13 @@ export const PIPELINE_BLOCK_SPECS = [
           label: 'Image URL',
           captionPath: 'caption',
         },
-        { kind: 'text', path: 'caption', label: 'Caption', optional: true },
+        {
+          kind: 'text',
+          path: 'caption',
+          label: 'Caption',
+          optional: true,
+          placeholder: 'What appears below the image…',
+        },
       ],
     },
   },
@@ -188,8 +230,19 @@ export const PIPELINE_BLOCK_SPECS = [
     defaultConfig: { title: '', content: '', visible: true },
     editor: {
       fields: [
-        { kind: 'text', path: 'title', label: 'Title' },
-        { kind: 'textarea', path: 'content', label: 'Entry' },
+        {
+          kind: 'text',
+          path: 'title',
+          label: 'Title',
+          placeholder: 'What players will recognize in their journal…',
+        },
+        {
+          kind: 'textarea',
+          path: 'content',
+          label: 'Entry',
+          rows: 3,
+          placeholder: 'The event detail worth preserving…',
+        },
         { kind: 'boolean', path: 'visible', label: 'Reveal in player journals' },
       ],
     },
@@ -212,8 +265,20 @@ export const PIPELINE_BLOCK_SPECS = [
     defaultConfig: { name: '', description: '', visible: true },
     editor: {
       fields: [
-        { kind: 'text', path: 'name', label: 'Quest name' },
-        { kind: 'textarea', path: 'description', label: 'Description', optional: true },
+        {
+          kind: 'text',
+          path: 'name',
+          label: 'Quest name',
+          placeholder: 'The objective added when this event fires…',
+        },
+        {
+          kind: 'textarea',
+          path: 'description',
+          label: 'Description',
+          rows: 3,
+          optional: true,
+          placeholder: 'What the players need to do and why it matters…',
+        },
         { kind: 'boolean', path: 'visible', label: 'Reveal in player journals' },
       ],
     },
@@ -235,6 +300,7 @@ export const PIPELINE_BLOCK_SPECS = [
     },
     defaultConfig: { statPath: '', operator: 'gte', threshold: 1 },
     editor: {
+      columns: 3,
       fields: [
         {
           kind: 'text',
@@ -254,7 +320,7 @@ export const PIPELINE_BLOCK_SPECS = [
             { value: 'eq', label: 'Exactly' },
           ],
         },
-        { kind: 'number', path: 'threshold', label: 'Threshold' },
+        { kind: 'number', path: 'threshold', label: 'Threshold', placeholder: '1' },
       ],
     },
   },
@@ -308,7 +374,12 @@ export const PIPELINE_BLOCK_SPECS = [
     defaultConfig: { dataType: '', query: {} },
     editor: {
       fields: [
-        { kind: 'text', path: 'dataType', label: 'Data Type' },
+        {
+          kind: 'text',
+          path: 'dataType',
+          label: 'Data Type',
+          placeholder: 'character, npc, location…',
+        },
         { kind: 'json', path: 'query', label: 'Query', optional: true },
       ],
     },
@@ -330,20 +401,30 @@ export const PIPELINE_BLOCK_SPECS = [
     },
     defaultConfig: { attribute: '', skill: '' },
     editor: {
+      columns: 2,
       fields: [
         {
           kind: 'system-stat-select',
           path: 'attribute',
           label: 'Attribute',
           statGroup: 'attributes',
+          hint: 'System attribute used to build the dice pool.',
         },
         {
           kind: 'system-stat-select',
           path: 'skill',
           label: 'Skill',
           statGroup: 'skills',
+          hint: 'System skill used to build the dice pool.',
         },
-        { kind: 'number', path: 'difficulty', label: 'Difficulty', optional: true },
+        {
+          kind: 'number',
+          path: 'difficulty',
+          label: 'Difficulty',
+          optional: true,
+          placeholder: '1',
+          columnSpan: 2,
+        },
       ],
     },
   },
@@ -363,18 +444,21 @@ export const PIPELINE_BLOCK_SPECS = [
     },
     defaultConfig: { attribute: '', skill: '' },
     editor: {
+      columns: 2,
       fields: [
         {
           kind: 'system-stat-select',
           path: 'attribute',
           label: 'Attribute',
           statGroup: 'attributes',
+          hint: 'System attribute used in the passive insight total.',
         },
         {
           kind: 'system-stat-select',
           path: 'skill',
           label: 'Skill',
           statGroup: 'skills',
+          hint: 'System skill added to the passive insight total.',
         },
       ],
     },

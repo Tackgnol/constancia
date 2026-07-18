@@ -8315,6 +8315,52 @@
         }
       }
     },
+    "/api/v1/bot/campaign-date/{guildId}": {
+      "get": {
+        "operationId": "getBotCampaignDate",
+        "summary": "Get the current campaign date formatted for Discord",
+        "tags": ["bot"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "formatted": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": ["formatted"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/bot/campaigns/{id}/visible-npcs/{discordUserId}": {
       "get": {
         "operationId": "listBotVisibleNpcsForPlayer",

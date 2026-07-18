@@ -6,13 +6,12 @@ import { clampNumeric, toNumericValue } from './types';
 const DEFAULT_MAX = 5;
 
 export function VtmStatRow(props: StatRowProps) {
+  const labelId = useId();
   if (props.field.type !== 'number') {
     return <FallbackStatRow {...props} />;
   }
 
   const { field, value, onChange, onBlur, disabled, error, inputId } = props;
-  const labelId = useId();
-
   const max = typeof field.max === 'number' ? field.max : DEFAULT_MAX;
   const min = typeof field.min === 'number' ? field.min : 0;
   const current = clampNumeric(toNumericValue(value, min), min, max);
