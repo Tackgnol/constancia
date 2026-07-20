@@ -206,8 +206,9 @@ Keep route handlers thin. The service should own:
 The service receives a branded `CampaignScope`; it does not accept an unscoped campaign ID as proof
 of authorization. It may use `createCampaignAccess(prisma).requireResource` for target checks.
 
-Use `buildUploadAssetUrl(config, assetId)` when returning `mapUrl`. Do not make the frontend infer a
-storage key or use `publicUrl` as an authorization mechanism.
+Use `buildUploadAssetUrl(config, assetId)` (exported from
+`apps/backend/src/services/upload-storage.ts`) when returning `mapUrl`. Do not make the frontend
+infer a storage key or use `publicUrl` as an authorization mechanism.
 
 ### Upload and scene-map asset services
 
@@ -418,9 +419,13 @@ route('map', './routes/map.tsx')
 ```
 
 Add Map immediately after Play in `sharedModeDefinitions`, preserving shared live/demo ordering.
-Change all Play rail human-visible scene terminology to channel terminology—“Scene Filter,” “All
-Scenes,” “Active scene,” counts, and selection hints—without renaming or replacing its
-channel-derived data in this slice. Internal component names can remain to keep the change focused.
+Change all Play human-visible scene terminology to channel terminology without renaming or replacing
+its channel-derived data in this slice. The current strings live in
+`apps/frontend/app/components/war-room/scene-rail-extras.tsx` (“Active scene,” “All scenes,”
+“…across N scenes,” “Choose a scene to narrow the board and timeline.”) and in
+`apps/frontend/app/routes/play.tsx` (the “This scene does not have a ready trigger yet…” empty
+state). There is no existing literal “Scene Filter” string; the rename targets these actual labels.
+Internal component names can remain to keep the change focused.
 
 ### Projection
 
@@ -811,7 +816,7 @@ verification.
 rg -n "@constancia/api-client" apps/frontend/app
 rg -n "@constancia/db" apps packages --glob "!packages/db/**"
 rg -n "\bany\b" apps/backend/src apps/frontend/app packages/db/prisma
-rg -n "Scene Filter" apps/frontend/app
+rg -n "Active scene|All scenes|across .* scenes|Choose a scene|This scene" apps/frontend/app/routes/play.tsx apps/frontend/app/components/war-room
 git diff --check
 ```
 
@@ -820,7 +825,8 @@ Review each result rather than assuming an empty result is always required:
 - generated-client value imports are permitted in route modules and `*.server.ts` helpers;
 - only the backend may import the DB package;
 - `any` must not appear in authored feature code;
-- “Scene Filter” should no longer remain as the Play user-facing label;
+- the Play scene-terminology grep must return no user-facing hits — those strings were renamed to
+  channel terminology in Slice 5 (internal identifiers like `sceneLabel` may remain);
 - “Scene” may still appear correctly for the Map domain and `ChannelType.scene`.
 
 ### Full commands
