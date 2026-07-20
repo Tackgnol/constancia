@@ -24,8 +24,8 @@ browser API calls, invented auth helpers, frontend Vitest commands, `any` casts,
 - The bot receives no scene/map command, handler, storage, or game logic.
 - No block definition, registry, pipeline, or system package changes are needed.
 - Persistent Scenes do not replace Discord channels or `ChannelType.scene`.
-- The Play rail's current channel-derived filter remains; only its visible label becomes
-  “Channel Filter.”
+- The Play rail's current channel-derived filter remains; only its visible scene terminology
+  (“Active scene,” “All scenes,” etc., see Slice 5) becomes channel terminology.
 - All frontend forms use React Hook Form. Structured forms use Zod plus `zodResolver`.
 - `any` is forbidden. Narrow `unknown` immediately at request or generated-client boundaries.
 - Generated API files are regenerated, never hand-edited.
@@ -861,7 +861,8 @@ $env:CONSTANCIA_ENABLE_DB_TESTS='true'; npm --workspace apps/backend run test
 8. Delete a scene and confirm its targets remain.
 9. Repeat core flows with keyboard controls and a narrow viewport.
 10. Confirm demo Map mirrors navigation, empty, mapped, placement, and armed-event states.
-11. Confirm Play still filters by channels under the “Channel Filter” label.
+11. Confirm Play still filters by channels, now labeled with channel terminology rather than scene
+    terminology.
 12. Inspect upload quota/records after failed attachment compensation and map replacement.
 
 ### Documentation closeout
