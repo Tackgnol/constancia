@@ -1,0 +1,75 @@
+Feature: Scene and map workspace behavior contract
+
+  Background:
+    Given a game master administers the campaign "Ashen Reach"
+
+  Scenario: A game master creates a scene and attaches a map
+    When the game master creates the scene "Rooftop Garden"
+    And the game master attaches the map "garden-map.png" to "Rooftop Garden"
+    Then the scene "Rooftop Garden" has the map "garden-map.png" attached
+
+  Scenario: An event peg keeps its normalized position after a move and a reload
+    Given the scene "Rooftop Garden" has the map "garden-map.png"
+    And the event "The Prince Arrives" is ready to place
+    When the game master places "The Prince Arrives" on "Rooftop Garden" at (0.5, 0.5)
+    And the game master moves "The Prince Arrives" on "Rooftop Garden" to (1.4, -0.2)
+    And the map reloads
+    Then "The Prince Arrives" is positioned at (1, 0) on "Rooftop Garden"
+
+  Scenario: An NPC target cannot be placed twice in the same scene but can be placed in another
+    Given the scene "Rooftop Garden" has the map "garden-map.png"
+    And the scene "Cellar" has the map "cellar-map.png"
+    And the NPC "Magistrate Voss" is ready to place
+    When the game master places "Magistrate Voss" on "Rooftop Garden" at (0.2, 0.3)
+    And the game master tries to place "Magistrate Voss" on "Rooftop Garden" again at (0.6, 0.6)
+    Then the placement is rejected as a duplicate target
+    When the game master places "Magistrate Voss" on "Cellar" at (0.4, 0.4)
+    Then "Magistrate Voss" is positioned at (0.4, 0.4) on "Cellar"
+
+  Scenario: A target from another campaign is rejected as not found
+    Given the scene "Rooftop Garden" has the map "garden-map.png"
+    And the lore entry "The Sunken Bell" belongs to another campaign
+    When the game master tries to place "The Sunken Bell" on "Rooftop Garden" at (0.5, 0.5)
+    Then the placement is rejected as not found
+
+  Scenario: Replacing a scene's map preserves existing peg positions
+    Given the scene "Rooftop Garden" has the map "garden-map.png"
+    And the NPC "Magistrate Voss" is ready to place
+    And the game master places "Magistrate Voss" on "Rooftop Garden" at (0.25, 0.75)
+    When the game master replaces the map on "Rooftop Garden" with "garden-map-v2.png"
+    Then the scene "Rooftop Garden" has the map "garden-map-v2.png" attached
+    And "Magistrate Voss" is positioned at (0.25, 0.75) on "Rooftop Garden"
+
+  Scenario: Deleting a target removes its pegs without deleting the scene
+    Given the scene "Rooftop Garden" has the map "garden-map.png"
+    And the NPC "Magistrate Voss" is ready to place
+    And the game master places "Magistrate Voss" on "Rooftop Garden" at (0.25, 0.75)
+    When the game master deletes the NPC "Magistrate Voss"
+    Then "Rooftop Garden" has no peg for "Magistrate Voss"
+    And the scene "Rooftop Garden" still exists
+
+  Scenario: Deleting a scene removes its pegs without deleting its targets
+    Given the scene "Rooftop Garden" has the map "garden-map.png"
+    And the NPC "Magistrate Voss" is ready to place
+    And the game master places "Magistrate Voss" on "Rooftop Garden" at (0.25, 0.75)
+    When the game master deletes the scene "Rooftop Garden"
+    Then the scene "Rooftop Garden" no longer exists
+    And the NPC "Magistrate Voss" still exists
+
+  Scenario: An event peg is armed, confirmed, and produces one idempotent execution receipt
+    Given the scene "Rooftop Garden" has the map "garden-map.png"
+    And the event "The Prince Arrives" is ready to place
+    And the game master places "The Prince Arrives" on "Rooftop Garden" at (0.5, 0.5)
+    When the game master arms "The Prince Arrives" on "Rooftop Garden"
+    And the game master confirms the armed event
+    Then "The Prince Arrives" has one execution receipt
+    When the confirmation is retried after an ambiguous response
+    Then "The Prince Arrives" still has one execution receipt
+
+  Scenario: Live and demo navigation expose Map in the same position
+    When the game master compares live and demo navigation
+    Then Map appears in the same position immediately after Play in both
+
+  Scenario: The existing Play channel filter remains available under its new label
+    Then the Play channel filter is still available
+    And the filter is presented using channel terminology rather than scene terminology
