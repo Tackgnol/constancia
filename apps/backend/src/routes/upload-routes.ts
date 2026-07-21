@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
 import { getPrismaClient } from '../auth/prisma.js';
-import { ok, sendNotFound } from '../http-responses.js';
+import { deleted, ok, sendNotFound } from '../http-responses.js';
 import {
+  deleteResponseSchema,
   standardResponseSchema,
   singleResponseSchema,
   uploadAssetParamsSchema,
@@ -11,7 +12,11 @@ import {
 } from '../schemas.js';
 import { processImageUpload } from '../services/image-upload.js';
 import { UploadPermissionError, UploadValidationError } from '../services/request-errors.js';
-import { assertUserUploadAllowance, type UploadQuotaSnapshot } from '../services/upload-assets.js';
+import {
+  assertUserUploadAllowance,
+  deleteOwnedUnlinkedUploadAsset,
+  type UploadQuotaSnapshot,
+} from '../services/upload-assets.js';
 import {
   deleteUploadObjects,
   isValidUploadAssetId,
@@ -217,6 +222,39 @@ const uploadProtectedRoutes: FastifyPluginAsync = async (app) => {
         sizeBytes: asset.sizeBytes,
         quota,
       });
+    },
+  );
+
+  app.delete<{ Params: { assetId: string } }>(
+    '/:assetId',
+    {
+      schema: {
+        tags: ['uploads'],
+        summary: 'Delete an owned upload that is not attached to any resource',
+        operationId: 'deleteUnlinkedUpload',
+        params: uploadAssetParamsSchema,
+        response: {
+          200: deleteResponseSchema,
+          400: standardResponseSchema,
+          401: standardResponseSchema,
+          403: standardResponseSchema,
+        },
+      },
+    },
+    async (request) => {
+      const userId = request.access.kind === 'session' ? request.access.userId : null;
+      if (!userId) {
+        throw new UploadPermissionError('Session required to delete uploads.');
+      }
+
+      // A linked or foreign asset is left untouched and reported as unavailable, so this
+      // compensation path can never strip an image off someone else's event or scene.
+      await deleteOwnedUnlinkedUploadAsset(app.config, getPrismaClient(), {
+        assetId: request.params.assetId,
+        userId,
+      });
+
+      return deleted(true);
     },
   );
 };

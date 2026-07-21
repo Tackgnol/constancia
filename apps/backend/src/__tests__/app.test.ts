@@ -138,6 +138,11 @@ describe('backend app', () => {
         '/api/v1/campaigns/{id}/lore/',
         '/api/v1/campaigns/{id}/lore/{loreId}',
         '/api/v1/campaigns/{id}/lore/{loreId}/reveal',
+        '/api/v1/campaigns/{id}/scenes/',
+        '/api/v1/campaigns/{id}/scenes/{sceneId}',
+        '/api/v1/campaigns/{id}/scenes/{sceneId}/map',
+        '/api/v1/campaigns/{id}/scenes/{sceneId}/pegs',
+        '/api/v1/campaigns/{id}/scenes/{sceneId}/pegs/{pegId}',
         '/api/v1/campaigns/{id}/summaries',
         '/api/v1/campaigns/{id}/summaries/{sumId}',
         '/api/v1/campaigns/{id}/journal/for/{discordId}',
@@ -156,6 +161,45 @@ describe('backend app', () => {
       'fireEvent',
     );
     expect(document.paths['/api/v1/systems/'].get.operationId).toBe('listGameSystems');
+
+    const scenePaths = document.paths;
+    expect([
+      scenePaths['/api/v1/campaigns/{id}/scenes/'].get.operationId,
+      scenePaths['/api/v1/campaigns/{id}/scenes/'].post.operationId,
+      scenePaths['/api/v1/campaigns/{id}/scenes/{sceneId}'].get.operationId,
+      scenePaths['/api/v1/campaigns/{id}/scenes/{sceneId}'].patch.operationId,
+      scenePaths['/api/v1/campaigns/{id}/scenes/{sceneId}'].delete.operationId,
+      scenePaths['/api/v1/campaigns/{id}/scenes/{sceneId}/map'].put.operationId,
+      scenePaths['/api/v1/campaigns/{id}/scenes/{sceneId}/map'].delete.operationId,
+      scenePaths['/api/v1/campaigns/{id}/scenes/{sceneId}/pegs'].post.operationId,
+      scenePaths['/api/v1/campaigns/{id}/scenes/{sceneId}/pegs/{pegId}'].patch.operationId,
+      scenePaths['/api/v1/campaigns/{id}/scenes/{sceneId}/pegs/{pegId}'].delete.operationId,
+      scenePaths['/api/v1/uploads/{assetId}'].delete.operationId,
+    ]).toEqual([
+      'listScenes',
+      'createScene',
+      'getScene',
+      'updateScene',
+      'deleteScene',
+      'setSceneMap',
+      'deleteSceneMap',
+      'createScenePeg',
+      'updateScenePeg',
+      'deleteScenePeg',
+      'deleteUnlinkedUpload',
+    ]);
+
+    // The peg response must stay discriminated rather than collapsing to a bare object.
+    const pegResponse =
+      scenePaths['/api/v1/campaigns/{id}/scenes/{sceneId}/pegs'].post.responses['201'].content[
+        'application/json'
+      ].schema.properties.data;
+    expect(pegResponse.oneOf).toHaveLength(3);
+    expect(
+      pegResponse.oneOf.map((branch: { properties: { kind: { enum: string[] } } }) =>
+        branch.properties.kind.enum.join(''),
+      ),
+    ).toEqual(['event', 'npc', 'lore']);
   });
 
   it('serves the design-doc endpoint surface with stable statuses', async () => {
@@ -377,6 +421,46 @@ describe('backend app', () => {
         url: '/api/v1/campaigns/campaign-1/lore/lore-1',
         statusCode: 401,
       },
+      { method: 'GET', url: '/api/v1/campaigns/campaign-1/scenes', statusCode: 401 },
+      {
+        method: 'POST',
+        url: '/api/v1/campaigns/campaign-1/scenes',
+        statusCode: 401,
+        payload: { name: 'Elysium' },
+      },
+      { method: 'GET', url: '/api/v1/campaigns/campaign-1/scenes/scene-1', statusCode: 401 },
+      {
+        method: 'PATCH',
+        url: '/api/v1/campaigns/campaign-1/scenes/scene-1',
+        statusCode: 401,
+        payload: { name: 'The Docks' },
+      },
+      { method: 'DELETE', url: '/api/v1/campaigns/campaign-1/scenes/scene-1', statusCode: 401 },
+      {
+        method: 'PUT',
+        url: '/api/v1/campaigns/campaign-1/scenes/scene-1/map',
+        statusCode: 401,
+        payload: { assetId: 'asset-1' },
+      },
+      { method: 'DELETE', url: '/api/v1/campaigns/campaign-1/scenes/scene-1/map', statusCode: 401 },
+      {
+        method: 'POST',
+        url: '/api/v1/campaigns/campaign-1/scenes/scene-1/pegs',
+        statusCode: 401,
+        payload: { kind: 'npc', targetId: 'npc-1', x: 0.5, y: 0.5 },
+      },
+      {
+        method: 'PATCH',
+        url: '/api/v1/campaigns/campaign-1/scenes/scene-1/pegs/peg-1',
+        statusCode: 401,
+        payload: { x: 0.6, y: 0.4 },
+      },
+      {
+        method: 'DELETE',
+        url: '/api/v1/campaigns/campaign-1/scenes/scene-1/pegs/peg-1',
+        statusCode: 401,
+      },
+      { method: 'DELETE', url: '/api/v1/uploads/some-asset', statusCode: 401 },
       { method: 'GET', url: '/api/v1/campaigns/campaign-1/summaries', statusCode: 401 },
       {
         method: 'POST',

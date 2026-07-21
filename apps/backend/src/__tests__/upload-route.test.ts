@@ -9,6 +9,10 @@ const prismaMock = vi.hoisted(() => ({
   user: {
     findUnique: vi.fn(),
   },
+  uploadAsset: {
+    findFirst: vi.fn(),
+    deleteMany: vi.fn(),
+  },
 }));
 
 vi.mock('../auth/prisma.js', () => ({
@@ -35,6 +39,70 @@ function createMultipartUpload() {
     payload,
   };
 }
+
+const ASSET_ID = '123e4567-e89b-12d3-a456-426614174000';
+
+async function buildUploadApp() {
+  const config = loadConfig({
+    NODE_ENV: 'test',
+    BETTER_AUTH_SECRET: 'constancia-test-secret-12345678901234567890',
+  });
+  const app = Fastify({ logger: false });
+  await app.register(configPlugin, { config });
+  await app.register(requestErrorPlugin);
+  await app.register(multipart, { limits: { fileSize: config.uploadMaxBytes, files: 1 } });
+  app.addHook('onRequest', async (request) => {
+    request.access = {
+      kind: 'session',
+      userId: 'user-1',
+      email: 'keeper@example.test',
+      discordUserId: 'discord-user-1',
+      isSuperUser: false,
+    };
+  });
+  await app.register(uploadProtectedRoutes, { prefix: '/uploads' });
+
+  return app;
+}
+
+describe('unlinked upload deletion', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('only considers assets the session user owns and nothing has claimed', async () => {
+    prismaMock.uploadAsset.findFirst.mockResolvedValue({
+      id: ASSET_ID,
+      storageProvider: 'local',
+      storageKey: `uploads/${ASSET_ID}.webp`,
+      bucket: null,
+    });
+    const app = await buildUploadApp();
+
+    const response = await app.inject({ method: 'DELETE', url: `/uploads/${ASSET_ID}` });
+    await app.close();
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ status: 'ok', deleted: true });
+    expect(prismaMock.uploadAsset.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: ASSET_ID, userId: 'user-1', eventId: null, sceneId: null },
+      }),
+    );
+  });
+
+  it('leaves a linked or foreign asset untouched', async () => {
+    prismaMock.uploadAsset.findFirst.mockResolvedValue(null);
+    const app = await buildUploadApp();
+
+    const response = await app.inject({ method: 'DELETE', url: `/uploads/${ASSET_ID}` });
+    await app.close();
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().data.code).toBe('UPLOAD_VALIDATION_FAILED');
+    expect(prismaMock.uploadAsset.deleteMany).not.toHaveBeenCalled();
+  });
+});
 
 describe('upload route multipart boundary', () => {
   beforeEach(() => {
