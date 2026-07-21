@@ -73,3 +73,23 @@ Feature: Scene and map workspace behavior contract
   Scenario: The existing Play channel filter remains available under its new label
     Then the Play channel filter is still available
     And the filter is presented using channel terminology rather than scene terminology
+
+  Scenario: A requested scene is selected only when the campaign returned it
+    Given the campaign has the scenes "Rooftop Garden, Cellar"
+    When the map workspace opens with the scene query "scene-2"
+    Then the workspace selects the scene named "Cellar"
+
+  Scenario: A scene query from another campaign falls back to the first scene
+    Given the campaign has the scenes "Rooftop Garden, Cellar"
+    When the map workspace opens with the scene query "scene-from-another-campaign"
+    Then the workspace selects the scene named "Rooftop Garden"
+
+  Scenario: Deleting the selected scene selects the next remaining scene
+    Given the campaign has the scenes "Rooftop Garden, Cellar, Undercroft"
+    When the game master removes the scene named "Cellar" from the index
+    Then the workspace selects the scene named "Undercroft"
+
+  Scenario: Deleting the last scene leaves nothing selected
+    Given the campaign has the scenes "Rooftop Garden"
+    When the game master removes the scene named "Rooftop Garden" from the index
+    Then the workspace selects no scene

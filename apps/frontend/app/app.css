@@ -4496,3 +4496,114 @@ h3 {
     outline-color: Highlight;
   }
 }
+
+/* ─── Map workspace ─────────────────────────────────────── */
+
+.map-workspace {
+  display: grid;
+  grid-template-columns: minmax(200px, 260px) minmax(0, 1fr) minmax(200px, 280px);
+  gap: 1rem;
+  align-items: start;
+}
+
+.map-scene-panel,
+.map-inspector-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--surface-high);
+  border-radius: 0.75rem;
+}
+
+.map-canvas-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.map-canvas-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+/* The image is the coordinate frame for pegs, so it must never be cropped or stretched. */
+.map-canvas-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+}
+
+.scene-index {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scene-index-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.scene-index-link {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: 0.125rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.scene-index-item.is-selected .scene-index-link {
+  background: var(--surface-highest, var(--surface-high));
+}
+
+.scene-index-name {
+  font-weight: 600;
+}
+
+.scene-index-meta,
+.map-peg-kind {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.scene-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.scene-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.map-peg-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 860px) {
+  .map-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

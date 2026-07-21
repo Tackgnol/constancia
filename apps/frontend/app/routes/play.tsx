@@ -769,8 +769,8 @@ export default function PlayRoute() {
         <section className="detail-card board-empty-state">
           <h2>No staged beats for this thread.</h2>
           <p>
-            This scene does not have a ready trigger yet. Clear the filter or stage a fresh beat in
-            Setup.
+            This channel does not have a ready trigger yet. Clear the filter or stage a fresh beat
+            in Setup.
           </p>
         </section>
       ) : null}

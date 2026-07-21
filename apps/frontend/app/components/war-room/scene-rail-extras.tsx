@@ -40,7 +40,7 @@ export function SceneRailExtras({
   return (
     <div className="rail-blocks">
       <section className="rail-card rail-card-scene">
-        <p className="rail-eyebrow">Active scene</p>
+        <p className="rail-eyebrow">Active channel</p>
         {activeLabel ? (
           <>
             <p className="rail-scene-name">{activeLabel}</p>
@@ -51,11 +51,11 @@ export function SceneRailExtras({
           </>
         ) : (
           <>
-            <p className="rail-scene-name">All scenes</p>
+            <p className="rail-scene-name">All channels</p>
             <p className="rail-scene-meta">
-              {eventCount} beat{eventCount !== 1 ? 's' : ''} across {tags.length} scenes
+              {eventCount} beat{eventCount !== 1 ? 's' : ''} across {tags.length} channels
             </p>
-            <p className="rail-scene-hint">Choose a scene to narrow the board and timeline.</p>
+            <p className="rail-scene-hint">Choose a channel to narrow the board and timeline.</p>
           </>
         )}
       </section>

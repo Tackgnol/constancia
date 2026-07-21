@@ -1,5 +1,11 @@
 import { expect } from '@playwright/test';
 import { createBdd, test as base } from 'playwright-bdd';
+import { buildWarRoomModeTabs } from '../../apps/frontend/app/components/war-room/war-room-navigation.js';
+import {
+  nextSceneAfterRemoval,
+  selectSceneId,
+  type SceneSummaryProjection,
+} from '../../apps/frontend/app/lib/map-workspace-projection.js';
 
 type TargetKind = 'event' | 'npc' | 'lore';
 
@@ -65,12 +71,15 @@ class SceneMapWorld {
   lastError: Error | null = null;
   armedAttempt: ArmedAttempt | null = null;
 
-  // Shared live/demo navigation order and the Play channel filter are modeled
-  // as plain in-memory data here (Slice 5 introduces the real route/component
-  // changes); this only captures the agreed product shape.
-  readonly liveNavOrder = ['Setup', 'Play', 'Map', 'NPCs', 'Participants', 'Lore', 'Quests'];
-  readonly demoNavOrder = ['Setup', 'Play', 'Map', 'NPCs', 'Participants', 'Lore', 'Quests'];
+  // Navigation ordering reads the real shared tab builder, so this scenario fails if live and
+  // demo ever drift apart. The Play channel filter stays modeled data until Slice 7.
+  readonly liveNavOrder = buildWarRoomModeTabs('').map((tab) => tab.label);
+  readonly demoNavOrder = buildWarRoomModeTabs('/demo').map((tab) => tab.label);
   readonly playChannelFilter = { available: true, terminology: 'channel' as const };
+
+  /** Mirrors the Map route's scene index; selection rules come from the real projection helpers. */
+  sceneIndex: SceneSummaryProjection[] = [];
+  selectedSceneId: string | null = null;
 
   campaign(name: string): string {
     const existing = this.campaignIds.get(name);
@@ -388,3 +397,32 @@ Then(
     expect(this.playChannelFilter.terminology).toBe('channel');
   },
 );
+
+Given('the campaign has the scenes {string}', function (names: string) {
+  this.sceneIndex = names.split(', ').map((name, index) => ({
+    id: `scene-${index + 1}`,
+    name,
+    hasMap: false,
+    pegCount: 0,
+  }));
+});
+
+When('the map workspace opens with the scene query {string}', function (requested: string) {
+  this.selectedSceneId = selectSceneId(this.sceneIndex, requested.length === 0 ? null : requested);
+});
+
+When('the game master removes the scene named {string} from the index', function (name: string) {
+  const removed = this.sceneIndex.find((scene) => scene.name === name);
+  expect(removed).toBeDefined();
+  this.selectedSceneId = nextSceneAfterRemoval(this.sceneIndex, removed?.id ?? '');
+  this.sceneIndex = this.sceneIndex.filter((scene) => scene.id !== removed?.id);
+});
+
+Then('the workspace selects the scene named {string}', function (name: string) {
+  const selected = this.sceneIndex.find((scene) => scene.id === this.selectedSceneId);
+  expect(selected?.name).toBe(name);
+});
+
+Then('the workspace selects no scene', function () {
+  expect(this.selectedSceneId).toBeNull();
+});

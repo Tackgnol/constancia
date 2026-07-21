@@ -397,14 +397,14 @@ export default function WarRoomLayout() {
       <div className="war-room-grid">
         {isPlayRoute ? (
           <aside className="filter-panel">
-            <div className="panel-title">Scene Filter</div>
+            <div className="panel-title">Channel Filter</div>
             <div className="filter-tag-list">
               <button
                 className={`filter-tag${activeTag === null ? ' is-active' : ''}`}
                 onClick={() => setActiveTag(null)}
                 type="button"
               >
-                All Scenes
+                All Channels
               </button>
               {outletContext.tags.map((tag) => {
                 const count = tagEventCounts.get(tag.id) ?? 0;
