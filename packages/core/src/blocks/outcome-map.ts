@@ -1,4 +1,5 @@
 import type { BlockContext, BlockDefinition, BlockMessage } from '@constancia/contracts';
+import { requirePipelineBlockSpec } from '@constancia/block-catalogue';
 
 interface Outcome {
   threshold: number;
@@ -10,29 +11,12 @@ interface OutcomeMapConfig {
   shortCircuit?: boolean;
 }
 
+const spec = requirePipelineBlockSpec('outcome-map');
+
 export const outcomeMapBlock: BlockDefinition<OutcomeMapConfig> = {
   type: 'outcome-map',
-  label: 'Outcome Map',
-  configSchema: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      outcomes: {
-        type: 'array',
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            threshold: { type: 'number' },
-            text: { type: 'string' },
-          },
-          required: ['threshold', 'text'],
-        },
-      },
-      shortCircuit: { type: 'boolean' },
-    },
-    required: ['outcomes'],
-  },
+  label: spec.label,
+  configSchema: spec.configSchema,
   execute: async (config: OutcomeMapConfig, ctx: BlockContext) => {
     const score = ctx.playerScore ?? 0;
     const targetId =

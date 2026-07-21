@@ -1,4 +1,5 @@
 import type { BlockDefinition } from '@constancia/contracts';
+import { requirePipelineBlockSpec } from '@constancia/block-catalogue';
 
 function normalizeRecipientIds(ids: string | string[] | undefined): string[] {
   if (Array.isArray(ids)) {
@@ -21,19 +22,12 @@ interface MessageGroupConfig {
   groupPlayerIds?: string | string[];
 }
 
+const spec = requirePipelineBlockSpec('message-group');
+
 export const messageGroupBlock: BlockDefinition<MessageGroupConfig> = {
   type: 'message-group',
-  label: 'Message Group',
-  configSchema: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      content: { type: 'string' },
-      imageUrl: { type: 'string' },
-      groupPlayerIds: { type: 'array', items: { type: 'string' } },
-    },
-    required: ['content'],
-  },
+  label: spec.label,
+  configSchema: spec.configSchema,
   execute: async (config: MessageGroupConfig) => {
     const targetIds = normalizeRecipientIds(config.groupPlayerIds);
 

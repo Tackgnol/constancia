@@ -1,4 +1,5 @@
 import type { BlockDefinition } from '@constancia/contracts';
+import { requirePipelineBlockSpec } from '@constancia/block-catalogue';
 
 interface AddJournalEntryConfig {
   title: string;
@@ -6,19 +7,12 @@ interface AddJournalEntryConfig {
   visible?: boolean;
 }
 
+const spec = requirePipelineBlockSpec('add-journal-entry');
+
 export const addJournalEntryBlock: BlockDefinition<AddJournalEntryConfig> = {
   type: 'add-journal-entry',
-  label: 'Add Journal Entry',
-  configSchema: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      title: { type: 'string' },
-      content: { type: 'string' },
-      visible: { type: 'boolean' },
-    },
-    required: ['title', 'content'],
-  },
+  label: spec.label,
+  configSchema: spec.configSchema,
   execute: async (config, ctx) => {
     const effect = {
       kind: 'add-journal-entry' as const,

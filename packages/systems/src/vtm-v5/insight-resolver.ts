@@ -1,4 +1,5 @@
 import type { BlockContext, BlockDefinition } from '@constancia/contracts';
+import { requirePipelineBlockSpec } from '@constancia/block-catalogue';
 
 interface VtmInsightResolverConfig {
   attribute: string;
@@ -31,18 +32,12 @@ export function resolveVtmInsightScore(
   };
 }
 
+const spec = requirePipelineBlockSpec('vtm-insight-resolver');
+
 export const vtmInsightResolverBlock: BlockDefinition<VtmInsightResolverConfig> = {
   type: 'vtm-insight-resolver',
-  label: 'VTM V5 Insight Resolver',
-  configSchema: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      attribute: { type: 'string', description: 'Key into characterData.attributes' },
-      skill: { type: 'string', description: 'Key into characterData.skills' },
-    },
-    required: ['attribute', 'skill'],
-  },
+  label: spec.label,
+  configSchema: spec.configSchema,
   execute: async (
     config: VtmInsightResolverConfig,
     ctx: BlockContext,
