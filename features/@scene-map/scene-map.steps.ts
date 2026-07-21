@@ -81,6 +81,62 @@ class SceneMapWorld {
   sceneIndex: SceneSummaryProjection[] = [];
   selectedSceneId: string | null = null;
 
+  // Composed map upload: an upload that cannot be attached must not survive as an owned asset.
+  readonly uploadedAssets = new Map<string, { attachedTo: string | null }>();
+  readonly reconciliationLog: Array<{ operation: string; assetId: string; sceneId: string }> = [];
+  attachWillFail = false;
+  compensationWillFail = false;
+  uploadAttempts = 0;
+  lastAttachError: string | null = null;
+
+  /**
+   * The route action's shape: upload, attach, and compensate on attachment failure. Reporting the
+   * attachment error is what the user sees, whether or not the compensating delete succeeds.
+   */
+  submitSceneMap(sceneName: string, assetId: string | null): void {
+    this.lastAttachError = null;
+    if (assetId === null) {
+      return;
+    }
+
+    this.uploadAttempts += 1;
+    this.uploadedAssets.set(assetId, { attachedTo: null });
+
+    if (!this.attachWillFail) {
+      this.uploadedAssets.set(assetId, { attachedTo: sceneName });
+      this.attachMapByName(sceneName, assetId);
+      return;
+    }
+
+    this.lastAttachError = 'attachment failed';
+    if (this.compensationWillFail) {
+      this.reconciliationLog.push({
+        operation: 'delete-unlinked-upload',
+        assetId,
+        sceneId: sceneName,
+      });
+      return;
+    }
+
+    this.uploadedAssets.delete(assetId);
+  }
+
+  removeMap(sceneName: string): void {
+    this.attachMapByName(sceneName, null);
+  }
+
+  unattachedAssetIds(): string[] {
+    return [...this.uploadedAssets.entries()]
+      .filter(([, asset]) => asset.attachedTo === null)
+      .map(([id]) => id);
+  }
+
+  private attachMapByName(sceneName: string, assetId: string | null): void {
+    const scene = this.scenesByName.get(sceneName);
+    if (!scene) throw new Error(`Unknown scene: ${sceneName}`);
+    scene.mapAssetId = assetId;
+  }
+
   campaign(name: string): string {
     const existing = this.campaignIds.get(name);
     if (existing) return existing;
@@ -397,6 +453,61 @@ Then(
     expect(this.playChannelFilter.terminology).toBe('channel');
   },
 );
+
+Given('the scene {string} exists without a map', function (sceneName: string) {
+  if (!this.scenesByName.has(sceneName)) {
+    this.createScene(sceneName);
+  }
+});
+
+Given('attaching a map will fail', function () {
+  this.attachWillFail = true;
+});
+
+Given('deleting an unattached upload will fail', function () {
+  this.compensationWillFail = true;
+});
+
+When(
+  'the game master submits the map {string} for {string}',
+  function (assetId: string, sceneName: string) {
+    this.submitSceneMap(sceneName, assetId);
+  },
+);
+
+When(
+  'the game master submits the map form for {string} without choosing a file',
+  function (sceneName: string) {
+    this.submitSceneMap(sceneName, null);
+  },
+);
+
+When('the game master removes the map from {string}', function (sceneName: string) {
+  this.removeMap(sceneName);
+});
+
+Then('no uploaded asset is left unattached', function () {
+  expect(this.unattachedAssetIds()).toEqual([]);
+});
+
+Then('the game master is told the attachment failed', function () {
+  expect(this.lastAttachError).toBe('attachment failed');
+});
+
+Then('the orphaned upload is recorded for reconciliation', function () {
+  expect(this.reconciliationLog).toHaveLength(1);
+  expect(this.reconciliationLog[0]?.operation).toBe('delete-unlinked-upload');
+  expect(this.reconciliationLog[0]?.assetId).toBeTruthy();
+  expect(this.reconciliationLog[0]?.sceneId).toBeTruthy();
+});
+
+Then('no upload is attempted', function () {
+  expect(this.uploadAttempts).toBe(0);
+});
+
+Then('the scene {string} has no map', function (sceneName: string) {
+  expect(this.scenesByName.get(sceneName)?.mapAssetId).toBeNull();
+});
 
 Given('the campaign has the scenes {string}', function (names: string) {
   this.sceneIndex = names.split(', ').map((name, index) => ({

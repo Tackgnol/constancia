@@ -4581,7 +4581,8 @@ h3 {
   opacity: 0.75;
 }
 
-.scene-form {
+.scene-form,
+.scene-map-form {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;

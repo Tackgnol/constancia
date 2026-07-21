@@ -74,6 +74,42 @@ Feature: Scene and map workspace behavior contract
     Then the Play channel filter is still available
     And the filter is presented using channel terminology rather than scene terminology
 
+  Scenario: Attaching a map is one action that leaves no orphaned upload
+    Given the scene "Rooftop Garden" exists without a map
+    When the game master submits the map "garden-map.png" for "Rooftop Garden"
+    Then the scene "Rooftop Garden" has the map "garden-map.png" attached
+    And no uploaded asset is left unattached
+
+  Scenario: A failed attachment deletes the upload it already made
+    Given the scene "Rooftop Garden" exists without a map
+    And attaching a map will fail
+    When the game master submits the map "garden-map.png" for "Rooftop Garden"
+    Then the game master is told the attachment failed
+    And no uploaded asset is left unattached
+    And the scene "Rooftop Garden" has no map
+
+  Scenario: A failed compensation still reports the attachment failure and records the orphan
+    Given the scene "Rooftop Garden" exists without a map
+    And attaching a map will fail
+    And deleting an unattached upload will fail
+    When the game master submits the map "garden-map.png" for "Rooftop Garden"
+    Then the game master is told the attachment failed
+    And the orphaned upload is recorded for reconciliation
+
+  Scenario: Submitting no file never reaches the backend
+    Given the scene "Rooftop Garden" exists without a map
+    When the game master submits the map form for "Rooftop Garden" without choosing a file
+    Then no upload is attempted
+    And the scene "Rooftop Garden" has no map
+
+  Scenario: Removing a map keeps the scene and its peg positions
+    Given the scene "Rooftop Garden" has the map "garden-map.png"
+    And the NPC "Magistrate Voss" is ready to place
+    And the game master places "Magistrate Voss" on "Rooftop Garden" at (0.25, 0.75)
+    When the game master removes the map from "Rooftop Garden"
+    Then the scene "Rooftop Garden" has no map
+    And "Magistrate Voss" is positioned at (0.25, 0.75) on "Rooftop Garden"
+
   Scenario: A requested scene is selected only when the campaign returned it
     Given the campaign has the scenes "Rooftop Garden, Cellar"
     When the map workspace opens with the scene query "scene-2"
