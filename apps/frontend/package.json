@@ -9,7 +9,9 @@
     "start": "react-router-serve build/server/index.js",
     "generate:api": "cd ../.. && npm run generate:api",
     "typecheck": "react-router typegen && tsc --noEmit",
-    "lint": "eslint app/"
+    "lint": "eslint app/",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
   },
   "dependencies": {
     "@constancia/api-client": "*",
@@ -45,6 +47,7 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "vite": "^7.1.12",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
   }
 }

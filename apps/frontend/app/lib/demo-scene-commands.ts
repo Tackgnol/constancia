@@ -22,7 +22,10 @@ function normalizeDemoSceneName(name: string): string {
   return name.trim().replace(/\s+/g, ' ');
 }
 
-function buildDemoScenePeg(candidate: MapCandidate, point: NormalizedPoint): ScenePegProjection {
+export function buildDemoScenePeg(
+  candidate: MapCandidate,
+  point: NormalizedPoint,
+): ScenePegProjection {
   const id = `demo-peg-${crypto.randomUUID()}`;
 
   switch (candidate.kind) {
