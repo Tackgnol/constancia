@@ -110,6 +110,28 @@ Feature: Scene and map workspace behavior contract
     Then the scene "Rooftop Garden" has no map
     And "Magistrate Voss" is positioned at (0.25, 0.75) on "Rooftop Garden"
 
+  Scenario: A click is normalized against the rendered image, whatever the camera
+    Given the map image is rendered at 300 by 200 starting at 40, 60
+    When the game master clicks the map at 190, 160
+    Then the placement point is (0.5, 0.5)
+
+  Scenario: The same map point survives a zoomed and panned camera
+    Given the map image is rendered at 1200 by 800 starting at -400, -240
+    When the game master clicks the map at 200, 160
+    Then the placement point is (0.5, 0.5)
+
+  Scenario: A click outside the image is clamped onto it
+    Given the map image is rendered at 300 by 200 starting at 40, 60
+    When the game master clicks the map at 1000, 10
+    Then the placement point is (1, 0)
+
+  Scenario: Keyboard nudges move a peg by a fixed share and stop at the edge
+    Given a peg sits at (0.5, 0.5)
+    When the game master presses "ArrowRight" 3 times
+    Then the peg sits at (0.53, 0.5)
+    When the game master presses "ArrowUp" with shift 12 times
+    Then the peg sits at (0.53, 0)
+
   Scenario: A requested scene is selected only when the campaign returned it
     Given the campaign has the scenes "Rooftop Garden, Cellar"
     When the map workspace opens with the scene query "scene-2"

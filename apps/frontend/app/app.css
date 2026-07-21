@@ -4608,3 +4608,191 @@ h3 {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ─── Map viewport and pegs ─────────────────────────────── */
+
+.map-viewport {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.map-viewport-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/*
+ * Scoped past the viewport library's own injected wrapper rule, which sizes to fit-content and
+ * otherwise collapses to zero: the map image's max-width would resolve against an indefinite box.
+ * A definite surface gives the image — and therefore every peg percentage — a real coordinate frame.
+ */
+.map-viewport .map-viewport-surface {
+  width: 100%;
+  height: min(70vh, 520px);
+  border-radius: 0.75rem;
+  background: var(--surface-high);
+  cursor: grab;
+  overflow: hidden;
+}
+
+.map-viewport .map-viewport-content {
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-viewport .map-viewport-surface:active {
+  cursor: grabbing;
+}
+
+/* Width-driven so the aspect ratio is never distorted; a tall map is panned rather than squashed. */
+.map-image-frame .map-canvas-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: none;
+}
+
+/*
+ * Sized to the image so peg percentages resolve against the image, not the padded viewport.
+ * max-content breaks the circular sizing between a flex item and a percentage-width child: without
+ * it the frame waits on the image while the image waits on the frame, and both collapse to zero.
+ */
+.map-image-frame {
+  position: relative;
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  line-height: 0;
+}
+
+.map-image-frame.is-placing {
+  cursor: crosshair;
+}
+
+.map-placement-surface {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: 2px dashed var(--focus-ring, currentColor);
+  border-radius: 0.5rem;
+  cursor: crosshair;
+}
+
+.scene-peg {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  padding: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--surface-lowest, #14111a);
+  background: var(--surface-highest, #e8e2f0);
+  border: 2px solid var(--surface-lowest, #14111a);
+  cursor: grab;
+  touch-action: none;
+}
+
+.scene-peg:active {
+  cursor: grabbing;
+}
+
+/* Shape and glyph carry the peg kind, so nothing depends on colour alone. */
+.scene-peg-event {
+  border-radius: 0.25rem;
+}
+
+.scene-peg-npc {
+  border-radius: 50%;
+}
+
+.scene-peg-lore {
+  border-radius: 0.25rem;
+  rotate: 45deg;
+}
+
+.scene-peg-lore .scene-peg-glyph {
+  rotate: -45deg;
+}
+
+.scene-peg.is-selected {
+  outline: 3px solid var(--focus-ring, Highlight);
+  outline-offset: 2px;
+}
+
+.map-peg-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.map-peg-row-select {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem;
+  text-align: left;
+  background: transparent;
+  border-radius: 0.5rem;
+  color: inherit;
+  cursor: pointer;
+}
+
+.map-peg-row.is-selected .map-peg-row-select {
+  background: var(--surface-highest, var(--surface-high));
+}
+
+.map-peg-name {
+  font-weight: 600;
+}
+
+.map-peg-position,
+.map-picker-placed {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.map-peg-row-actions,
+.map-picker-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.map-picker,
+.map-picker-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.map-picker-armed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background: var(--surface-highest, var(--surface-high));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-viewport-content,
+  .scene-peg {
+    transition: none !important;
+    animation: none !important;
+  }
+}

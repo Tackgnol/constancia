@@ -1,17 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useRevalidator } from 'react-router';
 import { ManagementWorkspace } from '@/components/layout/management-workspace';
+import { MapCandidatePicker } from '@/components/maps/map-candidate-picker';
+import { MapInspector } from '@/components/maps/map-inspector';
+import { MapViewport } from '@/components/maps/map-viewport';
 import { SceneForm } from '@/components/maps/scene-form';
 import { SceneIndex } from '@/components/maps/scene-index';
 import { SceneMapForm } from '@/components/maps/scene-map-form';
+import { ScenePegButton } from '@/components/maps/scene-peg-button';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import { Button } from '@/components/ui/button';
 import { postRouteAction } from '@/lib/route-action-client';
+import type { NormalizedPoint } from '@/lib/map-coordinates';
 import {
   buildSceneMapPath,
   nextSceneAfterRemoval,
+  type MapCandidate,
   type MapWorkspaceProjection,
   type SceneDetailProjection,
+  type ScenePegProjection,
   type SceneSummaryProjection,
 } from '@/lib/map-workspace-projection';
 
@@ -21,16 +28,49 @@ interface UploadQuota {
   uploadNearLimit: boolean;
 }
 
+interface MapActionData {
+  sceneId?: string;
+  pegId?: string;
+  quota?: UploadQuota;
+  duplicateTarget?: boolean;
+}
+
 interface SceneCommands {
   create: (name: string) => Promise<void>;
   rename: (sceneId: string, name: string) => Promise<void>;
   remove: (sceneId: string) => Promise<void>;
   replaceMap: (sceneId: string, file: File) => Promise<void>;
   removeMap: (sceneId: string) => Promise<void>;
+  createPeg: (sceneId: string, candidate: MapCandidate, point: NormalizedPoint) => Promise<void>;
+  movePeg: (sceneId: string, pegId: string, point: NormalizedPoint) => Promise<void>;
+  removePeg: (sceneId: string, pegId: string) => Promise<void>;
   pending: boolean;
   error: string | null;
   quotaWarning: string | null;
   clearError: () => void;
+}
+
+function demoPeg(candidate: MapCandidate, point: NormalizedPoint): ScenePegProjection {
+  const id = `demo-peg-${crypto.randomUUID()}`;
+
+  switch (candidate.kind) {
+    case 'event':
+      return {
+        id,
+        kind: 'event',
+        ...point,
+        target: { id: candidate.id, name: candidate.label, status: 'ready' },
+      };
+    case 'npc':
+      return {
+        id,
+        kind: 'npc',
+        ...point,
+        target: { id: candidate.id, name: candidate.label, imageUrl: null },
+      };
+    case 'lore':
+      return { id, kind: 'lore', ...point, target: { id: candidate.id, title: candidate.label } };
+  }
 }
 
 function formatQuotaWarning(quota: UploadQuota | undefined): string | null {
@@ -69,7 +109,7 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
 
   const runLive = async (
     values: Record<string, FormDataEntryValue>,
-    onDone: (data: { sceneId?: string; quota?: UploadQuota } | undefined) => Promise<void> | void,
+    onDone: (data: MapActionData | undefined) => Promise<void> | void,
   ) => {
     if (projection.campaignId === null) {
       setError('Reopen Map so we can identify your campaign, then try again.');
@@ -79,7 +119,7 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
     setPending(true);
     setError(null);
     try {
-      const response = await postRouteAction<{ sceneId?: string; quota?: UploadQuota }>('/map', {
+      const response = await postRouteAction<MapActionData>('/map', {
         ...values,
         campaignId: projection.campaignId,
       });
@@ -158,6 +198,25 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
             mapUrl: null,
           }));
         },
+        createPeg: async (sceneId, candidate, point) => {
+          setDemoDetail(sceneId, (current) =>
+            current.pegs.some((peg) => peg.target.id === candidate.id)
+              ? current
+              : { ...current, pegs: [...current.pegs, demoPeg(candidate, point)] },
+          );
+        },
+        movePeg: async (sceneId, pegId, point) => {
+          setDemoDetail(sceneId, (current) => ({
+            ...current,
+            pegs: current.pegs.map((peg) => (peg.id === pegId ? { ...peg, ...point } : peg)),
+          }));
+        },
+        removePeg: async (sceneId, pegId) => {
+          setDemoDetail(sceneId, (current) => ({
+            ...current,
+            pegs: current.pegs.filter((peg) => peg.id !== pegId),
+          }));
+        },
       },
     };
   }
@@ -190,6 +249,31 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
         runLive({ intent: 'delete-scene-map', sceneId }, () => {
           revalidator.revalidate();
         }),
+      createPeg: (sceneId, candidate, point) =>
+        runLive(
+          {
+            intent: 'create-scene-peg',
+            sceneId,
+            kind: candidate.kind,
+            targetId: candidate.id,
+            x: String(point.x),
+            y: String(point.y),
+          },
+          () => {
+            revalidator.revalidate();
+          },
+        ),
+      movePeg: (sceneId, pegId, point) =>
+        runLive(
+          { intent: 'move-scene-peg', sceneId, pegId, x: String(point.x), y: String(point.y) },
+          () => {
+            revalidator.revalidate();
+          },
+        ),
+      removePeg: (sceneId, pegId) =>
+        runLive({ intent: 'delete-scene-peg', sceneId, pegId }, () => {
+          revalidator.revalidate();
+        }),
     },
   };
 }
@@ -197,6 +281,40 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
 export function MapWorkspace({ projection }: { projection: MapWorkspaceProjection }) {
   const { commands, scenes, selectedScene } = useSceneCommands(projection);
   const [isRenaming, setIsRenaming] = useState(false);
+  const [armedCandidate, setArmedCandidate] = useState<MapCandidate | null>(null);
+  const [selectedPegId, setSelectedPegId] = useState<string | null>(null);
+
+  // Escape always cancels an armed placement, so the map never stays stuck in placing mode.
+  useEffect(() => {
+    if (armedCandidate === null) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setArmedCandidate(null);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [armedCandidate]);
+
+  const placeArmedCandidate = async (point: NormalizedPoint) => {
+    if (selectedScene === null || armedCandidate === null) {
+      return;
+    }
+
+    const candidate = armedCandidate;
+    setArmedCandidate(null);
+    await commands.createPeg(selectedScene.id, candidate, point);
+
+    // On a duplicate the peg already exists; select it rather than reporting a failure.
+    const existing = selectedScene.pegs.find((peg) => peg.target.id === candidate.id);
+    if (existing) {
+      setSelectedPegId(existing.id);
+    }
+  };
 
   return (
     <ManagementWorkspace
@@ -284,11 +402,22 @@ export function MapWorkspace({ projection }: { projection: MapWorkspaceProjectio
                   <p>Upload one below to start pinning events, NPCs, and lore to it.</p>
                 </div>
               ) : (
-                <img
-                  alt={`Map for ${selectedScene.name}`}
-                  className="map-canvas-image"
-                  src={selectedScene.mapUrl}
-                />
+                <MapViewport
+                  imageAlt={`Map of ${selectedScene.name}`}
+                  imageUrl={selectedScene.mapUrl}
+                  onPlace={(point) => void placeArmedCandidate(point)}
+                  placementActive={armedCandidate !== null}
+                >
+                  {selectedScene.pegs.map((peg) => (
+                    <ScenePegButton
+                      key={peg.id}
+                      onMove={(point) => commands.movePeg(selectedScene.id, peg.id, point)}
+                      onSelect={() => setSelectedPegId(peg.id)}
+                      peg={peg}
+                      selected={peg.id === selectedPegId}
+                    />
+                  ))}
+                </MapViewport>
               )}
 
               <SceneMapForm
@@ -305,17 +434,35 @@ export function MapWorkspace({ projection }: { projection: MapWorkspaceProjectio
 
         <aside className="map-inspector-panel" aria-label="Peg inspector">
           <p className="detail-label">Pegs</p>
-          {selectedScene && selectedScene.pegs.length > 0 ? (
-            <ul className="map-peg-list">
-              {selectedScene.pegs.map((peg) => (
-                <li key={peg.id}>
-                  <span className="map-peg-kind">{peg.kind}</span>{' '}
-                  {peg.kind === 'lore' ? peg.target.title : peg.target.name}
-                </li>
-              ))}
-            </ul>
+          {selectedScene === null ? (
+            <p className="form-hint">Select a scene to see its pegs.</p>
           ) : (
-            <p className="form-hint">Peg placement and inspection arrive in the next step.</p>
+            <>
+              <MapInspector
+                onDelete={async (pegId) => {
+                  await commands.removePeg(selectedScene.id, pegId);
+                  setSelectedPegId(null);
+                }}
+                onMove={(pegId, point) => commands.movePeg(selectedScene.id, pegId, point)}
+                onSelect={setSelectedPegId}
+                pegs={selectedScene.pegs}
+                pending={commands.pending}
+                selectedPegId={selectedPegId}
+              />
+
+              {selectedScene.mapUrl === null ? (
+                <p className="form-hint">Upload a map before placing pegs on it.</p>
+              ) : (
+                <MapCandidatePicker
+                  armedCandidate={armedCandidate}
+                  candidates={projection.candidates}
+                  disabled={commands.pending}
+                  onArm={setArmedCandidate}
+                  onCancel={() => setArmedCandidate(null)}
+                  pegs={selectedScene.pegs}
+                />
+              )}
+            </>
           )}
         </aside>
       </div>

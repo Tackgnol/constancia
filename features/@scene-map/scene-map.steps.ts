@@ -2,6 +2,13 @@ import { expect } from '@playwright/test';
 import { createBdd, test as base } from 'playwright-bdd';
 import { buildWarRoomModeTabs } from '../../apps/frontend/app/components/war-room/war-room-navigation.js';
 import {
+  arrowKeyDelta,
+  normalizePointInRect,
+  nudgePoint,
+  type NormalizedPoint,
+  type RenderedRect,
+} from '../../apps/frontend/app/lib/map-coordinates.js';
+import {
   nextSceneAfterRemoval,
   selectSceneId,
   type SceneSummaryProjection,
@@ -80,6 +87,11 @@ class SceneMapWorld {
   /** Mirrors the Map route's scene index; selection rules come from the real projection helpers. */
   sceneIndex: SceneSummaryProjection[] = [];
   selectedSceneId: string | null = null;
+
+  // The rendered image box already includes pan and zoom, so the same helpers cover both cameras.
+  renderedRect: RenderedRect = { left: 0, top: 0, width: 0, height: 0 };
+  placementPoint: NormalizedPoint = { x: 0, y: 0 };
+  keyboardPoint: NormalizedPoint = { x: 0, y: 0 };
 
   // Composed map upload: an upload that cannot be attached must not survive as an owned asset.
   readonly uploadedAssets = new Map<string, { attachedTo: string | null }>();
@@ -507,6 +519,50 @@ Then('no upload is attempted', function () {
 
 Then('the scene {string} has no map', function (sceneName: string) {
   expect(this.scenesByName.get(sceneName)?.mapAssetId).toBeNull();
+});
+
+Given(
+  'the map image is rendered at {int} by {int} starting at {int}, {int}',
+  function (width: number, height: number, left: number, top: number) {
+    this.renderedRect = { left, top, width, height };
+  },
+);
+
+When('the game master clicks the map at {int}, {int}', function (clientX: number, clientY: number) {
+  this.placementPoint = normalizePointInRect(clientX, clientY, this.renderedRect);
+});
+
+Then('the placement point is \\({float}, {float}\\)', function (x: number, y: number) {
+  expect(this.placementPoint.x).toBeCloseTo(x, 5);
+  expect(this.placementPoint.y).toBeCloseTo(y, 5);
+});
+
+Given('a peg sits at \\({float}, {float}\\)', function (x: number, y: number) {
+  this.keyboardPoint = { x, y };
+});
+
+When('the game master presses {string} {int} times', function (key: string, times: number) {
+  for (let index = 0; index < times; index += 1) {
+    const delta = arrowKeyDelta(key, false);
+    expect(delta).not.toBeNull();
+    this.keyboardPoint = nudgePoint(this.keyboardPoint, delta?.deltaX ?? 0, delta?.deltaY ?? 0);
+  }
+});
+
+When(
+  'the game master presses {string} with shift {int} times',
+  function (key: string, times: number) {
+    for (let index = 0; index < times; index += 1) {
+      const delta = arrowKeyDelta(key, true);
+      expect(delta).not.toBeNull();
+      this.keyboardPoint = nudgePoint(this.keyboardPoint, delta?.deltaX ?? 0, delta?.deltaY ?? 0);
+    }
+  },
+);
+
+Then('the peg sits at \\({float}, {float}\\)', function (x: number, y: number) {
+  expect(this.keyboardPoint.x).toBeCloseTo(x, 5);
+  expect(this.keyboardPoint.y).toBeCloseTo(y, 5);
 });
 
 Given('the campaign has the scenes {string}', function (names: string) {
