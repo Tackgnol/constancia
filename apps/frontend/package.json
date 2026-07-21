@@ -9,7 +9,8 @@
     "start": "react-router-serve build/server/index.js",
     "generate:api": "cd ../.. && npm run generate:api",
     "typecheck": "react-router typegen && tsc --noEmit",
-    "lint": "eslint app/"
+    "lint": "eslint app/",
+    "test": "tsx scripts/check-war-room-projection-invariant.ts"
   },
   "dependencies": {
     "@constancia/api-client": "*",

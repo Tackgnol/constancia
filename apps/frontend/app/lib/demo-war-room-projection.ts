@@ -1,18 +1,5 @@
 import { demoContext } from './demo-data.js';
-import { triggerSections } from './war-room-data.js';
-import type { WarRoomProjection } from './war-room-projection.js';
-
-function countDemoEventsByTag(): Record<string, number> {
-  const counts: Record<string, number> = {};
-  for (const section of triggerSections) {
-    for (const item of section.items) {
-      for (const tag of item.tags ?? []) {
-        counts[tag] = (counts[tag] ?? 0) + 1;
-      }
-    }
-  }
-  return counts;
-}
+import { countEventsByChannel, type WarRoomProjection } from './war-room-projection.js';
 
 export function loadDemoWarRoomProjection(): WarRoomProjection {
   return {
@@ -28,6 +15,6 @@ export function loadDemoWarRoomProjection(): WarRoomProjection {
     quests: demoContext.quests,
     summaries: demoContext.summaries,
     lore: demoContext.lore,
-    eventCountByTag: countDemoEventsByTag(),
+    eventCountByTag: countEventsByChannel(demoContext.events),
   };
 }
