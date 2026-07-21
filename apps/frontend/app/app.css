@@ -4796,3 +4796,17 @@ h3 {
     animation: none !important;
   }
 }
+
+.map-peg-detail,
+.map-peg-arm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.5rem 0.5rem;
+}
+
+.lore-card.is-highlighted {
+  outline: 2px solid var(--focus-ring, Highlight);
+  outline-offset: 3px;
+}

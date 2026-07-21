@@ -8,7 +8,9 @@ import {
   type NormalizedPoint,
   type RenderedRect,
 } from '../../apps/frontend/app/lib/map-coordinates.js';
+import { toFireReceiptView } from '../../apps/frontend/app/lib/fire-event-receipt.js';
 import {
+  buildTargetWorkspacePath,
   nextSceneAfterRemoval,
   selectSceneId,
   type SceneSummaryProjection,
@@ -77,6 +79,7 @@ class SceneMapWorld {
   activeCampaignId = '';
   lastError: Error | null = null;
   armedAttempt: ArmedAttempt | null = null;
+  armCount = 0;
 
   // Navigation ordering reads the real shared tab builder, so this scenario fails if live and
   // demo ever drift apart. The Play channel filter stays modeled data until Slice 7.
@@ -243,10 +246,20 @@ class SceneMapWorld {
     this.removePegsWhere((peg) => peg.sceneId === scene.id);
   }
 
+  /** Each arm mints a fresh key, so re-arming a fired event starts a genuinely new execution. */
   arm(eventName: string, sceneName: string): void {
     const peg = this.pegFor(eventName, sceneName);
     if (!peg) throw new Error(`No peg for ${eventName} on ${sceneName}`);
-    this.armedAttempt = { idempotencyKey: `arm:${peg.id}`, eventName, sceneName };
+    this.armCount += 1;
+    this.armedAttempt = {
+      idempotencyKey: `arm:${peg.id}:${this.armCount}`,
+      eventName,
+      sceneName,
+    };
+  }
+
+  cancelArmed(): void {
+    this.armedAttempt = null;
   }
 
   confirmArmed(): void {
@@ -441,6 +454,62 @@ Then('{string} still has one execution receipt', function (eventName: string) {
   );
   expect(ids.size).toBe(1);
 });
+
+When(
+  'the game master arms {string} on {string} again',
+  function (eventName: string, sceneName: string) {
+    this.arm(eventName, sceneName);
+  },
+);
+
+When('the game master cancels the armed event', function () {
+  this.cancelArmed();
+});
+
+Then('{string} has no execution receipt', function (eventName: string) {
+  expect(this.observedReceipts.filter((receipt) => receipt.eventName === eventName)).toEqual([]);
+});
+
+Then('{string} has {int} execution receipts', function (eventName: string, count: number) {
+  const ids = new Set(
+    this.observedReceipts.filter((receipt) => receipt.eventName === eventName).map((r) => r.id),
+  );
+  expect(ids.size).toBe(count);
+});
+
+Then('Map and Play use the same event fire translation', function () {
+  // Both routes call the shared helper, so one raw receipt yields one view for either wording.
+  const raw = {
+    id: 'execution-1',
+    eventId: 'event-1',
+    status: 'completed',
+    deliveries: [{ status: 'delivered' }, { status: 'pending' }],
+  };
+
+  expect(toFireReceiptView(raw)).toEqual({
+    eventId: 'event-1',
+    executionId: 'execution-1',
+    executionStatus: 'completed',
+    deliveryStatus: 'pending',
+  });
+  expect(toFireReceiptView({ ...raw, deliveries: 'not-an-array' })).toBeNull();
+});
+
+Then(
+  'an NPC peg links to {string} live and {string} in demo',
+  function (live: string, demo: string) {
+    expect(buildTargetWorkspacePath('npc', 'npc-1', false)).toBe(live);
+    expect(buildTargetWorkspacePath('npc', 'npc-1', true)).toBe(demo);
+  },
+);
+
+Then(
+  'a lore peg links to {string} live and {string} in demo',
+  function (live: string, demo: string) {
+    expect(buildTargetWorkspacePath('lore', 'lore-1', false)).toBe(live);
+    expect(buildTargetWorkspacePath('lore', 'lore-1', true)).toBe(demo);
+  },
+);
 
 When('the game master compares live and demo navigation', function () {
   // Comparison happens in the Then step; this step exists for readability.

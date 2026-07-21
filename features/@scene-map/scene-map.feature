@@ -66,6 +66,31 @@ Feature: Scene and map workspace behavior contract
     When the confirmation is retried after an ambiguous response
     Then "The Prince Arrives" still has one execution receipt
 
+  Scenario: Cancelling an armed event never executes it
+    Given the scene "Rooftop Garden" has the map "garden-map.png"
+    And the event "The Prince Arrives" is ready to place
+    And the game master places "The Prince Arrives" on "Rooftop Garden" at (0.5, 0.5)
+    When the game master arms "The Prince Arrives" on "Rooftop Garden"
+    And the game master cancels the armed event
+    Then "The Prince Arrives" has no execution receipt
+
+  Scenario: Re-arming after a fired event starts a new execution
+    Given the scene "Rooftop Garden" has the map "garden-map.png"
+    And the event "The Prince Arrives" is ready to place
+    And the game master places "The Prince Arrives" on "Rooftop Garden" at (0.5, 0.5)
+    When the game master arms "The Prince Arrives" on "Rooftop Garden"
+    And the game master confirms the armed event
+    And the game master arms "The Prince Arrives" on "Rooftop Garden" again
+    And the game master confirms the armed event
+    Then "The Prince Arrives" has 2 execution receipts
+
+  Scenario: Map and Play fire an event through the same execution path
+    Then Map and Play use the same event fire translation
+
+  Scenario: NPC and lore pegs deep link into their own workspaces
+    Then an NPC peg links to "/npcs?npc=npc-1" live and "/demo/npcs?npc=npc-1" in demo
+    And a lore peg links to "/lore?lore=lore-1" live and "/demo/lore?lore=lore-1" in demo
+
   Scenario: Live and demo navigation expose Map in the same position
     When the game master compares live and demo navigation
     Then Map appears in the same position immediately after Play in both

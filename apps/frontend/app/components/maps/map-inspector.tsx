@@ -1,12 +1,14 @@
+import { Link } from 'react-router';
 import { pegTargetName } from '@/components/maps/scene-peg-button';
 import { Button } from '@/components/ui/button';
+import type { FireReceiptView } from '@/lib/fire-event-receipt';
 import {
   PEG_NUDGE_STEP,
   PEG_NUDGE_STEP_COARSE,
   nudgePoint,
   type NormalizedPoint,
 } from '@/lib/map-coordinates';
-import type { ScenePegProjection } from '@/lib/map-workspace-projection';
+import { buildTargetWorkspacePath, type ScenePegProjection } from '@/lib/map-workspace-projection';
 
 const kindLabel: Record<ScenePegProjection['kind'], string> = {
   event: 'Event',
@@ -14,24 +16,41 @@ const kindLabel: Record<ScenePegProjection['kind'], string> = {
   lore: 'Lore',
 };
 
+export interface ArmedEvent {
+  pegId: string;
+  eventId: string;
+}
+
 /**
  * A non-spatial list of every peg, kept in sync with the canvas. Selecting, nudging, inspecting,
- * and deleting all work from here, so no task needs precise pointer placement.
+ * firing, and deleting all work from here, so no task needs precise pointer placement.
  */
 export function MapInspector({
   pegs,
   selectedPegId,
   pending,
+  demoMode,
+  armedEvent,
+  receipt,
   onSelect,
   onMove,
   onDelete,
+  onArm,
+  onCancelArm,
+  onConfirmFire,
 }: {
   pegs: readonly ScenePegProjection[];
   selectedPegId: string | null;
   pending: boolean;
+  demoMode: boolean;
+  armedEvent: ArmedEvent | null;
+  receipt: FireReceiptView | null;
   onSelect: (pegId: string) => void;
   onMove: (pegId: string, point: NormalizedPoint) => Promise<void>;
   onDelete: (pegId: string) => Promise<void>;
+  onArm: (peg: ScenePegProjection) => void;
+  onCancelArm: () => void;
+  onConfirmFire: () => Promise<void>;
 }) {
   if (pegs.length === 0) {
     return (
@@ -96,6 +115,62 @@ export function MapInspector({
                   Arrow keys move the selected peg by {PEG_NUDGE_STEP * 100}%, or{' '}
                   {PEG_NUDGE_STEP_COARSE * 100}% with Shift.
                 </span>
+              </div>
+            ) : null}
+
+            {selected && peg.kind === 'event' ? (
+              <div className="map-peg-detail">
+                <p className="form-hint">Status: {peg.target.status}</p>
+                {armedEvent?.pegId === peg.id ? (
+                  <div className="map-peg-arm" role="group" aria-label="Confirm firing this event">
+                    <span className="form-hint">
+                      Firing <strong>{peg.target.name}</strong> runs its pipeline and delivers to
+                      Discord.
+                    </span>
+                    <Button disabled={pending} onClick={() => void onConfirmFire()} type="button">
+                      {pending ? 'Firing…' : 'Confirm fire'}
+                    </Button>
+                    <Button disabled={pending} onClick={onCancelArm} type="button" variant="ghost">
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    disabled={pending}
+                    onClick={() => onArm(peg)}
+                    type="button"
+                    variant="outline"
+                  >
+                    Arm event
+                  </Button>
+                )}
+                {receipt !== null && receipt.eventId === peg.target.id ? (
+                  <p className="form-hint" role="status">
+                    Execution {receipt.executionStatus}; delivery {receipt.deliveryStatus}.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            {selected && peg.kind === 'npc' ? (
+              <div className="map-peg-detail">
+                <Link
+                  className="setup-inline-link"
+                  to={buildTargetWorkspacePath('npc', peg.target.id, demoMode)}
+                >
+                  Open {peg.target.name} in NPCs
+                </Link>
+              </div>
+            ) : null}
+
+            {selected && peg.kind === 'lore' ? (
+              <div className="map-peg-detail">
+                <Link
+                  className="setup-inline-link"
+                  to={buildTargetWorkspacePath('lore', peg.target.id, demoMode)}
+                >
+                  Open {peg.target.title} in Lore
+                </Link>
               </div>
             ) : null}
           </li>

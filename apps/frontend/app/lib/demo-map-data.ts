@@ -40,21 +40,21 @@ export const demoSceneDetails: Record<string, SceneDetailProjection> = {
         kind: 'event',
         x: 0.22,
         y: 0.3,
-        target: { id: 'demo-event-1', name: 'The Prince arrives', status: 'ready' },
+        target: { id: 'event-elysium-opens', name: 'Elysium opens', status: 'ready' },
       },
       {
         id: 'demo-peg-npc',
         kind: 'npc',
         x: 0.62,
         y: 0.44,
-        target: { id: 'demo-npc-1', name: 'Marcel', imageUrl: null },
+        target: { id: 'demo-prince-adrian-voss', name: 'Prince Adrian Voss', imageUrl: null },
       },
       {
         id: 'demo-peg-lore',
         kind: 'lore',
         x: 0.71,
         y: 0.86,
-        target: { id: 'demo-lore-1', title: 'Elysium Bells' },
+        target: { id: 'lore-elysium-bells', title: 'Elysium Bells' },
       },
     ],
   },
@@ -67,17 +67,19 @@ export const demoSceneDetails: Record<string, SceneDetailProjection> = {
   },
 };
 
+/** Ids match the rest of the demo campaign so NPC and lore pegs deep link to real records. */
 export const demoMapCandidates: MapWorkspaceCandidates = {
   events: [
-    { id: 'demo-event-1', kind: 'event', label: 'The Prince arrives' },
-    { id: 'demo-event-2', kind: 'event', label: 'Spot the sigil' },
+    { id: 'event-elysium-opens', kind: 'event', label: 'Elysium opens' },
+    { id: 'event-stealth-approach', kind: 'event', label: 'Stealth approach' },
+    { id: 'event-the-betrayal', kind: 'event', label: 'The betrayal' },
   ],
   npcs: [
-    { id: 'demo-npc-1', kind: 'npc', label: 'Marcel' },
-    { id: 'demo-npc-2', kind: 'npc', label: 'Regent Hale' },
+    { id: 'demo-prince-adrian-voss', kind: 'npc', label: 'Prince Adrian Voss' },
+    { id: 'demo-mara-the-veiled', kind: 'npc', label: 'Mara the Veiled' },
   ],
   lore: [
-    { id: 'demo-lore-1', kind: 'lore', label: 'Elysium Bells' },
-    { id: 'demo-lore-2', kind: 'lore', label: 'The Camarilla' },
+    { id: 'lore-elysium-bells', kind: 'lore', label: 'Elysium Bells' },
+    { id: 'lore-harpy-ledger', kind: 'lore', label: 'Harpy ledger' },
   ],
 };

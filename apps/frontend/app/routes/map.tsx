@@ -16,6 +16,7 @@ import { MapWorkspace } from '@/components/maps/map-workspace';
 import { ApiResponseError, assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import { buildServerApiOptions } from '@/lib/api-proxy.server';
 import { loadDemoMapWorkspaceProjection } from '@/lib/demo-map-workspace-projection';
+import { fireCampaignEvent } from '@/lib/fire-event-action.server';
 import { loadLiveMapWorkspaceProjection } from '@/lib/live-map-workspace-projection.server';
 import { uploadImageFromFormData } from '@/lib/upload-image-action.server';
 
@@ -29,6 +30,15 @@ const MAP_REMOVE_ERROR = "We couldn't remove that map. Peg positions are unchang
 const PEG_CREATE_ERROR = "We couldn't place that peg. Nothing was added to the map.";
 const PEG_MOVE_ERROR = "We couldn't move that peg. It stays where it was.";
 const PEG_DELETE_ERROR = "We couldn't remove that peg. It is still on the map.";
+
+/** Same execution path as Play, worded for a peg on a map rather than a row on the board. */
+const MAP_FIRE_MESSAGES = {
+  missingIdentifiers: "We couldn't identify this event peg. Reload Map, then arm it again.",
+  fireFailed:
+    "We couldn't confirm this event. Check Discord for the result before firing it again.",
+  unreadableReceipt:
+    "We couldn't confirm the execution receipt. Check Discord for the result before firing it again.",
+} as const;
 
 const intentFallbackMessages: Record<string, string> = {
   'create-scene': SCENE_CREATE_ERROR,
@@ -132,6 +142,20 @@ export async function action({ request }: ActionFunctionArgs) {
       const response = await createScene({ id: campaignId }, { name: name.trim() }, options);
       assertApiOk(response, SCENE_CREATE_ERROR);
       return Response.json({ status: 'success', data: { sceneId: response.data.id } });
+    }
+
+    // Firing is a campaign-level operation reusing Play's execution path; it needs no scene.
+    if (intent === 'fire-event') {
+      const result = await fireCampaignEvent(request, {
+        campaignId,
+        eventId: formData.get('eventId'),
+        idempotencyKey: formData.get('idempotencyKey'),
+        messages: MAP_FIRE_MESSAGES,
+      });
+
+      return result.status === 'error'
+        ? failure(result.message, result.statusCode)
+        : Response.json({ status: 'success', data: { receipt: result.receipt } });
     }
 
     const sceneId = formData.get('sceneId');

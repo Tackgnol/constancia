@@ -11,6 +11,7 @@ import { ScenePegButton } from '@/components/maps/scene-peg-button';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import { Button } from '@/components/ui/button';
 import { postRouteAction } from '@/lib/route-action-client';
+import type { FireReceiptView } from '@/lib/fire-event-receipt';
 import type { NormalizedPoint } from '@/lib/map-coordinates';
 import {
   buildSceneMapPath,
@@ -33,6 +34,17 @@ interface MapActionData {
   pegId?: string;
   quota?: UploadQuota;
   duplicateTarget?: boolean;
+  receipt?: FireReceiptView;
+}
+
+/**
+ * One key per armed attempt. Retrying an ambiguous failure reuses it so the backend collapses the
+ * repeat onto the same execution; arming again mints a new one.
+ */
+interface ArmedFireAttempt {
+  pegId: string;
+  eventId: string;
+  idempotencyKey: string;
 }
 
 interface SceneCommands {
@@ -44,6 +56,7 @@ interface SceneCommands {
   createPeg: (sceneId: string, candidate: MapCandidate, point: NormalizedPoint) => Promise<void>;
   movePeg: (sceneId: string, pegId: string, point: NormalizedPoint) => Promise<void>;
   removePeg: (sceneId: string, pegId: string) => Promise<void>;
+  fireEvent: (attempt: ArmedFireAttempt) => Promise<FireReceiptView | null>;
   pending: boolean;
   error: string | null;
   quotaWarning: string | null;
@@ -99,6 +112,7 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
   const [quotaWarning, setQuotaWarning] = useState<string | null>(null);
   const [demoScenes, setDemoScenes] = useState<SceneSummaryProjection[]>(projection.scenes);
   const [demoDetails, setDemoDetails] = useState<Record<string, SceneDetailProjection>>({});
+  const [demoReceipts, setDemoReceipts] = useState<Record<string, FireReceiptView>>({});
 
   const scenes = projection.demoMode ? demoScenes : projection.scenes;
   const selectedScene =
@@ -217,6 +231,22 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
             pegs: current.pegs.filter((peg) => peg.id !== pegId),
           }));
         },
+        // Demo keys the receipt off the idempotency key, mirroring the backend's collapse.
+        fireEvent: async (attempt) => {
+          const existing = demoReceipts[attempt.idempotencyKey];
+          if (existing) {
+            return existing;
+          }
+
+          const created: FireReceiptView = {
+            eventId: attempt.eventId,
+            executionId: `demo-execution-${attempt.idempotencyKey}`,
+            executionStatus: 'completed',
+            deliveryStatus: 'delivered',
+          };
+          setDemoReceipts((current) => ({ ...current, [attempt.idempotencyKey]: created }));
+          return created;
+        },
       },
     };
   }
@@ -274,6 +304,21 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
         runLive({ intent: 'delete-scene-peg', sceneId, pegId }, () => {
           revalidator.revalidate();
         }),
+      fireEvent: async (attempt) => {
+        let fired: FireReceiptView | null = null;
+        await runLive(
+          {
+            intent: 'fire-event',
+            eventId: attempt.eventId,
+            idempotencyKey: attempt.idempotencyKey,
+          },
+          (data) => {
+            fired = data?.receipt ?? null;
+          },
+        );
+
+        return fired;
+      },
     },
   };
 }
@@ -283,6 +328,8 @@ export function MapWorkspace({ projection }: { projection: MapWorkspaceProjectio
   const [isRenaming, setIsRenaming] = useState(false);
   const [armedCandidate, setArmedCandidate] = useState<MapCandidate | null>(null);
   const [selectedPegId, setSelectedPegId] = useState<string | null>(null);
+  const [armedFire, setArmedFire] = useState<ArmedFireAttempt | null>(null);
+  const [receipt, setReceipt] = useState<FireReceiptView | null>(null);
 
   // Escape always cancels an armed placement, so the map never stays stuck in placing mode.
   useEffect(() => {
@@ -439,6 +486,31 @@ export function MapWorkspace({ projection }: { projection: MapWorkspaceProjectio
           ) : (
             <>
               <MapInspector
+                armedEvent={armedFire}
+                demoMode={projection.demoMode}
+                onArm={(peg) => {
+                  setReceipt(null);
+                  // A fresh arm always mints a new key, so it can never reuse a spent execution.
+                  setArmedFire({
+                    pegId: peg.id,
+                    eventId: peg.target.id,
+                    idempotencyKey: crypto.randomUUID(),
+                  });
+                }}
+                onCancelArm={() => setArmedFire(null)}
+                onConfirmFire={async () => {
+                  if (armedFire === null) {
+                    return;
+                  }
+
+                  const fired = await commands.fireEvent(armedFire);
+                  // A failed confirm keeps the attempt armed with the same key, so a retry
+                  // collapses onto the same execution rather than starting a second one.
+                  if (fired !== null) {
+                    setReceipt(fired);
+                    setArmedFire(null);
+                  }
+                }}
                 onDelete={async (pegId) => {
                   await commands.removePeg(selectedScene.id, pegId);
                   setSelectedPegId(null);
@@ -447,6 +519,7 @@ export function MapWorkspace({ projection }: { projection: MapWorkspaceProjectio
                 onSelect={setSelectedPegId}
                 pegs={selectedScene.pegs}
                 pending={commands.pending}
+                receipt={receipt}
                 selectedPegId={selectedPegId}
               />
 

@@ -102,6 +102,21 @@ export function unavailableMapWorkspace(
   };
 }
 
+/**
+ * NPC and lore pegs link into the workspace that already owns reveal and access management, rather
+ * than duplicating those forms inside Map.
+ */
+export function buildTargetWorkspacePath(
+  kind: Exclude<ScenePegKind, 'event'>,
+  targetId: string,
+  demoMode: boolean,
+): string {
+  const base = demoMode ? '/demo' : '';
+  const query = kind === 'npc' ? 'npc' : 'lore';
+
+  return `${base}/${kind === 'npc' ? 'npcs' : 'lore'}?${query}=${encodeURIComponent(targetId)}`;
+}
+
 export function buildSceneMapPath(demoMode: boolean, sceneId: string | null): string {
   const base = demoMode ? '/demo/map' : '/map';
   return sceneId === null ? base : `${base}?scene=${encodeURIComponent(sceneId)}`;
