@@ -88,6 +88,11 @@ function demoPeg(candidate: MapCandidate, point: NormalizedPoint): ScenePegProje
   }
 }
 
+/** Mirrors the backend's scene-name normalization so announcements match what was stored. */
+function announceName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ');
+}
+
 function formatQuotaWarning(quota: UploadQuota | undefined): string | null {
   if (!quota?.uploadNearLimit) {
     return null;
@@ -210,7 +215,7 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
         quotaWarning,
         clearError,
         create: async (name) => {
-          setStatus(`Scene "${name}" created.`);
+          setStatus(`Scene "${announceName(name)}" created.`);
           const scene = {
             id: `demo-scene-${crypto.randomUUID()}`,
             name,
@@ -258,6 +263,7 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
           return true;
         },
         createPeg: async (sceneId, candidate, point) => {
+          setStatus(`${candidate.label} placed.`);
           setDemoDetail(sceneId, (current) =>
             current.pegs.some((peg) => peg.target.id === candidate.id)
               ? current
@@ -266,6 +272,7 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
           return true;
         },
         movePeg: async (sceneId, pegId, point) => {
+          setStatus('Peg moved.');
           setDemoDetail(sceneId, (current) => ({
             ...current,
             pegs: current.pegs.map((peg) => (peg.id === pegId ? { ...peg, ...point } : peg)),
@@ -315,7 +322,7 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
           async (data) => {
             await navigate(buildSceneMapPath(false, data?.sceneId ?? null));
           },
-          `Scene "${name}" created.`,
+          `Scene "${announceName(name)}" created.`,
         ),
       rename: (sceneId, name) =>
         runLive(
@@ -323,7 +330,7 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
           () => {
             revalidator.revalidate();
           },
-          `Scene renamed to "${name}".`,
+          `Scene renamed to "${announceName(name)}".`,
         ),
       remove: (sceneId) =>
         runLive(
@@ -358,6 +365,7 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
           () => {
             revalidator.revalidate();
           },
+          `${candidate.label} placed.`,
         ),
       movePeg: (sceneId, pegId, point) =>
         runLive(
@@ -365,6 +373,7 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
           () => {
             revalidator.revalidate();
           },
+          'Peg moved.',
         ),
       removePeg: (sceneId, pegId) =>
         runLive(
