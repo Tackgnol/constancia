@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { NO_PAN_CLASS, useMapImageRect } from '@/components/maps/map-viewport';
 import {
   arrowKeyDelta,
@@ -39,22 +39,25 @@ export function ScenePegButton({
   peg: ScenePegProjection;
   selected: boolean;
   onSelect: () => void;
-  onMove: (point: NormalizedPoint) => Promise<void>;
+  /** Resolves true when the move was accepted; false rolls the peg back to the loader position. */
+  onMove: (point: NormalizedPoint) => Promise<boolean>;
 }) {
   const readImageRect = useMapImageRect();
   const loaderPoint = { x: peg.x, y: peg.y };
-  const [dragPoint, setDragPoint] = useState<NormalizedPoint | null>(null);
+  const [drag, setDrag] = useState<{ point: NormalizedPoint; base: NormalizedPoint } | null>(null);
   const draggingRef = useRef(false);
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Revalidation is the source of truth: once the loader agrees, drop the local override.
-  useEffect(() => {
-    if (!draggingRef.current) {
-      setDragPoint(null);
-    }
-  }, [peg.x, peg.y]);
+  /**
+   * The override is derived, not synced: it applies only while the loader still reports the point
+   * the drag started from. Once revalidation lands a new position the override is stale and the
+   * loader wins, which avoids both a flash back to the old spot and a reset-state effect.
+   */
+  const position =
+    drag !== null && pointsAreEqual(drag.base, loaderPoint) ? drag.point : loaderPoint;
 
-  const position = dragPoint ?? loaderPoint;
+  const setDragPoint = (point: NormalizedPoint | null) =>
+    setDrag(point === null ? null : { point, base: loaderPoint });
 
   const pointFromEvent = (event: { clientX: number; clientY: number }): NormalizedPoint | null => {
     const rect = readImageRect();
@@ -68,11 +71,11 @@ export function ScenePegButton({
     }
 
     setDragPoint(next);
-    try {
-      await onMove(next);
-    } finally {
-      // A failed move leaves the loader position in place, so clearing restores it visibly.
-      draggingRef.current = false;
+    draggingRef.current = false;
+
+    // A rejected move drops the override immediately, so the peg visibly snaps back to where the
+    // loader still has it. A successful one keeps it until revalidation reports the new position.
+    if (!(await onMove(next))) {
       setDragPoint(null);
     }
   };

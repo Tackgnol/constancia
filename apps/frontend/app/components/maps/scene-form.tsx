@@ -28,7 +28,7 @@ export function SceneForm({
   label: string;
   defaultName?: string;
   pending: boolean;
-  onSubmit: (name: string) => Promise<void>;
+  onSubmit: (name: string) => Promise<unknown>;
   onCancel?: () => void;
 }) {
   const {

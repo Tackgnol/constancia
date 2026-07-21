@@ -46,18 +46,15 @@ export function MapInspector({
   armedEvent: ArmedEvent | null;
   receipt: FireReceiptView | null;
   onSelect: (pegId: string) => void;
-  onMove: (pegId: string, point: NormalizedPoint) => Promise<void>;
-  onDelete: (pegId: string) => Promise<void>;
+  onMove: (pegId: string, point: NormalizedPoint) => Promise<unknown>;
+  onDelete: (pegId: string) => Promise<unknown>;
   onArm: (peg: ScenePegProjection) => void;
   onCancelArm: () => void;
   onConfirmFire: () => Promise<void>;
 }) {
+  // The next step depends on whether a map exists, so the caller supplies that guidance below.
   if (pegs.length === 0) {
-    return (
-      <p className="form-hint">
-        No pegs on this scene yet. Pick a target below, then click the map to place it.
-      </p>
-    );
+    return <p className="form-hint">No pegs on this scene yet.</p>;
   }
 
   return (

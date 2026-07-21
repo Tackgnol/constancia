@@ -4810,3 +4810,19 @@ h3 {
   outline: 2px solid var(--focus-ring, Highlight);
   outline-offset: 3px;
 }
+
+.map-live-region {
+  min-height: 1.25rem;
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.map-live-region:empty {
+  min-height: 0;
+}
+
+.map-inspector-panel .detail-label:focus-visible {
+  outline: 2px solid var(--focus-ring, Highlight);
+  outline-offset: 2px;
+}

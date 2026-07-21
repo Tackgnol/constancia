@@ -24,8 +24,8 @@ export function SceneMapForm({
   hasMap: boolean;
   pending: boolean;
   quotaWarning: string | null;
-  onReplace: (file: File) => Promise<void>;
-  onRemove: () => Promise<void>;
+  onReplace: (file: File) => Promise<unknown>;
+  onRemove: () => Promise<unknown>;
 }) {
   const {
     register,

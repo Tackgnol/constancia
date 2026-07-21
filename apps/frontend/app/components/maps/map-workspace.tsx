@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useRevalidator } from 'react-router';
 import { ManagementWorkspace } from '@/components/layout/management-workspace';
 import { MapCandidatePicker } from '@/components/maps/map-candidate-picker';
@@ -47,18 +47,20 @@ interface ArmedFireAttempt {
   idempotencyKey: string;
 }
 
+/** Every mutation resolves to whether it was accepted, so callers can roll back optimistic UI. */
 interface SceneCommands {
-  create: (name: string) => Promise<void>;
-  rename: (sceneId: string, name: string) => Promise<void>;
-  remove: (sceneId: string) => Promise<void>;
-  replaceMap: (sceneId: string, file: File) => Promise<void>;
-  removeMap: (sceneId: string) => Promise<void>;
-  createPeg: (sceneId: string, candidate: MapCandidate, point: NormalizedPoint) => Promise<void>;
-  movePeg: (sceneId: string, pegId: string, point: NormalizedPoint) => Promise<void>;
-  removePeg: (sceneId: string, pegId: string) => Promise<void>;
+  create: (name: string) => Promise<boolean>;
+  rename: (sceneId: string, name: string) => Promise<boolean>;
+  remove: (sceneId: string) => Promise<boolean>;
+  replaceMap: (sceneId: string, file: File) => Promise<boolean>;
+  removeMap: (sceneId: string) => Promise<boolean>;
+  createPeg: (sceneId: string, candidate: MapCandidate, point: NormalizedPoint) => Promise<boolean>;
+  movePeg: (sceneId: string, pegId: string, point: NormalizedPoint) => Promise<boolean>;
+  removePeg: (sceneId: string, pegId: string) => Promise<boolean>;
   fireEvent: (attempt: ArmedFireAttempt) => Promise<FireReceiptView | null>;
   pending: boolean;
   error: string | null;
+  status: string | null;
   quotaWarning: string | null;
   clearError: () => void;
 }
@@ -109,6 +111,7 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
   const revalidator = useRevalidator();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
   const [quotaWarning, setQuotaWarning] = useState<string | null>(null);
   const [demoScenes, setDemoScenes] = useState<SceneSummaryProjection[]>(projection.scenes);
   const [demoDetails, setDemoDetails] = useState<Record<string, SceneDetailProjection>>({});
@@ -121,17 +124,39 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
       : projection.selectedScene;
   const clearError = () => setError(null);
 
+  const demoPreviewUrls = useRef(new Map<string, string>());
+  const revokeDemoPreview = (sceneId: string) => {
+    const existing = demoPreviewUrls.current.get(sceneId);
+    if (existing !== undefined) {
+      URL.revokeObjectURL(existing);
+      demoPreviewUrls.current.delete(sceneId);
+    }
+  };
+
+  // Any previews still held when the workspace unmounts would outlive the page session otherwise.
+  useEffect(() => {
+    const urls = demoPreviewUrls.current;
+    return () => {
+      for (const url of urls.values()) {
+        URL.revokeObjectURL(url);
+      }
+      urls.clear();
+    };
+  }, []);
+
   const runLive = async (
     values: Record<string, FormDataEntryValue>,
     onDone: (data: MapActionData | undefined) => Promise<void> | void,
-  ) => {
+    successMessage?: string,
+  ): Promise<boolean> => {
     if (projection.campaignId === null) {
       setError('Reopen Map so we can identify your campaign, then try again.');
-      return;
+      return false;
     }
 
     setPending(true);
     setError(null);
+    setStatus(null);
     try {
       const response = await postRouteAction<MapActionData>('/map', {
         ...values,
@@ -140,11 +165,17 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
 
       if (response.status !== 'success') {
         setError(response.message);
-        return;
+        return false;
       }
 
       setQuotaWarning(formatQuotaWarning(response.data?.quota));
+      setStatus(
+        response.data?.duplicateTarget === true
+          ? 'That target already had a peg here, so we selected it.'
+          : (successMessage ?? null),
+      );
       await onDone(response.data);
+      return true;
     } finally {
       setPending(false);
     }
@@ -175,9 +206,11 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
       commands: {
         pending,
         error,
+        status,
         quotaWarning,
         clearError,
         create: async (name) => {
+          setStatus(`Scene "${name}" created.`);
           const scene = {
             id: `demo-scene-${crypto.randomUUID()}`,
             name,
@@ -186,31 +219,43 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
           };
           setDemoScenes((current) => [...current, scene]);
           await navigate(buildSceneMapPath(true, scene.id));
+          return true;
         },
         rename: async (sceneId, name) => {
           setDemoScenes((current) =>
             current.map((scene) => (scene.id === sceneId ? { ...scene, name } : scene)),
           );
           setDemoDetail(sceneId, (current) => ({ ...current, name }));
+          return true;
         },
         remove: async (sceneId) => {
+          setStatus('Scene deleted. Its targets were kept.');
           setDemoScenes((current) => current.filter((scene) => scene.id !== sceneId));
           await navigate(buildSceneMapPath(true, nextSceneAfterRemoval(scenes, sceneId)));
+          return true;
         },
         // Demo never calls the upload API; the chosen file is previewed from the page session.
+        // Each preview URL pins its File in memory, so the one it replaces is revoked.
         replaceMap: async (sceneId, file) => {
+          const preview = URL.createObjectURL(file);
+          revokeDemoPreview(sceneId);
+          demoPreviewUrls.current.set(sceneId, preview);
           setDemoDetail(sceneId, (current) => ({
             ...current,
             mapAssetId: `demo-map-${sceneId}`,
-            mapUrl: URL.createObjectURL(file),
+            mapUrl: preview,
           }));
+          return true;
         },
         removeMap: async (sceneId) => {
+          setStatus('Map removed. Peg positions were kept.');
+          revokeDemoPreview(sceneId);
           setDemoDetail(sceneId, (current) => ({
             ...current,
             mapAssetId: null,
             mapUrl: null,
           }));
+          return true;
         },
         createPeg: async (sceneId, candidate, point) => {
           setDemoDetail(sceneId, (current) =>
@@ -218,18 +263,22 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
               ? current
               : { ...current, pegs: [...current.pegs, demoPeg(candidate, point)] },
           );
+          return true;
         },
         movePeg: async (sceneId, pegId, point) => {
           setDemoDetail(sceneId, (current) => ({
             ...current,
             pegs: current.pegs.map((peg) => (peg.id === pegId ? { ...peg, ...point } : peg)),
           }));
+          return true;
         },
         removePeg: async (sceneId, pegId) => {
+          setStatus('Peg removed.');
           setDemoDetail(sceneId, (current) => ({
             ...current,
             pegs: current.pegs.filter((peg) => peg.id !== pegId),
           }));
+          return true;
         },
         // Demo keys the receipt off the idempotency key, mirroring the backend's collapse.
         fireEvent: async (attempt) => {
@@ -257,28 +306,45 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
     commands: {
       pending,
       error,
+      status,
       quotaWarning,
       clearError,
       create: (name) =>
-        runLive({ intent: 'create-scene', name }, async (data) => {
-          await navigate(buildSceneMapPath(false, data?.sceneId ?? null));
-        }),
+        runLive(
+          { intent: 'create-scene', name },
+          async (data) => {
+            await navigate(buildSceneMapPath(false, data?.sceneId ?? null));
+          },
+          `Scene "${name}" created.`,
+        ),
       rename: (sceneId, name) =>
-        runLive({ intent: 'rename-scene', sceneId, name }, () => {
-          revalidator.revalidate();
-        }),
+        runLive(
+          { intent: 'rename-scene', sceneId, name },
+          () => {
+            revalidator.revalidate();
+          },
+          `Scene renamed to "${name}".`,
+        ),
       remove: (sceneId) =>
-        runLive({ intent: 'delete-scene', sceneId }, async () => {
-          await navigate(buildSceneMapPath(false, nextSceneAfterRemoval(scenes, sceneId)));
-        }),
+        runLive(
+          { intent: 'delete-scene', sceneId },
+          async () => {
+            await navigate(buildSceneMapPath(false, nextSceneAfterRemoval(scenes, sceneId)));
+          },
+          'Scene deleted. Its targets were kept.',
+        ),
       replaceMap: (sceneId, file) =>
         runLive({ intent: 'replace-scene-map', sceneId, file }, () => {
           revalidator.revalidate();
         }),
       removeMap: (sceneId) =>
-        runLive({ intent: 'delete-scene-map', sceneId }, () => {
-          revalidator.revalidate();
-        }),
+        runLive(
+          { intent: 'delete-scene-map', sceneId },
+          () => {
+            revalidator.revalidate();
+          },
+          'Map removed. Peg positions were kept.',
+        ),
       createPeg: (sceneId, candidate, point) =>
         runLive(
           {
@@ -301,9 +367,13 @@ function useSceneCommands(projection: MapWorkspaceProjection): {
           },
         ),
       removePeg: (sceneId, pegId) =>
-        runLive({ intent: 'delete-scene-peg', sceneId, pegId }, () => {
-          revalidator.revalidate();
-        }),
+        runLive(
+          { intent: 'delete-scene-peg', sceneId, pegId },
+          () => {
+            revalidator.revalidate();
+          },
+          'Peg removed.',
+        ),
       fireEvent: async (attempt) => {
         let fired: FireReceiptView | null = null;
         await runLive(
@@ -330,6 +400,7 @@ export function MapWorkspace({ projection }: { projection: MapWorkspaceProjectio
   const [selectedPegId, setSelectedPegId] = useState<string | null>(null);
   const [armedFire, setArmedFire] = useState<ArmedFireAttempt | null>(null);
   const [receipt, setReceipt] = useState<FireReceiptView | null>(null);
+  const inspectorHeadingRef = useRef<HTMLParagraphElement | null>(null);
 
   // Escape always cancels an armed placement, so the map never stays stuck in placing mode.
   useEffect(() => {
@@ -393,6 +464,11 @@ export function MapWorkspace({ projection }: { projection: MapWorkspaceProjectio
         </SetupNotice>
       ) : null}
 
+      {/* One polite region announces the outcome of whichever control the user just used. */}
+      <p aria-live="polite" className="map-live-region">
+        {commands.pending ? 'Working…' : (commands.status ?? '')}
+      </p>
+
       <div className="map-workspace">
         <aside className="map-scene-panel" aria-label="Scene index">
           <SceneIndex
@@ -414,8 +490,23 @@ export function MapWorkspace({ projection }: { projection: MapWorkspaceProjectio
         <section className="map-canvas-panel" aria-label="Scene map">
           {selectedScene === null ? (
             <div className="detail-card board-empty-state">
-              <h2>No scene selected.</h2>
-              <p>Create a scene, or pick one from the index, to start building its map.</p>
+              {/* An unreachable service is a different problem from an empty campaign. */}
+              {projection.errorMessage !== null ? (
+                <>
+                  <h2>Scenes are unavailable right now.</h2>
+                  <p>Nothing has been lost. Refresh once the connection is back.</p>
+                </>
+              ) : scenes.length === 0 ? (
+                <>
+                  <h2>No scenes yet.</h2>
+                  <p>Create your first scene on the left, then upload a map for it.</p>
+                </>
+              ) : (
+                <>
+                  <h2>That scene is no longer available.</h2>
+                  <p>It may have been deleted elsewhere. Pick another from the index.</p>
+                </>
+              )}
             </div>
           ) : (
             <>
@@ -480,7 +571,9 @@ export function MapWorkspace({ projection }: { projection: MapWorkspaceProjectio
         </section>
 
         <aside className="map-inspector-panel" aria-label="Peg inspector">
-          <p className="detail-label">Pegs</p>
+          <p className="detail-label" ref={inspectorHeadingRef} tabIndex={-1}>
+            Pegs
+          </p>
           {selectedScene === null ? (
             <p className="form-hint">Select a scene to see its pegs.</p>
           ) : (
@@ -514,6 +607,8 @@ export function MapWorkspace({ projection }: { projection: MapWorkspaceProjectio
                 onDelete={async (pegId) => {
                   await commands.removePeg(selectedScene.id, pegId);
                   setSelectedPegId(null);
+                  // Focus would otherwise be lost on the removed button; put it somewhere real.
+                  inspectorHeadingRef.current?.focus();
                 }}
                 onMove={(pegId, point) => commands.movePeg(selectedScene.id, pegId, point)}
                 onSelect={setSelectedPegId}
@@ -524,7 +619,7 @@ export function MapWorkspace({ projection }: { projection: MapWorkspaceProjectio
               />
 
               {selectedScene.mapUrl === null ? (
-                <p className="form-hint">Upload a map before placing pegs on it.</p>
+                <p className="form-hint">Upload a map for this scene before placing pegs on it.</p>
               ) : (
                 <MapCandidatePicker
                   armedCandidate={armedCandidate}

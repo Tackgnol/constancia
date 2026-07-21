@@ -67,12 +67,17 @@ export const demoSceneDetails: Record<string, SceneDetailProjection> = {
   },
 };
 
-/** Ids match the rest of the demo campaign so NPC and lore pegs deep link to real records. */
+/**
+ * Ids match the rest of the demo campaign so NPC and lore pegs deep link to real records. The list
+ * is long enough that searching narrows it and that already-placed targets are visibly disabled.
+ */
 export const demoMapCandidates: MapWorkspaceCandidates = {
   events: [
     { id: 'event-elysium-opens', kind: 'event', label: 'Elysium opens' },
     { id: 'event-stealth-approach', kind: 'event', label: 'Stealth approach' },
+    { id: 'event-social-manipulation', kind: 'event', label: 'Social manipulation' },
     { id: 'event-the-betrayal', kind: 'event', label: 'The betrayal' },
+    { id: 'event-princes-warning', kind: 'event', label: "The Prince's warning" },
   ],
   npcs: [
     { id: 'demo-prince-adrian-voss', kind: 'npc', label: 'Prince Adrian Voss' },
