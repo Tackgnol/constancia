@@ -11,7 +11,9 @@ const GUILD_ID = `${NS}-guild`;
 const OTHER_GUILD_ID = `${NS}-guild-other`;
 const USER_EMAIL = `${NS}@example.test`;
 
-const prisma = getPrismaClient();
+// Resolved lazily: getPrismaClient() throws without DATABASE_URL, and a module-level call would
+// fail collection before describe.skip can take effect in environments with no test database.
+const db = () => getPrismaClient();
 
 /**
  * Prisma reports unique violations as P2002. Under the pg driver adapter `meta.target` is absent —
@@ -40,30 +42,30 @@ type Fixtures = {
 };
 
 async function removeNamespace() {
-  await prisma.campaign.deleteMany({
+  await db().campaign.deleteMany({
     where: { discordGuildId: { in: [GUILD_ID, OTHER_GUILD_ID] } },
   });
-  await prisma.user.deleteMany({ where: { email: USER_EMAIL } });
+  await db().user.deleteMany({ where: { email: USER_EMAIL } });
 }
 
 async function seed(): Promise<Fixtures> {
-  const campaign = await prisma.campaign.create({
+  const campaign = await db().campaign.create({
     data: { name: `${NS} campaign`, discordGuildId: GUILD_ID, gameSystemId: 'vtm-v5' },
   });
-  const otherCampaign = await prisma.campaign.create({
+  const otherCampaign = await db().campaign.create({
     data: { name: `${NS} other campaign`, discordGuildId: OTHER_GUILD_ID, gameSystemId: 'vtm-v5' },
   });
-  const user = await prisma.user.create({
+  const user = await db().user.create({
     data: { name: `${NS} user`, email: USER_EMAIL },
   });
-  const channel = await prisma.channel.create({
+  const channel = await db().channel.create({
     data: { name: 'general', discordChannelId: `${NS}-channel`, campaignId: campaign.id },
   });
-  const event = await prisma.event.create({
+  const event = await db().event.create({
     data: { name: 'Ambush', type: 'scene', channelId: channel.id, campaignId: campaign.id },
   });
-  const npc = await prisma.npc.create({ data: { name: 'Marcel', campaignId: campaign.id } });
-  const loreEntry = await prisma.loreEntry.create({
+  const npc = await db().npc.create({ data: { name: 'Marcel', campaignId: campaign.id } });
+  const loreEntry = await db().loreEntry.create({
     data: { title: 'The Camarilla', content: 'Old and tired.', campaignId: campaign.id },
   });
 
@@ -94,11 +96,11 @@ describeDatabase('scene persistence constraints', () => {
   });
 
   async function createScene(name = 'Elysium') {
-    return prisma.scene.create({ data: { name, campaignId: fx.campaignId } });
+    return db().scene.create({ data: { name, campaignId: fx.campaignId } });
   }
 
   async function createUploadAsset(overrides: { eventId?: string; sceneId?: string } = {}) {
-    return prisma.uploadAsset.create({
+    return db().uploadAsset.create({
       data: {
         userId: fx.userId,
         storageKey: `${NS}/${crypto.randomUUID()}.webp`,
@@ -114,7 +116,7 @@ describeDatabase('scene persistence constraints', () => {
   it('accepts a peg with exactly one target', async () => {
     const scene = await createScene();
 
-    const peg = await prisma.scenePeg.create({
+    const peg = await db().scenePeg.create({
       data: { sceneId: scene.id, eventId: fx.eventId, x: 0.25, y: 0.75 },
     });
 
@@ -126,7 +128,7 @@ describeDatabase('scene persistence constraints', () => {
     const scene = await createScene();
 
     await expect(
-      prisma.scenePeg.create({ data: { sceneId: scene.id, x: 0.5, y: 0.5 } }),
+      db().scenePeg.create({ data: { sceneId: scene.id, x: 0.5, y: 0.5 } }),
     ).rejects.toThrow(/scene_pegs_exactly_one_target_check/);
   });
 
@@ -134,7 +136,7 @@ describeDatabase('scene persistence constraints', () => {
     const scene = await createScene();
 
     await expect(
-      prisma.scenePeg.create({
+      db().scenePeg.create({
         data: { sceneId: scene.id, eventId: fx.eventId, npcId: fx.npcId, x: 0.5, y: 0.5 },
       }),
     ).rejects.toThrow(/scene_pegs_exactly_one_target_check/);
@@ -149,23 +151,23 @@ describeDatabase('scene persistence constraints', () => {
     const scene = await createScene();
 
     await expect(
-      prisma.scenePeg.create({ data: { sceneId: scene.id, npcId: fx.npcId, ...coords } }),
+      db().scenePeg.create({ data: { sceneId: scene.id, npcId: fx.npcId, ...coords } }),
     ).rejects.toThrow(expected);
   });
 
   it('rejects the same target twice in one scene but allows it in another scene', async () => {
     const scene = await createScene('Elysium');
     const otherScene = await createScene('The Docks');
-    await prisma.scenePeg.create({
+    await db().scenePeg.create({
       data: { sceneId: scene.id, npcId: fx.npcId, x: 0.1, y: 0.1 },
     });
 
     await expectUniqueViolation(
-      prisma.scenePeg.create({ data: { sceneId: scene.id, npcId: fx.npcId, x: 0.9, y: 0.9 } }),
+      db().scenePeg.create({ data: { sceneId: scene.id, npcId: fx.npcId, x: 0.9, y: 0.9 } }),
       'ScenePeg',
     );
 
-    const elsewhere = await prisma.scenePeg.create({
+    const elsewhere = await db().scenePeg.create({
       data: { sceneId: otherScene.id, npcId: fx.npcId, x: 0.9, y: 0.9 },
     });
     expect(elsewhere.sceneId).toBe(otherScene.id);
@@ -174,13 +176,13 @@ describeDatabase('scene persistence constraints', () => {
   it('allows several pegs of different kinds in one scene', async () => {
     const scene = await createScene();
 
-    await prisma.scenePeg.create({ data: { sceneId: scene.id, eventId: fx.eventId, x: 0, y: 0 } });
-    await prisma.scenePeg.create({ data: { sceneId: scene.id, npcId: fx.npcId, x: 0.5, y: 0.5 } });
-    await prisma.scenePeg.create({
+    await db().scenePeg.create({ data: { sceneId: scene.id, eventId: fx.eventId, x: 0, y: 0 } });
+    await db().scenePeg.create({ data: { sceneId: scene.id, npcId: fx.npcId, x: 0.5, y: 0.5 } });
+    await db().scenePeg.create({
       data: { sceneId: scene.id, loreEntryId: fx.loreEntryId, x: 1, y: 1 },
     });
 
-    expect(await prisma.scenePeg.count({ where: { sceneId: scene.id } })).toBe(3);
+    expect(await db().scenePeg.count({ where: { sceneId: scene.id } })).toBe(3);
   });
 
   it.each([
@@ -190,36 +192,36 @@ describeDatabase('scene persistence constraints', () => {
   ] as const)('deleting a %s deletes its pegs but keeps the scene', async (_label, field) => {
     const scene = await createScene();
     const targetId = fx[field];
-    await prisma.scenePeg.create({
+    await db().scenePeg.create({
       data: { sceneId: scene.id, [field]: targetId, x: 0.2, y: 0.2 },
     });
 
-    if (field === 'eventId') await prisma.event.delete({ where: { id: targetId } });
-    if (field === 'npcId') await prisma.npc.delete({ where: { id: targetId } });
-    if (field === 'loreEntryId') await prisma.loreEntry.delete({ where: { id: targetId } });
+    if (field === 'eventId') await db().event.delete({ where: { id: targetId } });
+    if (field === 'npcId') await db().npc.delete({ where: { id: targetId } });
+    if (field === 'loreEntryId') await db().loreEntry.delete({ where: { id: targetId } });
 
-    expect(await prisma.scenePeg.count({ where: { sceneId: scene.id } })).toBe(0);
-    expect(await prisma.scene.findUnique({ where: { id: scene.id } })).not.toBeNull();
+    expect(await db().scenePeg.count({ where: { sceneId: scene.id } })).toBe(0);
+    expect(await db().scene.findUnique({ where: { id: scene.id } })).not.toBeNull();
   });
 
   it('deleting a scene deletes its pegs and its map asset row but keeps the targets', async () => {
     const scene = await createScene();
-    await prisma.scenePeg.create({ data: { sceneId: scene.id, npcId: fx.npcId, x: 0.2, y: 0.2 } });
+    await db().scenePeg.create({ data: { sceneId: scene.id, npcId: fx.npcId, x: 0.2, y: 0.2 } });
     const asset = await createUploadAsset({ sceneId: scene.id });
 
-    await prisma.scene.delete({ where: { id: scene.id } });
+    await db().scene.delete({ where: { id: scene.id } });
 
-    expect(await prisma.scenePeg.count({ where: { sceneId: scene.id } })).toBe(0);
-    expect(await prisma.uploadAsset.findUnique({ where: { id: asset.id } })).toBeNull();
-    expect(await prisma.npc.findUnique({ where: { id: fx.npcId } })).not.toBeNull();
+    expect(await db().scenePeg.count({ where: { sceneId: scene.id } })).toBe(0);
+    expect(await db().uploadAsset.findUnique({ where: { id: asset.id } })).toBeNull();
+    expect(await db().npc.findUnique({ where: { id: fx.npcId } })).not.toBeNull();
   });
 
   it('deleting a campaign deletes its scenes', async () => {
     const scene = await createScene();
 
-    await prisma.campaign.delete({ where: { id: fx.campaignId } });
+    await db().campaign.delete({ where: { id: fx.campaignId } });
 
-    expect(await prisma.scene.findUnique({ where: { id: scene.id } })).toBeNull();
+    expect(await db().scene.findUnique({ where: { id: scene.id } })).toBeNull();
   });
 
   it('rejects an upload asset attached to both an event and a scene', async () => {
@@ -238,11 +240,11 @@ describeDatabase('scene persistence constraints', () => {
   });
 
   it('does not treat a scene from another campaign as reachable through the campaign scope', async () => {
-    const scene = await prisma.scene.create({
+    const scene = await db().scene.create({
       data: { name: 'Rival scene', campaignId: fx.otherCampaignId },
     });
 
-    const found = await prisma.scene.findFirst({
+    const found = await db().scene.findFirst({
       where: { id: scene.id, campaignId: fx.campaignId },
     });
 
