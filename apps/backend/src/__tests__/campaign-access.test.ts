@@ -38,6 +38,9 @@ function createPrismaMock(
     quest?: { id: string } | null;
     questEntry?: { id: string } | null;
     sessionSummary?: { id: string } | null;
+    loreEntry?: { id: string } | null;
+    scene?: { id: string } | null;
+    scenePeg?: { id: string } | null;
   } = {},
 ): CampaignAccessPrisma {
   return {
@@ -90,6 +93,21 @@ function createPrismaMock(
         .mockResolvedValue(
           'sessionSummary' in overrides ? overrides.sessionSummary : { id: 'summary-1' },
         ),
+    },
+    loreEntry: {
+      findFirst: vi
+        .fn()
+        .mockResolvedValue('loreEntry' in overrides ? overrides.loreEntry : { id: 'lore-1' }),
+    },
+    scene: {
+      findFirst: vi
+        .fn()
+        .mockResolvedValue('scene' in overrides ? overrides.scene : { id: 'scene-1' }),
+    },
+    scenePeg: {
+      findFirst: vi
+        .fn()
+        .mockResolvedValue('scenePeg' in overrides ? overrides.scenePeg : { id: 'peg-1' }),
     },
   };
 }
@@ -157,6 +175,8 @@ describe('CampaignAccess', () => {
     await access.requireResource(scope, { kind: 'npc', id: 'npc-1' });
     await access.requireResource(scope, { kind: 'quest', id: 'quest-1' });
     await access.requireResource(scope, { kind: 'session-summary', id: 'summary-1' });
+    await access.requireResource(scope, { kind: 'lore', id: 'lore-1' });
+    await access.requireResource(scope, { kind: 'scene', id: 'scene-1' });
 
     const expectedQuery = (id: string) => ({
       where: { id, campaignId: 'campaign-1' },
@@ -167,6 +187,38 @@ describe('CampaignAccess', () => {
     expect(prisma.npc.findFirst).toHaveBeenCalledWith(expectedQuery('npc-1'));
     expect(prisma.quest.findFirst).toHaveBeenCalledWith(expectedQuery('quest-1'));
     expect(prisma.sessionSummary.findFirst).toHaveBeenCalledWith(expectedQuery('summary-1'));
+    expect(prisma.loreEntry.findFirst).toHaveBeenCalledWith(expectedQuery('lore-1'));
+    expect(prisma.scene.findFirst).toHaveBeenCalledWith(expectedQuery('scene-1'));
+  });
+
+  it('checks a Scene Peg through both its Scene and Campaign', async () => {
+    const prisma = createPrismaMock();
+    const access = createCampaignAccess(prisma);
+    const scope = await access.requireAdmin(session(), 'campaign-1');
+
+    await access.requireResource(scope, { kind: 'scene-peg', id: 'peg-1', sceneId: 'scene-1' });
+
+    expect(prisma.scenePeg.findFirst).toHaveBeenCalledWith({
+      where: { id: 'peg-1', sceneId: 'scene-1', scene: { campaignId: 'campaign-1' } },
+      select: { id: true },
+    });
+  });
+
+  it('hides a scene, peg, or lore entry from another campaign behind the same not-found error', async () => {
+    const access = createCampaignAccess(
+      createPrismaMock({ scene: null, scenePeg: null, loreEntry: null }),
+    );
+    const scope = await access.requireAdmin(session(), 'campaign-1');
+
+    await expect(
+      access.requireResource(scope, { kind: 'scene', id: 'rival-scene' }),
+    ).rejects.toBeInstanceOf(CampaignResourceNotFoundError);
+    await expect(
+      access.requireResource(scope, { kind: 'scene-peg', id: 'rival-peg', sceneId: 'rival-scene' }),
+    ).rejects.toBeInstanceOf(CampaignResourceNotFoundError);
+    await expect(
+      access.requireResource(scope, { kind: 'lore', id: 'rival-lore' }),
+    ).rejects.toBeInstanceOf(CampaignResourceNotFoundError);
   });
 
   it('checks an NPC Fact through both its NPC and Campaign', async () => {
