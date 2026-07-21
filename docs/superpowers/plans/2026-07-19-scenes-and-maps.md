@@ -831,7 +831,6 @@ npm run lint
 npm run typecheck
 npm run test
 npm run test:bdd
-npm run check:block-drift
 npm run build
 npx react-doctor@latest .
 git diff --check

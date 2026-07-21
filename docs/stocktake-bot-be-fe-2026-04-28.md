@@ -135,7 +135,7 @@ These are the next implementation steps needed to close the remaining unchecked 
   Status: complete for the player-facing route and bot `/journal`. The GM Log tab remains the dense Quest control surface from the UX cleanup.
 
 - [ ] **Step 12: Add event pipeline write-back blocks**
-  Add backend-executed pipeline blocks for writing NPC facts, lore reveals, quest updates, and journal/session-summary entries from fired events. Treat every editable pipeline block as a mirrored backend/frontend contract: update core/system block definitions, backend registration/OpenAPI, frontend block schemas/default configs/edit fields, Orval output, and `check:block-drift` together.
+  Add backend-executed pipeline blocks for writing NPC facts, lore reveals, quest updates, and journal/session-summary entries from fired events. Treat every editable pipeline block as a mirrored backend/frontend contract: update the shared `@constancia/block-catalogue` spec, core/system block definitions, backend registration/OpenAPI, frontend block schemas/default configs/edit fields, and Orval output together.
   Closes: automatic event-driven NPC fact, lore, quest, and journal writes.
 
 - [ ] **Step 13: Add admin upload controls**
@@ -143,7 +143,7 @@ These are the next implementation steps needed to close the remaining unchecked 
   Closes: admin panel for upload allowance / upload enablement.
 
 - [ ] **Step 14: Run end-to-end hardening across the loop**
-  Add or update tests for event editing, quest visibility, NPC quest links, lore visibility, event write-back blocks, upload quota admin changes, OpenAPI/Orval generation, and block drift. Finish with full `lint`, `typecheck`, `test`, and `check:block-drift`.
+  Add or update tests for event editing, quest visibility, NPC quest links, lore visibility, event write-back blocks, upload quota admin changes, and OpenAPI/Orval generation. Finish with full `lint`, `typecheck`, and `test`.
 
 ## Short version
 - Strongest working loop today: **event creation in FE → event firing in FE → backend execution → Discord delivery by bot**, plus **ad-hoc player whispers**.
