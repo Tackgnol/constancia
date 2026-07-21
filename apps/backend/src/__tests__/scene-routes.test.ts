@@ -284,11 +284,23 @@ describe('scene route responses', () => {
     expect(response.json().data.code).toBe('SCENE_PEG_TARGET_ALREADY_PLACED');
   });
 
-  it('deletes a scene through the standard delete envelope', async () => {
+  it('deletes a scene through the standard delete envelope, cleaning up its map storage', async () => {
+    prismaMock.uploadAsset.findFirst.mockResolvedValueOnce({
+      id: 'asset-old',
+      storageProvider: 'local',
+      storageKey: 'uploads/asset-old.webp',
+      bucket: null,
+    });
+
     const response = await app.inject({ method: 'DELETE', url: url(`/${SCENE_ID}`) });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ status: 'ok', deleted: true });
+    // The service now owns prepare/finish map-asset cleanup as part of `remove`, so the route
+    // itself only has to call `scenes.remove` and the storage read still has to precede the delete.
+    expect(prismaMock.uploadAsset.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { sceneId: SCENE_ID } }),
+    );
     expect(prismaMock.scene.delete).toHaveBeenCalledWith({ where: { id: SCENE_ID } });
   });
 
@@ -307,6 +319,34 @@ describe('scene route responses', () => {
     expect(response.json()).toEqual({
       status: 'ok',
       data: { assetId: 'asset-7', url: 'http://localhost:3001/api/v1/uploads/asset-7' },
+    });
+  });
+
+  it('checks scene existence with a minimal select before attaching a map', async () => {
+    prismaMock.uploadAsset.findFirst.mockImplementation(async (args: { where: { id?: string } }) =>
+      args.where.id === 'asset-7' ? { id: 'asset-7', eventId: null, sceneId: null } : null,
+    );
+
+    await app.inject({
+      method: 'PUT',
+      url: url(`/${SCENE_ID}/map`),
+      payload: { assetId: 'asset-7' },
+    });
+
+    // `scenes.exists` now backs this check instead of the full-detail `scenes.get`, so the scene
+    // lookup should be a bare `SELECT id` rather than the peg-joining detail select.
+    expect(prismaMock.scene.findFirst).toHaveBeenCalledWith({
+      where: { id: SCENE_ID, campaignId: CAMPAIGN_ID },
+      select: { id: true },
+    });
+  });
+
+  it('checks scene existence with a minimal select before detaching a map', async () => {
+    await app.inject({ method: 'DELETE', url: url(`/${SCENE_ID}/map`) });
+
+    expect(prismaMock.scene.findFirst).toHaveBeenCalledWith({
+      where: { id: SCENE_ID, campaignId: CAMPAIGN_ID },
+      select: { id: true },
     });
   });
 });

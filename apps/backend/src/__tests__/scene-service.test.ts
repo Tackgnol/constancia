@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SessionAccessContext } from '../auth/access-context.js';
 import {
   CampaignResourceNotFoundError,
@@ -6,6 +6,7 @@ import {
   type CampaignAccessPrisma,
   type CampaignScope,
 } from '../services/campaign-access.js';
+import type { SceneMapAssetLogger } from '../services/scene-map-assets.js';
 import {
   createSceneService,
   normalizeSceneName,
@@ -14,7 +15,16 @@ import {
   type SceneServicePrisma,
   type ScenePegKind,
 } from '../services/scene-service.js';
+import { deleteUploadObjects } from '../services/upload-storage.js';
+import type * as UploadStorageModule from '../services/upload-storage.js';
 import { createTestBackendConfig } from './test-config.js';
+
+vi.mock('../services/upload-storage.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof UploadStorageModule>();
+  return { ...actual, deleteUploadObjects: vi.fn(async () => {}) };
+});
+
+const deleteUploadObjectsMock = vi.mocked(deleteUploadObjects);
 
 const config = createTestBackendConfig();
 const CAMPAIGN_ID = 'campaign-1';
@@ -104,16 +114,27 @@ function detailRow(
   };
 }
 
+const mapStorageOf = (id: string) => ({
+  id,
+  storageProvider: 'local',
+  storageKey: `uploads/${id}.webp`,
+  bucket: null,
+});
+
 function createServicePrisma(
   overrides: Partial<{
     detail: ReturnType<typeof detailRow> | null;
     createdPeg: ReturnType<typeof pegRow>;
     pegCreateError: unknown;
+    mapStorage: ReturnType<typeof mapStorageOf> | null;
   }> = {},
 ) {
   const detail = 'detail' in overrides ? overrides.detail : detailRow();
 
   const prisma: SceneServicePrisma = {
+    uploadAsset: {
+      findFirst: vi.fn(async () => overrides.mapStorage ?? null),
+    },
     scene: {
       findMany: vi.fn(async () => [
         {
@@ -353,5 +374,99 @@ describe('scene peg placement rules', () => {
       CampaignResourceNotFoundError,
     );
     expect(prisma.scenePeg.delete).not.toHaveBeenCalled();
+  });
+});
+
+function createLogger(): SceneMapAssetLogger & { entries: Array<Record<string, unknown>> } {
+  const entries: Array<Record<string, unknown>> = [];
+  return { entries, error: (details) => void entries.push(details) };
+}
+
+describe('scene existence check', () => {
+  it('resolves without pulling the full scene detail select', async () => {
+    const prisma = createServicePrisma();
+    const { service, scope } = await createScopedService([], prisma);
+
+    await expect(service.exists(scope, SCENE_ID)).resolves.toBeUndefined();
+    expect(prisma.scene.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('reports a scene from another campaign as not found', async () => {
+    const { service, scope } = await createScopedService(['scene']);
+
+    await expect(service.exists(scope, 'rival-scene')).rejects.toBeInstanceOf(
+      CampaignResourceNotFoundError,
+    );
+  });
+});
+
+describe('scene deletion', () => {
+  beforeEach(() => {
+    deleteUploadObjectsMock.mockClear();
+    deleteUploadObjectsMock.mockImplementation(async () => {});
+  });
+
+  it('rejects deleting a scene from another campaign before touching storage or the row', async () => {
+    const prisma = createServicePrisma();
+    const { service, scope } = await createScopedService(['scene'], prisma);
+
+    await expect(
+      service.remove(scope, 'rival-scene', { logger: createLogger() }),
+    ).rejects.toBeInstanceOf(CampaignResourceNotFoundError);
+    expect(prisma.uploadAsset.findFirst).not.toHaveBeenCalled();
+    expect(prisma.scene.delete).not.toHaveBeenCalled();
+  });
+
+  it('reads the map storage metadata before deleting, then cleans it up after', async () => {
+    const prisma = createServicePrisma({ mapStorage: mapStorageOf('asset-old') });
+    const { service, scope } = await createScopedService([], prisma);
+    const calls: string[] = [];
+    vi.mocked(prisma.uploadAsset.findFirst).mockImplementation(async () => {
+      calls.push('read-map-storage');
+      return mapStorageOf('asset-old');
+    });
+    vi.mocked(prisma.scene.delete).mockImplementation(async () => {
+      calls.push('delete-scene');
+      return { id: SCENE_ID };
+    });
+    deleteUploadObjectsMock.mockImplementation(async () => {
+      calls.push('delete-storage-object');
+    });
+
+    await service.remove(scope, SCENE_ID, { logger: createLogger() });
+
+    expect(calls).toEqual(['read-map-storage', 'delete-scene', 'delete-storage-object']);
+    expect(prisma.scene.delete).toHaveBeenCalledWith({ where: { id: SCENE_ID } });
+    expect(deleteUploadObjectsMock).toHaveBeenCalledWith(config, [mapStorageOf('asset-old')]);
+  });
+
+  it('deletes the scene even when it never had a map', async () => {
+    const prisma = createServicePrisma({ mapStorage: null });
+    const { service, scope } = await createScopedService([], prisma);
+
+    await service.remove(scope, SCENE_ID, { logger: createLogger() });
+
+    expect(prisma.scene.delete).toHaveBeenCalledWith({ where: { id: SCENE_ID } });
+    expect(deleteUploadObjectsMock).not.toHaveBeenCalled();
+  });
+
+  it('still deletes the scene and logs when storage cleanup fails', async () => {
+    const prisma = createServicePrisma({ mapStorage: mapStorageOf('asset-old') });
+    const { service, scope } = await createScopedService([], prisma);
+    const logger = createLogger();
+    deleteUploadObjectsMock.mockRejectedValueOnce(new Error('bucket offline'));
+
+    await expect(service.remove(scope, SCENE_ID, { logger })).resolves.toBeUndefined();
+
+    expect(prisma.scene.delete).toHaveBeenCalledWith({ where: { id: SCENE_ID } });
+    expect(logger.entries).toEqual([
+      {
+        sceneId: SCENE_ID,
+        assetId: 'asset-old',
+        storageKey: 'uploads/asset-old.webp',
+        operation: 'delete-scene-map-storage',
+        reason: 'bucket offline',
+      },
+    ]);
   });
 });

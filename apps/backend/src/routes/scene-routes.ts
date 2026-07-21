@@ -20,13 +20,7 @@ import {
   standardResponseSchema,
 } from '../schemas.js';
 import { createCampaignAccess } from '../services/campaign-access.js';
-import {
-  clearSceneMap,
-  finishSceneMapCleanup,
-  prepareSceneMapCleanup,
-  requireSessionUserId,
-  setSceneMap,
-} from '../services/scene-map-assets.js';
+import { clearSceneMap, requireSessionUserId, setSceneMap } from '../services/scene-map-assets.js';
 import { createSceneService, type ScenePegKind } from '../services/scene-service.js';
 
 interface CampaignParams {
@@ -170,12 +164,10 @@ const sceneRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request) => {
-      const { prisma, scenes } = services();
-      const { sceneId } = request.params;
-      // The cascade removes the map row, so its storage metadata has to be read first.
-      const map = await prepareSceneMapCleanup(prisma, sceneId);
-      await scenes.remove(request.campaignScope, sceneId);
-      await finishSceneMapCleanup(app.config, map, { sceneId, logger: request.log });
+      const { scenes } = services();
+      await scenes.remove(request.campaignScope, request.params.sceneId, {
+        logger: request.log,
+      });
 
       return deleted(true);
     },
@@ -200,7 +192,7 @@ const sceneRoutes: FastifyPluginAsync = async (app) => {
       const { prisma, scenes } = services();
       const { sceneId } = request.params;
       const userId = requireSessionUserId(request.access);
-      await scenes.get(request.campaignScope, sceneId);
+      await scenes.exists(request.campaignScope, sceneId);
 
       return ok(
         await setSceneMap(app.config, prisma, {
@@ -231,7 +223,7 @@ const sceneRoutes: FastifyPluginAsync = async (app) => {
       const { prisma, scenes } = services();
       const { sceneId } = request.params;
       requireSessionUserId(request.access);
-      await scenes.get(request.campaignScope, sceneId);
+      await scenes.exists(request.campaignScope, sceneId);
       await clearSceneMap(app.config, prisma, { sceneId, logger: request.log });
 
       return deleted(true);

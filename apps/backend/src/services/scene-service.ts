@@ -5,6 +5,12 @@ import {
   type CampaignAccess,
   type CampaignScope,
 } from './campaign-access.js';
+import {
+  finishSceneMapCleanup,
+  prepareSceneMapCleanup,
+  type SceneMapAssetLogger,
+  type SceneMapCleanupReadPrisma,
+} from './scene-map-assets.js';
 import { buildUploadAssetUrl } from './upload-storage.js';
 
 export type ScenePegKind = 'event' | 'npc' | 'lore';
@@ -123,7 +129,7 @@ interface SceneDetailRow {
   pegs: ScenePegRow[];
 }
 
-export interface SceneServicePrisma {
+export interface SceneServicePrisma extends SceneMapCleanupReadPrisma {
   scene: {
     findMany(args: {
       where: { campaignId: string };
@@ -169,9 +175,18 @@ export interface SceneServicePrisma {
 export interface SceneService {
   list(scope: CampaignScope): Promise<SceneSummaryView[]>;
   get(scope: CampaignScope, sceneId: string): Promise<SceneView>;
+  /**
+   * A cheap existence/authorization check — `SELECT id` scoped to the campaign — for callers that
+   * only need to prove a scene exists in this campaign without paying for the full peg join.
+   */
+  exists(scope: CampaignScope, sceneId: string): Promise<void>;
   create(scope: CampaignScope, input: { name: string }): Promise<SceneView>;
   rename(scope: CampaignScope, sceneId: string, input: { name: string }): Promise<SceneView>;
-  remove(scope: CampaignScope, sceneId: string): Promise<void>;
+  remove(
+    scope: CampaignScope,
+    sceneId: string,
+    params: { logger: SceneMapAssetLogger },
+  ): Promise<void>;
   createPeg(
     scope: CampaignScope,
     sceneId: string,
@@ -207,6 +222,10 @@ class PrismaSceneService implements SceneService {
     return this.toSceneView(await this.requireScene(scope, sceneId));
   }
 
+  async exists(scope: CampaignScope, sceneId: string): Promise<void> {
+    await this.access.requireResource(scope, { kind: 'scene', id: sceneId });
+  }
+
   async create(scope: CampaignScope, input: { name: string }): Promise<SceneView> {
     const scene = await this.prisma.scene.create({
       data: { name: normalizeSceneName(input.name), campaignId: scope.campaignId },
@@ -227,9 +246,16 @@ class PrismaSceneService implements SceneService {
     return this.toSceneView(scene);
   }
 
-  async remove(scope: CampaignScope, sceneId: string): Promise<void> {
-    await this.requireScene(scope, sceneId);
+  async remove(
+    scope: CampaignScope,
+    sceneId: string,
+    params: { logger: SceneMapAssetLogger },
+  ): Promise<void> {
+    await this.exists(scope, sceneId);
+    // The cascade removes the map row, so its storage metadata has to be read first.
+    const map = await prepareSceneMapCleanup(this.prisma, sceneId);
     await this.prisma.scene.delete({ where: { id: sceneId } });
+    await finishSceneMapCleanup(this.config, map, { sceneId, logger: params.logger });
   }
 
   async createPeg(

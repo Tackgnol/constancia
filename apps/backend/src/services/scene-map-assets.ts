@@ -25,13 +25,25 @@ export interface SceneMapView {
   url: string;
 }
 
-export interface SceneMapAssetPrisma extends UploadAssetDeletionPrisma, UploadAssetOwnershipPrisma {
+/**
+ * The minimal Prisma slice {@link prepareSceneMapCleanup} needs: read a scene's map storage
+ * metadata by scene id. Kept separate from {@link SceneMapAssetPrisma} so callers that only need
+ * to read this (such as `SceneService`) don't have to carry attach/detach shapes they never use.
+ */
+export interface SceneMapCleanupReadPrisma {
+  uploadAsset: {
+    findFirst(args: {
+      where: { sceneId: string };
+      select: typeof uploadAssetStorageSelect;
+    }): Promise<StoredMapAsset | null>;
+  };
+}
+
+export interface SceneMapAssetPrisma
+  extends UploadAssetDeletionPrisma, UploadAssetOwnershipPrisma, SceneMapCleanupReadPrisma {
   uploadAsset: UploadAssetDeletionPrisma['uploadAsset'] &
-    UploadAssetOwnershipPrisma['uploadAsset'] & {
-      findFirst(args: {
-        where: { sceneId: string };
-        select: typeof uploadAssetStorageSelect;
-      }): Promise<StoredMapAsset | null>;
+    UploadAssetOwnershipPrisma['uploadAsset'] &
+    SceneMapCleanupReadPrisma['uploadAsset'] & {
       update(args: {
         where: { id: string };
         data: { sceneId: string | null };
@@ -119,7 +131,7 @@ export async function clearSceneMap(
  * Pair with {@link finishSceneMapCleanup} once the scene is gone.
  */
 export async function prepareSceneMapCleanup(
-  prisma: SceneMapAssetPrisma,
+  prisma: SceneMapCleanupReadPrisma,
   sceneId: string,
 ): Promise<StoredMapAsset | null> {
   return prisma.uploadAsset.findFirst({
