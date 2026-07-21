@@ -662,7 +662,7 @@ h3 {
   text-transform: uppercase;
 }
 
-.rail-scene-name,
+.rail-channel-name,
 .rail-clock-value {
   color: var(--text);
   font:
@@ -675,7 +675,7 @@ h3 {
   font-variant-numeric: tabular-nums;
 }
 
-.rail-scene-meta {
+.rail-channel-meta {
   color: var(--text-secondary);
   font-size: 0.78rem;
   line-height: 1.35;
@@ -3328,7 +3328,7 @@ h3 {
   justify-content: flex-end;
 }
 
-.rail-scene-hint {
+.rail-channel-hint {
   margin: 0;
   color: var(--muted);
   font:

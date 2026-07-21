@@ -3,7 +3,7 @@ import type { Tag } from '@/lib/war-room-data';
 
 const INITIAL_SESSION_ELAPSED_MS = 47 * 60_000 + 12_000;
 
-type SceneRailExtrasProps = {
+type ChannelRailExtrasProps = {
   tags: Tag[];
   activeTag: string | null;
   eventCount: number;
@@ -22,12 +22,12 @@ function formatElapsed(ms: number) {
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
-export function SceneRailExtras({
+export function ChannelRailExtras({
   tags,
   activeTag,
   eventCount,
   activeEventCount,
-}: SceneRailExtrasProps) {
+}: ChannelRailExtrasProps) {
   const [elapsedMs, setElapsedMs] = useState(INITIAL_SESSION_ELAPSED_MS);
 
   useEffect(() => {
@@ -39,23 +39,23 @@ export function SceneRailExtras({
 
   return (
     <div className="rail-blocks">
-      <section className="rail-card rail-card-scene">
+      <section className="rail-card rail-card-channel">
         <p className="rail-eyebrow">Active channel</p>
         {activeLabel ? (
           <>
-            <p className="rail-scene-name">{activeLabel}</p>
-            <p className="rail-scene-meta">
+            <p className="rail-channel-name">{activeLabel}</p>
+            <p className="rail-channel-meta">
               {activeEventCount} staged beat{activeEventCount !== 1 ? 's' : ''}
             </p>
-            <p className="rail-scene-hint">Play and Quests are scoped to this thread.</p>
+            <p className="rail-channel-hint">Play and Quests are scoped to this thread.</p>
           </>
         ) : (
           <>
-            <p className="rail-scene-name">All channels</p>
-            <p className="rail-scene-meta">
+            <p className="rail-channel-name">All channels</p>
+            <p className="rail-channel-meta">
               {eventCount} beat{eventCount !== 1 ? 's' : ''} across {tags.length} channels
             </p>
-            <p className="rail-scene-hint">Choose a channel to narrow the board and timeline.</p>
+            <p className="rail-channel-hint">Choose a channel to narrow the board and timeline.</p>
           </>
         )}
       </section>
@@ -63,7 +63,7 @@ export function SceneRailExtras({
       <section className="rail-card rail-card-clock">
         <p className="rail-eyebrow">Session clock</p>
         <p className="rail-clock-value">{formatElapsed(elapsedMs)}</p>
-        <p className="rail-scene-meta">since first beat</p>
+        <p className="rail-channel-meta">since first beat</p>
       </section>
     </div>
   );
