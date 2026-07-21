@@ -5,6 +5,7 @@ import { getScene, listScenes } from '@constancia/api-client/endpoints/scenes/sc
 import type { GetScene200Data, ListScenes200DataItem } from '@constancia/api-client/model';
 import { buildServerApiOptions, resolveCurrentCampaignId } from './api-proxy.server.js';
 import {
+  assembleScenePeg,
   noMapCandidates,
   selectSceneId,
   unavailableMapWorkspace,
@@ -36,23 +37,13 @@ function toSceneSummary(scene: ListScenes200DataItem): SceneSummaryProjection {
 }
 
 function toScenePeg(peg: ApiScenePeg): ScenePegProjection {
-  const position = { id: peg.id, x: peg.x, y: peg.y };
-
-  switch (peg.kind) {
-    case 'event':
-      return { ...position, kind: 'event', target: peg.target };
-    case 'npc':
-      return { ...position, kind: 'npc', target: peg.target };
-    case 'lore':
-      return { ...position, kind: 'lore', target: peg.target };
-  }
+  return assembleScenePeg(peg.id, { x: peg.x, y: peg.y }, peg);
 }
 
 function toSceneDetail(scene: GetScene200Data): SceneDetailProjection {
   return {
     id: scene.id,
     name: scene.name,
-    mapAssetId: scene.mapAssetId ?? null,
     mapUrl: scene.mapUrl ?? null,
     pegs: scene.pegs.map(toScenePeg),
   };
@@ -82,7 +73,6 @@ export async function loadLiveMapWorkspaceProjection(
       scenes,
       selectedScene: null,
       candidates: noMapCandidates,
-      apiOnline: true,
       errorMessage: null,
       demoMode: false,
     };
@@ -114,7 +104,6 @@ export async function loadLiveMapWorkspaceProjection(
     // A scene deleted by another request between the two calls simply reads as no selection.
     selectedScene: sceneResponse.status === 'ok' ? toSceneDetail(sceneResponse.data) : null,
     candidates: { events, npcs, lore },
-    apiOnline: true,
     errorMessage: null,
     demoMode: false,
   };

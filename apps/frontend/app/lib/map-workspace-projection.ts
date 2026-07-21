@@ -3,6 +3,9 @@
  * the live adapter maps generated models into these types on the frontend server.
  */
 
+import type { FireReceiptView } from './fire-event-receipt.js';
+import type { NormalizedPoint } from './map-coordinates.js';
+
 export type ScenePegKind = 'event' | 'npc' | 'lore';
 
 export type ScenePegProjection =
@@ -32,7 +35,6 @@ export interface SceneSummaryProjection {
 export interface SceneDetailProjection {
   id: string;
   name: string;
-  mapAssetId: string | null;
   mapUrl: string | null;
   pegs: ScenePegProjection[];
 }
@@ -54,9 +56,37 @@ export interface MapWorkspaceProjection {
   scenes: SceneSummaryProjection[];
   selectedScene: SceneDetailProjection | null;
   candidates: MapWorkspaceCandidates;
-  apiOnline: boolean;
   errorMessage: string | null;
   demoMode: boolean;
+}
+
+/** One key per armed attempt, so a retried ambiguous fire collapses onto the same execution. */
+export interface ArmedFireAttempt {
+  pegId: string;
+  eventId: string;
+  idempotencyKey: string;
+}
+
+/**
+ * The write-side counterpart to `MapWorkspaceProjection`: every mutation resolves to whether it was
+ * accepted, so callers can roll back optimistic UI. Demo and live each implement this once, in their
+ * own module, so `MapWorkspace` never has to know which one it was handed.
+ */
+export interface SceneCommands {
+  create: (name: string) => Promise<boolean>;
+  rename: (sceneId: string, name: string) => Promise<boolean>;
+  remove: (sceneId: string) => Promise<boolean>;
+  replaceMap: (sceneId: string, file: File) => Promise<boolean>;
+  removeMap: (sceneId: string) => Promise<boolean>;
+  createPeg: (sceneId: string, candidate: MapCandidate, point: NormalizedPoint) => Promise<boolean>;
+  movePeg: (sceneId: string, pegId: string, point: NormalizedPoint) => Promise<boolean>;
+  removePeg: (sceneId: string, pegId: string) => Promise<boolean>;
+  fireEvent: (attempt: ArmedFireAttempt) => Promise<FireReceiptView | null>;
+  pending: boolean;
+  error: string | null;
+  status: string | null;
+  quotaWarning: string | null;
+  clearError: () => void;
 }
 
 export const noMapCandidates: MapWorkspaceCandidates = { events: [], npcs: [], lore: [] };
@@ -96,10 +126,32 @@ export function unavailableMapWorkspace(
     scenes: [],
     selectedScene: null,
     candidates: noMapCandidates,
-    apiOnline: false,
     errorMessage,
     demoMode,
   };
+}
+
+/**
+ * Assembles a peg from its parts, re-discriminating on `kind` purely so the union stays exact.
+ * Both the live projection (from an already-full API peg) and the demo commands (from a candidate
+ * plus a drop point) funnel through here, so there is exactly one place that shapes a peg.
+ */
+export function assembleScenePeg(
+  id: string,
+  point: NormalizedPoint,
+  discriminant:
+    | { kind: 'event'; target: Extract<ScenePegProjection, { kind: 'event' }>['target'] }
+    | { kind: 'npc'; target: Extract<ScenePegProjection, { kind: 'npc' }>['target'] }
+    | { kind: 'lore'; target: Extract<ScenePegProjection, { kind: 'lore' }>['target'] },
+): ScenePegProjection {
+  switch (discriminant.kind) {
+    case 'event':
+      return { id, ...point, kind: 'event', target: discriminant.target };
+    case 'npc':
+      return { id, ...point, kind: 'npc', target: discriminant.target };
+    case 'lore':
+      return { id, ...point, kind: 'lore', target: discriminant.target };
+  }
 }
 
 /**

@@ -23,16 +23,17 @@ const demoMapImage =
     </svg>`,
   );
 
-export const demoScenes: SceneSummaryProjection[] = [
-  { id: 'demo-scene-elysium', name: 'Elysium', hasMap: true, pegCount: 3 },
-  { id: 'demo-scene-docks', name: 'The Docks', hasMap: false, pegCount: 0 },
-];
-
-export const demoSceneDetails: Record<string, SceneDetailProjection> = {
-  'demo-scene-elysium': {
+/**
+ * The one store behind demo Map: every fixture scene's full detail, in display order. `demoScenes`
+ * and `demoSceneDetails` below are both derived from this rather than hand-kept in sync, so
+ * `hasMap`/`pegCount` can never drift from the pegs a scene actually has. `demo-scene-commands.ts`
+ * seeds its own client-side store from this same array and keeps deriving summaries the same way,
+ * so a scene created or edited during a session stays consistent everywhere it is shown.
+ */
+export const demoSceneFixtures: SceneDetailProjection[] = [
+  {
     id: 'demo-scene-elysium',
     name: 'Elysium',
-    mapAssetId: 'demo-map-asset',
     mapUrl: demoMapImage,
     pegs: [
       {
@@ -58,14 +59,28 @@ export const demoSceneDetails: Record<string, SceneDetailProjection> = {
       },
     ],
   },
-  'demo-scene-docks': {
+  {
     id: 'demo-scene-docks',
     name: 'The Docks',
-    mapAssetId: null,
     mapUrl: null,
     pegs: [],
   },
-};
+];
+
+export function toDemoSceneSummary(scene: SceneDetailProjection): SceneSummaryProjection {
+  return {
+    id: scene.id,
+    name: scene.name,
+    hasMap: scene.mapUrl !== null,
+    pegCount: scene.pegs.length,
+  };
+}
+
+export const demoScenes: SceneSummaryProjection[] = demoSceneFixtures.map(toDemoSceneSummary);
+
+export const demoSceneDetails: Record<string, SceneDetailProjection> = Object.fromEntries(
+  demoSceneFixtures.map((scene) => [scene.id, scene]),
+);
 
 /**
  * Ids match the rest of the demo campaign so NPC and lore pegs deep link to real records. The list

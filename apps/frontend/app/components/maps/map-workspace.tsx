@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useRevalidator } from 'react-router';
 import { ManagementWorkspace } from '@/components/layout/management-workspace';
 import { MapCandidatePicker } from '@/components/maps/map-candidate-picker';
 import { MapInspector } from '@/components/maps/map-inspector';
@@ -10,400 +9,73 @@ import { SceneMapForm } from '@/components/maps/scene-map-form';
 import { ScenePegButton } from '@/components/maps/scene-peg-button';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import { Button } from '@/components/ui/button';
-import { postRouteAction } from '@/lib/route-action-client';
+import { useDemoSceneCommands } from '@/lib/demo-scene-commands';
 import type { FireReceiptView } from '@/lib/fire-event-receipt';
+import { useLiveSceneCommands } from '@/lib/live-scene-commands';
 import type { NormalizedPoint } from '@/lib/map-coordinates';
-import {
-  buildSceneMapPath,
-  nextSceneAfterRemoval,
-  type MapCandidate,
-  type MapWorkspaceProjection,
-  type SceneDetailProjection,
-  type ScenePegProjection,
-  type SceneSummaryProjection,
+import type {
+  ArmedFireAttempt,
+  MapCandidate,
+  MapWorkspaceProjection,
+  SceneCommands,
+  SceneDetailProjection,
+  SceneSummaryProjection,
 } from '@/lib/map-workspace-projection';
 
-interface UploadQuota {
-  uploadRemainingBytes: number;
-  uploadUsagePercent: number;
-  uploadNearLimit: boolean;
+/**
+ * Picks the `SceneCommands` implementation for the current route and hands it, already resolved,
+ * to the layout component below. This is the one place that knows demo and live exist; `MapWorkspace`
+ * itself only ever sees the shared `SceneCommands` contract.
+ */
+export function MapWorkspaceRoot({ projection }: { projection: MapWorkspaceProjection }) {
+  return projection.demoMode ? (
+    <DemoMapWorkspace projection={projection} />
+  ) : (
+    <LiveMapWorkspace projection={projection} />
+  );
 }
 
-interface MapActionData {
-  sceneId?: string;
-  pegId?: string;
-  quota?: UploadQuota;
-  duplicateTarget?: boolean;
-  receipt?: FireReceiptView;
+function DemoMapWorkspace({ projection }: { projection: MapWorkspaceProjection }) {
+  const { commands, scenes, selectedScene } = useDemoSceneCommands(projection);
+  return (
+    <MapWorkspace
+      commands={commands}
+      projection={projection}
+      scenes={scenes}
+      selectedScene={selectedScene}
+    />
+  );
+}
+
+function LiveMapWorkspace({ projection }: { projection: MapWorkspaceProjection }) {
+  const { commands, scenes, selectedScene } = useLiveSceneCommands(projection);
+  return (
+    <MapWorkspace
+      commands={commands}
+      projection={projection}
+      scenes={scenes}
+      selectedScene={selectedScene}
+    />
+  );
 }
 
 /**
- * One key per armed attempt. Retrying an ambiguous failure reuses it so the backend collapses the
- * repeat onto the same execution; arming again mints a new one.
+ * Layout and interaction state for the Map workspace: armed-placement state, armed-fire
+ * idempotency-key state, receipt state, rename-mode toggle, the Escape-key handler, focus
+ * management, empty-state copy, and the 3-panel layout. All scene/peg mutation lives behind the
+ * `SceneCommands` contract this component is handed — it never builds an implementation itself.
  */
-interface ArmedFireAttempt {
-  pegId: string;
-  eventId: string;
-  idempotencyKey: string;
-}
-
-/** Every mutation resolves to whether it was accepted, so callers can roll back optimistic UI. */
-interface SceneCommands {
-  create: (name: string) => Promise<boolean>;
-  rename: (sceneId: string, name: string) => Promise<boolean>;
-  remove: (sceneId: string) => Promise<boolean>;
-  replaceMap: (sceneId: string, file: File) => Promise<boolean>;
-  removeMap: (sceneId: string) => Promise<boolean>;
-  createPeg: (sceneId: string, candidate: MapCandidate, point: NormalizedPoint) => Promise<boolean>;
-  movePeg: (sceneId: string, pegId: string, point: NormalizedPoint) => Promise<boolean>;
-  removePeg: (sceneId: string, pegId: string) => Promise<boolean>;
-  fireEvent: (attempt: ArmedFireAttempt) => Promise<FireReceiptView | null>;
-  pending: boolean;
-  error: string | null;
-  status: string | null;
-  quotaWarning: string | null;
-  clearError: () => void;
-}
-
-function demoPeg(candidate: MapCandidate, point: NormalizedPoint): ScenePegProjection {
-  const id = `demo-peg-${crypto.randomUUID()}`;
-
-  switch (candidate.kind) {
-    case 'event':
-      return {
-        id,
-        kind: 'event',
-        ...point,
-        target: { id: candidate.id, name: candidate.label, status: 'ready' },
-      };
-    case 'npc':
-      return {
-        id,
-        kind: 'npc',
-        ...point,
-        target: { id: candidate.id, name: candidate.label, imageUrl: null },
-      };
-    case 'lore':
-      return { id, kind: 'lore', ...point, target: { id: candidate.id, title: candidate.label } };
-  }
-}
-
-/** Mirrors the backend's scene-name normalization so announcements match what was stored. */
-function announceName(name: string): string {
-  return name.trim().replace(/\s+/g, ' ');
-}
-
-function formatQuotaWarning(quota: UploadQuota | undefined): string | null {
-  if (!quota?.uploadNearLimit) {
-    return null;
-  }
-
-  const remainingMb = Math.max(quota.uploadRemainingBytes, 0) / (1024 * 1024);
-  return `Upload allowance is ${quota.uploadUsagePercent}% used. About ${remainingMb.toFixed(1)} MB remain.`;
-}
-
-/**
- * Live commands post to the map route action and let React Router revalidate the loader; demo
- * commands mutate page-session state. Both expose the same shape so components stay identical.
- * Demo detail overrides are keyed by scene id so navigating between scenes keeps each one's edits.
- */
-function useSceneCommands(projection: MapWorkspaceProjection): {
+export function MapWorkspace({
+  projection,
+  commands,
+  scenes,
+  selectedScene,
+}: {
+  projection: MapWorkspaceProjection;
   commands: SceneCommands;
   scenes: SceneSummaryProjection[];
   selectedScene: SceneDetailProjection | null;
-} {
-  const navigate = useNavigate();
-  const revalidator = useRevalidator();
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
-  const [quotaWarning, setQuotaWarning] = useState<string | null>(null);
-  const [demoScenes, setDemoScenes] = useState<SceneSummaryProjection[]>(projection.scenes);
-  const [demoDetails, setDemoDetails] = useState<Record<string, SceneDetailProjection>>({});
-  const [demoReceipts, setDemoReceipts] = useState<Record<string, FireReceiptView>>({});
-
-  const scenes = projection.demoMode ? demoScenes : projection.scenes;
-  const selectedScene =
-    projection.demoMode && projection.selectedScene !== null
-      ? (demoDetails[projection.selectedScene.id] ?? projection.selectedScene)
-      : projection.selectedScene;
-  const clearError = () => setError(null);
-
-  const demoPreviewUrls = useRef(new Map<string, string>());
-  const revokeDemoPreview = (sceneId: string) => {
-    const existing = demoPreviewUrls.current.get(sceneId);
-    if (existing !== undefined) {
-      URL.revokeObjectURL(existing);
-      demoPreviewUrls.current.delete(sceneId);
-    }
-  };
-
-  // Any previews still held when the workspace unmounts would outlive the page session otherwise.
-  useEffect(() => {
-    const urls = demoPreviewUrls.current;
-    return () => {
-      for (const url of urls.values()) {
-        URL.revokeObjectURL(url);
-      }
-      urls.clear();
-    };
-  }, []);
-
-  const runLive = async (
-    values: Record<string, FormDataEntryValue>,
-    onDone: (data: MapActionData | undefined) => Promise<void> | void,
-    successMessage?: string,
-  ): Promise<boolean> => {
-    if (projection.campaignId === null) {
-      setError('Reopen Map so we can identify your campaign, then try again.');
-      return false;
-    }
-
-    setPending(true);
-    setError(null);
-    setStatus(null);
-    try {
-      const response = await postRouteAction<MapActionData>('/map', {
-        ...values,
-        campaignId: projection.campaignId,
-      });
-
-      if (response.status !== 'success') {
-        setError(response.message);
-        return false;
-      }
-
-      setQuotaWarning(formatQuotaWarning(response.data?.quota));
-      setStatus(
-        response.data?.duplicateTarget === true
-          ? 'That target already had a peg here, so we selected it.'
-          : (successMessage ?? null),
-      );
-      await onDone(response.data);
-      return true;
-    } finally {
-      setPending(false);
-    }
-  };
-
-  const setDemoDetail = (
-    sceneId: string,
-    update: (current: SceneDetailProjection) => SceneDetailProjection,
-  ) => {
-    const base = demoDetails[sceneId] ?? projection.selectedScene;
-    if (base === null || base.id !== sceneId) {
-      return;
-    }
-
-    const next = update(base);
-    setDemoDetails((current) => ({ ...current, [sceneId]: next }));
-    setDemoScenes((current) =>
-      current.map((scene) =>
-        scene.id === sceneId ? { ...scene, hasMap: next.mapUrl !== null } : scene,
-      ),
-    );
-  };
-
-  if (projection.demoMode) {
-    return {
-      scenes,
-      selectedScene,
-      commands: {
-        pending,
-        error,
-        status,
-        quotaWarning,
-        clearError,
-        create: async (name) => {
-          setStatus(`Scene "${announceName(name)}" created.`);
-          const scene = {
-            id: `demo-scene-${crypto.randomUUID()}`,
-            name,
-            hasMap: false,
-            pegCount: 0,
-          };
-          setDemoScenes((current) => [...current, scene]);
-          await navigate(buildSceneMapPath(true, scene.id));
-          return true;
-        },
-        rename: async (sceneId, name) => {
-          setDemoScenes((current) =>
-            current.map((scene) => (scene.id === sceneId ? { ...scene, name } : scene)),
-          );
-          setDemoDetail(sceneId, (current) => ({ ...current, name }));
-          return true;
-        },
-        remove: async (sceneId) => {
-          setStatus('Scene deleted. Its targets were kept.');
-          setDemoScenes((current) => current.filter((scene) => scene.id !== sceneId));
-          await navigate(buildSceneMapPath(true, nextSceneAfterRemoval(scenes, sceneId)));
-          return true;
-        },
-        // Demo never calls the upload API; the chosen file is previewed from the page session.
-        // Each preview URL pins its File in memory, so the one it replaces is revoked.
-        replaceMap: async (sceneId, file) => {
-          const preview = URL.createObjectURL(file);
-          revokeDemoPreview(sceneId);
-          demoPreviewUrls.current.set(sceneId, preview);
-          setDemoDetail(sceneId, (current) => ({
-            ...current,
-            mapAssetId: `demo-map-${sceneId}`,
-            mapUrl: preview,
-          }));
-          return true;
-        },
-        removeMap: async (sceneId) => {
-          setStatus('Map removed. Peg positions were kept.');
-          revokeDemoPreview(sceneId);
-          setDemoDetail(sceneId, (current) => ({
-            ...current,
-            mapAssetId: null,
-            mapUrl: null,
-          }));
-          return true;
-        },
-        createPeg: async (sceneId, candidate, point) => {
-          setStatus(`${candidate.label} placed.`);
-          setDemoDetail(sceneId, (current) =>
-            current.pegs.some((peg) => peg.target.id === candidate.id)
-              ? current
-              : { ...current, pegs: [...current.pegs, demoPeg(candidate, point)] },
-          );
-          return true;
-        },
-        movePeg: async (sceneId, pegId, point) => {
-          setStatus('Peg moved.');
-          setDemoDetail(sceneId, (current) => ({
-            ...current,
-            pegs: current.pegs.map((peg) => (peg.id === pegId ? { ...peg, ...point } : peg)),
-          }));
-          return true;
-        },
-        removePeg: async (sceneId, pegId) => {
-          setStatus('Peg removed.');
-          setDemoDetail(sceneId, (current) => ({
-            ...current,
-            pegs: current.pegs.filter((peg) => peg.id !== pegId),
-          }));
-          return true;
-        },
-        // Demo keys the receipt off the idempotency key, mirroring the backend's collapse.
-        fireEvent: async (attempt) => {
-          const existing = demoReceipts[attempt.idempotencyKey];
-          if (existing) {
-            return existing;
-          }
-
-          const created: FireReceiptView = {
-            eventId: attempt.eventId,
-            executionId: `demo-execution-${attempt.idempotencyKey}`,
-            executionStatus: 'completed',
-            deliveryStatus: 'delivered',
-          };
-          setDemoReceipts((current) => ({ ...current, [attempt.idempotencyKey]: created }));
-          return created;
-        },
-      },
-    };
-  }
-
-  return {
-    scenes,
-    selectedScene,
-    commands: {
-      pending,
-      error,
-      status,
-      quotaWarning,
-      clearError,
-      create: (name) =>
-        runLive(
-          { intent: 'create-scene', name },
-          async (data) => {
-            await navigate(buildSceneMapPath(false, data?.sceneId ?? null));
-          },
-          `Scene "${announceName(name)}" created.`,
-        ),
-      rename: (sceneId, name) =>
-        runLive(
-          { intent: 'rename-scene', sceneId, name },
-          () => {
-            revalidator.revalidate();
-          },
-          `Scene renamed to "${announceName(name)}".`,
-        ),
-      remove: (sceneId) =>
-        runLive(
-          { intent: 'delete-scene', sceneId },
-          async () => {
-            await navigate(buildSceneMapPath(false, nextSceneAfterRemoval(scenes, sceneId)));
-          },
-          'Scene deleted. Its targets were kept.',
-        ),
-      replaceMap: (sceneId, file) =>
-        runLive({ intent: 'replace-scene-map', sceneId, file }, () => {
-          revalidator.revalidate();
-        }),
-      removeMap: (sceneId) =>
-        runLive(
-          { intent: 'delete-scene-map', sceneId },
-          () => {
-            revalidator.revalidate();
-          },
-          'Map removed. Peg positions were kept.',
-        ),
-      createPeg: (sceneId, candidate, point) =>
-        runLive(
-          {
-            intent: 'create-scene-peg',
-            sceneId,
-            kind: candidate.kind,
-            targetId: candidate.id,
-            x: String(point.x),
-            y: String(point.y),
-          },
-          () => {
-            revalidator.revalidate();
-          },
-          `${candidate.label} placed.`,
-        ),
-      movePeg: (sceneId, pegId, point) =>
-        runLive(
-          { intent: 'move-scene-peg', sceneId, pegId, x: String(point.x), y: String(point.y) },
-          () => {
-            revalidator.revalidate();
-          },
-          'Peg moved.',
-        ),
-      removePeg: (sceneId, pegId) =>
-        runLive(
-          { intent: 'delete-scene-peg', sceneId, pegId },
-          () => {
-            revalidator.revalidate();
-          },
-          'Peg removed.',
-        ),
-      fireEvent: async (attempt) => {
-        let fired: FireReceiptView | null = null;
-        await runLive(
-          {
-            intent: 'fire-event',
-            eventId: attempt.eventId,
-            idempotencyKey: attempt.idempotencyKey,
-          },
-          (data) => {
-            fired = data?.receipt ?? null;
-          },
-        );
-
-        return fired;
-      },
-    },
-  };
-}
-
-export function MapWorkspace({ projection }: { projection: MapWorkspaceProjection }) {
-  const { commands, scenes, selectedScene } = useSceneCommands(projection);
+}) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [armedCandidate, setArmedCandidate] = useState<MapCandidate | null>(null);
   const [selectedPegId, setSelectedPegId] = useState<string | null>(null);

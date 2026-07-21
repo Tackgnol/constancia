@@ -16,7 +16,6 @@ export function loadDemoMapWorkspaceProjection(requestUrl: string): MapWorkspace
     scenes: demoScenes,
     selectedScene: selectedSceneId === null ? null : (demoSceneDetails[selectedSceneId] ?? null),
     candidates: demoMapCandidates,
-    apiOnline: true,
     errorMessage: null,
     demoMode: true,
   };

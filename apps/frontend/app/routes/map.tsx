@@ -12,9 +12,9 @@ import type { CreateScenePegBodyKind } from '@constancia/api-client/model';
 import { deleteUnlinkedUpload } from '@constancia/api-client/endpoints/uploads/uploads';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { useLoaderData } from 'react-router';
-import { MapWorkspace } from '@/components/maps/map-workspace';
+import { MapWorkspaceRoot } from '@/components/maps/map-workspace';
 import { ApiResponseError, assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
-import { buildServerApiOptions } from '@/lib/api-proxy.server';
+import { buildServerApiOptions, resolveCurrentCampaignId } from '@/lib/api-proxy.server';
 import { loadDemoMapWorkspaceProjection } from '@/lib/demo-map-workspace-projection';
 import { fireCampaignEvent } from '@/lib/fire-event-action.server';
 import { loadLiveMapWorkspaceProjection } from '@/lib/live-map-workspace-projection.server';
@@ -124,10 +124,15 @@ async function replaceSceneMap(
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const intent = formData.get('intent');
-  const campaignId = formData.get('campaignId');
 
-  if (typeof campaignId !== 'string' || campaignId.length === 0) {
-    return failure('Reopen Map so we can identify your campaign, then try again.', 400);
+  // Resolved the same way the loader does, so a client-supplied value is never trusted for
+  // authorization or lookup purposes.
+  const campaignId = await resolveCurrentCampaignId(request);
+  if (campaignId === null) {
+    return failure(
+      'No campaign is connected yet. Finish Setup, then return to build your maps.',
+      400,
+    );
   }
 
   const options = buildServerApiOptions(request);
@@ -141,7 +146,10 @@ export async function action({ request }: ActionFunctionArgs) {
 
       const response = await createScene({ id: campaignId }, { name: name.trim() }, options);
       assertApiOk(response, SCENE_CREATE_ERROR);
-      return Response.json({ status: 'success', data: { sceneId: response.data.id } });
+      return Response.json({
+        status: 'success',
+        data: { sceneId: response.data.id, name: response.data.name },
+      });
     }
 
     // Firing is a campaign-level operation reusing Play's execution path; it needs no scene.
@@ -175,7 +183,10 @@ export async function action({ request }: ActionFunctionArgs) {
         options,
       );
       assertApiOk(response, SCENE_RENAME_ERROR);
-      return Response.json({ status: 'success', data: { sceneId } });
+      return Response.json({
+        status: 'success',
+        data: { sceneId, name: response.data.name },
+      });
     }
 
     if (intent === 'delete-scene') {
@@ -217,7 +228,7 @@ export async function action({ request }: ActionFunctionArgs) {
         options,
       );
       assertApiOk(response, PEG_CREATE_ERROR);
-      return Response.json({ status: 'success', data: { pegId: response.data.id } });
+      return Response.json({ status: 'success' });
     }
 
     const pegId = formData.get('pegId');
@@ -235,7 +246,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
       const response = await updateScenePeg({ id: campaignId, sceneId, pegId }, { x, y }, options);
       assertApiOk(response, PEG_MOVE_ERROR);
-      return Response.json({ status: 'success', data: { pegId } });
+      return Response.json({ status: 'success' });
     }
 
     if (intent === 'delete-scene-peg') {
@@ -265,5 +276,5 @@ export async function action({ request }: ActionFunctionArgs) {
 export default function MapRoute() {
   const projection = useLoaderData<typeof loader>();
 
-  return <MapWorkspace projection={projection} />;
+  return <MapWorkspaceRoot projection={projection} />;
 }
