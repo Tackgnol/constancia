@@ -6,7 +6,7 @@ import { PlayerRail } from '@/components/war-room/player-rail';
 import { QuickNarrationForm } from '@/components/war-room/quick-narration-form';
 import { quickNarrationActivityLabel } from '@/components/war-room/quick-narration';
 import { buildWarRoomModeTabs } from '@/components/war-room/war-room-navigation';
-import { SceneRailExtras } from '@/components/war-room/scene-rail-extras';
+import { ChannelRailExtras } from '@/components/war-room/channel-rail-extras';
 import { loadDemoWarRoomProjection } from '@/lib/demo-war-room-projection';
 import type { GameDate } from '@constancia/contracts';
 
@@ -109,14 +109,14 @@ export default function DemoLayout() {
       <div className="war-room-grid">
         {isPlayRoute ? (
           <aside className="filter-panel">
-            <div className="panel-title">Scene Filter</div>
+            <div className="panel-title">Channel Filter</div>
             <div className="filter-tag-list">
               <button
                 className={`filter-tag${activeTag === null ? ' is-active' : ''}`}
                 onClick={() => setActiveTag(null)}
                 type="button"
               >
-                All Scenes
+                All Channels
               </button>
               {outletContext.tags.map((tag) => {
                 const count = tagEventCounts.get(tag.id) ?? 0;
@@ -135,7 +135,7 @@ export default function DemoLayout() {
               })}
             </div>
 
-            <SceneRailExtras
+            <ChannelRailExtras
               tags={outletContext.tags}
               activeTag={activeTag}
               eventCount={Array.from(tagEventCounts.values()).reduce((a, b) => a + b, 0)}

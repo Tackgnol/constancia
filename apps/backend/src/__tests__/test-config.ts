@@ -1,0 +1,41 @@
+import type { BackendConfig } from '../config.js';
+
+/** A complete BackendConfig for unit tests. Override only the fields a test actually cares about. */
+export function createTestBackendConfig(overrides: Partial<BackendConfig> = {}): BackendConfig {
+  return {
+    host: '127.0.0.1',
+    port: 3000,
+    nodeEnv: 'test',
+    apiPrefix: '/api/v1',
+    docsPrefix: '/documentation',
+    openApiPath: '/openapi.json',
+    frontendUrl: 'http://localhost:3000',
+    betterAuthSecret: 'constancia-test-secret-12345678901234567890',
+    betterAuthUrl: 'http://localhost:3001',
+    betterAuthPath: '/api/auth',
+    discordClientId: undefined,
+    discordClientSecret: undefined,
+    magicLinkFrontendPath: '/auth',
+    botApiKey: 'constancia-bot-dev-key',
+    botInternalUrl: 'http://localhost:3002',
+    backendPublicUrl: 'http://localhost:3001',
+    openAiApiKey: undefined,
+    contentModerationEnabled: false,
+    contentModerationModel: 'omni-moderation-latest',
+    contentModerationFailClosed: true,
+    uploadStorageDriver: 'local',
+    uploadStorageDir: 'data/test-uploads',
+    uploadMaxBytes: 5 * 1024 * 1024,
+    uploadImageMaxDimension: 1024,
+    uploadWebpQuality: 80,
+    uploadDefaultEnabled: false,
+    uploadDefaultAllowanceBytes: 50 * 1024 * 1024,
+    uploadQuotaWarningPercent: 80,
+    uploadPublicBaseUrl: undefined,
+    r2Endpoint: undefined,
+    r2AccessKeyId: undefined,
+    r2SecretAccessKey: undefined,
+    r2Bucket: undefined,
+    ...overrides,
+  };
+}

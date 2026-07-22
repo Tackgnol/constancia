@@ -1178,6 +1178,185 @@ export const participantParamsSchema = {
   required: ['guildId', 'discordUserId'],
 } as const;
 
+// ─── Scenes and maps ────────────────────────────────────────
+
+export const sceneParamsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    sceneId: { type: 'string' },
+  },
+  required: ['id', 'sceneId'],
+} as const;
+
+export const scenePegParamsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    sceneId: { type: 'string' },
+    pegId: { type: 'string' },
+  },
+  required: ['id', 'sceneId', 'pegId'],
+} as const;
+
+export const sceneBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    name: { type: 'string', minLength: 1, maxLength: 120 },
+  },
+  required: ['name'],
+} as const;
+
+export const scenePatchBodySchema = sceneBodySchema;
+
+export const sceneMapBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    assetId: { type: 'string', minLength: 1 },
+  },
+  required: ['assetId'],
+} as const;
+
+/** Peg coordinates are normalized against the rendered map image, never pixels. */
+const scenePegCoordinateSchema = { type: 'number', minimum: 0, maximum: 1 } as const;
+
+export const scenePegKindValues = ['event', 'npc', 'lore'] as const;
+
+export const scenePegBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    kind: { type: 'string', enum: scenePegKindValues },
+    targetId: { type: 'string', minLength: 1 },
+    x: scenePegCoordinateSchema,
+    y: scenePegCoordinateSchema,
+  },
+  required: ['kind', 'targetId', 'x', 'y'],
+} as const;
+
+export const scenePegPatchBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    x: scenePegCoordinateSchema,
+    y: scenePegCoordinateSchema,
+  },
+  required: ['x', 'y'],
+} as const;
+
+const scenePegBase = {
+  id: { type: 'string' },
+  x: scenePegCoordinateSchema,
+  y: scenePegCoordinateSchema,
+} as const;
+
+export const scenePegEventSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    ...scenePegBase,
+    kind: { type: 'string', const: 'event' },
+    target: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        id: { type: 'string' },
+        name: { type: 'string' },
+        status: eventStatusSchema,
+      },
+      required: ['id', 'name', 'status'],
+    },
+  },
+  required: ['id', 'kind', 'x', 'y', 'target'],
+} as const;
+
+export const scenePegNpcSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    ...scenePegBase,
+    kind: { type: 'string', const: 'npc' },
+    target: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        id: { type: 'string' },
+        name: { type: 'string' },
+        imageUrl: { type: 'string', nullable: true },
+      },
+      required: ['id', 'name', 'imageUrl'],
+    },
+  },
+  required: ['id', 'kind', 'x', 'y', 'target'],
+} as const;
+
+export const scenePegLoreSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    ...scenePegBase,
+    kind: { type: 'string', const: 'lore' },
+    target: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        id: { type: 'string' },
+        title: { type: 'string' },
+      },
+      required: ['id', 'title'],
+    },
+  },
+  required: ['id', 'kind', 'x', 'y', 'target'],
+} as const;
+
+/** Discriminated so a client never has to inspect three nullable target columns. */
+export const scenePegSchema = {
+  oneOf: [scenePegEventSchema, scenePegNpcSchema, scenePegLoreSchema],
+} as const;
+
+export const sceneSummarySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    hasMap: { type: 'boolean' },
+    pegCount: { type: 'integer' },
+    createdAt: { type: 'string' },
+    updatedAt: { type: 'string' },
+  },
+  required: ['id', 'name', 'hasMap', 'pegCount', 'createdAt', 'updatedAt'],
+} as const;
+
+export const sceneSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    mapAssetId: { type: 'string', nullable: true },
+    mapUrl: { type: 'string', nullable: true },
+    pegs: { type: 'array', items: scenePegSchema },
+    createdAt: { type: 'string' },
+    updatedAt: { type: 'string' },
+  },
+  required: ['id', 'name', 'mapAssetId', 'mapUrl', 'pegs', 'createdAt', 'updatedAt'],
+} as const;
+
+export const sceneMapSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    assetId: { type: 'string' },
+    url: { type: 'string' },
+  },
+  required: ['assetId', 'url'],
+} as const;
+
 // ─── Response wrappers ────────────────────────────────────────
 
 export function listResponseSchema<T extends object>(itemSchema: T) {

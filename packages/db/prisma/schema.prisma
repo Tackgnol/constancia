@@ -38,10 +38,12 @@ model UploadAsset {
   sizeBytes        Int
   originalMimeType String
   eventId          String?
+  sceneId          String?  @unique
   createdAt        DateTime @default(now())
 
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   event Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  scene Scene? @relation("SceneMapAsset", fields: [sceneId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([eventId])
@@ -146,6 +148,7 @@ model Campaign {
   summaries       SessionSummary[]
   loreEntries     LoreEntry[]
   eventExecutions EventExecution[]
+  scenes          Scene[]
 
   @@map("campaigns")
 }
@@ -201,8 +204,9 @@ model Npc {
   campaignId   String
   createdAt    DateTime @default(now())
 
-  campaign Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   facts    NpcFact[]
+  pegs     ScenePeg[]
 
   @@map("npcs")
 }
@@ -242,6 +246,7 @@ model LoreEntry {
 
   campaign  Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   knowledge LoreKnowledge[]
+  pegs      ScenePeg[]
 
   @@index([campaignId, sortOrder])
   @@map("lore_entries")
@@ -275,6 +280,7 @@ model Event {
   campaign     Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   uploadAssets UploadAsset[]
   executions   EventExecution[]
+  pegs         ScenePeg[]
 
   @@map("events")
 }
@@ -404,4 +410,41 @@ model CampaignAdmin {
 enum AdminRole {
   owner
   gm
+}
+
+model Scene {
+  id         String   @id @default(cuid())
+  name       String
+  campaignId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  campaign  Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  mapAsset  UploadAsset? @relation("SceneMapAsset")
+  pegs      ScenePeg[]
+
+  @@index([campaignId, createdAt])
+  @@map("scenes")
+}
+
+model ScenePeg {
+  id          String   @id @default(cuid())
+  sceneId     String
+  eventId     String?
+  npcId       String?
+  loreEntryId String?
+  x           Float
+  y           Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  scene     Scene      @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  event     Event?     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  npc       Npc?       @relation(fields: [npcId], references: [id], onDelete: Cascade)
+  loreEntry LoreEntry? @relation(fields: [loreEntryId], references: [id], onDelete: Cascade)
+
+  @@unique([sceneId, eventId])
+  @@unique([sceneId, npcId])
+  @@unique([sceneId, loreEntryId])
+  @@map("scene_pegs")
 }

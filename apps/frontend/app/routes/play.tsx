@@ -2,11 +2,12 @@ import { startTransition, useEffect, useEffectEvent, useRef, useState } from 're
 import type { ActionFunctionArgs } from 'react-router';
 import { useOutletContext } from 'react-router';
 
-import { fireEvent } from '@constancia/api-client/endpoints/events/events';
 import { sendPlayerMessage } from '@constancia/api-client/endpoints/messages/messages';
 import type { ListEvents200DataItem } from '@constancia/api-client/model';
 import { buildServerApiOptions } from '@/lib/api-proxy.server';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
+import { fireCampaignEvent } from '@/lib/fire-event-action.server';
+import type { DeliveryViewState, FireReceiptView } from '@/lib/fire-event-receipt';
 import { postRouteAction } from '@/lib/route-action-client';
 import { handleUploadImageAction } from '@/lib/upload-image-action.server';
 import type { TriggerKind, WarRoomContext } from '@/lib/war-room-data';
@@ -27,13 +28,6 @@ type TriggerView = {
 };
 
 type ArtifactSize = 'standard' | 'half' | 'wide' | 'tall';
-type DeliveryViewState = 'not-required' | 'pending' | 'delivered' | 'failed';
-type FireReceiptView = {
-  eventId: string;
-  executionId: string;
-  executionStatus: 'completed' | 'failed';
-  deliveryStatus: DeliveryViewState;
-};
 type PendingUndo = {
   id: string;
   name: string;
@@ -56,55 +50,13 @@ function asStringArray(input: FormDataEntryValue | null): string[] {
   }
 }
 
-function toFireReceiptView(input: unknown): FireReceiptView | null {
-  if (typeof input !== 'object' || input === null) {
-    return null;
-  }
-
-  const receipt = input as Record<string, unknown>;
-  if (
-    typeof receipt.id !== 'string' ||
-    typeof receipt.eventId !== 'string' ||
-    (receipt.status !== 'completed' && receipt.status !== 'failed') ||
-    !Array.isArray(receipt.deliveries)
-  ) {
-    return null;
-  }
-
-  const deliveryStatuses = receipt.deliveries.flatMap((delivery) => {
-    if (
-      typeof delivery !== 'object' ||
-      delivery === null ||
-      !('status' in delivery) ||
-      (delivery.status !== 'pending' &&
-        delivery.status !== 'delivered' &&
-        delivery.status !== 'failed')
-    ) {
-      return [];
-    }
-
-    return [delivery.status];
-  });
-  if (deliveryStatuses.length !== receipt.deliveries.length) {
-    return null;
-  }
-
-  const deliveryStatus: DeliveryViewState =
-    deliveryStatuses.length === 0
-      ? 'not-required'
-      : deliveryStatuses.every((status) => status === 'delivered')
-        ? 'delivered'
-        : deliveryStatuses.some((status) => status === 'pending')
-          ? 'pending'
-          : 'failed';
-
-  return {
-    eventId: receipt.eventId,
-    executionId: receipt.id,
-    executionStatus: receipt.status,
-    deliveryStatus,
-  };
-}
+const PLAY_FIRE_MESSAGES = {
+  missingIdentifiers: "We couldn't identify this event. Refresh Play, then arm it again.",
+  fireFailed:
+    "We couldn't confirm this trigger. Check Discord for the result before firing it again.",
+  unreadableReceipt:
+    "We couldn't confirm the trigger receipt. Check Discord for the result before firing it again.",
+} as const;
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
@@ -129,51 +81,16 @@ export async function action({ request }: ActionFunctionArgs) {
 
   try {
     if (intent === 'fire-event') {
-      const eventId = formData.get('eventId');
-      const idempotencyKey = formData.get('idempotencyKey');
+      const result = await fireCampaignEvent(request, {
+        campaignId,
+        eventId: formData.get('eventId'),
+        idempotencyKey: formData.get('idempotencyKey'),
+        messages: PLAY_FIRE_MESSAGES,
+      });
 
-      if (
-        typeof eventId !== 'string' ||
-        eventId.length === 0 ||
-        typeof idempotencyKey !== 'string' ||
-        idempotencyKey.length === 0
-      ) {
-        return Response.json(
-          {
-            status: 'error',
-            message: "We couldn't identify this event. Refresh Play, then arm it again.",
-          },
-          { status: 400 },
-        );
-      }
-
-      const response = await fireEvent(
-        { id: campaignId, eventId },
-        {
-          ...apiOptions,
-          headers: {
-            ...apiOptions.headers,
-            'idempotency-key': idempotencyKey,
-          },
-        },
-      );
-      assertApiOk(
-        response,
-        "We couldn't confirm this trigger. Check Discord for the result before firing it again.",
-      );
-      const receipt = toFireReceiptView(response.data);
-      if (receipt === null) {
-        return Response.json(
-          {
-            status: 'error',
-            message:
-              "We couldn't confirm the trigger receipt. Check Discord for the result before firing it again.",
-          },
-          { status: 502 },
-        );
-      }
-
-      return Response.json({ status: 'success', data: receipt });
+      return result.status === 'error'
+        ? Response.json({ status: 'error', message: result.message }, { status: result.statusCode })
+        : Response.json({ status: 'success', data: result.receipt });
     }
 
     if (intent === 'send-player-message') {
@@ -769,8 +686,8 @@ export default function PlayRoute() {
         <section className="detail-card board-empty-state">
           <h2>No staged beats for this thread.</h2>
           <p>
-            This scene does not have a ready trigger yet. Clear the filter or stage a fresh beat in
-            Setup.
+            This channel does not have a ready trigger yet. Clear the filter or stage a fresh beat
+            in Setup.
           </p>
         </section>
       ) : null}

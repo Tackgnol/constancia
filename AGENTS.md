@@ -58,7 +58,7 @@ Present today:
 - `packages/core`
 - `packages/db` (schema + initial migration, not yet migrated against production DB)
 - `packages/systems` (VTM V5 pool resolver; no Mörk Borg yet)
-- `apps/backend` (all routes live: campaigns, channels, characters, NPCs, events, journal, bot, auth, systems)
+- `apps/backend` (all routes live: campaigns, channels, characters, NPCs, events, journal, bot, auth, systems, scenes)
 - `apps/bot` (Orval-generated API client, no Discord.js commands yet)
 - `apps/frontend` (Orval-generated API client, React Router 7 scaffolded, no UI components yet)
 
@@ -68,6 +68,19 @@ Not yet implemented:
 - Frontend UI components
 - Mörk Borg game system (`packages/systems/src/mork-borg/`)
 - Orval client regeneration after channel routes were added
+
+### Scenes and maps
+
+- Persistent scene and map backend routes are present under `/campaigns/:id/scenes`, inside the
+  existing campaign-admin scope. `DELETE /uploads/:assetId` exists so a failed map attachment can
+  compensate for its own upload.
+- Generated scene clients are current in `apps/backend/openapi/openapi.json`; peg responses stay a
+  `oneOf` discriminated by kind.
+- The frontend Map workspace is implemented at `/map` and `/demo/map`, with scene CRUD, one map per
+  scene, and typed event/NPC/lore pegs.
+- Map reuses the existing event execution path through `apps/frontend/app/lib/fire-event-action.server.ts`;
+  it defines no pipeline block and changes no block catalogue.
+- The bot has no scene or map commands, and should not gain any without a separate approved feature.
 
 ## Dependency Boundaries
 

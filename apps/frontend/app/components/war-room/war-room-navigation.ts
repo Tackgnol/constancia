@@ -7,6 +7,7 @@ export interface WarRoomModeTab {
 const sharedModeDefinitions = [
   { path: 'setup', label: 'Setup' },
   { path: '', label: 'Play', end: true },
+  { path: 'map', label: 'Map' },
   { path: 'npcs', label: 'NPCs' },
   { path: 'participants', label: 'Participants' },
   { path: 'lore', label: 'Lore' },
