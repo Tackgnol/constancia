@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
-import { Link, useLoaderData, useOutletContext } from 'react-router';
+import { Link, useLoaderData, useOutletContext, useSearchParams } from 'react-router';
 import { listNpcs, revealNpcFacts } from '@constancia/api-client/endpoints/npcs/npcs';
 import type { ListNpcs200DataItem } from '@constancia/api-client/model';
 import { buildServerApiOptions, resolveCurrentCampaignId } from '@/lib/api-proxy.server';
@@ -173,8 +173,15 @@ export default function NpcsRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
   const isDemoCampaign = warRoom.campaign.id.startsWith('demo-');
   const actionPath = warRoom.demoMode ? '/demo/npcs' : '/npcs';
+  const [searchParams] = useSearchParams();
+  // Map's NPC pegs deep link here, so honour ?npc= when it names an NPC this campaign returned.
+  const requestedNpcId = searchParams.get('npc');
   const [npcs, setNpcs] = useState<CampaignNpc[]>(() => initialNpcs);
-  const [selectedNpcId, setSelectedNpcId] = useState<string | null>(initialNpcs[0]?.id ?? null);
+  const [selectedNpcId, setSelectedNpcId] = useState<string | null>(
+    (requestedNpcId !== null && initialNpcs.some((npc) => npc.id === requestedNpcId)
+      ? requestedNpcId
+      : initialNpcs[0]?.id) ?? null,
+  );
   const [pendingAssignments, setPendingAssignments] = useState<Record<string, string[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [assigningFactId, setAssigningFactId] = useState<string | null>(null);
@@ -189,9 +196,16 @@ export default function NpcsRoute() {
 
   useEffect(() => {
     setNpcs(initialNpcs);
-    setSelectedNpcId((current) => current ?? initialNpcs[0]?.id ?? null);
+    setSelectedNpcId(
+      (current) =>
+        (requestedNpcId !== null && initialNpcs.some((npc) => npc.id === requestedNpcId)
+          ? requestedNpcId
+          : current) ??
+        initialNpcs[0]?.id ??
+        null,
+    );
     setError(null);
-  }, [initialNpcs]);
+  }, [initialNpcs, requestedNpcId]);
 
   useEffect(() => {
     if (selectedNpcId && npcs.some((npc) => npc.id === selectedNpcId)) {

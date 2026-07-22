@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ActionFunctionArgs } from 'react-router';
-import { Link, useOutletContext } from 'react-router';
+import { Link, useOutletContext, useSearchParams } from 'react-router';
 import { revealLoreEntry } from '@constancia/api-client/endpoints/lore/lore';
 import type {
   ListLoreEntries200DataItem,
@@ -133,6 +133,23 @@ export default function LoreRoute() {
     [warRoom.rawCharacters],
   );
   const revealedCount = loreEntries.filter((entry) => entry.knownTo.length > 0).length;
+  const [searchParams] = useSearchParams();
+  // Map's lore pegs deep link here; only honour an id this campaign actually returned.
+  const requestedLoreId = searchParams.get('lore');
+  const highlightedLoreId =
+    requestedLoreId !== null && loreEntries.some((entry) => entry.id === requestedLoreId)
+      ? requestedLoreId
+      : null;
+
+  useEffect(() => {
+    if (highlightedLoreId === null) {
+      return;
+    }
+
+    document
+      .getElementById(`lore-${highlightedLoreId}`)
+      ?.scrollIntoView({ block: 'center', behavior: 'auto' });
+  }, [highlightedLoreId]);
 
   const togglePendingAssignment = (loreId: string, recipientId: string) => {
     setPendingAssignments((current) => {
@@ -243,6 +260,7 @@ export default function LoreRoute() {
           {loreEntries.map((loreEntry) => (
             <LoreCard
               key={loreEntry.id}
+              highlighted={loreEntry.id === highlightedLoreId}
               loreEntry={loreEntry}
               setupBase={setupBase}
               recipientOptions={recipientOptions}
@@ -272,6 +290,7 @@ function LoreCard({
   recipientOptions,
   pending,
   assigning,
+  highlighted,
   onToggle,
   onApply,
 }: {
@@ -280,11 +299,15 @@ function LoreCard({
   recipientOptions: RecipientOption[];
   pending: string[];
   assigning: boolean;
+  highlighted: boolean;
   onToggle: (recipientId: string) => void;
   onApply: () => void;
 }) {
   return (
-    <article className="quest-card quest-card-active lore-card">
+    <article
+      className={`quest-card quest-card-active lore-card${highlighted ? ' is-highlighted' : ''}`}
+      id={`lore-${loreEntry.id}`}
+    >
       <div className="quest-summary-header">
         <div className="quest-summary-copy">
           <p className="detail-label">

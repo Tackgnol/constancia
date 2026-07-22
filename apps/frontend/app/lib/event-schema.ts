@@ -67,9 +67,13 @@ export const conditionalGateConfigSchema = z.object({
   threshold: z.coerce.number(),
 });
 
+// `text` intentionally allows an empty string here: it mirrors the catalogue's `outcome-map`
+// JSON Schema (`packages/block-catalogue`), which has no `minLength` on `text`, and the
+// catalogue's own `defaultConfig` seeds a fresh outcome with `text: ''`. Requiring non-empty
+// text here would reject that default and disagree with the schema that governs the field.
 export const outcomeEntrySchema = z.object({
   threshold: z.coerce.number(),
-  text: z.string().min(1, 'Text is required'),
+  text: z.string(),
 });
 
 export const outcomeMapConfigSchema = z.object({

@@ -10,7 +10,7 @@ import {
   getSuggestedBlockTypesForEventType,
   type EventType,
 } from '@/lib/event-schema';
-import { BlockConfigFields } from './block-config-fields.js';
+import { BlockConfigFields } from './pipeline-block-editor-fields.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select.js';
 
 export function PipelineBuilder({

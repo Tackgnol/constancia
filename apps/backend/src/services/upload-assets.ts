@@ -7,6 +7,87 @@ import {
   type UploadAssetStorageRecord,
 } from './upload-storage.js';
 
+/** The resource an upload asset can belong to. An asset never belongs to more than one. */
+export type UploadAssetOwnerRef =
+  | { kind: 'event'; eventId: string }
+  | { kind: 'scene'; sceneId: string };
+
+export interface OwnedUploadAsset {
+  id: string;
+  /** True when the asset is already attached to this exact owner, making attachment idempotent. */
+  alreadyAttached: boolean;
+}
+
+/** Structural slice of Prisma used by the ownership helpers so services stay unit-testable. */
+export interface UploadAssetOwnershipPrisma {
+  uploadAsset: {
+    findFirst(args: {
+      where: { id: string; userId: string };
+      select: { id: true; eventId: true; sceneId: true };
+    }): Promise<{ id: string; eventId: string | null; sceneId: string | null } | null>;
+  };
+}
+
+/**
+ * An asset is attachable only when the session user owns it and it is either unlinked or already
+ * attached to this same owner. Anything else — a foreign user, or an asset owned by another
+ * resource — is reported as a validation failure without disclosing which case applied.
+ */
+export async function requireAttachableUploadAsset(
+  prisma: UploadAssetOwnershipPrisma,
+  params: { assetId: string; userId: string; owner: UploadAssetOwnerRef },
+): Promise<OwnedUploadAsset> {
+  const asset = await prisma.uploadAsset.findFirst({
+    where: { id: params.assetId, userId: params.userId },
+    select: { id: true, eventId: true, sceneId: true },
+  });
+  if (asset === null) {
+    throw new UploadValidationError('Image asset is not available.');
+  }
+
+  const ownerId = params.owner.kind === 'event' ? params.owner.eventId : params.owner.sceneId;
+  const attachedTo = params.owner.kind === 'event' ? asset.eventId : asset.sceneId;
+  const attachedElsewhere = params.owner.kind === 'event' ? asset.sceneId : asset.eventId;
+
+  if (attachedElsewhere !== null || (attachedTo !== null && attachedTo !== ownerId)) {
+    throw new UploadValidationError('Image asset is not available.');
+  }
+
+  return { id: asset.id, alreadyAttached: attachedTo === ownerId };
+}
+
+export interface UploadAssetDeletionPrisma {
+  uploadAsset: {
+    deleteMany(args: { where: { id: { in: string[] } } }): Promise<{ count: number }>;
+  };
+}
+
+export interface UploadAssetCleanupPrisma extends UploadAssetDeletionPrisma {
+  uploadAsset: UploadAssetDeletionPrisma['uploadAsset'] & {
+    findFirst(args: {
+      where: { id: string; userId: string; eventId: null; sceneId: null };
+      select: typeof uploadAssetStorageSelect;
+    }): Promise<({ id: string } & UploadAssetStorageRecord) | null>;
+  };
+}
+
+/** Deletes an asset the session user owns and nothing has claimed yet. */
+export async function deleteOwnedUnlinkedUploadAsset(
+  config: BackendConfig,
+  prisma: UploadAssetCleanupPrisma,
+  params: { assetId: string; userId: string },
+): Promise<void> {
+  const asset = await prisma.uploadAsset.findFirst({
+    where: { id: params.assetId, userId: params.userId, eventId: null, sceneId: null },
+    select: uploadAssetStorageSelect,
+  });
+  if (asset === null) {
+    throw new UploadValidationError('Image asset is not available.');
+  }
+
+  await deleteUploadAssetRecords(config, prisma, [asset]);
+}
+
 export interface UploadQuotaSnapshot {
   uploadAllowanceBytes: number;
   uploadUsedBytes: number;
@@ -184,9 +265,13 @@ async function getUserUploadUsedBytes(prisma: PrismaClient, userId: string): Pro
   return aggregate._sum.sizeBytes ?? 0;
 }
 
-async function deleteUploadAssetRecords(
+/**
+ * Removes storage objects first, then their rows, from explicit metadata the caller already read.
+ * Callers that must survive a storage failure should catch and leave the row unlinked for repair.
+ */
+export async function deleteUploadAssetRecords(
   config: BackendConfig,
-  prisma: PrismaClient,
+  prisma: UploadAssetDeletionPrisma,
   assets: Array<{ id: string } & UploadAssetStorageRecord>,
 ): Promise<void> {
   if (assets.length === 0) {
@@ -203,7 +288,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-const uploadAssetStorageSelect = {
+export const uploadAssetStorageSelect = {
   id: true,
   storageProvider: true,
   storageKey: true,

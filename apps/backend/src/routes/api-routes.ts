@@ -10,6 +10,7 @@ import eventRoutes from './event-routes.js';
 import messageRoutes from './message-routes.js';
 import journalRoutes from './journal-routes.js';
 import loreRoutes from './lore-routes.js';
+import sceneRoutes from './scene-routes.js';
 import botRoutes from './bot-routes.js';
 import systemRoutes from './system-routes.js';
 import userSettingsRoutes from './user-settings-routes.js';
@@ -45,6 +46,7 @@ const apiRoutes: FastifyPluginAsync = async (app) => {
       await campaignAdminScope.register(messageRoutes, { prefix: '/campaigns/:id/messages' });
       await campaignAdminScope.register(journalRoutes, { prefix: '/campaigns/:id' });
       await campaignAdminScope.register(loreRoutes, { prefix: '/campaigns/:id/lore' });
+      await campaignAdminScope.register(sceneRoutes, { prefix: '/campaigns/:id/scenes' });
     });
   });
 

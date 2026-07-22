@@ -82,15 +82,42 @@ export interface CampaignAccessPrisma {
       select: { id: true };
     }): Promise<{ id: string } | null>;
   };
+  loreEntry: {
+    findFirst(args: {
+      where: { id: string; campaignId: string };
+      select: { id: true };
+    }): Promise<{ id: string } | null>;
+  };
+  scene: {
+    findFirst(args: {
+      where: { id: string; campaignId: string };
+      select: { id: true };
+    }): Promise<{ id: string } | null>;
+  };
+  scenePeg: {
+    findFirst(args: {
+      where: { id: string; sceneId: string; scene: { campaignId: string } };
+      select: { id: true };
+    }): Promise<{ id: string } | null>;
+  };
 }
 
 export type CampaignResourceRef =
   | {
-      kind: 'event' | 'channel' | 'character' | 'npc' | 'quest' | 'session-summary';
+      kind:
+        | 'event'
+        | 'channel'
+        | 'character'
+        | 'npc'
+        | 'quest'
+        | 'session-summary'
+        | 'lore'
+        | 'scene';
       id: string;
     }
   | { kind: 'npc-fact'; id: string; npcId: string }
-  | { kind: 'quest-entry'; id: string; questId: string };
+  | { kind: 'quest-entry'; id: string; questId: string }
+  | { kind: 'scene-peg'; id: string; sceneId: string };
 
 export interface CampaignAccess {
   requireAdmin(access: AccessContext, campaignId: string): Promise<CampaignScope>;
@@ -207,6 +234,22 @@ class PrismaCampaignAccess implements CampaignAccess {
         break;
       case 'session-summary':
         record = await this.prisma.sessionSummary.findFirst(directResourceArgs);
+        break;
+      case 'lore':
+        record = await this.prisma.loreEntry.findFirst(directResourceArgs);
+        break;
+      case 'scene':
+        record = await this.prisma.scene.findFirst(directResourceArgs);
+        break;
+      case 'scene-peg':
+        record = await this.prisma.scenePeg.findFirst({
+          where: {
+            id: resource.id,
+            sceneId: resource.sceneId,
+            scene: { campaignId: scope.campaignId },
+          },
+          select: { id: true },
+        });
         break;
       case 'npc-fact':
         record = await this.prisma.npcFact.findFirst({

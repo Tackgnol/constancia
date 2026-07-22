@@ -1,7 +1,7 @@
 import type { ListCharacters200DataItem } from '@constancia/api-client/model';
 import { GREGORIAN_CALENDAR } from '@constancia/systems';
-import { activityFeed, players, sessionTags } from './war-room-data.js';
-import type { WarRoomContext } from './war-room-data.js';
+import { activityFeed, players } from './war-room-data.js';
+import type { ChannelEntry, WarRoomContext } from './war-room-data.js';
 
 const demoCharacters: ListCharacters200DataItem[] = players.map((player) => ({
   id: player.id,
@@ -15,6 +15,17 @@ const demoCharacters: ListCharacters200DataItem[] = players.map((player) => ({
   systemData: { clan: player.character },
 }));
 
+// `demoContext.tags` is derived from `demoContext.channels` (same shape the live
+// projection builds), so `tags[].id` always shares an id-space with
+// `events[].channelId` and with `channels[].id`. Do not swap this back to an
+// independently-authored fixture (e.g. `sessionTags`) — that previously let
+// `eventCountByTag` keys silently diverge from `tags`.
+const demoChannels: ChannelEntry[] = [
+  { id: 'ch-1', discordId: '1', name: 'the-elysium' },
+  { id: 'ch-2', discordId: '2', name: 'harpy-court' },
+  { id: 'ch-3', discordId: '3', name: 'basement' },
+];
+
 export const demoContext: WarRoomContext = {
   rawCharacters: demoCharacters,
   campaign: {
@@ -25,18 +36,14 @@ export const demoContext: WarRoomContext = {
     channel: '# the-elysium',
     connectedPlayers: players.filter((p) => p.status === 'online').length,
   },
-  channels: [
-    { id: 'ch-1', discordId: '1', name: 'the-elysium' },
-    { id: 'ch-2', discordId: '2', name: 'harpy-court' },
-    { id: 'ch-3', discordId: '3', name: 'basement' },
-  ],
+  channels: demoChannels,
   system: {
     id: 'vtm-v5',
     name: 'VTM V5',
     defaultCalendarId: GREGORIAN_CALENDAR.id,
     calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
   },
-  tags: sessionTags,
+  tags: demoChannels.map((channel) => ({ id: channel.id, label: `# ${channel.name}` })),
   activeTag: null,
   players,
   activity: activityFeed,

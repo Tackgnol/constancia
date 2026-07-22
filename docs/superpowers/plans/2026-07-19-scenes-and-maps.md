@@ -24,8 +24,8 @@ browser API calls, invented auth helpers, frontend Vitest commands, `any` casts,
 - The bot receives no scene/map command, handler, storage, or game logic.
 - No block definition, registry, pipeline, or system package changes are needed.
 - Persistent Scenes do not replace Discord channels or `ChannelType.scene`.
-- The Play rail's current channel-derived filter remains; only its visible label becomes
-  “Channel Filter.”
+- The Play rail's current channel-derived filter remains; only its visible scene terminology
+  (“Active scene,” “All scenes,” etc., see Slice 5) becomes channel terminology.
 - All frontend forms use React Hook Form. Structured forms use Zod plus `zodResolver`.
 - `any` is forbidden. Narrow `unknown` immediately at request or generated-client boundaries.
 - Generated API files are regenerated, never hand-edited.
@@ -206,8 +206,9 @@ Keep route handlers thin. The service should own:
 The service receives a branded `CampaignScope`; it does not accept an unscoped campaign ID as proof
 of authorization. It may use `createCampaignAccess(prisma).requireResource` for target checks.
 
-Use `buildUploadAssetUrl(config, assetId)` when returning `mapUrl`. Do not make the frontend infer a
-storage key or use `publicUrl` as an authorization mechanism.
+Use `buildUploadAssetUrl(config, assetId)` (exported from
+`apps/backend/src/services/upload-storage.ts`) when returning `mapUrl`. Do not make the frontend
+infer a storage key or use `publicUrl` as an authorization mechanism.
 
 ### Upload and scene-map asset services
 
@@ -418,9 +419,13 @@ route('map', './routes/map.tsx')
 ```
 
 Add Map immediately after Play in `sharedModeDefinitions`, preserving shared live/demo ordering.
-Change all Play rail human-visible scene terminology to channel terminology—“Scene Filter,” “All
-Scenes,” “Active scene,” counts, and selection hints—without renaming or replacing its
-channel-derived data in this slice. Internal component names can remain to keep the change focused.
+Change all Play human-visible scene terminology to channel terminology without renaming or replacing
+its channel-derived data in this slice. The current strings live in
+`apps/frontend/app/components/war-room/scene-rail-extras.tsx` (“Active scene,” “All scenes,”
+“…across N scenes,” “Choose a scene to narrow the board and timeline.”) and in
+`apps/frontend/app/routes/play.tsx` (the “This scene does not have a ready trigger yet…” empty
+state). There is no existing literal “Scene Filter” string; the rename targets these actual labels.
+Internal component names can remain to keep the change focused.
 
 ### Projection
 
@@ -811,7 +816,7 @@ verification.
 rg -n "@constancia/api-client" apps/frontend/app
 rg -n "@constancia/db" apps packages --glob "!packages/db/**"
 rg -n "\bany\b" apps/backend/src apps/frontend/app packages/db/prisma
-rg -n "Scene Filter" apps/frontend/app
+rg -n "Active scene|All scenes|across .* scenes|Choose a scene|This scene" apps/frontend/app/routes/play.tsx apps/frontend/app/components/war-room
 git diff --check
 ```
 
@@ -820,7 +825,8 @@ Review each result rather than assuming an empty result is always required:
 - generated-client value imports are permitted in route modules and `*.server.ts` helpers;
 - only the backend may import the DB package;
 - `any` must not appear in authored feature code;
-- “Scene Filter” should no longer remain as the Play user-facing label;
+- the Play scene-terminology grep must return no user-facing hits — those strings were renamed to
+  channel terminology in Slice 5 (internal identifiers like `sceneLabel` may remain);
 - “Scene” may still appear correctly for the Map domain and `ChannelType.scene`.
 
 ### Full commands
@@ -831,7 +837,6 @@ npm run lint
 npm run typecheck
 npm run test
 npm run test:bdd
-npm run check:block-drift
 npm run build
 npx react-doctor@latest .
 git diff --check
@@ -855,7 +860,8 @@ $env:CONSTANCIA_ENABLE_DB_TESTS='true'; npm --workspace apps/backend run test
 8. Delete a scene and confirm its targets remain.
 9. Repeat core flows with keyboard controls and a narrow viewport.
 10. Confirm demo Map mirrors navigation, empty, mapped, placement, and armed-event states.
-11. Confirm Play still filters by channels under the “Channel Filter” label.
+11. Confirm Play still filters by channels, now labeled with channel terminology rather than scene
+    terminology.
 12. Inspect upload quota/records after failed attachment compensation and map replacement.
 
 ### Documentation closeout

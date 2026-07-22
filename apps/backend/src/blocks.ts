@@ -30,14 +30,17 @@ const registeredBlocks = [...commonBlocks, ...systemBlocks];
 
 const registeredBlocksByType = new Map(registeredBlocks.map((block) => [block.type, block]));
 
+// Every block module sources its `label`/`configSchema` directly from the matching
+// `PIPELINE_BLOCK_SPECS` entry (via `requirePipelineBlockSpec`), so those two fields can no
+// longer drift between the runtime registration and the catalogue by construction. What can
+// still drift is *coverage*: a block registered at runtime but missing from the catalogue (so
+// it can never be added to a pipeline in the editor), or a catalogue entry with no matching
+// runtime registration (so the editor could construct a pipeline the backend can't execute).
 for (const spec of PIPELINE_BLOCK_SPECS) {
-  const definition = registeredBlocksByType.get(spec.blockType);
-  if (
-    !definition ||
-    definition.label !== spec.label ||
-    JSON.stringify(definition.configSchema) !== JSON.stringify(spec.configSchema)
-  ) {
-    throw new Error(`Pipeline block definition drift: ${spec.blockType}`);
+  if (!registeredBlocksByType.has(spec.blockType)) {
+    throw new Error(
+      `Pipeline block catalogue lists "${spec.blockType}" but no runtime block is registered for it.`,
+    );
   }
 }
 

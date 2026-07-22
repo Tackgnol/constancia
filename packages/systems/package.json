@@ -27,6 +27,7 @@
     "test:watch": "vitest watch"
   },
   "dependencies": {
+    "@constancia/block-catalogue": "*",
     "@constancia/contracts": "*"
   },
   "devDependencies": {

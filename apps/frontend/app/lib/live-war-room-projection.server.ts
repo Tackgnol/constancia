@@ -9,7 +9,6 @@ import { listGameSystems } from '@constancia/api-client/endpoints/systems/system
 import { parseGameDate } from '@constancia/systems';
 import { buildServerApiOptions } from './api-proxy.server.js';
 import {
-  activityFeed,
   fallbackCampaign,
   fallbackSystem,
   players as fallbackPlayers,
@@ -112,7 +111,11 @@ export async function loadLiveWarRoomProjection(
       tags: channels.map((channel) => ({ id: channel.id, label: `# ${channel.name}` })),
       players: players.length > 0 ? players : fallbackPlayers,
       rawCharacters,
-      activity: activityFeed,
+      // No live activity-feed endpoint exists yet (see apps/backend/src/routes).
+      // Do not fall back to the demo fixture here: an authenticated live campaign
+      // must never display another table's hardcoded demo activity. Once a real
+      // endpoint exists, source this from it instead of leaving it empty.
+      activity: [],
       apiOnline: health.status === 'ok',
       events,
       quests: questsResponse?.status === 'ok' ? questsResponse.data : [],

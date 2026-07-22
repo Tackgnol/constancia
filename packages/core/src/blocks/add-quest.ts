@@ -1,4 +1,5 @@
 import type { BlockDefinition } from '@constancia/contracts';
+import { requirePipelineBlockSpec } from '@constancia/block-catalogue';
 
 interface AddQuestConfig {
   name: string;
@@ -6,19 +7,12 @@ interface AddQuestConfig {
   visible?: boolean;
 }
 
+const spec = requirePipelineBlockSpec('add-quest');
+
 export const addQuestBlock: BlockDefinition<AddQuestConfig> = {
   type: 'add-quest',
-  label: 'Add Quest',
-  configSchema: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      name: { type: 'string' },
-      description: { type: 'string' },
-      visible: { type: 'boolean' },
-    },
-    required: ['name'],
-  },
+  label: spec.label,
+  configSchema: spec.configSchema,
   execute: async (config) => {
     const effect = {
       kind: 'add-quest' as const,
