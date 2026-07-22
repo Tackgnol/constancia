@@ -8,7 +8,7 @@ import {
   toPercentPosition,
   type NormalizedPoint,
 } from '@/lib/map-coordinates';
-import type { ScenePegProjection } from '@/lib/map-workspace-projection';
+import { pegTargetName, type ScenePegProjection } from '@/lib/map-workspace-projection';
 
 const pegKindLabel: Record<ScenePegProjection['kind'], string> = {
   event: 'Event',
@@ -25,10 +25,6 @@ const pegKindGlyph: Record<ScenePegProjection['kind'], string> = {
 
 /** Below this the press is treated as a selection click rather than a drag. */
 const DRAG_THRESHOLD_PX = 4;
-
-export function pegTargetName(peg: ScenePegProjection): string {
-  return peg.kind === 'lore' ? peg.target.title : peg.target.name;
-}
 
 export function ScenePegButton({
   peg,

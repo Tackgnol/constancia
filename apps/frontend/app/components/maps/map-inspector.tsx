@@ -1,5 +1,4 @@
 import { Link } from 'react-router';
-import { pegTargetName } from '@/components/maps/scene-peg-button';
 import { Button } from '@/components/ui/button';
 import type { FireReceiptView } from '@/lib/fire-event-receipt';
 import {
@@ -8,7 +7,11 @@ import {
   nudgePoint,
   type NormalizedPoint,
 } from '@/lib/map-coordinates';
-import { buildTargetWorkspacePath, type ScenePegProjection } from '@/lib/map-workspace-projection';
+import {
+  buildTargetWorkspacePath,
+  pegTargetName,
+  type ScenePegProjection,
+} from '@/lib/map-workspace-projection';
 
 const kindLabel: Record<ScenePegProjection['kind'], string> = {
   event: 'Event',

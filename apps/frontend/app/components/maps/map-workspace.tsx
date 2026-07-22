@@ -64,8 +64,9 @@ function LiveMapWorkspace({ projection }: { projection: MapWorkspaceProjection }
  * idempotency-key state, receipt state, rename-mode toggle, the Escape-key handler, focus
  * management, empty-state copy, and the 3-panel layout. All scene/peg mutation lives behind the
  * `SceneCommands` contract this component is handed — it never builds an implementation itself.
+ * Only reached through `MapWorkspaceRoot` above, which picks the demo or live commands.
  */
-export function MapWorkspace({
+function MapWorkspace({
   projection,
   commands,
   scenes,

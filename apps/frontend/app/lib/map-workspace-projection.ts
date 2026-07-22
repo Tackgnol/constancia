@@ -154,6 +154,11 @@ export function assembleScenePeg(
   }
 }
 
+/** Lore targets carry `title` rather than `name`; every other peg kind carries `name`. */
+export function pegTargetName(peg: ScenePegProjection): string {
+  return peg.kind === 'lore' ? peg.target.title : peg.target.name;
+}
+
 /**
  * NPC and lore pegs link into the workspace that already owns reveal and access management, rather
  * than duplicating those forms inside Map.
