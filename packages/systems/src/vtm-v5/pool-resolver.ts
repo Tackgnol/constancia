@@ -1,4 +1,5 @@
 import type { BlockDefinition, BlockContext, BlockMessage } from '@constancia/contracts';
+import { requirePipelineBlockSpec } from '@constancia/block-catalogue';
 
 interface VtmPoolResolverConfig {
   attribute: string;
@@ -65,19 +66,12 @@ function outcomeLabel(outcome: VtmPoolResult['outcome']): string {
   }
 }
 
+const spec = requirePipelineBlockSpec('vtm-pool-resolver');
+
 export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
   type: 'vtm-pool-resolver',
-  label: 'VTM V5 Dice Pool Resolver',
-  configSchema: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      attribute: { type: 'string', description: 'Key into characterData.attributes' },
-      skill: { type: 'string', description: 'Key into characterData.skills' },
-      difficulty: { type: 'number', description: 'Number of successes needed to succeed' },
-    },
-    required: ['attribute', 'skill'],
-  },
+  label: spec.label,
+  configSchema: spec.configSchema,
   execute: async (
     config: VtmPoolResolverConfig,
     ctx: BlockContext,

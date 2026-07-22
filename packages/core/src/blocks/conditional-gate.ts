@@ -1,4 +1,5 @@
 import type { BlockContext, BlockDefinition } from '@constancia/contracts';
+import { requirePipelineBlockSpec } from '@constancia/block-catalogue';
 
 type Operator = 'gte' | 'gt' | 'lte' | 'lt' | 'eq';
 
@@ -26,19 +27,12 @@ const operators: Record<Operator, (value: number, threshold: number) => boolean>
   eq: (value, threshold) => value === threshold,
 };
 
+const spec = requirePipelineBlockSpec('conditional-gate');
+
 export const conditionalGateBlock: BlockDefinition<ConditionalGateConfig> = {
   type: 'conditional-gate',
-  label: 'Conditional Gate',
-  configSchema: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      statPath: { type: 'string' },
-      operator: { type: 'string', enum: ['gte', 'gt', 'lte', 'lt', 'eq'] },
-      threshold: { type: 'number' },
-    },
-    required: ['statPath', 'operator', 'threshold'],
-  },
+  label: spec.label,
+  configSchema: spec.configSchema,
   execute: async (config: ConditionalGateConfig, ctx: BlockContext) => {
     const value = getNestedValue(ctx.characterData, config.statPath);
     const numericValue = typeof value === 'number' ? value : Number.NaN;
