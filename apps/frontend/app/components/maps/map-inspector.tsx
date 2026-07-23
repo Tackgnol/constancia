@@ -74,7 +74,7 @@ export function MapInspector({
               onClick={() => onSelect(peg.id)}
               type="button"
             >
-              <span className="map-peg-kind">{kindLabel[peg.kind]}</span>
+              <span className={`map-peg-kind map-peg-kind-${peg.kind}`}>{kindLabel[peg.kind]}</span>
               <span className="map-peg-name">{pegTargetName(peg)}</span>
               <span className="map-peg-position">
                 {Math.round(peg.x * 100)}%, {Math.round(peg.y * 100)}%

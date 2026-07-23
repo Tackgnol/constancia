@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch';
 import { Button } from '@/components/ui/button';
 import {
@@ -72,6 +73,10 @@ export function MapViewport({
 }) {
   const imageRef = useRef<HTMLImageElement | null>(null);
   const reducedMotion = usePrefersReducedMotion();
+  // react-zoom-pan-pinch drives the transform imperatively and only exposes the render-prop's own
+  // `state` at the point it last re-rendered, which isn't every zoom step; `onTransform` fires on
+  // every change, so the live readout tracks that instead.
+  const [zoomPercent, setZoomPercent] = useState(100);
   const readImageRect = useMemo<ImageRectReader>(
     () => () => imageRef.current?.getBoundingClientRect() ?? null,
     [],
@@ -92,28 +97,55 @@ export function MapViewport({
       doubleClick={{ disabled: true }}
       maxScale={8}
       minScale={0.5}
+      onTransform={(_ref, state) => setZoomPercent(Math.round(state.scale * 100))}
       panning={{ excluded: [NO_PAN_CLASS], velocityDisabled: reducedMotion }}
-      smooth={!reducedMotion}
+      /*
+       * `smooth` multiplies the wheel step by the raw wheel-event deltaY (library quirk: it's
+       * meant for tiny per-pixel step values, not a flat per-notch one). With a flat step, a
+       * single wheel notch or trackpad burst could jump straight from minScale to maxScale.
+       * Linear button steps are a fine trade for wheel zoom that stays where you put it.
+       */
+      smooth={false}
       velocityAnimation={{ disabled: reducedMotion }}
-      wheel={{ step: 0.12 }}
+      wheel={{ step: 0.1 }}
       zoomAnimation={{ disabled: reducedMotion }}
     >
       {({ zoomIn, zoomOut, resetTransform }) => (
         <div className="map-viewport">
-          <div className="map-viewport-controls">
-            <Button aria-label="Zoom in" onClick={() => zoomIn()} type="button" variant="ghost">
-              Zoom in
-            </Button>
-            <Button aria-label="Zoom out" onClick={() => zoomOut()} type="button" variant="ghost">
-              Zoom out
-            </Button>
+          <div className={`map-viewport-controls ${NO_PAN_CLASS}`}>
             <Button
-              aria-label="Reset the map view"
-              onClick={() => resetTransform()}
+              aria-label="Zoom out"
+              className="icon-hit-44"
+              onClick={() => zoomOut()}
+              size="icon-sm"
               type="button"
               variant="ghost"
             >
-              Reset view
+              <ZoomOut aria-hidden="true" />
+            </Button>
+            <span className="map-viewport-zoom-pct" aria-live="polite">
+              {zoomPercent}%
+            </span>
+            <Button
+              aria-label="Zoom in"
+              className="icon-hit-44"
+              onClick={() => zoomIn()}
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+            >
+              <ZoomIn aria-hidden="true" />
+            </Button>
+            <span className="map-viewport-controls-divider" />
+            <Button
+              aria-label="Reset the map view"
+              className="icon-hit-44"
+              onClick={() => resetTransform()}
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+            >
+              <RotateCcw aria-hidden="true" />
             </Button>
           </div>
 

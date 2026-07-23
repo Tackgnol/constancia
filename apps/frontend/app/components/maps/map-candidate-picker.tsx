@@ -41,8 +41,6 @@ export function MapCandidatePicker({
 
   return (
     <section className="map-picker" aria-label="Place a target">
-      <p className="detail-label">Place on map</p>
-
       {armedCandidate ? (
         <div className="map-picker-armed" role="status">
           <span>
@@ -86,6 +84,10 @@ export function MapCandidatePicker({
                     type="button"
                     variant="ghost"
                   >
+                    <span
+                      aria-hidden="true"
+                      className={`map-picker-dot map-picker-dot-${candidate.kind}`}
+                    />
                     {candidate.label}
                     {placed ? <span className="map-picker-placed"> · placed</span> : null}
                   </Button>

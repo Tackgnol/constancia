@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useId } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ export function SceneForm({
   pending,
   onSubmit,
   onCancel,
+  compact = false,
 }: {
   submitLabel: string;
   pendingLabel: string;
@@ -30,7 +32,10 @@ export function SceneForm({
   pending: boolean;
   onSubmit: (name: string) => Promise<unknown>;
   onCancel?: () => void;
+  /** Single row (input + actions), label visually hidden. Fits a floating panel without a scroll. */
+  compact?: boolean;
 }) {
+  const nameFieldId = useId();
   const {
     register,
     handleSubmit,
@@ -43,7 +48,7 @@ export function SceneForm({
 
   return (
     <form
-      className="scene-form"
+      className={`scene-form${compact ? ' scene-form-compact' : ''}`}
       noValidate
       onSubmit={handleSubmit(async (values) => {
         await onSubmit(values.name.trim());
@@ -52,13 +57,13 @@ export function SceneForm({
         }
       })}
     >
-      <label className="detail-label" htmlFor="scene-name">
+      <label className={compact ? 'sr-only' : 'detail-label'} htmlFor={nameFieldId}>
         {label}
       </label>
       <Input
         aria-invalid={errors.name ? true : undefined}
         autoComplete="off"
-        id="scene-name"
+        id={nameFieldId}
         placeholder="Elysium"
         {...register('name')}
       />

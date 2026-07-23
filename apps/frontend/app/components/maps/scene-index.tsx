@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { Link } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { buildSceneMapPath, type SceneSummaryProjection } from '@/lib/map-workspace-projection';
@@ -38,12 +39,14 @@ export function SceneIndex({
             </Link>
             <Button
               aria-label={`Delete scene ${scene.name}`}
+              className="icon-hit-44"
               disabled={pending}
               onClick={() => onDelete(scene.id)}
+              size="icon-sm"
               type="button"
               variant="ghost"
             >
-              Delete
+              <X aria-hidden="true" />
             </Button>
           </li>
         );

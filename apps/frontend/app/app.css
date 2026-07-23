@@ -107,6 +107,16 @@
   --event-insight: #3fb950;
   --event-message: #f0883e;
 
+  /*
+   * Map peg categories (event / NPC / lore target on a scene). Deliberately not the event-type
+   * quartet above — those are reserved for session-log block types, and reusing them here would
+   * blur what they mean there. Shape and glyph still carry the kind on their own; color is a
+   * second, redundant cue, not the only one.
+   */
+  --peg-event: var(--primary-glow);
+  --peg-npc: #8fa8d6;
+  --peg-lore: var(--tertiary);
+
   /* Shadow */
   --shadow: 0 8px 24px rgb(from var(--bg) r g b / 0.6);
 }
@@ -4497,38 +4507,29 @@ h3 {
   }
 }
 
-/* ─── Map workspace ─────────────────────────────────────── */
+/* ─── Map workspace: full-bleed canvas, floating panels ────── */
 
 .map-workspace {
-  display: grid;
-  grid-template-columns: minmax(200px, 260px) minmax(0, 1fr) minmax(200px, 280px);
-  gap: 1rem;
-  align-items: start;
-}
-
-.map-scene-panel,
-.map-inspector-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: var(--surface-high);
+  position: relative;
+  height: min(82vh, 760px);
+  overflow: hidden;
+  background: var(--surface-low);
   border-radius: 0.75rem;
 }
 
-.map-canvas-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  min-width: 0;
+.map-canvas-full {
+  position: absolute;
+  inset: 0;
 }
 
-.map-canvas-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+.map-canvas-full .board-empty-state {
+  position: absolute;
+  inset: 0;
+  max-width: 26rem;
+  margin: auto;
+  padding: 1.5rem;
+  text-align: center;
+  place-content: center;
 }
 
 /* The image is the coordinate frame for pegs, so it must never be cropped or stretched. */
@@ -4537,6 +4538,138 @@ h3 {
   max-width: 100%;
   height: auto;
   border-radius: 0.75rem;
+}
+
+/*
+ * Floating chrome: everything overlays the map and collapses out of the way. Sunk a shade below
+ * the app's usual card tone (surface-low, not surface-high) so it reads as glass over the map
+ * rather than another app surface; the hairline edge is load-bearing here, not decorative, since
+ * a map image can be any hue or brightness and tone-only separation (the app's usual "No-Line"
+ * rule) can't be relied on to read against it.
+ */
+.map-panel {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  max-height: calc(100% - 1.5rem);
+  background: rgb(from var(--surface-low) r g b / 0.92);
+  border: 1px solid rgb(from var(--text) r g b / 0.08);
+  border-radius: 0.75rem;
+  box-shadow: 0 14px 36px rgb(from var(--bg) r g b / 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/*
+ * Scenes and Pegs share the left edge, one anchored top and one bottom, so each is capped to a
+ * share of the column (with room left over for the gap) rather than the full container height.
+ * Otherwise a long scene list can grow tall enough to butt against the pegs panel below it.
+ */
+.map-panel-scenes {
+  top: 0.75rem;
+  left: 0.75rem;
+  max-height: 58%;
+}
+
+.map-panel-place {
+  top: 4.5rem;
+  right: 0.75rem;
+}
+
+.map-panel-pegs {
+  bottom: 0.75rem;
+  left: 0.75rem;
+  max-height: 34%;
+}
+
+.map-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.85rem 0.85rem 0.65rem;
+}
+
+.map-panel-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.3rem;
+}
+
+.map-panel-heading h2 {
+  margin: 0;
+  font-family: 'Newsreader', serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.map-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-height: 0;
+  padding: 0 0.85rem 0.85rem;
+  overflow: auto;
+}
+
+/*
+ * A visible box the same size as icon-sm (32px) would fall under the project's 44px touch-target
+ * rule; the pseudo-element pads the real hit area without inflating how big the control looks.
+ */
+.icon-hit-44 {
+  position: relative;
+}
+
+.icon-hit-44::before {
+  position: absolute;
+  inset: -6px;
+  content: '';
+}
+
+/*
+ * A normal, in-flow bar for the selected scene's map, sitting above the whole map workspace
+ * (not glass, not floating over the canvas) so replacing or removing a map never adds scroll
+ * to the Scenes panel.
+ */
+.map-upload-bar {
+  background: var(--surface-high);
+  border-radius: 0.75rem;
+  padding: 0.65rem 1rem;
+}
+
+.map-upload-bar .scene-map-form {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* The label repeats what the buttons already say ("Replace"/"Upload"); keep it for a11y only. */
+.map-upload-bar .scene-map-form > label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.map-upload-bar .scene-map-form [data-slot='input'] {
+  width: auto;
+  max-width: 17rem;
+}
+
+.map-upload-bar .scene-map-form #scene-map-hint {
+  flex-basis: 100%;
+  order: 1;
+  max-width: 40rem;
 }
 
 .scene-index {
@@ -4588,6 +4721,25 @@ h3 {
   gap: 0.5rem;
 }
 
+/* "New scene" and inline rename: one row, no dedicated label line, so the panel stays short. */
+.scene-form-compact {
+  flex-direction: row;
+  align-items: center;
+}
+
+.scene-form-compact [data-slot='input'] {
+  flex: 1;
+  width: auto;
+}
+
+.scene-form-compact .scene-form-actions {
+  flex-wrap: nowrap;
+}
+
+.scene-form-compact .form-error {
+  flex-basis: 100%;
+}
+
 .scene-form-actions {
   display: flex;
   flex-wrap: wrap;
@@ -4603,25 +4755,83 @@ h3 {
   list-style: none;
 }
 
+/* Overlapping floating panels only work with room to float in; small screens stack instead. */
 @media (max-width: 860px) {
   .map-workspace {
-    grid-template-columns: minmax(0, 1fr);
+    position: static;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    height: auto;
+    overflow: visible;
+    background: transparent;
+  }
+
+  .map-canvas-full {
+    position: static;
+    order: -1;
+  }
+
+  .map-canvas-full .board-empty-state {
+    position: static;
+    margin: 0;
+  }
+
+  .map-viewport {
+    height: min(70vh, 520px);
+  }
+
+  .map-panel {
+    position: static;
+    width: auto;
+    max-height: none;
+    background: var(--surface-high);
+    border: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 }
 
 /* ─── Map viewport and pegs ─────────────────────────────── */
 
 .map-viewport {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  min-width: 0;
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 .map-viewport-controls {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 3;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: rgb(from var(--surface-low) r g b / 0.92);
+  border: 1px solid rgb(from var(--text) r g b / 0.08);
+  border-radius: 0.75rem;
+  box-shadow: 0 14px 36px rgb(from var(--bg) r g b / 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.map-viewport-zoom-pct {
+  min-width: 2.75rem;
+  padding: 0 0.25rem;
+  font:
+    600 0.7rem/1 'IBM Plex Mono',
+    monospace;
+  color: var(--muted);
+  text-align: center;
+}
+
+.map-viewport-controls-divider {
+  width: 1px;
+  height: 1.25rem;
+  margin: 0 0.15rem;
+  background: rgb(from var(--text) r g b / 0.12);
 }
 
 /*
@@ -4631,7 +4841,7 @@ h3 {
  */
 .map-viewport .map-viewport-surface {
   width: 100%;
-  height: min(70vh, 520px);
+  height: 100%;
   border-radius: 0.75rem;
   background: var(--surface-high);
   cursor: grab;
@@ -4696,9 +4906,9 @@ h3 {
   font-size: 0.85rem;
   font-weight: 700;
   line-height: 1;
-  color: var(--surface-lowest, #14111a);
-  background: var(--surface-highest, #e8e2f0);
-  border: 2px solid var(--surface-lowest, #14111a);
+  color: var(--text);
+  background: var(--surface-highest);
+  border: 2px solid var(--text);
   cursor: grab;
   touch-action: none;
 }
@@ -4707,18 +4917,30 @@ h3 {
   cursor: grabbing;
 }
 
-/* Shape and glyph carry the peg kind, so nothing depends on colour alone. */
+/*
+ * Shape and glyph carry the peg kind on their own; the per-kind colour below is a second,
+ * redundant cue on top of that, not the only signal.
+ */
 .scene-peg-event {
   border-radius: 0.25rem;
+  border-color: var(--peg-event);
+  color: var(--peg-event);
+  box-shadow: 0 0 0 5px color-mix(in oklch, var(--peg-event) 16%, transparent);
 }
 
 .scene-peg-npc {
   border-radius: 50%;
+  border-color: var(--peg-npc);
+  color: var(--peg-npc);
+  box-shadow: 0 0 0 5px color-mix(in oklch, var(--peg-npc) 16%, transparent);
 }
 
 .scene-peg-lore {
   border-radius: 0.25rem;
   rotate: 45deg;
+  border-color: var(--peg-lore);
+  color: var(--peg-lore);
+  box-shadow: 0 0 0 5px color-mix(in oklch, var(--peg-lore) 16%, transparent);
 }
 
 .scene-peg-lore .scene-peg-glyph {
@@ -4769,6 +4991,43 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem;
+}
+
+/* Echoes the peg's own shape + colour, so a target reads the same here as it does on the map. */
+.map-picker-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border: 1.5px solid currentcolor;
+  background: color-mix(in oklch, currentcolor 22%, transparent);
+}
+
+.map-picker-dot-event {
+  color: var(--peg-event);
+  border-radius: 0.15rem;
+}
+
+.map-picker-dot-npc {
+  color: var(--peg-npc);
+  border-radius: 50%;
+}
+
+.map-picker-dot-lore {
+  color: var(--peg-lore);
+  border-radius: 0.15rem;
+  rotate: 45deg;
+}
+
+.map-peg-kind-event {
+  color: var(--peg-event);
+}
+
+.map-peg-kind-npc {
+  color: var(--peg-npc);
+}
+
+.map-peg-kind-lore {
+  color: var(--peg-lore);
 }
 
 .map-picker,
