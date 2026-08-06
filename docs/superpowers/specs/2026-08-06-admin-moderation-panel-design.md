@@ -104,8 +104,12 @@ remember at 2am.
   banned" becomes a real question.
 - **No `MessageReport` migration.** `status`, `reviewedAt`, `reviewedByUserId` already exist
   and are dead. Triage starts writing them.
-- **No `EventDelivery` migration.** `status` is a plain `String`, so `cancelled` is a new
-  value, not a schema change.
+- **No `EventDelivery` migration.** `status` is a plain `String`, so `cancelled` is a new value,
+  not a schema change. It is not free of code, though: `EventDeliveryStatus`
+  (`event-execution.ts:5`) must gain the variant, `parseDeliveryStatus`
+  (`event-execution-store.ts:253`) **throws** on any status it does not recognise, and
+  `InMemoryEventExecutionStore.listRetryableDeliveries` filters on `status !== 'delivered'` and
+  would otherwise keep retrying cancelled rows.
 
 ## Enforcement
 
@@ -118,7 +122,7 @@ A ban means the bot goes quiet, including in-flight deliveries. Six points:
 | 3 | `event-execution-store.ts:112` claim query | `where execution.campaign.disabledAt = null` |
 | 4 | Disable handler | One `updateMany` marking that campaign's `pending` deliveries `cancelled` |
 | 5 | `bot-routes.ts:359` `setupChannel` | Find-then-branch instead of upsert; disabled campaign → 403, never revive |
-| 6 | `bot-backend.ts` unwrap | 403 → surface `message` to the user ephemerally; anything else → generic line |
+| 6 | `bot-backend.ts` unwrap | error `code === 'ACCESS_REVOKED'` → surface `message` ephemerally; anything else → generic line |
 
 Notes:
 
@@ -131,10 +135,16 @@ Notes:
   `update: {}`, so after a campaign is disabled the next person to run setup in that guild is
   handed the disabled campaign back and their channel is attached to it — silently rejoining
   the campaign the operator killed.
-- **#6 needs no new plumbing.** `ErrorResponse` is already `{ status: 'error', data: { message } }`,
-  so the reason travels as the message. No error-code field, no ban lookup in the bot. The
-  403-only condition matters: passing every backend error through to Discord would leak 500
-  detail into a public channel. 403 is the "this text was written for a human" contract.
+- **#6 keys on the error code, not the HTTP status.** The Orval fetch client is generated with
+  `includeHttpResponseReturnType: false` and never throws: it reads the body, parses it, and
+  returns it, discarding `res.status` entirely
+  (`packages/api-client/src/generated/endpoints/bot/bot.ts`). The bot therefore cannot see a
+  403. It does not need to — `request-error-plugin.ts` routes any thrown error carrying
+  `statusCode` + `code` through `serializeHandledRequestError`, which already emits
+  `{ status: 'error', data: { message, code } }`. So enforcement throws a single
+  `AccessRevokedError` (403, `code: 'ACCESS_REVOKED'`) and the bot surfaces `message` only for
+  that code. Keying on a code rather than a status is also the safer rule: it can never
+  accidentally match a 500, whose message may carry internal detail.
 
 ### Superuser bypass
 
@@ -153,6 +163,7 @@ frontend
 backend  (all inside superUserScopePlugin)
   GET    /admin/message-reports?status=pending   extend existing
   PATCH  /admin/message-reports/:id              { status: reviewed | dismissed }
+  GET    /admin/overview                         { bans[], disabledCampaigns[] }
   POST   /admin/bans                             { discordUserId, internalNote, reasonShownToUser? }
   DELETE /admin/bans/:discordUserId
   POST   /admin/campaigns/:id/disable            { internalNote, publicReason? }
