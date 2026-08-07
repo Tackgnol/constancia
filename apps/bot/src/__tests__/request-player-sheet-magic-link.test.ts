@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createGeneratedBotBackend } from '../backend/bot-backend.js';
+import { BotAccessRevokedError } from '../backend/access-revoked.js';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -57,5 +58,27 @@ describe('generated bot backend magic links', () => {
         'guild-1',
       ),
     ).rejects.toThrow('invalid magic link payload');
+  });
+
+  it('surfaces an access-revocation reason instead of parsing the error as a link', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        text: async () =>
+          JSON.stringify({
+            status: 'error',
+            data: { code: 'ACCESS_REVOKED', message: 'Suspended pending review.' },
+          }),
+      }),
+    );
+
+    await expect(
+      createGeneratedBotBackend(() => ({ headers: {} })).requestPlayerSheetMagicLink(
+        'discord-user-1',
+        'guild-1',
+      ),
+    ).rejects.toEqual(new BotAccessRevokedError('Suspended pending review.'));
   });
 });

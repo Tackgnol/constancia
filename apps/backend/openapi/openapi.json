@@ -685,96 +685,6 @@
         }
       }
     },
-    "/api/v1/admin/message-reports": {
-      "get": {
-        "operationId": "listMessageReports",
-        "summary": "List pending Discord message reports",
-        "tags": ["admin"],
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "eventId": {
-                            "type": "string"
-                          },
-                          "campaignId": {
-                            "type": "string"
-                          },
-                          "discordGuildId": {
-                            "type": "string"
-                          },
-                          "discordChannelId": {
-                            "type": "string"
-                          },
-                          "discordMessageId": {
-                            "type": "string"
-                          },
-                          "discordUserId": {
-                            "type": "string"
-                          },
-                          "messageTarget": {
-                            "type": "string"
-                          },
-                          "messageContent": {
-                            "type": "string"
-                          },
-                          "imageUrl": {
-                            "type": "string"
-                          },
-                          "status": {
-                            "type": "string"
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          }
-                        },
-                        "required": ["id", "discordUserId", "messageContent", "status", "createdAt"]
-                      }
-                    }
-                  },
-                  "required": ["status", "data"]
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "properties": {
-                    "status": {
-                      "type": "string"
-                    },
-                    "data": {}
-                  },
-                  "required": ["status", "data"]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/uploads/image": {
       "post": {
         "operationId": "uploadImage",
@@ -1641,6 +1551,709 @@
                       },
                       "required": ["id", "name", "campaignId", "facts"]
                     }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/message-reports": {
+      "get": {
+        "operationId": "listMessageReports",
+        "summary": "List Discord message reports",
+        "tags": ["admin"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "reviewed", "dismissed"]
+            },
+            "in": "query",
+            "name": "status",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "eventId": {
+                            "type": "string"
+                          },
+                          "campaignId": {
+                            "type": "string"
+                          },
+                          "discordGuildId": {
+                            "type": "string"
+                          },
+                          "discordChannelId": {
+                            "type": "string"
+                          },
+                          "discordMessageId": {
+                            "type": "string"
+                          },
+                          "discordUserId": {
+                            "type": "string"
+                          },
+                          "messageTarget": {
+                            "type": "string"
+                          },
+                          "messageContent": {
+                            "type": "string"
+                          },
+                          "imageUrl": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "campaign": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "disabledAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "admins": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "required": ["id", "name", "admins"]
+                          }
+                        },
+                        "required": ["id", "discordUserId", "messageContent", "status", "createdAt"]
+                      }
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/message-reports/{id}": {
+      "patch": {
+        "operationId": "updateMessageReport",
+        "summary": "Mark a Discord message report reviewed or dismissed",
+        "tags": ["admin"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["reviewed", "dismissed"]
+                  }
+                },
+                "required": ["status"]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "eventId": {
+                          "type": "string"
+                        },
+                        "campaignId": {
+                          "type": "string"
+                        },
+                        "discordGuildId": {
+                          "type": "string"
+                        },
+                        "discordChannelId": {
+                          "type": "string"
+                        },
+                        "discordMessageId": {
+                          "type": "string"
+                        },
+                        "discordUserId": {
+                          "type": "string"
+                        },
+                        "messageTarget": {
+                          "type": "string"
+                        },
+                        "messageContent": {
+                          "type": "string"
+                        },
+                        "imageUrl": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "campaign": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "disabledAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "admins": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": ["id", "name", "admins"]
+                        }
+                      },
+                      "required": ["id", "discordUserId", "messageContent", "status", "createdAt"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/overview": {
+      "get": {
+        "operationId": "getAdminOverview",
+        "summary": "List active bans and disabled campaigns",
+        "tags": ["admin"],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "bans": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "discordUserId": {
+                                "type": "string"
+                              },
+                              "internalNote": {
+                                "type": "string"
+                              },
+                              "reasonShownToUser": {
+                                "type": "string"
+                              },
+                              "bannedByUserId": {
+                                "type": "string"
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            },
+                            "required": ["id", "discordUserId", "internalNote", "createdAt"]
+                          }
+                        },
+                        "disabledCampaigns": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "disabledAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "disabledInternalNote": {
+                                "type": "string"
+                              },
+                              "disabledPublicReason": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["id", "name", "disabledAt"]
+                          }
+                        }
+                      },
+                      "required": ["bans", "disabledCampaigns"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/bans": {
+      "post": {
+        "operationId": "createDiscordUserBan",
+        "summary": "Ban a Discord user from Constancia",
+        "tags": ["admin"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "discordUserId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "internalNote": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "reasonShownToUser": {
+                    "type": "string"
+                  }
+                },
+                "required": ["discordUserId", "internalNote"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "discordUserId": {
+                          "type": "string"
+                        },
+                        "internalNote": {
+                          "type": "string"
+                        },
+                        "reasonShownToUser": {
+                          "type": "string"
+                        },
+                        "bannedByUserId": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": ["id", "discordUserId", "internalNote", "createdAt"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/bans/{discordUserId}": {
+      "delete": {
+        "operationId": "deleteDiscordUserBan",
+        "summary": "Lift a Discord user ban",
+        "tags": ["admin"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "discordUserId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "deleted": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["status", "deleted"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/campaigns/{id}/disable": {
+      "post": {
+        "operationId": "disableCampaign",
+        "summary": "Suspend a campaign and silence its queued deliveries",
+        "tags": ["admin"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "internalNote": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "publicReason": {
+                    "type": "string"
+                  }
+                },
+                "required": ["internalNote"]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/campaigns/{id}/enable": {
+      "post": {
+        "operationId": "enableCampaign",
+        "summary": "Lift a campaign suspension",
+        "tags": ["admin"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
                   },
                   "required": ["status", "data"]
                 }
@@ -5590,7 +6203,7 @@
                               },
                               "status": {
                                 "type": "string",
-                                "enum": ["pending", "delivered", "failed"]
+                                "enum": ["pending", "delivered", "failed", "cancelled"]
                               },
                               "attempts": {
                                 "type": "number"
@@ -10054,6 +10667,73 @@
         }
       }
     },
+    "/api/v1/bot/access": {
+      "post": {
+        "operationId": "checkBotAccess",
+        "summary": "Check whether a Discord interaction may use Constancia",
+        "tags": ["bot"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "discordUserId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "guildId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": ["discordUserId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/bot/message-reports": {
       "post": {
         "operationId": "createBotMessageReport",
@@ -10321,7 +11001,7 @@
                               },
                               "status": {
                                 "type": "string",
-                                "enum": ["pending", "delivered", "failed"]
+                                "enum": ["pending", "delivered", "failed", "cancelled"]
                               },
                               "attempts": {
                                 "type": "number"
@@ -11365,6 +12045,24 @@
                       },
                       "required": ["campaign", "channel", "created"]
                     }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {}
                   },
                   "required": ["status", "data"]
                 }

@@ -23,6 +23,7 @@ model User {
   accounts       Account[]
   uploadAssets   UploadAsset[]
   messageReports MessageReport[]
+  discordUserBans DiscordUserBan[] @relation("DiscordUserBanIssuer")
 
   @@map("user")
 }
@@ -72,6 +73,19 @@ model MessageReport {
   @@index([eventId])
   @@index([campaignId])
   @@map("message_reports")
+}
+
+model DiscordUserBan {
+  id                String   @id @default(cuid())
+  discordUserId     String   @unique
+  internalNote      String
+  reasonShownToUser String?
+  bannedByUserId    String?
+  createdAt         DateTime @default(now())
+
+  bannedBy User? @relation("DiscordUserBanIssuer", fields: [bannedByUserId], references: [id], onDelete: SetNull)
+
+  @@map("discord_user_bans")
 }
 
 enum MessageReportStatus {
@@ -136,6 +150,10 @@ model Campaign {
   discordGuildId String   @unique
   gameSystemId   String
   gameDate       Json?
+  disabledAt           DateTime?
+  disabledInternalNote String?
+  disabledPublicReason String?
+  disabledByUserId     String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

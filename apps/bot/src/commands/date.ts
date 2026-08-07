@@ -1,5 +1,6 @@
 import type { ChatInputCommandInteraction } from 'discord.js';
 import { botBackend, type BotBackend } from '../backend/bot-backend.js';
+import { BotAccessRevokedError } from '../backend/access-revoked.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
 export async function handleDate(
@@ -30,6 +31,7 @@ export async function handleDate(
 
     await interaction.editReply(`📅 Current game date: **${formatted}**`);
   } catch (error) {
+    if (error instanceof BotAccessRevokedError) throw error;
     console.error('Date command error:', error);
     await interaction.editReply('Failed to fetch the game date. Please try again later.');
   }

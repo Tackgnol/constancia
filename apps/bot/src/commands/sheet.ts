@@ -5,6 +5,7 @@ import {
 } from 'discord.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 import { botBackend, type BotBackend } from '../backend/bot-backend.js';
+import { BotAccessRevokedError } from '../backend/access-revoked.js';
 
 export async function handleSheet(
   interaction: ChatInputCommandInteraction,
@@ -27,6 +28,7 @@ export async function handleSheet(
         '*This link signs you into your player sheet. It is unique to your Discord account and should not be shared.*',
     });
   } catch (error) {
+    if (error instanceof BotAccessRevokedError) throw error;
     console.error('Sheet command error:', error);
     await interaction.editReply('Failed to generate a player sheet link. Please try again later.');
   }

@@ -27,6 +27,11 @@ export default [
     route('demo/participants', './routes/participants.tsx', { id: 'demo-participants' }),
     route('demo/log', './routes/log.tsx', { id: 'demo-log' }),
   ]),
+  route('admin', './routes/admin-layout.tsx', [
+    index('./routes/admin-reports.tsx'),
+    route('reports', './routes/admin-reports.tsx', { id: 'admin-reports' }),
+    route('bans', './routes/admin-bans.tsx'),
+  ]),
   // Path '/' (not layout()) so fetcher submissions can target this route's action:
   // React Router drops pathless routes when resolving a submission target.
   route('/', './routes/war-room-layout.tsx', [

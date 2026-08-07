@@ -2,7 +2,7 @@ import type { BlockEffect, BlockMessage, BotDeliveryPayload } from '@constancia/
 
 export type EventExecutionKind = 'fire' | 'test-result';
 export type EventExecutionStatus = 'completed' | 'failed';
-export type EventDeliveryStatus = 'pending' | 'delivered' | 'failed';
+export type EventDeliveryStatus = 'pending' | 'delivered' | 'failed' | 'cancelled';
 
 export interface FireEventCommand {
   kind: 'fire';
@@ -96,7 +96,8 @@ export interface BotDeliveryCommand {
 
 export type BotDeliveryResult =
   | { status: 'delivered'; delivered: number; skipped: number }
-  | { status: 'failed'; error: string };
+  | { status: 'failed'; error: string }
+  | { status: 'cancelled' };
 
 export interface BotDeliveryPort {
   deliver(command: BotDeliveryCommand): Promise<BotDeliveryResult>;
@@ -405,6 +406,7 @@ export class InMemoryEventExecutionStore implements EventExecutionStore {
       .filter(
         (item) =>
           item.status !== 'delivered' &&
+          item.status !== 'cancelled' &&
           (input.executionId === undefined || item.executionId === input.executionId),
       )
       .slice(0, input.limit)
@@ -437,8 +439,10 @@ export class InMemoryEventExecutionStore implements EventExecutionStore {
       if (result.status === 'delivered') {
         receiptDelivery.deliveredAt = new Date().toISOString();
         delete receiptDelivery.lastError;
-      } else {
+      } else if (result.status === 'failed') {
         receiptDelivery.lastError = result.error;
+      } else {
+        delete receiptDelivery.lastError;
       }
 
       return cloneReceipt(stored.receipt);

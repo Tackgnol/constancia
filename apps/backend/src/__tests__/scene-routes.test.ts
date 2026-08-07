@@ -32,6 +32,7 @@ const npcPegRow = {
 const prismaMock = vi.hoisted(() => ({
   campaign: { findUnique: vi.fn() },
   campaignAdmin: { findUnique: vi.fn() },
+  discordUserBan: { findUnique: vi.fn() },
   event: { findFirst: vi.fn() },
   channel: { findFirst: vi.fn() },
   character: { findFirst: vi.fn() },
@@ -93,8 +94,11 @@ beforeEach(async () => {
     id: CAMPAIGN_ID,
     discordGuildId: 'guild-1',
     gameSystemId: 'vtm-v5',
+    disabledAt: null,
+    disabledPublicReason: null,
   });
   prismaMock.campaignAdmin.findUnique.mockResolvedValue({ role: 'gm' });
+  prismaMock.discordUserBan.findUnique.mockResolvedValue(null);
   prismaMock.scene.findFirst.mockResolvedValue(sceneDetail);
   prismaMock.scene.findMany.mockResolvedValue([
     { ...sceneDetail, mapAsset: { id: 'asset-1' }, _count: { pegs: 2 } },
@@ -177,7 +181,13 @@ describe('scene route campaign scoping', () => {
 
     expect(prismaMock.campaign.findUnique).toHaveBeenCalledWith({
       where: { id: CAMPAIGN_ID },
-      select: { id: true, discordGuildId: true, gameSystemId: true },
+      select: {
+        id: true,
+        discordGuildId: true,
+        gameSystemId: true,
+        disabledAt: true,
+        disabledPublicReason: true,
+      },
     });
   });
 

@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getChatCommand, getChatCommandData } from '../discord/command-registry.js';
 import { routeInteraction } from '../discord/interaction-router.js';
+import { createInMemoryBotBackend } from '../backend/bot-backend.js';
+import { BotAccessRevokedError } from '../backend/access-revoked.js';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -105,16 +107,46 @@ describe('interaction router', () => {
     }
 
     const executeSpy = vi.spyOn(command, 'execute').mockResolvedValue(undefined);
+    const requireAccess = vi.fn().mockResolvedValue(undefined);
     const interaction = {
       isChatInputCommand: () => true,
       isAutocomplete: () => false,
       commandName: 'roll',
+      user: { id: 'discord-user' },
+      guildId: 'guild-1',
     };
 
-    await routeInteraction(interaction as never);
+    await routeInteraction(interaction as never, createInMemoryBotBackend({ requireAccess }));
 
+    expect(requireAccess).toHaveBeenCalledWith('discord-user', 'guild-1');
     expect(executeSpy).toHaveBeenCalledTimes(1);
     expect(executeSpy).toHaveBeenCalledWith(interaction);
+  });
+
+  it('surfaces an access-revocation reason before a command runs', async () => {
+    const command = getChatCommand('roll');
+    if (!command) throw new Error('roll command was not registered');
+    const executeSpy = vi.spyOn(command, 'execute').mockResolvedValue(undefined);
+    const reply = vi.fn().mockResolvedValue(undefined);
+    const interaction = {
+      isChatInputCommand: () => true,
+      isAutocomplete: () => false,
+      commandName: 'roll',
+      user: { id: 'discord-gm' },
+      guildId: 'guild-1',
+      deferred: false,
+      reply,
+    };
+    const backend = createInMemoryBotBackend({
+      requireAccess: vi.fn().mockRejectedValue(new BotAccessRevokedError('Repeated harassment.')),
+    });
+
+    await routeInteraction(interaction as never, backend);
+
+    expect(executeSpy).not.toHaveBeenCalled();
+    expect(reply).toHaveBeenCalledWith(
+      expect.objectContaining({ content: 'Repeated harassment.' }),
+    );
   });
 
   it('routes autocomplete interactions to the command autocomplete handler', async () => {
@@ -141,13 +173,18 @@ describe('interaction router', () => {
       isModalSubmit: () => false,
       responded: false,
       commandName: 'setup',
+      user: { id: 'discord-user' },
+      guildId: 'guild-1',
       options: {
         getFocused: () => ({ name: 'game-system', value: 'vampire' }),
       },
       respond,
     };
 
-    await routeInteraction(interaction as never);
+    await routeInteraction(
+      interaction as never,
+      createInMemoryBotBackend({ requireAccess: vi.fn().mockResolvedValue(undefined) }),
+    );
 
     expect(respond).toHaveBeenCalledWith([
       { name: 'Vampire: The Masquerade (5e)', value: 'vtm-v5' },

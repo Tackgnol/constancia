@@ -4464,6 +4464,314 @@ h3 {
   }
 }
 
+/* ─── Operator moderation desk ───────────────────────────── */
+
+.admin-shell {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.admin-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0.9rem clamp(1rem, 3vw, 2.5rem);
+  background: color-mix(in oklch, var(--surface-low) 94%, transparent);
+  box-shadow: 0 8px 24px rgb(from var(--bg) r g b / 0.55);
+  backdrop-filter: blur(12px);
+}
+
+.admin-brand {
+  display: grid;
+  gap: 0.15rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.admin-brand span,
+.admin-nav,
+.admin-filter,
+.admin-report-stamp,
+.admin-report-facts dt,
+.admin-control-card dt {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.admin-brand span {
+  color: var(--primary-glow);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-brand strong {
+  font-size: 1rem;
+}
+
+.admin-nav,
+.admin-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.admin-nav a,
+.admin-filter a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.75rem;
+  color: var(--muted-strong);
+  font-size: 0.74rem;
+  text-decoration: none;
+  text-transform: capitalize;
+}
+
+.admin-nav a:hover,
+.admin-nav a.active,
+.admin-filter a:hover,
+.admin-filter a.active {
+  color: var(--text);
+  background: var(--surface-highest);
+}
+
+.admin-nav a span {
+  min-width: 1.5rem;
+  padding: 0.1rem 0.35rem;
+  color: var(--primary-glow);
+  background: color-mix(in oklch, var(--surface-highest) 82%, var(--primary) 18%);
+  text-align: center;
+}
+
+.admin-main {
+  width: min(100%, 96rem);
+  margin-inline: auto;
+  padding: clamp(1rem, 3vw, 2.5rem);
+}
+
+.admin-queue-meta,
+.admin-report-list,
+.admin-report-card,
+.admin-control-section,
+.admin-control-card,
+.admin-action-form {
+  display: grid;
+}
+
+.admin-queue-meta {
+  gap: 0.35rem;
+}
+
+.admin-queue-meta p,
+.admin-queue-meta strong,
+.admin-queue-meta span {
+  margin: 0;
+}
+
+.admin-queue-meta strong {
+  color: var(--primary-glow);
+  font-size: 1.1rem;
+  text-transform: capitalize;
+}
+
+.admin-filter {
+  padding: 0.35rem;
+  background: var(--surface-low);
+  justify-self: start;
+}
+
+.admin-report-list,
+.admin-report-card,
+.admin-control-section,
+.admin-control-card {
+  gap: 1rem;
+}
+
+.admin-report-list {
+  max-width: 76rem;
+}
+
+.admin-report-header,
+.admin-triage-actions,
+.admin-reverse-action,
+.admin-control-section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.admin-report-header h2,
+.admin-control-card h2,
+.admin-control-section h2,
+.admin-enforcement-panel h3,
+.admin-empty-state h2 {
+  margin: 0;
+  font-family: 'Newsreader', serif;
+  font-weight: 500;
+}
+
+.admin-report-stamp {
+  display: grid;
+  gap: 0.25rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+  text-align: right;
+}
+
+.admin-report-stamp strong {
+  color: var(--primary-glow);
+  text-transform: uppercase;
+}
+
+.admin-report-content {
+  padding: 1rem;
+  background: var(--surface-low);
+}
+
+.admin-report-content p {
+  max-width: 72ch;
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.65;
+}
+
+.admin-report-content img {
+  display: block;
+  max-width: min(100%, 36rem);
+  max-height: 28rem;
+  margin-top: 1rem;
+  object-fit: contain;
+}
+
+.admin-report-facts,
+.admin-control-card dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.admin-report-facts > div,
+.admin-control-card dl > div {
+  min-width: 0;
+  padding: 0.75rem;
+  background: var(--surface-high);
+}
+
+.admin-report-facts dt,
+.admin-control-card dt {
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.admin-report-facts dd,
+.admin-control-card dd {
+  margin: 0.4rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-triage-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.admin-enforcement-grid,
+.admin-control-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.admin-enforcement-panel {
+  min-width: 0;
+  padding: 1rem;
+  background: var(--surface-high);
+}
+
+.admin-enforcement-panel > p:not(.detail-label) {
+  color: var(--text-secondary);
+}
+
+.admin-action-details {
+  margin-top: 0.75rem;
+  background: var(--surface-low);
+}
+
+.admin-action-details summary {
+  min-height: 44px;
+  padding: 0.8rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.admin-action-form {
+  gap: 0.8rem;
+  padding: 0 0.8rem 0.8rem;
+}
+
+.admin-action-form label {
+  margin-bottom: 0.45rem;
+  line-height: 1.35;
+}
+
+.admin-action-status,
+.admin-inline-note,
+.admin-empty-state {
+  margin: 0;
+  color: var(--muted-strong);
+  font-size: 0.85rem;
+}
+
+.admin-control-section > header span {
+  min-width: 2rem;
+  padding: 0.2rem 0.45rem;
+  background: var(--surface-highest);
+  text-align: center;
+}
+
+.admin-control-card dl {
+  grid-template-columns: 1fr;
+}
+
+.admin-reverse-action {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 760px) {
+  .admin-topbar,
+  .admin-report-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-nav {
+    width: 100%;
+  }
+
+  .admin-nav a {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .admin-report-stamp {
+    text-align: left;
+  }
+
+  .admin-report-facts,
+  .admin-enforcement-grid,
+  .admin-control-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* One keyboard-focus contract for native controls, links, and headless UI triggers. */
 :is(
   a[href],

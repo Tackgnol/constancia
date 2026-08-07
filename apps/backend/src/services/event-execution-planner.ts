@@ -14,6 +14,7 @@ import type {
   SubmitTestResultCommand,
 } from './event-execution.js';
 import { filterInsightResolutionPipeline, resolveInsightScore } from './insight-event.js';
+import { assertCampaignActive } from './moderation-enforcement.js';
 import { buildTestInstancePayload, filterManualTestResolutionPipeline } from './test-instance.js';
 
 export class EventExecutionRequestError extends Error {
@@ -42,12 +43,16 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
           channelId: true,
           pipeline: true,
           channel: { select: { discordChannelId: true } },
+          campaign: { select: { disabledAt: true, disabledPublicReason: true } },
         },
       });
 
       if (!event) {
         throw new EventExecutionRequestError(404, 'EVENT_NOT_FOUND', 'Event not found.');
       }
+
+      // Bot API-key routes bypass campaign-admin authorization.
+      assertCampaignActive(event.campaign);
 
       const pipeline = parsePipeline(event.pipeline);
 
@@ -122,12 +127,15 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
           channelId: true,
           pipeline: true,
           channel: { select: { discordChannelId: true } },
+          campaign: { select: { disabledAt: true, disabledPublicReason: true } },
         },
       });
 
       if (!event) {
         throw new EventExecutionRequestError(404, 'EVENT_NOT_FOUND', 'Event not found.');
       }
+
+      assertCampaignActive(event.campaign);
 
       if (event.type !== 'test') {
         throw new EventExecutionRequestError(

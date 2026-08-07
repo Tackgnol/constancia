@@ -4,6 +4,7 @@ import {
   createPlayerSheetMagicLink,
 } from '@constancia/api-client/endpoints/auth/auth';
 import {
+  checkBotAccess,
   createBotMessageReport,
   getBotCampaignDate,
   getBotJournalForPlayer,
@@ -32,6 +33,7 @@ import type {
   SubmitBotTestResultBody,
 } from '@constancia/api-client/model';
 import { botRequestOptions } from '../config.js';
+import { requireApiData } from './access-revoked.js';
 
 export type BotCampaign = GetCampaignByGuild200Data;
 export type BotChannelEvent = GetChannelEvents200DataItem;
@@ -56,6 +58,7 @@ export interface BotMagicLink {
 }
 
 export interface BotBackend {
+  requireAccess(discordUserId: string, guildId?: string): Promise<void>;
   getCampaignDate(guildId: string): Promise<string | null | undefined>;
   getCampaign(guildId: string): Promise<BotCampaign | null>;
   getChannelEvents(channelId: string): Promise<BotChannelEvent[]>;
@@ -74,18 +77,6 @@ export interface BotBackend {
   requestPlayerJournalMagicLink(discordUserId: string, guildId: string): Promise<BotMagicLink>;
   submitMessageReport(input: BotMessageReportInput): Promise<void>;
   submitTestResult(input: BotTestResultInput): Promise<BotTestResult>;
-}
-
-interface ApiEnvelope<T> {
-  status: string;
-  data: T;
-}
-
-function requireApiData<T>(response: ApiEnvelope<T>, operation: string): T {
-  if (response.status !== 'ok') {
-    throw new Error(`Backend failed to ${operation}`);
-  }
-  return response.data;
 }
 
 function parseMagicLink(payload: unknown, requireCampaign: boolean): BotMagicLink {
@@ -117,6 +108,12 @@ export function createGeneratedBotBackend(
   requestOptions: () => RequestInit = botRequestOptions,
 ): BotBackend {
   return {
+    requireAccess: async (discordUserId, guildId) => {
+      requireApiData(
+        await checkBotAccess({ discordUserId, ...(guildId ? { guildId } : {}) }, requestOptions()),
+        'check interaction access',
+      );
+    },
     getCampaignDate: async (guildId) => {
       const response = await getBotCampaignDate({ guildId }, requestOptions());
       return response.status === 'ok' ? response.data.formatted : undefined;
@@ -161,21 +158,21 @@ export function createGeneratedBotBackend(
     },
     requestAdminMagicLink: async (discordUserId, guildId) => {
       const response = await createMagicLink({ discordUserId, guildId }, requestOptions());
-      return parseMagicLink(response.data, false);
+      return parseMagicLink(requireApiData(response, 'create admin magic link'), false);
     },
     requestPlayerSheetMagicLink: async (discordUserId, guildId) => {
       const response = await createPlayerSheetMagicLink(
         { discordUserId, guildId },
         requestOptions(),
       );
-      return parseMagicLink(response.data, true);
+      return parseMagicLink(requireApiData(response, 'create player sheet magic link'), true);
     },
     requestPlayerJournalMagicLink: async (discordUserId, guildId) => {
       const response = await createPlayerJournalMagicLink(
         { discordUserId, guildId },
         requestOptions(),
       );
-      return parseMagicLink(response.data, true);
+      return parseMagicLink(requireApiData(response, 'create player journal magic link'), true);
     },
     submitMessageReport: async (input) => {
       requireApiData(
@@ -194,6 +191,7 @@ const notConfigured = async (): Promise<never> => {
 
 export function createInMemoryBotBackend(overrides: Partial<BotBackend> = {}): BotBackend {
   return {
+    requireAccess: notConfigured,
     getCampaignDate: notConfigured,
     getCampaign: notConfigured,
     getChannelEvents: notConfigured,

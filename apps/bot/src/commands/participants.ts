@@ -6,6 +6,7 @@ import {
   type InteractionDeferReplyOptions,
 } from 'discord.js';
 import { botBackend, type BotBackend } from '../backend/bot-backend.js';
+import { BotAccessRevokedError } from '../backend/access-revoked.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
 export async function handleParticipants(
@@ -65,6 +66,7 @@ export async function handleParticipants(
       await interaction.editReply(`**Participants (${chars.length}):**\n${lines.join('\n')}`);
     }
   } catch (err) {
+    if (err instanceof BotAccessRevokedError) throw err;
     console.error('Participants command error:', err);
     await interaction.editReply('Something went wrong. Please try again later.');
   }

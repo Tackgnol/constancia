@@ -4,6 +4,7 @@ import { deleted, isPrismaNotFoundError, ok, sendNotFound } from '../http-respon
 import {
   botTestResultBodySchema,
   botTestResultResponseSchema,
+  botAccessBodySchema,
   botCampaignDateSchema,
   campaignSchema,
   botMessageReportBodySchema,
@@ -20,6 +21,7 @@ import {
   setupChannelBodySchema,
   setupChannelDataSchema,
   singleResponseSchema,
+  standardResponseSchema,
   syncParticipantsBodySchema,
   syncParticipantsDataSchema,
 } from '../schemas.js';
@@ -30,6 +32,7 @@ import {
 import { moderatePayloadText } from '../services/content-moderation.js';
 import { getPlayerJournal } from '../services/player-journal.js';
 import { formatCampaignGameDate } from '../services/game-date.js';
+import { assertCampaignActive, assertNotBanned } from '../services/moderation-enforcement.js';
 
 interface BotTestResultBody {
   eventId: string;
@@ -49,6 +52,11 @@ interface BotMessageReportBody {
   messageTarget?: string;
   messageContent?: string;
   imageUrl?: string;
+}
+
+interface BotAccessBody {
+  discordUserId: string;
+  guildId?: string;
 }
 
 function mapMessageReport(report: {
@@ -114,6 +122,35 @@ interface CampaignDiscordUserParams {
 }
 
 const botRoutes: FastifyPluginAsync = async (app) => {
+  app.post<{ Body: BotAccessBody }>(
+    '/access',
+    {
+      schema: {
+        tags: ['bot'],
+        summary: 'Check whether a Discord interaction may use Constancia',
+        operationId: 'checkBotAccess',
+        body: botAccessBodySchema,
+        response: { 200: standardResponseSchema, 403: standardResponseSchema },
+      },
+    },
+    async (request) => {
+      const prisma = getPrismaClient();
+      await assertNotBanned(prisma, request.body.discordUserId);
+
+      if (request.body.guildId) {
+        const campaign = await prisma.campaign.findUnique({
+          where: { discordGuildId: request.body.guildId },
+          select: { disabledAt: true, disabledPublicReason: true },
+        });
+        if (campaign !== null) {
+          assertCampaignActive(campaign);
+        }
+      }
+
+      return ok({ allowed: true });
+    },
+  );
+
   app.post<{ Body: BotMessageReportBody }>(
     '/message-reports',
     {
@@ -129,10 +166,14 @@ const botRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const prisma = getPrismaClient();
+      const event = await prisma.event.findUnique({
+        where: { id: request.body.eventId },
+        select: { campaignId: true },
+      });
       const report = await prisma.messageReport.create({
         data: {
           eventId: request.body.eventId,
-          campaignId: request.body.campaignId,
+          campaignId: event?.campaignId ?? request.body.campaignId,
           discordGuildId: request.body.discordGuildId,
           discordChannelId: request.body.discordChannelId,
           discordMessageId: request.body.discordMessageId,
@@ -343,6 +384,7 @@ const botRoutes: FastifyPluginAsync = async (app) => {
         body: setupChannelBodySchema,
         response: {
           200: singleResponseSchema(setupChannelDataSchema),
+          403: standardResponseSchema,
         },
       },
     },
@@ -353,21 +395,35 @@ const botRoutes: FastifyPluginAsync = async (app) => {
 
       const existingCampaign = await prisma.campaign.findUnique({
         where: { discordGuildId: guildId },
-        select: { id: true },
+        select: { id: true, disabledAt: true, disabledPublicReason: true },
       });
 
-      const campaign = await prisma.campaign.upsert({
-        where: { discordGuildId: guildId },
-        create: { name: campaignName, discordGuildId: guildId, gameSystemId },
-        update: {},
-        select: {
-          id: true,
-          name: true,
-          discordGuildId: true,
-          gameSystemId: true,
-          gameDate: true,
-        },
-      });
+      if (existingCampaign !== null) {
+        assertCampaignActive(existingCampaign);
+      }
+
+      const campaign =
+        existingCampaign === null
+          ? await prisma.campaign.create({
+              data: { name: campaignName, discordGuildId: guildId, gameSystemId },
+              select: {
+                id: true,
+                name: true,
+                discordGuildId: true,
+                gameSystemId: true,
+                gameDate: true,
+              },
+            })
+          : await prisma.campaign.findUniqueOrThrow({
+              where: { id: existingCampaign.id },
+              select: {
+                id: true,
+                name: true,
+                discordGuildId: true,
+                gameSystemId: true,
+                gameDate: true,
+              },
+            });
 
       const existingChannel = await prisma.channel.findUnique({
         where: { discordChannelId },

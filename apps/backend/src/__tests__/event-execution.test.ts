@@ -202,3 +202,27 @@ describe('EventExecution', () => {
     expect(first.deliveries).toMatchObject([{ status: 'delivered', attempts: 1 }]);
   });
 });
+
+describe('cancelled deliveries', () => {
+  it('never returns cancelled deliveries as retryable', async () => {
+    const store = new InMemoryEventExecutionStore();
+    await store.createOnce({
+      kind: 'fire',
+      idempotencyKey: 'key-cancelled-1',
+      commandFingerprint: 'fire:campaign-1:event-1',
+      eventId: 'event-1',
+      campaignId: 'campaign-1',
+      messages: [],
+      effects: [],
+      halted: false,
+      markEventFired: false,
+      deliveries: [messageDelivery('event-1')],
+    });
+
+    const [job] = await store.listRetryableDeliveries({ limit: 10 });
+    expect(job).toBeDefined();
+    await store.recordDeliveryResult(job!.id, { status: 'cancelled' });
+
+    expect(await store.listRetryableDeliveries({ limit: 10 })).toEqual([]);
+  });
+});

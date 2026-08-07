@@ -7,6 +7,7 @@ import {
   type InteractionDeferReplyOptions,
 } from 'discord.js';
 import { botBackend, type BotBackend } from '../backend/bot-backend.js';
+import { BotAccessRevokedError } from '../backend/access-revoked.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
 const DEFAULT_GAME_SYSTEM_ID = 'vtm-v5';
@@ -98,11 +99,13 @@ export async function handleSetup(
         { discordUserId: interaction.user.id, discordName },
       ]);
     } catch (syncErr) {
+      if (syncErr instanceof BotAccessRevokedError) throw syncErr;
       console.error('Setup: failed to auto-register caller as participant:', syncErr);
     }
 
     await interaction.editReply(message);
   } catch (error) {
+    if (error instanceof BotAccessRevokedError) throw error;
     console.error('Setup command error:', error);
     await interaction.editReply('Failed to setup channel. Please try again later.');
   }

@@ -596,6 +596,16 @@ export const botMessageReportBodySchema = {
   required: ['eventId', 'discordUserId'],
 } as const;
 
+export const botAccessBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    discordUserId: { type: 'string', minLength: 1 },
+    guildId: { type: 'string', minLength: 1 },
+  },
+  required: ['discordUserId'],
+} as const;
+
 export const standardResponseSchema = {
   type: 'object',
   additionalProperties: true,
@@ -1009,7 +1019,7 @@ export const fireEventResultSchema = {
         additionalProperties: false,
         properties: {
           id: { type: 'string' },
-          status: { type: 'string', enum: ['pending', 'delivered', 'failed'] },
+          status: { type: 'string', enum: ['pending', 'delivered', 'failed', 'cancelled'] },
           attempts: { type: 'number' },
           lastError: { type: 'string' },
           deliveredAt: { type: 'string', format: 'date-time' },
@@ -1096,6 +1106,95 @@ export const messageReportSchema = {
     createdAt: { type: 'string', format: 'date-time' },
   },
   required: ['id', 'discordUserId', 'messageContent', 'status', 'createdAt'],
+} as const;
+
+export const messageReportCampaignSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    disabledAt: { type: 'string', format: 'date-time' },
+    admins: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['id', 'name', 'admins'],
+} as const;
+
+export const adminMessageReportSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    ...messageReportSchema.properties,
+    campaign: messageReportCampaignSchema,
+  },
+  required: ['id', 'discordUserId', 'messageContent', 'status', 'createdAt'],
+} as const;
+
+export const updateMessageReportBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    status: { type: 'string', enum: ['reviewed', 'dismissed'] },
+  },
+  required: ['status'],
+} as const;
+
+export const discordUserBanSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    discordUserId: { type: 'string' },
+    internalNote: { type: 'string' },
+    reasonShownToUser: { type: 'string' },
+    bannedByUserId: { type: 'string' },
+    createdAt: { type: 'string', format: 'date-time' },
+  },
+  required: ['id', 'discordUserId', 'internalNote', 'createdAt'],
+} as const;
+
+export const createBanBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    discordUserId: { type: 'string', minLength: 1 },
+    internalNote: { type: 'string', minLength: 1 },
+    reasonShownToUser: { type: 'string' },
+  },
+  required: ['discordUserId', 'internalNote'],
+} as const;
+
+export const disableCampaignBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    internalNote: { type: 'string', minLength: 1 },
+    publicReason: { type: 'string' },
+  },
+  required: ['internalNote'],
+} as const;
+
+export const disabledCampaignSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    disabledAt: { type: 'string', format: 'date-time' },
+    disabledInternalNote: { type: 'string' },
+    disabledPublicReason: { type: 'string' },
+  },
+  required: ['id', 'name', 'disabledAt'],
+} as const;
+
+export const adminOverviewSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    bans: { type: 'array', items: discordUserBanSchema },
+    disabledCampaigns: { type: 'array', items: disabledCampaignSchema },
+  },
+  required: ['bans', 'disabledCampaigns'],
 } as const;
 
 export const setupChannelBodySchema = {

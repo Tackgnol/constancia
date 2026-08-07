@@ -16,9 +16,11 @@ import systemRoutes from './system-routes.js';
 import userSettingsRoutes from './user-settings-routes.js';
 import { uploadProtectedRoutes, uploadPublicRoutes } from './upload-routes.js';
 import adminRoutes from './admin-routes.js';
+import adminBanRoutes from './admin-ban-routes.js';
 import sessionGuardPlugin from '../plugins/session-guard-plugin.js';
 import botAuthPlugin from '../plugins/bot-auth-plugin.js';
 import campaignAdminScopePlugin from '../plugins/campaign-admin-scope-plugin.js';
+import superUserScopePlugin from '../plugins/super-user-scope-plugin.js';
 
 const apiRoutes: FastifyPluginAsync = async (app) => {
   await app.register(authPublicRoutes, { prefix: '/auth' });
@@ -29,11 +31,16 @@ const apiRoutes: FastifyPluginAsync = async (app) => {
   await app.register(async (protected_) => {
     await protected_.register(sessionGuardPlugin);
     await protected_.register(userSettingsRoutes, { prefix: '/users' });
-    await protected_.register(adminRoutes, { prefix: '/admin' });
     await protected_.register(uploadProtectedRoutes, { prefix: '/uploads' });
     await protected_.register(campaignRoutes, { prefix: '/campaigns' });
     await protected_.register(playerCharacterRoutes, { prefix: '/campaigns/:id/player-character' });
     await protected_.register(playerNpcRoutes, { prefix: '/campaigns/:id/player-npcs' });
+
+    await protected_.register(async (superUserScope) => {
+      await superUserScope.register(superUserScopePlugin);
+      await superUserScope.register(adminRoutes, { prefix: '/admin' });
+      await superUserScope.register(adminBanRoutes, { prefix: '/admin' });
+    });
 
     await protected_.register(async (campaignAdminScope) => {
       await campaignAdminScope.register(campaignAdminScopePlugin);

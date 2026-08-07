@@ -1,5 +1,10 @@
 import type { AccessContext } from '../auth/access-context.js';
 import { getPrismaClient } from '../auth/prisma.js';
+import {
+  assertCampaignActive,
+  assertNotBanned,
+  type BanLookupPrisma,
+} from './moderation-enforcement.js';
 
 const campaignScopeBrand: unique symbol = Symbol('CampaignScope');
 
@@ -15,6 +20,8 @@ interface CampaignRecord {
   id: string;
   discordGuildId: string;
   gameSystemId: string;
+  disabledAt: Date | null;
+  disabledPublicReason: string | null;
 }
 
 interface CampaignAdminRecord {
@@ -25,7 +32,13 @@ export interface CampaignAccessPrisma {
   campaign: {
     findUnique(args: {
       where: { id: string };
-      select: { id: true; discordGuildId: true; gameSystemId: true };
+      select: {
+        id: true;
+        discordGuildId: true;
+        gameSystemId: true;
+        disabledAt: true;
+        disabledPublicReason: true;
+      };
     }): Promise<CampaignRecord | null>;
   };
   campaignAdmin: {
@@ -34,6 +47,7 @@ export interface CampaignAccessPrisma {
       select: { role: true };
     }): Promise<CampaignAdminRecord | null>;
   };
+  discordUserBan: BanLookupPrisma['discordUserBan'];
   event: {
     findFirst(args: {
       where: { id: string; campaignId: string };
@@ -179,7 +193,13 @@ class PrismaCampaignAccess implements CampaignAccess {
 
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
-      select: { id: true, discordGuildId: true, gameSystemId: true },
+      select: {
+        id: true,
+        discordGuildId: true,
+        gameSystemId: true,
+        disabledAt: true,
+        disabledPublicReason: true,
+      },
     });
     if (campaign === null) {
       throw new CampaignNotFoundError();
@@ -193,6 +213,8 @@ class PrismaCampaignAccess implements CampaignAccess {
       throw new CampaignAuthorizationError('A linked Discord account is required.');
     }
 
+    await assertNotBanned(this.prisma, discordUserId);
+
     const admin = await this.prisma.campaignAdmin.findUnique({
       where: {
         discordUserId_campaignId: {
@@ -205,6 +227,8 @@ class PrismaCampaignAccess implements CampaignAccess {
     if (admin === null) {
       throw new CampaignAuthorizationError();
     }
+
+    assertCampaignActive(campaign);
 
     return createCampaignScope(campaign, admin.role);
   }

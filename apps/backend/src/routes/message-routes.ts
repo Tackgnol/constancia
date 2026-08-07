@@ -94,7 +94,7 @@ const messageRoutes: FastifyPluginAsync = async (app) => {
         },
       );
 
-      if (result.delivery.status === 'failed') {
+      if (result.delivery.status !== 'delivered') {
         return sendError(
           reply,
           503,

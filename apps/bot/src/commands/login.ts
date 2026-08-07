@@ -4,6 +4,7 @@ import {
   type InteractionDeferReplyOptions,
 } from 'discord.js';
 import { botBackend, type BotBackend } from '../backend/bot-backend.js';
+import { BotAccessRevokedError } from '../backend/access-revoked.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
 export async function handleLogin(
@@ -25,6 +26,7 @@ export async function handleLogin(
       content: `Use this link to log in to the Constancia web dashboard: <${result.url}>\n\n*Note: This link is unique to you and should not be shared.*`,
     });
   } catch (error) {
+    if (error instanceof BotAccessRevokedError) throw error;
     console.error('Login command error:', error);
     await interaction.editReply('Failed to generate a login link. Please try again later.');
   }

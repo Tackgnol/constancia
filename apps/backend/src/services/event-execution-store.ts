@@ -113,6 +113,8 @@ export function createPrismaEventExecutionStore(prisma: PrismaClient): EventExec
         where: {
           status: { in: ['pending', 'failed'] },
           nextAttemptAt: { lte: new Date() },
+          // The disable handler sweeps queued rows; this also closes the race.
+          execution: { campaign: { disabledAt: null } },
           ...(input.executionId ? { executionId: input.executionId } : {}),
         },
         orderBy: { nextAttemptAt: 'asc' },
@@ -137,12 +139,14 @@ export function createPrismaEventExecutionStore(prisma: PrismaClient): EventExec
                 lastError: null,
                 deliveredAt: new Date(),
               }
-            : {
-                status: 'failed',
-                attempts: { increment: 1 },
-                lastError: result.error,
-                nextAttemptAt: new Date(),
-              },
+            : result.status === 'cancelled'
+              ? { status: 'cancelled', lastError: null }
+              : {
+                  status: 'failed',
+                  attempts: { increment: 1 },
+                  lastError: result.error,
+                  nextAttemptAt: new Date(),
+                },
         select: { executionId: true },
       });
       const execution = await prisma.eventExecution.findUniqueOrThrow({
@@ -251,7 +255,7 @@ function parseExecutionStatus(value: string): EventExecutionStatus {
 }
 
 function parseDeliveryStatus(value: string): EventDeliveryStatus {
-  if (value === 'pending' || value === 'delivered' || value === 'failed') {
+  if (value === 'pending' || value === 'delivered' || value === 'failed' || value === 'cancelled') {
     return value;
   }
   throw new Error(`Unknown Event delivery status: ${value}`);

@@ -14,6 +14,7 @@ import {
 } from '../schemas.js';
 import { getPrismaClient } from '../auth/prisma.js';
 import { sendNotFound } from '../http-responses.js';
+import { assertCampaignActive, assertNotBanned } from '../services/moderation-enforcement.js';
 
 interface MagicLinkBody {
   discordUserId: string;
@@ -166,15 +167,16 @@ export const authBotRoutes: FastifyPluginAsync = async (app) => {
       const body = request.body;
       const requestId = randomUUID();
       const callbackURL = '/';
-      const discordUser = await ensureDiscordUser(body.discordUserId);
       if (process.env.NODE_ENV !== 'test') {
         const prisma = getPrismaClient();
+        await assertNotBanned(prisma, body.discordUserId);
         const campaign = await prisma.campaign.findUnique({
           where: { discordGuildId: body.guildId },
-          select: { id: true },
+          select: { id: true, disabledAt: true, disabledPublicReason: true },
         });
 
         if (campaign) {
+          assertCampaignActive(campaign);
           await prisma.campaignAdmin.upsert({
             where: {
               discordUserId_campaignId: {
@@ -193,6 +195,7 @@ export const authBotRoutes: FastifyPluginAsync = async (app) => {
           });
         }
       }
+      const discordUser = await ensureDiscordUser(body.discordUserId);
 
       const result = await auth.api.signInMagicLink({
         body: {
@@ -234,14 +237,16 @@ export const authBotRoutes: FastifyPluginAsync = async (app) => {
   ) {
     const body = request.body;
     const prisma = getPrismaClient();
+    await assertNotBanned(prisma, body.discordUserId);
     const campaign = await prisma.campaign.findUnique({
       where: { discordGuildId: body.guildId },
-      select: { id: true },
+      select: { id: true, disabledAt: true, disabledPublicReason: true },
     });
 
     if (campaign === null) {
       return sendNotFound(reply, 'Campaign not found for this guild');
     }
+    assertCampaignActive(campaign);
 
     const requestId = randomUUID();
     const callbackURL = `/player/campaigns/${campaign.id}/${target}`;

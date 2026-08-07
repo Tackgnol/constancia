@@ -13,6 +13,8 @@ const campaign = {
   id: 'campaign-1',
   discordGuildId: 'guild-1',
   gameSystemId: 'vtm-v5',
+  disabledAt: null as Date | null,
+  disabledPublicReason: null as string | null,
 };
 
 function session(overrides: Partial<SessionAccessContext> = {}): SessionAccessContext {
@@ -41,6 +43,7 @@ function createPrismaMock(
     loreEntry?: { id: string } | null;
     scene?: { id: string } | null;
     scenePeg?: { id: string } | null;
+    ban?: { reasonShownToUser: string | null } | null;
   } = {},
 ): CampaignAccessPrisma {
   return {
@@ -53,6 +56,9 @@ function createPrismaMock(
       findUnique: vi
         .fn()
         .mockResolvedValue('admin' in overrides ? overrides.admin : { role: 'gm' }),
+    },
+    discordUserBan: {
+      findUnique: vi.fn().mockResolvedValue('ban' in overrides ? overrides.ban : null),
     },
     event: {
       findFirst: vi
@@ -249,5 +255,70 @@ describe('CampaignAccess', () => {
       where: { id: 'entry-1', questId: 'quest-1', quest: { campaignId: 'campaign-1' } },
       select: { id: true },
     });
+  });
+});
+
+describe('requireAdmin moderation guards', () => {
+  it('blocks a banned GM with the ban reason', async () => {
+    const access = createCampaignAccess(
+      createPrismaMock({ ban: { reasonShownToUser: 'Repeated harassment.' } }),
+    );
+
+    await expect(access.requireAdmin(session(), 'campaign-1')).rejects.toThrow(
+      'Repeated harassment.',
+    );
+  });
+
+  it('blocks an admin of a disabled campaign with the public reason', async () => {
+    const access = createCampaignAccess(
+      createPrismaMock({
+        campaign: {
+          ...campaign,
+          disabledAt: new Date('2026-08-06T00:00:00.000Z'),
+          disabledPublicReason: 'Suspended pending review.',
+        },
+      }),
+    );
+
+    await expect(access.requireAdmin(session(), 'campaign-1')).rejects.toThrow(
+      'Suspended pending review.',
+    );
+  });
+
+  it('prefers the ban reason when both guards apply', async () => {
+    const access = createCampaignAccess(
+      createPrismaMock({
+        ban: { reasonShownToUser: 'Repeated harassment.' },
+        campaign: {
+          ...campaign,
+          disabledAt: new Date('2026-08-06T00:00:00.000Z'),
+          disabledPublicReason: 'Suspended pending review.',
+        },
+      }),
+    );
+
+    await expect(access.requireAdmin(session(), 'campaign-1')).rejects.toThrow(
+      'Repeated harassment.',
+    );
+  });
+
+  it('lets a superuser reverse either action', async () => {
+    const access = createCampaignAccess(
+      createPrismaMock({
+        ban: { reasonShownToUser: 'Repeated harassment.' },
+        campaign: {
+          ...campaign,
+          disabledAt: new Date('2026-08-06T00:00:00.000Z'),
+          disabledPublicReason: 'Suspended pending review.',
+        },
+      }),
+    );
+
+    const scope = await access.requireAdmin(
+      session({ isSuperUser: true, discordUserId: 'discord-gm' }),
+      'campaign-1',
+    );
+
+    expect(scope.role).toBe('superuser');
   });
 });
