@@ -14,6 +14,7 @@ export type WarRoomProjection = Pick<
   | 'quests'
   | 'summaries'
   | 'lore'
+  | 'npcs'
 > & {
   /**
    * Invariant: every key of `eventCountByTag` must also appear in

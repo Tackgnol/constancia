@@ -218,6 +218,7 @@ export default function WarRoomLayout() {
   const liveQuests = projection.quests;
   const liveSummaries = projection.summaries;
   const liveLore = projection.lore;
+  const liveNpcs = projection.npcs;
   const isPlayRoute = location.pathname === '/';
   const tagEventCounts = new Map(Object.entries(projection.eventCountByTag));
   const liveCharacters = projection.rawCharacters;
@@ -288,6 +289,7 @@ export default function WarRoomLayout() {
     quests: liveQuests,
     summaries: liveSummaries,
     lore: liveLore,
+    npcs: liveNpcs,
     recordActivity,
   };
 

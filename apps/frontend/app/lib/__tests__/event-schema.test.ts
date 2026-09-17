@@ -11,6 +11,7 @@ import {
   isPipelineEqualToEventDefault,
   normalizeEventFormValues,
   normalizePipelineForSubmission,
+  outcomeEntrySchema,
   pipelineBlockSchema,
   type EventFormValues,
   type PipelineBlock,
@@ -251,6 +252,27 @@ describe('eventFormSchema', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0]?.path).toEqual(['pipeline', 0, 'config', 'content']);
+    }
+  });
+});
+
+describe('outcomeEntrySchema', () => {
+  it('accepts an outcome with no grants', () => {
+    const result = outcomeEntrySchema.safeParse({ threshold: 2, text: 'Full success' });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts an outcome carrying lore and NPC fact grants', () => {
+    const result = outcomeEntrySchema.safeParse({
+      threshold: 2,
+      text: 'Full success',
+      loreEntryIds: ['lore-1'],
+      npcFactIds: ['fact-1', 'fact-2'],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.loreEntryIds).toEqual(['lore-1']);
+      expect(result.data.npcFactIds).toEqual(['fact-1', 'fact-2']);
     }
   });
 });

@@ -341,6 +341,8 @@ export const PIPELINE_BLOCK_SPECS = [
             properties: {
               threshold: { type: 'number' },
               text: { type: 'string' },
+              loreEntryIds: { type: 'array', items: { type: 'string' } },
+              npcFactIds: { type: 'array', items: { type: 'string' } },
             },
             required: ['threshold', 'text'],
           },

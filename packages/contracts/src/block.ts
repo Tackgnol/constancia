@@ -106,6 +106,16 @@ export type BlockEffect =
       name: string;
       description: string;
       visible: boolean;
+    }
+  | {
+      kind: 'grant-lore-entry';
+      loreEntryId: string;
+      discordUserId: string;
+    }
+  | {
+      kind: 'grant-npc-fact';
+      npcFactId: string;
+      discordUserId: string;
     };
 
 export interface BlockResult {

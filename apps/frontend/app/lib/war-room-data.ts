@@ -2,6 +2,7 @@ import type {
   ListEvents200DataItem,
   ListCharacters200DataItem,
   ListLoreEntries200DataItem,
+  ListNpcs200DataItem,
   ListQuests200DataItem,
   ListSessionSummaries200DataItem,
 } from '@constancia/api-client/model';
@@ -14,22 +15,6 @@ export type Presence = 'online' | 'offline';
 export type Tag = {
   id: string;
   label: string;
-};
-
-export type TriggerCard = {
-  id: string;
-  kind: TriggerKind;
-  name: string;
-  meta: string;
-  fired?: boolean;
-  tags?: string[];
-};
-
-export type TriggerSection = {
-  id: string;
-  title: string;
-  kind: TriggerKind;
-  items: TriggerCard[];
 };
 
 export type PlayerPresence = {
@@ -90,6 +75,7 @@ export type WarRoomContext = {
   quests: ListQuests200DataItem[];
   summaries: ListSessionSummaries200DataItem[];
   lore: ListLoreEntries200DataItem[];
+  npcs?: ListNpcs200DataItem[];
   demoMode?: boolean;
   firedEventIds?: string[];
   recordActivity?: (label: string) => void;
@@ -112,132 +98,6 @@ export const fallbackSystem: SystemSummary = {
   defaultCalendarId: GREGORIAN_CALENDAR.id,
   calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
 };
-
-export const sessionTags: Tag[] = [
-  { id: 'the-elysium', label: 'The Elysium' },
-  { id: 'harpy-court', label: "Harpy's Court" },
-  { id: 'victim-bedroom', label: "Victim's Bedroom" },
-  { id: 'basement', label: 'House Basement' },
-  { id: 'streets', label: 'The Streets' },
-];
-
-export const triggerSections: TriggerSection[] = [
-  {
-    id: 'tests',
-    title: 'Tests',
-    kind: 'test',
-    items: [
-      {
-        id: 'perception-check',
-        kind: 'test',
-        name: 'Perception Check',
-        meta: 'Wits + Awareness · d3',
-        tags: ['the-elysium'],
-      },
-      {
-        id: 'social-manipulation',
-        kind: 'test',
-        name: 'Social Manipulation',
-        meta: 'Manipulation + Persuasion · d4',
-        tags: ['harpy-court'],
-      },
-      {
-        id: 'stealth-approach',
-        kind: 'test',
-        name: 'Stealth Approach',
-        meta: 'Dexterity + Stealth · d2',
-        fired: true,
-        tags: ['basement'],
-      },
-      {
-        id: 'resist-dominate',
-        kind: 'test',
-        name: 'Resist Dominate',
-        meta: 'Resolve + Composure · d5',
-        tags: ['harpy-court'],
-      },
-    ],
-  },
-  {
-    id: 'narrations',
-    title: 'Narrations',
-    kind: 'narration',
-    items: [
-      {
-        id: 'the-arrival',
-        kind: 'narration',
-        name: 'The Arrival',
-        meta: 'image + text',
-        tags: ['the-elysium'],
-      },
-      {
-        id: 'elysium-opens',
-        kind: 'narration',
-        name: 'Elysium Opens',
-        meta: 'text only',
-        fired: true,
-        tags: ['the-elysium'],
-      },
-      {
-        id: 'the-betrayal',
-        kind: 'narration',
-        name: 'The Betrayal',
-        meta: 'image + text',
-        tags: ['harpy-court'],
-      },
-    ],
-  },
-  {
-    id: 'insights',
-    title: 'Stat Insights',
-    kind: 'insight',
-    items: [
-      {
-        id: 'occult-sigils',
-        kind: 'insight',
-        name: 'Occult Sigils',
-        meta: 'Occult ≥ 4',
-        tags: ['victim-bedroom'],
-      },
-      {
-        id: 'political-tension',
-        kind: 'insight',
-        name: 'Political Tension',
-        meta: 'Politics ≥ 3',
-        tags: ['harpy-court'],
-      },
-      {
-        id: 'hidden-weapon',
-        kind: 'insight',
-        name: 'Hidden Weapon',
-        meta: 'Awareness ≥ 3',
-        fired: true,
-        tags: ['basement'],
-      },
-    ],
-  },
-  {
-    id: 'messages',
-    title: 'Direct Messages',
-    kind: 'message',
-    items: [
-      {
-        id: 'princes-warning',
-        kind: 'message',
-        name: "Prince's Warning",
-        meta: '→ Aleksei',
-        tags: ['harpy-court'],
-      },
-      {
-        id: 'sires-whisper',
-        kind: 'message',
-        name: "Sire's Whisper",
-        meta: '→ Vivienne',
-        tags: ['the-elysium'],
-      },
-    ],
-  },
-];
 
 export const players: PlayerPresence[] = [
   {

@@ -5,6 +5,7 @@ import { listEvents } from '@constancia/api-client/endpoints/events/events';
 import { listQuests, listSessionSummaries } from '@constancia/api-client/endpoints/journal/journal';
 import { listLoreEntries } from '@constancia/api-client/endpoints/lore/lore';
 import { getServiceHealth } from '@constancia/api-client/endpoints/meta/meta';
+import { listNpcs } from '@constancia/api-client/endpoints/npcs/npcs';
 import { listGameSystems } from '@constancia/api-client/endpoints/systems/systems';
 import { parseGameDate } from '@constancia/systems';
 import { buildServerApiOptions } from './api-proxy.server.js';
@@ -46,6 +47,7 @@ export async function loadLiveWarRoomProjection(
     questsResponse,
     summariesResponse,
     loreResponse,
+    npcsResponse,
   ] = campaignId
     ? await Promise.all([
         listChannels({ id: campaignId }, options),
@@ -54,8 +56,9 @@ export async function loadLiveWarRoomProjection(
         listQuests({ id: campaignId }, options),
         listSessionSummaries({ id: campaignId }, options),
         listLoreEntries({ id: campaignId }, options),
+        listNpcs({ id: campaignId }, options),
       ])
-    : [null, null, null, null, null, null];
+    : [null, null, null, null, null, null, null];
 
   const channels: ChannelEntry[] =
     channelsResponse?.status === 'ok'
@@ -121,6 +124,7 @@ export async function loadLiveWarRoomProjection(
       quests: questsResponse?.status === 'ok' ? questsResponse.data : [],
       summaries: summariesResponse?.status === 'ok' ? summariesResponse.data : [],
       lore: loreResponse?.status === 'ok' ? loreResponse.data : [],
+      npcs: npcsResponse?.status === 'ok' ? npcsResponse.data : [],
       eventCountByTag: countEventsByChannel(events),
     },
   };

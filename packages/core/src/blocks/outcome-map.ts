@@ -1,9 +1,16 @@
-import type { BlockContext, BlockDefinition, BlockMessage } from '@constancia/contracts';
+import type {
+  BlockContext,
+  BlockDefinition,
+  BlockEffect,
+  BlockMessage,
+} from '@constancia/contracts';
 import { requirePipelineBlockSpec } from '@constancia/block-catalogue';
 
 interface Outcome {
   threshold: number;
   text: string;
+  loreEntryIds?: string[];
+  npcFactIds?: string[];
 }
 
 interface OutcomeMapConfig {
@@ -37,9 +44,31 @@ export const outcomeMapBlock: BlockDefinition<OutcomeMapConfig> = {
       content: outcome.text,
     }));
 
+    // Knowledge grants need a specific player to attach to — a system-fired
+    // Event (no submitting player) never grants Lore/NPC facts.
+    const effects: BlockEffect[] = targetId
+      ? selectedOutcomes.flatMap((outcome: Outcome) => [
+          ...(outcome.loreEntryIds ?? []).map(
+            (loreEntryId): BlockEffect => ({
+              kind: 'grant-lore-entry',
+              loreEntryId,
+              discordUserId: targetId,
+            }),
+          ),
+          ...(outcome.npcFactIds ?? []).map(
+            (npcFactId): BlockEffect => ({
+              kind: 'grant-npc-fact',
+              npcFactId,
+              discordUserId: targetId,
+            }),
+          ),
+        ])
+      : [];
+
     return {
       output: selectedOutcomes,
       messages,
+      effects,
       halt: false,
     };
   },

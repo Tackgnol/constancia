@@ -74,6 +74,8 @@ export const conditionalGateConfigSchema = z.object({
 export const outcomeEntrySchema = z.object({
   threshold: z.coerce.number(),
   text: z.string(),
+  loreEntryIds: z.array(z.string()).optional(),
+  npcFactIds: z.array(z.string()).optional(),
 });
 
 export const outcomeMapConfigSchema = z.object({

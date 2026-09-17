@@ -67,4 +67,30 @@ describe('OutcomeMap block', () => {
     expect(result.messages).toHaveLength(3);
     expect(result.messages?.map((message) => message.content)).toEqual(['Fail', 'Partial', 'Full']);
   });
+
+  it('emits grant effects for lore and NPC facts on the matched outcome', async () => {
+    const config = {
+      outcomes: [
+        { threshold: 0, text: 'Fail' },
+        { threshold: 2, text: 'Full', loreEntryIds: ['lore-1'], npcFactIds: ['fact-1', 'fact-2'] },
+      ],
+    };
+
+    const result = await outcomeMapBlock.execute(config, ctx);
+    expect(result.effects).toEqual([
+      { kind: 'grant-lore-entry', loreEntryId: 'lore-1', discordUserId: 'p1' },
+      { kind: 'grant-npc-fact', npcFactId: 'fact-1', discordUserId: 'p1' },
+      { kind: 'grant-npc-fact', npcFactId: 'fact-2', discordUserId: 'p1' },
+    ]);
+  });
+
+  it('emits no grant effects for a system-fired Event with no submitting player', async () => {
+    const config = {
+      outcomes: [{ threshold: 0, text: 'Full', loreEntryIds: ['lore-1'] }],
+    };
+
+    const systemCtx = { ...ctx, playerId: 'system' };
+    const result = await outcomeMapBlock.execute(config, systemCtx);
+    expect(result.effects).toEqual([]);
+  });
 });

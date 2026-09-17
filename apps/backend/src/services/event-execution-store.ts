@@ -170,6 +170,15 @@ interface BlockEffectTransaction {
   sessionSummary: {
     create(args: Prisma.SessionSummaryCreateArgs): PromiseLike<{ id: string }>;
   };
+  character: {
+    findUniqueOrThrow(args: Prisma.CharacterFindUniqueOrThrowArgs): PromiseLike<{ id: string }>;
+  };
+  loreKnowledge: {
+    createMany(args: Prisma.LoreKnowledgeCreateManyArgs): PromiseLike<unknown>;
+  };
+  npcKnowledge: {
+    createMany(args: Prisma.NpcKnowledgeCreateManyArgs): PromiseLike<unknown>;
+  };
 }
 
 export async function applyBlockEffect(
@@ -193,6 +202,30 @@ export async function applyBlockEffect(
         visible: effect.visible,
         channelId: effect.channelId,
       },
+    });
+    return;
+  }
+
+  if (effect.kind === 'grant-lore-entry') {
+    const character = await tx.character.findUniqueOrThrow({
+      where: { discordUserId_campaignId: { discordUserId: effect.discordUserId, campaignId } },
+      select: { id: true },
+    });
+    await tx.loreKnowledge.createMany({
+      data: [{ characterId: character.id, loreEntryId: effect.loreEntryId }],
+      skipDuplicates: true,
+    });
+    return;
+  }
+
+  if (effect.kind === 'grant-npc-fact') {
+    const character = await tx.character.findUniqueOrThrow({
+      where: { discordUserId_campaignId: { discordUserId: effect.discordUserId, campaignId } },
+      select: { id: true },
+    });
+    await tx.npcKnowledge.createMany({
+      data: [{ characterId: character.id, npcFactId: effect.npcFactId }],
+      skipDuplicates: true,
     });
     return;
   }

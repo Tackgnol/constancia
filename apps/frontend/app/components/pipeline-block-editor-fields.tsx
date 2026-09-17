@@ -270,23 +270,87 @@ function SystemStatFieldAdapter({ field, name, warRoom }: FieldAdapterProps) {
 interface OutcomeEntry {
   threshold: number | string;
   text: string;
+  loreEntryIds: string[];
+  npcFactIds: string[];
+}
+
+function normalizeStringIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0);
 }
 
 function normalizeOutcomes(value: unknown): OutcomeEntry[] {
   if (!Array.isArray(value)) return [];
   return value.map((entry) => {
-    if (typeof entry !== 'object' || entry === null) return { threshold: 0, text: '' };
+    if (typeof entry !== 'object' || entry === null) {
+      return { threshold: 0, text: '', loreEntryIds: [], npcFactIds: [] };
+    }
     const record = entry as Record<string, unknown>;
     const threshold = record.threshold;
     return {
       threshold: typeof threshold === 'number' || typeof threshold === 'string' ? threshold : 0,
       text: typeof record.text === 'string' ? record.text : '',
+      loreEntryIds: normalizeStringIds(record.loreEntryIds),
+      npcFactIds: normalizeStringIds(record.npcFactIds),
     };
   });
 }
 
-function OutcomeListFieldAdapter({ name }: FieldAdapterProps) {
+interface KnowledgeGrantOption {
+  id: string;
+  label: string;
+}
+
+function KnowledgeGrantChecklist({
+  label,
+  options,
+  selectedIds,
+  onChange,
+}: {
+  label: string;
+  options: KnowledgeGrantOption[];
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  if (options.length === 0) return null;
+  return (
+    <div className="grid gap-1 rounded-md border border-border/60 bg-background/40 p-2">
+      <span className="text-[0.7rem] font-mono uppercase text-muted-foreground">
+        Grant {label} on this outcome
+      </span>
+      <div className="grid max-h-32 gap-1 overflow-y-auto">
+        {options.map((option) => {
+          const checked = selectedIds.includes(option.id);
+          return (
+            <label key={option.id} className="flex items-start gap-2 text-sm">
+              <Checkbox
+                checked={checked}
+                onCheckedChange={(next) =>
+                  onChange(
+                    next === true
+                      ? [...selectedIds, option.id]
+                      : selectedIds.filter((id) => id !== option.id),
+                  )
+                }
+              />
+              <span className="leading-tight">{option.label}</span>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function OutcomeListFieldAdapter({ name, warRoom }: FieldAdapterProps) {
   const { control } = useFormContext<EventFormValues>();
+  const loreOptions: KnowledgeGrantOption[] = (warRoom.lore ?? []).map((entry) => ({
+    id: entry.id,
+    label: entry.title,
+  }));
+  const npcFactOptions: KnowledgeGrantOption[] = (warRoom.npcs ?? []).flatMap((npc) =>
+    npc.facts.map((fact) => ({ id: fact.id, label: `${npc.name}: ${fact.content}` })),
+  );
   return (
     <Controller
       control={control}
@@ -304,39 +368,60 @@ function OutcomeListFieldAdapter({ name }: FieldAdapterProps) {
           <div className="grid gap-3">
             <div className="outcome-list">
               {outcomes.map((outcome, outcomeIndex) => (
-                <div key={outcomeIndex} className="outcome-row">
-                  <Input
-                    type="number"
-                    placeholder="Threshold"
-                    className="outcome-score"
-                    value={outcome.threshold}
-                    onChange={(event) =>
-                      update(outcomeIndex, { threshold: event.currentTarget.value })
-                    }
+                <div key={outcomeIndex} className="grid gap-2">
+                  <div className="outcome-row">
+                    <Input
+                      type="number"
+                      placeholder="Threshold"
+                      className="outcome-score"
+                      value={outcome.threshold}
+                      onChange={(event) =>
+                        update(outcomeIndex, { threshold: event.currentTarget.value })
+                      }
+                    />
+                    <Input
+                      type="text"
+                      placeholder="Outcome text…"
+                      className="outcome-text"
+                      value={outcome.text}
+                      onChange={(event) =>
+                        update(outcomeIndex, { text: event.currentTarget.value })
+                      }
+                    />
+                    <button
+                      className="outcome-remove"
+                      onClick={() =>
+                        formField.onChange(outcomes.filter((_, index) => index !== outcomeIndex))
+                      }
+                      type="button"
+                      aria-label="Remove outcome"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <KnowledgeGrantChecklist
+                    label="Lore"
+                    options={loreOptions}
+                    selectedIds={outcome.loreEntryIds}
+                    onChange={(loreEntryIds) => update(outcomeIndex, { loreEntryIds })}
                   />
-                  <Input
-                    type="text"
-                    placeholder="Outcome text…"
-                    className="outcome-text"
-                    value={outcome.text}
-                    onChange={(event) => update(outcomeIndex, { text: event.currentTarget.value })}
+                  <KnowledgeGrantChecklist
+                    label="NPC facts"
+                    options={npcFactOptions}
+                    selectedIds={outcome.npcFactIds}
+                    onChange={(npcFactIds) => update(outcomeIndex, { npcFactIds })}
                   />
-                  <button
-                    className="outcome-remove"
-                    onClick={() =>
-                      formField.onChange(outcomes.filter((_, index) => index !== outcomeIndex))
-                    }
-                    type="button"
-                    aria-label="Remove outcome"
-                  >
-                    ×
-                  </button>
                 </div>
               ))}
             </div>
             <button
               className="outcome-add"
-              onClick={() => formField.onChange([...outcomes, { threshold: 0, text: '' }])}
+              onClick={() =>
+                formField.onChange([
+                  ...outcomes,
+                  { threshold: 0, text: '', loreEntryIds: [], npcFactIds: [] },
+                ])
+              }
               type="button"
             >
               + Add Outcome
