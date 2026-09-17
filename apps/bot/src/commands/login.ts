@@ -4,7 +4,7 @@ import {
   type InteractionDeferReplyOptions,
 } from 'discord.js';
 import { botBackend, type BotBackend } from '../backend/bot-backend.js';
-import { BotAccessRevokedError } from '../backend/access-revoked.js';
+import { BotAccessRevokedError, BotCampaignAdminRequiredError } from '../backend/access-revoked.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
 export async function handleLogin(
@@ -27,6 +27,10 @@ export async function handleLogin(
     });
   } catch (error) {
     if (error instanceof BotAccessRevokedError) throw error;
+    if (error instanceof BotCampaignAdminRequiredError) {
+      await interaction.editReply(error.message);
+      return;
+    }
     console.error('Login command error:', error);
     await interaction.editReply('Failed to generate a login link. Please try again later.');
   }

@@ -11,6 +11,9 @@ const prismaMock = vi.hoisted(() => ({
   discordUserBan: { findUnique: vi.fn() },
   event: { findUnique: vi.fn() },
   messageReport: { create: vi.fn() },
+  campaignAdmin: { findUnique: vi.fn(), count: vi.fn(), upsert: vi.fn(), create: vi.fn() },
+  character: { upsert: vi.fn(), delete: vi.fn() },
+  $transaction: vi.fn(),
 }));
 
 vi.mock('../auth/prisma.js', () => ({ getPrismaClient: () => prismaMock }));
@@ -32,6 +35,7 @@ let app: Awaited<ReturnType<typeof buildTestApp>>;
 beforeEach(() => {
   vi.clearAllMocks();
   prismaMock.discordUserBan.findUnique.mockResolvedValue(null);
+  prismaMock.$transaction.mockImplementation((jobs: Promise<unknown>[]) => Promise.all(jobs));
 });
 afterEach(async () => app.close());
 
@@ -54,6 +58,7 @@ describe('bot setup moderation', () => {
         channelName: 'general',
         campaignName: 'Midnight Chronicle',
         gameSystemId: 'vtm-v5',
+        discordUserId: 'discord-caller',
       },
     });
 
@@ -118,5 +123,144 @@ describe('bot setup moderation', () => {
     expect(prismaMock.messageReport.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ campaignId: 'campaign-1' }) }),
     );
+  });
+});
+
+describe('bot GM authorization', () => {
+  const setupPayload = {
+    guildId: 'guild-1',
+    guildName: 'Test Guild',
+    discordChannelId: 'discord-channel-9',
+    channelName: 'general',
+    campaignName: 'Midnight Chronicle',
+    gameSystemId: 'vtm-v5',
+    discordUserId: 'discord-caller',
+  };
+
+  it('bootstraps the caller as owner on a brand-new campaign', async () => {
+    prismaMock.campaign.findUnique.mockResolvedValue(null);
+    prismaMock.campaign.create.mockResolvedValue({
+      id: 'campaign-1',
+      name: 'Midnight Chronicle',
+      discordGuildId: 'guild-1',
+      gameSystemId: 'vtm-v5',
+      gameDate: null,
+    });
+    prismaMock.channel.findUnique.mockResolvedValue(null);
+    prismaMock.channel.upsert.mockResolvedValue({
+      id: 'channel-1',
+      name: 'general',
+      discordChannelId: 'discord-channel-9',
+      campaignId: 'campaign-1',
+      type: 'main',
+    });
+    app = await buildTestApp({ kind: 'bot' });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/bot/setup-channel',
+      payload: setupPayload,
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(prismaMock.campaignAdmin.upsert).toHaveBeenCalledWith({
+      where: {
+        discordUserId_campaignId: { discordUserId: 'discord-caller', campaignId: 'campaign-1' },
+      },
+      create: { discordUserId: 'discord-caller', campaignId: 'campaign-1', role: 'owner' },
+      update: {},
+    });
+  });
+
+  it('rejects a non-admin re-running /setup on an existing campaign', async () => {
+    prismaMock.campaign.findUnique.mockResolvedValue({
+      id: 'campaign-1',
+      disabledAt: null,
+      disabledPublicReason: null,
+    });
+    prismaMock.campaignAdmin.count.mockResolvedValue(1);
+    prismaMock.campaignAdmin.findUnique.mockResolvedValue(null);
+    app = await buildTestApp({ kind: 'bot' });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/bot/setup-channel',
+      payload: setupPayload,
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json().data.code).toBe('CAMPAIGN_ADMIN_REQUIRED');
+    expect(prismaMock.campaignAdmin.upsert).not.toHaveBeenCalled();
+    expect(prismaMock.channel.upsert).not.toHaveBeenCalled();
+  });
+
+  it('allows an existing admin to re-run /setup without re-creating the admin row', async () => {
+    prismaMock.campaign.findUnique.mockResolvedValue({
+      id: 'campaign-1',
+      disabledAt: null,
+      disabledPublicReason: null,
+    });
+    prismaMock.campaign.findUniqueOrThrow.mockResolvedValue({
+      id: 'campaign-1',
+      name: 'Midnight Chronicle',
+      discordGuildId: 'guild-1',
+      gameSystemId: 'vtm-v5',
+      gameDate: null,
+    });
+    prismaMock.campaignAdmin.count.mockResolvedValue(1);
+    prismaMock.campaignAdmin.findUnique.mockResolvedValue({ role: 'owner' });
+    prismaMock.channel.findUnique.mockResolvedValue({ id: 'channel-1' });
+    prismaMock.channel.upsert.mockResolvedValue({
+      id: 'channel-1',
+      name: 'general',
+      discordChannelId: 'discord-channel-9',
+      campaignId: 'campaign-1',
+      type: 'main',
+    });
+    app = await buildTestApp({ kind: 'bot' });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/bot/setup-channel',
+      payload: setupPayload,
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(prismaMock.campaignAdmin.upsert).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-admin trying to sync participants', async () => {
+    prismaMock.campaign.findUnique.mockResolvedValue({ id: 'campaign-1' });
+    prismaMock.campaignAdmin.findUnique.mockResolvedValue(null);
+    app = await buildTestApp({ kind: 'bot' });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/bot/sync-participants',
+      payload: {
+        guildId: 'guild-1',
+        participants: [{ discordUserId: 'discord-player', discordName: 'Player' }],
+        callerDiscordUserId: 'discord-outsider',
+      },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json().data.code).toBe('CAMPAIGN_ADMIN_REQUIRED');
+    expect(prismaMock.character.upsert).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-admin trying to remove a participant', async () => {
+    prismaMock.campaign.findUnique.mockResolvedValue({ id: 'campaign-1' });
+    prismaMock.campaignAdmin.findUnique.mockResolvedValue(null);
+    app = await buildTestApp({ kind: 'bot' });
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/bot/participant/guild-1/discord-player?callerDiscordUserId=discord-outsider',
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json().data.code).toBe('CAMPAIGN_ADMIN_REQUIRED');
+    expect(prismaMock.character.delete).not.toHaveBeenCalled();
   });
 });

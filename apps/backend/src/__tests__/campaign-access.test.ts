@@ -1,12 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SessionAccessContext } from '../auth/access-context.js';
 import {
+  CampaignAdminRequiredError,
   CampaignAuthenticationError,
   CampaignAuthorizationError,
   CampaignNotFoundError,
   CampaignResourceNotFoundError,
   createCampaignAccess,
+  ensureMagicLinkCampaignAdmin,
+  requireBotCampaignAdmin,
   type CampaignAccessPrisma,
+  type MagicLinkCampaignAdminPrisma,
 } from '../services/campaign-access.js';
 
 const campaign = {
@@ -320,5 +324,69 @@ describe('requireAdmin moderation guards', () => {
     );
 
     expect(scope.role).toBe('superuser');
+  });
+});
+
+describe('requireBotCampaignAdmin', () => {
+  function adminPrismaMock(admin: { role: 'owner' | 'gm' } | null) {
+    return { campaignAdmin: { findUnique: vi.fn().mockResolvedValue(admin) } };
+  }
+
+  it('resolves when the caller already holds a CampaignAdmin row', async () => {
+    const prisma = adminPrismaMock({ role: 'gm' });
+
+    await expect(
+      requireBotCampaignAdmin(prisma, 'discord-gm', 'campaign-1'),
+    ).resolves.toBeUndefined();
+  });
+
+  it('throws CampaignAdminRequiredError when the caller has no CampaignAdmin row', async () => {
+    const prisma = adminPrismaMock(null);
+
+    await expect(requireBotCampaignAdmin(prisma, 'discord-outsider', 'campaign-1')).rejects.toThrow(
+      CampaignAdminRequiredError,
+    );
+  });
+});
+
+describe('ensureMagicLinkCampaignAdmin', () => {
+  function magicLinkPrismaMock(overrides: {
+    admin?: { role: 'owner' | 'gm' } | null;
+    existingAdminCount?: number;
+  }): MagicLinkCampaignAdminPrisma {
+    return {
+      campaignAdmin: {
+        findUnique: vi.fn().mockResolvedValue(overrides.admin ?? null),
+        count: vi.fn().mockResolvedValue(overrides.existingAdminCount ?? 0),
+        create: vi.fn().mockResolvedValue(undefined),
+      },
+    };
+  }
+
+  it('bootstraps the caller as owner when the campaign has no admin yet', async () => {
+    const prisma = magicLinkPrismaMock({ admin: null, existingAdminCount: 0 });
+
+    await ensureMagicLinkCampaignAdmin(prisma, 'discord-first-gm', 'campaign-1');
+
+    expect(prisma.campaignAdmin.create).toHaveBeenCalledWith({
+      data: { discordUserId: 'discord-first-gm', campaignId: 'campaign-1', role: 'owner' },
+    });
+  });
+
+  it('resolves without creating a row when the caller is already an admin', async () => {
+    const prisma = magicLinkPrismaMock({ admin: { role: 'gm' }, existingAdminCount: 1 });
+
+    await ensureMagicLinkCampaignAdmin(prisma, 'discord-gm', 'campaign-1');
+
+    expect(prisma.campaignAdmin.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects an ordinary member when the campaign already has an admin', async () => {
+    const prisma = magicLinkPrismaMock({ admin: null, existingAdminCount: 1 });
+
+    await expect(
+      ensureMagicLinkCampaignAdmin(prisma, 'discord-outsider', 'campaign-1'),
+    ).rejects.toThrow(CampaignAdminRequiredError);
+    expect(prisma.campaignAdmin.create).not.toHaveBeenCalled();
   });
 });

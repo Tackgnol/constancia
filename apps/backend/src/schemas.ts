@@ -1207,6 +1207,7 @@ export const setupChannelBodySchema = {
     channelName: { type: 'string' },
     campaignName: { type: 'string' },
     gameSystemId: { type: 'string' },
+    discordUserId: { type: 'string' },
   },
   required: [
     'guildId',
@@ -1215,6 +1216,7 @@ export const setupChannelBodySchema = {
     'channelName',
     'campaignName',
     'gameSystemId',
+    'discordUserId',
   ],
 } as const;
 
@@ -1253,8 +1255,9 @@ export const syncParticipantsBodySchema = {
   properties: {
     guildId: { type: 'string' },
     participants: { type: 'array', items: participantEntrySchema, minItems: 1 },
+    callerDiscordUserId: { type: 'string' },
   },
-  required: ['guildId', 'participants'],
+  required: ['guildId', 'participants', 'callerDiscordUserId'],
 } as const;
 
 export const syncParticipantsDataSchema = {
@@ -1275,6 +1278,15 @@ export const participantParamsSchema = {
     discordUserId: { type: 'string' },
   },
   required: ['guildId', 'discordUserId'],
+} as const;
+
+export const removeParticipantQuerySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    callerDiscordUserId: { type: 'string' },
+  },
+  required: ['callerDiscordUserId'],
 } as const;
 
 // ─── Scenes and maps ────────────────────────────────────────

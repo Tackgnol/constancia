@@ -15,6 +15,7 @@ import {
 import { getPrismaClient } from '../auth/prisma.js';
 import { sendNotFound } from '../http-responses.js';
 import { assertCampaignActive, assertNotBanned } from '../services/moderation-enforcement.js';
+import { ensureMagicLinkCampaignAdmin } from '../services/campaign-access.js';
 
 interface MagicLinkBody {
   discordUserId: string;
@@ -167,6 +168,10 @@ export const authBotRoutes: FastifyPluginAsync = async (app) => {
       const body = request.body;
       const requestId = randomUUID();
       const callbackURL = '/';
+      // Skipped under the plain test NODE_ENV: this app has no reachable
+      // Postgres in that mode (Better Auth's own session store is SQLite and
+      // doesn't need it). The gating logic itself is covered directly, with a
+      // mocked Prisma client, in auth-bot-routes.test.ts.
       if (process.env.NODE_ENV !== 'test') {
         const prisma = getPrismaClient();
         await assertNotBanned(prisma, body.discordUserId);
@@ -177,22 +182,7 @@ export const authBotRoutes: FastifyPluginAsync = async (app) => {
 
         if (campaign) {
           assertCampaignActive(campaign);
-          await prisma.campaignAdmin.upsert({
-            where: {
-              discordUserId_campaignId: {
-                discordUserId: body.discordUserId,
-                campaignId: campaign.id,
-              },
-            },
-            create: {
-              discordUserId: body.discordUserId,
-              campaignId: campaign.id,
-              role: 'gm',
-            },
-            update: {
-              role: 'gm',
-            },
-          });
+          await ensureMagicLinkCampaignAdmin(prisma, body.discordUserId, campaign.id);
         }
       }
       const discordUser = await ensureDiscordUser(body.discordUserId);

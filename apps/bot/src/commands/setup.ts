@@ -7,7 +7,7 @@ import {
   type InteractionDeferReplyOptions,
 } from 'discord.js';
 import { botBackend, type BotBackend } from '../backend/bot-backend.js';
-import { BotAccessRevokedError } from '../backend/access-revoked.js';
+import { BotAccessRevokedError, BotCampaignAdminRequiredError } from '../backend/access-revoked.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
 const DEFAULT_GAME_SYSTEM_ID = 'vtm-v5';
@@ -78,6 +78,7 @@ export async function handleSetup(
       channelName,
       campaignName: guildName,
       gameSystemId,
+      discordUserId: interaction.user.id,
     });
 
     let message =
@@ -95,9 +96,11 @@ export async function handleSetup(
       const member = interaction.member as GuildMember | null;
       const discordName =
         member?.displayName ?? interaction.user.displayName ?? interaction.user.username;
-      await backend.syncParticipants(guildId, [
-        { discordUserId: interaction.user.id, discordName },
-      ]);
+      await backend.syncParticipants(
+        guildId,
+        [{ discordUserId: interaction.user.id, discordName }],
+        interaction.user.id,
+      );
     } catch (syncErr) {
       if (syncErr instanceof BotAccessRevokedError) throw syncErr;
       console.error('Setup: failed to auto-register caller as participant:', syncErr);
@@ -106,6 +109,10 @@ export async function handleSetup(
     await interaction.editReply(message);
   } catch (error) {
     if (error instanceof BotAccessRevokedError) throw error;
+    if (error instanceof BotCampaignAdminRequiredError) {
+      await interaction.editReply(error.message);
+      return;
+    }
     console.error('Setup command error:', error);
     await interaction.editReply('Failed to setup channel. Please try again later.');
   }

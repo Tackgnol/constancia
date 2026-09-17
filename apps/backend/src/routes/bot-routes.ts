@@ -18,6 +18,7 @@ import {
   messageReportSchema,
   playerVisibleNpcSchema,
   participantParamsSchema,
+  removeParticipantQuerySchema,
   setupChannelBodySchema,
   setupChannelDataSchema,
   singleResponseSchema,
@@ -33,6 +34,7 @@ import { moderatePayloadText } from '../services/content-moderation.js';
 import { getPlayerJournal } from '../services/player-journal.js';
 import { formatCampaignGameDate } from '../services/game-date.js';
 import { assertCampaignActive, assertNotBanned } from '../services/moderation-enforcement.js';
+import { requireBotCampaignAdmin } from '../services/campaign-access.js';
 
 interface BotTestResultBody {
   eventId: string;
@@ -104,16 +106,22 @@ interface SetupChannelBody {
   channelName: string;
   campaignName: string;
   gameSystemId: string;
+  discordUserId: string;
 }
 
 interface SyncParticipantsBody {
   guildId: string;
   participants: Array<{ discordUserId: string; discordName: string }>;
+  callerDiscordUserId: string;
 }
 
 interface ParticipantParams {
   guildId: string;
   discordUserId: string;
+}
+
+interface RemoveParticipantQuery {
+  callerDiscordUserId: string;
 }
 
 interface CampaignDiscordUserParams {
@@ -391,7 +399,8 @@ const botRoutes: FastifyPluginAsync = async (app) => {
     async (request) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
-      const { guildId, discordChannelId, channelName, campaignName, gameSystemId } = request.body;
+      const { guildId, discordChannelId, channelName, campaignName, gameSystemId, discordUserId } =
+        request.body;
 
       const existingCampaign = await prisma.campaign.findUnique({
         where: { discordGuildId: guildId },
@@ -400,6 +409,18 @@ const botRoutes: FastifyPluginAsync = async (app) => {
 
       if (existingCampaign !== null) {
         assertCampaignActive(existingCampaign);
+      }
+
+      const existingAdminCount = existingCampaign
+        ? await prisma.campaignAdmin.count({ where: { campaignId: existingCampaign.id } })
+        : 0;
+
+      // A campaign with at least one admin already has an owner — only that
+      // owner (or another admin they've granted) may re-run /setup on it.
+      // A campaign with none (brand new, or pre-dating this check) bootstraps
+      // whoever calls next as its owner.
+      if (existingCampaign !== null && existingAdminCount > 0) {
+        await requireBotCampaignAdmin(prisma, discordUserId, existingCampaign.id);
       }
 
       const campaign =
@@ -437,6 +458,14 @@ const botRoutes: FastifyPluginAsync = async (app) => {
         select: { id: true, name: true, discordChannelId: true, campaignId: true, type: true },
       });
 
+      if (existingAdminCount === 0) {
+        await prisma.campaignAdmin.upsert({
+          where: { discordUserId_campaignId: { discordUserId, campaignId: campaign.id } },
+          create: { discordUserId, campaignId: campaign.id, role: 'owner' },
+          update: {},
+        });
+      }
+
       return ok({
         campaign,
         channel,
@@ -464,7 +493,7 @@ const botRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
-      const { guildId, participants } = request.body;
+      const { guildId, participants, callerDiscordUserId } = request.body;
 
       const campaign = await prisma.campaign.findUnique({
         where: { discordGuildId: guildId },
@@ -473,6 +502,8 @@ const botRoutes: FastifyPluginAsync = async (app) => {
       if (!campaign) {
         return sendNotFound(reply, 'Campaign not found. Run /setup first.');
       }
+
+      await requireBotCampaignAdmin(prisma, callerDiscordUserId, campaign.id);
 
       await prisma.$transaction(
         participants.map((p) =>
@@ -503,7 +534,7 @@ const botRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.delete<{ Params: ParticipantParams }>(
+  app.delete<{ Params: ParticipantParams; Querystring: RemoveParticipantQuery }>(
     '/participant/:guildId/:discordUserId',
     {
       schema: {
@@ -511,6 +542,7 @@ const botRoutes: FastifyPluginAsync = async (app) => {
         summary: 'Remove a participant from a campaign',
         operationId: 'removeParticipant',
         params: participantParamsSchema,
+        querystring: removeParticipantQuerySchema,
         response: {
           200: deleteResponseSchema,
         },
@@ -519,6 +551,7 @@ const botRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const prisma = getPrismaClient();
       const { guildId, discordUserId } = request.params;
+      const { callerDiscordUserId } = request.query;
 
       const campaign = await prisma.campaign.findUnique({
         where: { discordGuildId: guildId },
@@ -527,6 +560,8 @@ const botRoutes: FastifyPluginAsync = async (app) => {
       if (!campaign) {
         return sendNotFound(reply, 'Campaign not found.');
       }
+
+      await requireBotCampaignAdmin(prisma, callerDiscordUserId, campaign.id);
 
       try {
         await prisma.character.delete({

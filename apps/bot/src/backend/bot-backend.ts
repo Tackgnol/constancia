@@ -33,7 +33,11 @@ import type {
   SubmitBotTestResultBody,
 } from '@constancia/api-client/model';
 import { botRequestOptions } from '../config.js';
-import { requireApiData } from './access-revoked.js';
+import {
+  BotCampaignAdminRequiredError,
+  campaignAdminRequiredMessage,
+  requireApiData,
+} from './access-revoked.js';
 
 export type BotCampaign = GetCampaignByGuild200Data;
 export type BotChannelEvent = GetChannelEvents200DataItem;
@@ -70,8 +74,13 @@ export interface BotBackend {
   syncParticipants(
     guildId: string,
     participants: Array<{ discordUserId: string; discordName: string }>,
+    callerDiscordUserId: string,
   ): Promise<void>;
-  removeParticipant(guildId: string, discordUserId: string): Promise<boolean>;
+  removeParticipant(
+    guildId: string,
+    discordUserId: string,
+    callerDiscordUserId: string,
+  ): Promise<boolean>;
   requestAdminMagicLink(discordUserId: string, guildId: string): Promise<BotMagicLink>;
   requestPlayerSheetMagicLink(discordUserId: string, guildId: string): Promise<BotMagicLink>;
   requestPlayerJournalMagicLink(discordUserId: string, guildId: string): Promise<BotMagicLink>;
@@ -143,15 +152,21 @@ export function createGeneratedBotBackend(
       requireApiData(await listGameSystems(requestOptions()), 'list game systems'),
     setupChannel: async (input) =>
       requireApiData(await setupChannel(input, requestOptions()), 'set up channel'),
-    syncParticipants: async (guildId, participants) => {
+    syncParticipants: async (guildId, participants, callerDiscordUserId) => {
       requireApiData(
-        await syncParticipants({ guildId, participants }, requestOptions()),
+        await syncParticipants({ guildId, participants, callerDiscordUserId }, requestOptions()),
         'sync participants',
       );
     },
-    removeParticipant: async (guildId, discordUserId) => {
-      const response = await removeParticipant({ guildId, discordUserId }, requestOptions());
+    removeParticipant: async (guildId, discordUserId, callerDiscordUserId) => {
+      const response = await removeParticipant(
+        { guildId, discordUserId },
+        { callerDiscordUserId },
+        requestOptions(),
+      );
       if (response.status !== 'ok') {
+        const adminRequired = campaignAdminRequiredMessage(response);
+        if (adminRequired !== null) throw new BotCampaignAdminRequiredError(adminRequired);
         throw new Error('Backend failed to remove participant');
       }
       return response.deleted;

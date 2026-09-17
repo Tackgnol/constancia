@@ -11937,6 +11937,9 @@
                   },
                   "gameSystemId": {
                     "type": "string"
+                  },
+                  "discordUserId": {
+                    "type": "string"
                   }
                 },
                 "required": [
@@ -11945,7 +11948,8 @@
                   "discordChannelId",
                   "channelName",
                   "campaignName",
-                  "gameSystemId"
+                  "gameSystemId",
+                  "discordUserId"
                 ]
               }
             }
@@ -12104,9 +12108,12 @@
                       "required": ["discordUserId", "discordName"]
                     },
                     "minItems": 1
+                  },
+                  "callerDiscordUserId": {
+                    "type": "string"
                   }
                 },
-                "required": ["guildId", "participants"]
+                "required": ["guildId", "participants", "callerDiscordUserId"]
               }
             }
           }
@@ -12150,6 +12157,14 @@
         "summary": "Remove a participant from a campaign",
         "tags": ["bot"],
         "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "callerDiscordUserId",
+            "required": true
+          },
           {
             "schema": {
               "type": "string"

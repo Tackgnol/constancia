@@ -178,6 +178,83 @@ export class CampaignResourceNotFoundError extends Error {
   }
 }
 
+export class CampaignAdminRequiredError extends Error {
+  readonly statusCode = 403;
+  readonly code = 'CAMPAIGN_ADMIN_REQUIRED';
+
+  constructor(
+    message = "You're not a GM for this campaign. Ask the GM who ran /setup to add you.",
+  ) {
+    super(message);
+    this.name = 'CampaignAdminRequiredError';
+  }
+}
+
+export interface BotCampaignAdminPrisma {
+  campaignAdmin: {
+    findUnique(args: {
+      where: { discordUserId_campaignId: { discordUserId: string; campaignId: string } };
+      select: { role: true };
+    }): Promise<{ role: 'owner' | 'gm' } | null>;
+  };
+}
+
+// Bot-side authorization boundary: gates /setup, /login, and /participants
+// against an existing CampaignAdmin row for the calling Discord user. Unlike
+// requireAdmin above, this has no web session — the caller's identity comes
+// straight from the verified Discord interaction relayed by the bot.
+export async function requireBotCampaignAdmin(
+  prisma: BotCampaignAdminPrisma,
+  discordUserId: string,
+  campaignId: string,
+): Promise<void> {
+  const admin = await prisma.campaignAdmin.findUnique({
+    where: { discordUserId_campaignId: { discordUserId, campaignId } },
+    select: { role: true },
+  });
+
+  if (admin === null) {
+    throw new CampaignAdminRequiredError();
+  }
+}
+
+export interface MagicLinkCampaignAdminPrisma extends BotCampaignAdminPrisma {
+  campaignAdmin: BotCampaignAdminPrisma['campaignAdmin'] & {
+    count(args: { where: { campaignId: string } }): Promise<number>;
+    create(args: {
+      data: { discordUserId: string; campaignId: string; role: 'owner' };
+    }): Promise<unknown>;
+  };
+}
+
+// The sole GM-granting moment: a campaign with no admin yet bootstraps
+// whoever logs in first as owner. A campaign that already has an admin never
+// auto-grants — the caller must already hold a CampaignAdmin row.
+export async function ensureMagicLinkCampaignAdmin(
+  prisma: MagicLinkCampaignAdminPrisma,
+  discordUserId: string,
+  campaignId: string,
+): Promise<void> {
+  const admin = await prisma.campaignAdmin.findUnique({
+    where: { discordUserId_campaignId: { discordUserId, campaignId } },
+    select: { role: true },
+  });
+
+  if (admin !== null) {
+    return;
+  }
+
+  const existingAdminCount = await prisma.campaignAdmin.count({ where: { campaignId } });
+
+  if (existingAdminCount > 0) {
+    throw new CampaignAdminRequiredError();
+  }
+
+  await prisma.campaignAdmin.create({
+    data: { discordUserId, campaignId, role: 'owner' },
+  });
+}
+
 class PrismaCampaignAccess implements CampaignAccess {
   constructor(private readonly prisma: CampaignAccessPrisma) {}
 

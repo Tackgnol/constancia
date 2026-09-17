@@ -6,7 +6,7 @@ import {
   type InteractionDeferReplyOptions,
 } from 'discord.js';
 import { botBackend, type BotBackend } from '../backend/bot-backend.js';
-import { BotAccessRevokedError } from '../backend/access-revoked.js';
+import { BotAccessRevokedError, BotCampaignAdminRequiredError } from '../backend/access-revoked.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
 export async function handleParticipants(
@@ -29,14 +29,18 @@ export async function handleParticipants(
       const member = interaction.options.getMember('user') as GuildMember | null;
       const discordName = member?.displayName ?? user.displayName ?? user.username;
 
-      await backend.syncParticipants(guildId, [{ discordUserId: user.id, discordName }]);
+      await backend.syncParticipants(
+        guildId,
+        [{ discordUserId: user.id, discordName }],
+        interaction.user.id,
+      );
       await interaction.editReply(
         `✓ **${discordName}** added as a participant.\nGM can set their in-game name on the dashboard.`,
       );
     } else if (sub === 'remove') {
       const user = interaction.options.getUser('user', true);
 
-      const deleted = await backend.removeParticipant(guildId, user.id);
+      const deleted = await backend.removeParticipant(guildId, user.id, interaction.user.id);
 
       if (deleted) {
         await interaction.editReply(`✓ **${user.username}** removed from the campaign.`);
@@ -67,6 +71,10 @@ export async function handleParticipants(
     }
   } catch (err) {
     if (err instanceof BotAccessRevokedError) throw err;
+    if (err instanceof BotCampaignAdminRequiredError) {
+      await interaction.editReply(err.message);
+      return;
+    }
     console.error('Participants command error:', err);
     await interaction.editReply('Something went wrong. Please try again later.');
   }
