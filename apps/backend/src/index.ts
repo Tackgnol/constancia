@@ -1,3 +1,6 @@
+// Must be the first import: Sentry's auto-instrumentation has to patch
+// Node's http/fs modules before anything else (including Fastify) loads them.
+import './instrument.js';
 import { pathToFileURL } from 'node:url';
 import { buildApp } from './app.js';
 import { loadConfig } from './config.js';

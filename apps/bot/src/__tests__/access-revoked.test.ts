@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   accessRevokedMessage,
   BotAccessRevokedError,
+  BotCampaignAdminRequiredError,
   errorReplyContent,
+  isRoutineBotError,
 } from '../backend/access-revoked.js';
 
 describe('accessRevokedMessage', () => {
@@ -39,5 +41,18 @@ describe('errorReplyContent', () => {
     expect(errorReplyContent(new Error('ECONNREFUSED 127.0.0.1:3000'))).toBe(
       'Something went wrong.',
     );
+  });
+});
+
+describe('isRoutineBotError', () => {
+  it('treats access-revoked and admin-required as routine', () => {
+    expect(isRoutineBotError(new BotAccessRevokedError('Suspended pending review.'))).toBe(true);
+    expect(
+      isRoutineBotError(new BotCampaignAdminRequiredError("You're not a GM for this campaign.")),
+    ).toBe(true);
+  });
+
+  it('treats everything else as unexpected', () => {
+    expect(isRoutineBotError(new Error('ECONNREFUSED 127.0.0.1:3000'))).toBe(false);
   });
 });

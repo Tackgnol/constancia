@@ -1,5 +1,6 @@
 import fp from 'fastify-plugin';
 import type { FastifyPluginAsync } from 'fastify';
+import { Sentry } from '../instrument.js';
 import { isHandledRequestError, serializeHandledRequestError } from '../services/request-errors.js';
 
 const requestErrorPlugin: FastifyPluginAsync = async (app) => {
@@ -8,6 +9,18 @@ const requestErrorPlugin: FastifyPluginAsync = async (app) => {
       reply.code(error.statusCode).send(serializeHandledRequestError(error));
       return;
     }
+
+    // Only genuinely unexpected failures are worth a GlitchTip capture —
+    // handled 4xx business errors above (bans, auth, validation) are routine.
+    const discordUserId =
+      request.access?.kind === 'session' ? (request.access.discordUserId ?? undefined) : undefined;
+    Sentry.captureException(error, {
+      tags: {
+        route: request.url,
+        method: request.method,
+        ...(discordUserId ? { discordUserId } : {}),
+      },
+    });
 
     request.log.error(error);
     reply.status(getErrorStatusCode(error)).send({

@@ -49,6 +49,13 @@ export function errorReplyContent(error: unknown): string {
     : GENERIC_ERROR_CONTENT;
 }
 
+// Access-revoked and admin-required are routine, expected outcomes (a banned
+// user, an unauthorized caller) — not worth a GlitchTip capture. Everything
+// else reaching the interaction router's catch block is unexpected.
+export function isRoutineBotError(error: unknown): boolean {
+  return error instanceof BotAccessRevokedError || error instanceof BotCampaignAdminRequiredError;
+}
+
 export function requireApiData<T>(response: ApiEnvelope<T>, operation: string): T {
   if (response.status !== 'ok') {
     const revoked = accessRevokedMessage(response);

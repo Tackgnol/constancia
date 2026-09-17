@@ -1,3 +1,6 @@
+// Must be the first import: Sentry's auto-instrumentation has to patch
+// Node's http/fs modules before anything else (including discord.js) loads them.
+import './instrument.js';
 import { Client, GatewayIntentBits, Events } from 'discord.js';
 import { loadBotConfig } from './config.js';
 import { routeInteraction } from './discord/interaction-router.js';

@@ -7,6 +7,7 @@ import {
   ScrollRestoration,
   useRouteError,
 } from 'react-router';
+import * as Sentry from '@sentry/react-router';
 
 import './app.css';
 
@@ -84,6 +85,9 @@ export default function App() {
 
 export function ErrorBoundary() {
   const error = useRouteError();
+  // Client-side Sentry was never initialized (server-only per the pilot's
+  // observability decision), so this is a silent no-op in the browser.
+  Sentry.captureException(error);
   const title = isRouteErrorResponse(error)
     ? `${error.status} ${error.statusText}`
     : 'Interface failure';

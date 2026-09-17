@@ -53,6 +53,9 @@ x-backend-environment: &backend-environment
   R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
   R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
   R2_BUCKET: ${R2_BUCKET:-}
+  # Same DSN across backend, bot, and frontend — one shared GlitchTip project,
+  # events tagged by service. Unset disables error capture entirely.
+  GLITCHTIP_DSN: ${GLITCHTIP_DSN:-}
 
 services:
   postgres:
@@ -140,6 +143,7 @@ services:
       DISCORD_TOKEN: ${DISCORD_TOKEN:?DISCORD_TOKEN is required}
       CLIENT_ID: ${DISCORD_CLIENT_ID:?DISCORD_CLIENT_ID is required}
       GUILD_ID: ${DISCORD_GUILD_ID:-}
+      GLITCHTIP_DSN: ${GLITCHTIP_DSN:-}
     networks:
       - bot-be
       - egress
@@ -162,6 +166,7 @@ services:
       BACKEND_URL: http://constancia_backend:3000
       BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:?BACKEND_PUBLIC_URL is required}
       VITE_DISCORD_AUTH_ENABLED: ${VITE_DISCORD_AUTH_ENABLED:-false}
+      GLITCHTIP_DSN: ${GLITCHTIP_DSN:-}
     ports:
       - target: 3000
         published: '${FRONTEND_PORT:-3020}'
