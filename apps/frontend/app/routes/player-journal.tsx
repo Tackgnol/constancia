@@ -10,12 +10,17 @@ import type {
 } from '@constancia/api-client/model';
 import { formatGameDate, gameSystemRegistry, parseGameDate } from '@constancia/systems';
 import { demoPlayerJournal } from '@/lib/demo-player-data';
+import {
+  normalizeQuestEntryStatus,
+  normalizeQuestStatus,
+  sortQuestEntries,
+} from '@/lib/quest-status';
 
-const QUEST_STATUSES = ['active', 'completed', 'failed'] as const;
-const ENTRY_STATUSES = ['pending', 'done'] as const;
-
-type QuestStatus = (typeof QUEST_STATUSES)[number];
-type QuestEntryStatus = (typeof ENTRY_STATUSES)[number];
+const SESSION_DATE_FORMATTER = new Intl.DateTimeFormat('en-GB', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+});
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const campaignId = params.campaignId ?? 'demo-crimson-dynasty';
@@ -56,28 +61,8 @@ export function meta() {
   ];
 }
 
-function normalizeQuestStatus(status: string): QuestStatus {
-  return QUEST_STATUSES.includes(status as QuestStatus) ? (status as QuestStatus) : 'active';
-}
-
-function normalizeEntryStatus(status: string): QuestEntryStatus {
-  return ENTRY_STATUSES.includes(status as QuestEntryStatus)
-    ? (status as QuestEntryStatus)
-    : 'pending';
-}
-
-function sortQuestEntries(
-  entries: GetJournalForCurrentPlayer200DataQuestsItemEntriesItem[] | undefined,
-): GetJournalForCurrentPlayer200DataQuestsItemEntriesItem[] {
-  return [...(entries ?? [])].sort((left, right) => left.sortOrder - right.sortOrder);
-}
-
 function formatSessionDate(value: string) {
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(value));
+  return SESSION_DATE_FORMATTER.format(new Date(value));
 }
 
 function formatJournalGameDate(value: unknown): string | null {
@@ -257,7 +242,7 @@ function PlayerQuestEntryRow({
 }: {
   entry: GetJournalForCurrentPlayer200DataQuestsItemEntriesItem;
 }) {
-  const status = normalizeEntryStatus(entry.status);
+  const status = normalizeQuestEntryStatus(entry.status);
 
   return (
     <div className="quest-entry-summary-row">

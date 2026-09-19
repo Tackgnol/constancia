@@ -9,6 +9,7 @@ import { buildServerApiOptions } from '@/lib/api-proxy.server';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import { fireCampaignEvent } from '@/lib/fire-event-action.server';
 import type { DeliveryViewState, FireReceiptView } from '@/lib/fire-event-receipt';
+import { parseStringArrayFormValue } from '@/lib/form-data';
 import { postRouteAction } from '@/lib/route-action-client';
 import { handleTestInstanceAction } from '@/lib/test-instance-action.server';
 import { handleUploadImageAction } from '@/lib/upload-image-action.server';
@@ -36,21 +37,6 @@ type PendingUndo = {
   target: string | null;
   expiresAt: number;
 };
-
-function asStringArray(input: FormDataEntryValue | null): string[] {
-  if (typeof input !== 'string' || input.length === 0) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(input) as unknown;
-    return Array.isArray(parsed)
-      ? parsed.filter((entry): entry is string => typeof entry === 'string')
-      : [];
-  } catch {
-    return [];
-  }
-}
 
 const PLAY_FIRE_MESSAGES = {
   missingIdentifiers: "We couldn't identify this event. Refresh Play, then arm it again.",
@@ -104,7 +90,7 @@ export async function action({ request }: ActionFunctionArgs) {
       const channelId = formData.get('channelId');
       const content = formData.get('content');
       const imageUrl = formData.get('imageUrl');
-      const discordUserIds = asStringArray(formData.get('playerIds'));
+      const discordUserIds = parseStringArrayFormValue(formData.get('playerIds'));
       const idempotencyKey = formData.get('idempotencyKey');
 
       if (
@@ -287,6 +273,14 @@ const TRIGGER_SECTION_DEFINITIONS: ReadonlyArray<Pick<TriggerSectionView, 'id' |
   { id: 'message', title: 'Direct Messages' },
 ];
 
+function buildPlayLookups(warRoom: WarRoomContext) {
+  return {
+    channelById: new Map(warRoom.channels.map((channel) => [channel.id, channel])),
+    tagLabelById: new Map(warRoom.tags.map((tag) => [tag.id, tag.label])),
+    playerLabelById: new Map(warRoom.players.map((player) => [player.id, player.name])),
+  };
+}
+
 function buildTriggerSections(
   events: ListEvents200DataItem[],
   activeTag: string | null,
@@ -332,6 +326,226 @@ function buildTriggerSections(
   return sections;
 }
 
+function useUndoCountdown(pendingUndo: PendingUndo | null, onExpire: () => void) {
+  const [countdownMs, setCountdownMs] = useState(0);
+  const expire = useEffectEvent(onExpire);
+
+  useEffect(() => {
+    if (pendingUndo === null) {
+      setCountdownMs(0);
+      return;
+    }
+
+    setCountdownMs(Math.max(pendingUndo.expiresAt - Date.now(), 0));
+    const intervalId = window.setInterval(() => {
+      const remaining = Math.max(pendingUndo.expiresAt - Date.now(), 0);
+      setCountdownMs(remaining);
+      if (remaining === 0) {
+        expire();
+      }
+    }, 100);
+
+    return () => window.clearInterval(intervalId);
+  }, [pendingUndo]);
+
+  return countdownMs;
+}
+
+function getCommandEcho(lastAction: string | null, nextUpItem: TriggerView | null) {
+  if (lastAction) {
+    return lastAction;
+  }
+
+  return nextUpItem
+    ? `${nextUpItem.name} queued${nextUpItem.target ? ` ${nextUpItem.target}` : nextUpItem.sceneLabel ? ` in ${nextUpItem.sceneLabel}` : ''}.`
+    : 'Standing by — no commands fired yet.';
+}
+
+function PlayStatusBanners({
+  commandEcho,
+  lastAction,
+  pendingUndo,
+  undoCountdownMs,
+  onUndo,
+}: {
+  commandEcho: string;
+  lastAction: string | null;
+  pendingUndo: PendingUndo | null;
+  undoCountdownMs: number;
+  onUndo: () => void;
+}) {
+  return (
+    <>
+      <section className="last-action-banner">
+        <span className="eyebrow">Command Echo</span>
+        <p key={lastAction} className="command-echo-text">
+          {commandEcho}
+        </p>
+      </section>
+
+      {pendingUndo ? (
+        <section className="undo-banner" aria-live="polite">
+          <div>
+            <p className="eyebrow">Undo window</p>
+            <p className="undo-copy">
+              {pendingUndo.name} just fired. Retract the cue within{' '}
+              {Math.max(1, Math.ceil(undoCountdownMs / 1000))}s if it was a misfire.
+            </p>
+          </div>
+          <button className="undo-button" onClick={onUndo} type="button">
+            Undo misfire
+          </button>
+        </section>
+      ) : null}
+    </>
+  );
+}
+
+function ShortcutPanel({ onClose }: { onClose: () => void }) {
+  return (
+    <section className="shortcut-panel">
+      <div className="shortcut-panel-header">
+        <div>
+          <p className="eyebrow">Keyboard guide</p>
+          <h2>Run the board without hunting.</h2>
+        </div>
+        <button className="ghost-action ghost-action-inline" onClick={onClose} type="button">
+          Close
+        </button>
+      </div>
+      <div className="shortcut-grid">
+        <div className="shortcut-row">
+          <span className="shortcut-key">?</span>
+          <span className="shortcut-copy">Open or close this legend.</span>
+        </div>
+        <div className="shortcut-row">
+          <span className="shortcut-key">← ↑ ↓ →</span>
+          <span className="shortcut-copy">Move the active selection across staged beats.</span>
+        </div>
+        <div className="shortcut-row">
+          <span className="shortcut-key">Enter</span>
+          <span className="shortcut-copy">Arm the selected beat, then press again to fire.</span>
+        </div>
+        <div className="shortcut-row">
+          <span className="shortcut-key">Esc</span>
+          <span className="shortcut-copy">Stand down the armed beat or close the legend.</span>
+        </div>
+        <div className="shortcut-row">
+          <span className="shortcut-key">U</span>
+          <span className="shortcut-copy">
+            Undo the latest demo misfire while the retract window is live.
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TriggerBoardSections({
+  sections,
+  firedItems,
+  deliveryByEventId,
+  armedItemId,
+  errorItemId,
+  nextUpItem,
+  selectedItem,
+  holdProgress,
+  onSelect,
+  onPointerDown,
+  onPointerUp,
+}: {
+  sections: TriggerSectionView[];
+  firedItems: Set<string>;
+  deliveryByEventId: Record<string, DeliveryViewState>;
+  armedItemId: string | null;
+  errorItemId: string | null;
+  nextUpItem: TriggerView | null;
+  selectedItem: TriggerView | null;
+  holdProgress: number;
+  onSelect: (itemId: string) => void;
+  onPointerDown: (event: React.PointerEvent<HTMLButtonElement>, itemId: string) => void;
+  onPointerUp: (itemId: string) => void;
+}) {
+  return sections.map((section) => {
+    if (section.items.length === 0) return null;
+
+    return (
+      <section key={section.id} className="board-section">
+        <header className="board-section-header">{section.title}</header>
+
+        <div className="board-grid">
+          {section.items.map((item, index) => {
+            const isFired = firedItems.has(item.id);
+            const deliveryStatus = deliveryByEventId[item.id];
+            const isArmed = armedItemId === item.id && !isFired;
+            const hasError = errorItemId === item.id && !isFired;
+            const isNextUp = nextUpItem?.id === item.id && !isArmed && !isFired && !hasError;
+            const artifactSize = getArtifactSize(section.id, index, section.items.length);
+
+            return (
+              <button
+                key={item.id}
+                className={`trigger-card is-${item.kind} is-${artifactSize}${isFired ? ' is-fired' : ''}${isArmed ? ' is-armed' : ''}${hasError ? ' is-error' : ''}${isNextUp ? ' is-next-up' : ''}${selectedItem?.id === item.id ? ' is-selected' : ''}`}
+                onFocus={() => onSelect(item.id)}
+                onPointerDown={(event) => {
+                  if (!isFired) onPointerDown(event, item.id);
+                }}
+                onPointerUp={() => onPointerUp(item.id)}
+                type="button"
+              >
+                <span className="trigger-type-row">
+                  <span className="trigger-type">{item.kind === 'message' ? 'DM' : item.kind}</span>
+                  {item.sceneLabel ? (
+                    <span className="trigger-scene">{item.sceneLabel}</span>
+                  ) : null}
+                </span>
+                <strong className="trigger-name">{item.name}</strong>
+                {item.target ? <span className="trigger-target">{item.target}</span> : null}
+                {item.preview ? (
+                  <span className="trigger-preview">{item.preview}</span>
+                ) : (
+                  <span className="trigger-meta">{item.meta}</span>
+                )}
+                {!isFired && !isArmed ? (
+                  <span className="trigger-gesture-hint">Hold 1s · Enter twice</span>
+                ) : null}
+                {isFired ? (
+                  <span className="trigger-flag">
+                    {deliveryStatus === 'pending'
+                      ? 'Awaiting Discord'
+                      : deliveryStatus === 'failed'
+                        ? 'Delivery retrying'
+                        : deliveryStatus === 'delivered'
+                          ? 'Delivered'
+                          : 'Fired'}
+                  </span>
+                ) : isNextUp ? (
+                  <span className="trigger-flag is-next-up-flag">Next up</span>
+                ) : isArmed ? (
+                  <span className="trigger-flag">Hold to fire</span>
+                ) : hasError ? (
+                  <span className="trigger-flag is-error-flag">Cancelled</span>
+                ) : null}
+                {isArmed ? (
+                  <span
+                    className="trigger-progress"
+                    style={
+                      {
+                        '--progress': holdProgress,
+                      } as React.CSSProperties
+                    }
+                    aria-hidden="true"
+                  />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+    );
+  });
+}
+
 export default function PlayRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
   const liveEvents = warRoom.events;
@@ -345,7 +559,6 @@ export default function PlayRoute() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [pendingUndo, setPendingUndo] = useState<PendingUndo | null>(null);
-  const [undoCountdownMs, setUndoCountdownMs] = useState(0);
   const [deliveryByEventId, setDeliveryByEventId] = useState<Record<string, DeliveryViewState>>({});
 
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -354,16 +567,14 @@ export default function PlayRoute() {
   const pendingUndoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fireIdempotencyKeysRef = useRef(new Map<string, string>());
 
-  const channelById = new Map(warRoom.channels.map((c) => [c.id, c]));
-  const tagLabelById = new Map(warRoom.tags.map((t) => [t.id, t.label]));
-  const playerLabelById = new Map(warRoom.players.map((p) => [p.id, p.name]));
+  const lookups = buildPlayLookups(warRoom);
 
   const sections = buildTriggerSections(
     liveEvents,
     warRoom.activeTag,
-    channelById,
-    tagLabelById,
-    playerLabelById,
+    lookups.channelById,
+    lookups.tagLabelById,
+    lookups.playerLabelById,
   );
 
   const visibleItems = sections.flatMap((section) => section.items);
@@ -372,39 +583,13 @@ export default function PlayRoute() {
     if (event.status === 'fired') firedItems.add(event.id);
   }
   const nextUpItem = visibleItems.find((item) => !firedItems.has(item.id)) ?? null;
-  const commandEcho =
-    lastAction ??
-    (nextUpItem
-      ? `${nextUpItem.name} queued${nextUpItem.target ? ` ${nextUpItem.target}` : nextUpItem.sceneLabel ? ` in ${nextUpItem.sceneLabel}` : ''}.`
-      : 'Standing by — no commands fired yet.');
   const selectedItem =
-    visibleItems.find((item) => item.id === selectedItemId) ?? nextUpItem ?? null;
-
-  useEffect(() => {
-    if (pendingUndo === null) {
-      setUndoCountdownMs(0);
-      return;
-    }
-
-    setUndoCountdownMs(Math.max(pendingUndo.expiresAt - Date.now(), 0));
-    const intervalId = window.setInterval(() => {
-      const remaining = Math.max(pendingUndo.expiresAt - Date.now(), 0);
-      setUndoCountdownMs(remaining);
-      if (remaining === 0) {
-        setPendingUndo(null);
-      }
-    }, 100);
-
-    return () => window.clearInterval(intervalId);
-  }, [pendingUndo]);
-
-  useEffect(() => {
-    if (selectedItemId && visibleItems.some((item) => item.id === selectedItemId)) {
-      return;
-    }
-
-    setSelectedItemId(nextUpItem?.id ?? visibleItems[0]?.id ?? null);
-  }, [nextUpItem?.id, selectedItemId, visibleItems]);
+    visibleItems.find((item) => item.id === selectedItemId) ??
+    nextUpItem ??
+    visibleItems[0] ??
+    null;
+  const undoCountdownMs = useUndoCountdown(pendingUndo, () => setPendingUndo(null));
+  const commandEcho = getCommandEcho(lastAction, nextUpItem);
 
   const clearHoldRefs = () => {
     if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
@@ -625,71 +810,15 @@ export default function PlayRoute() {
 
   return (
     <div className="play-route">
-      <section className="last-action-banner">
-        <span className="eyebrow">Command Echo</span>
-        <p key={lastAction} className="command-echo-text">
-          {commandEcho}
-        </p>
-      </section>
+      <PlayStatusBanners
+        commandEcho={commandEcho}
+        lastAction={lastAction}
+        pendingUndo={pendingUndo}
+        undoCountdownMs={undoCountdownMs}
+        onUndo={handleUndo}
+      />
 
-      {pendingUndo ? (
-        <section className="undo-banner" aria-live="polite">
-          <div>
-            <p className="eyebrow">Undo window</p>
-            <p className="undo-copy">
-              {pendingUndo.name} just fired. Retract the cue within{' '}
-              {Math.max(1, Math.ceil(undoCountdownMs / 1000))}s if it was a misfire.
-            </p>
-          </div>
-          <button className="undo-button" onClick={handleUndo} type="button">
-            Undo misfire
-          </button>
-        </section>
-      ) : null}
-
-      {shortcutsOpen ? (
-        <section className="shortcut-panel">
-          <div className="shortcut-panel-header">
-            <div>
-              <p className="eyebrow">Keyboard guide</p>
-              <h2>Run the board without hunting.</h2>
-            </div>
-            <button
-              className="ghost-action ghost-action-inline"
-              onClick={() => setShortcutsOpen(false)}
-              type="button"
-            >
-              Close
-            </button>
-          </div>
-          <div className="shortcut-grid">
-            <div className="shortcut-row">
-              <span className="shortcut-key">?</span>
-              <span className="shortcut-copy">Open or close this legend.</span>
-            </div>
-            <div className="shortcut-row">
-              <span className="shortcut-key">← ↑ ↓ →</span>
-              <span className="shortcut-copy">Move the active selection across staged beats.</span>
-            </div>
-            <div className="shortcut-row">
-              <span className="shortcut-key">Enter</span>
-              <span className="shortcut-copy">
-                Arm the selected beat, then press again to fire.
-              </span>
-            </div>
-            <div className="shortcut-row">
-              <span className="shortcut-key">Esc</span>
-              <span className="shortcut-copy">Stand down the armed beat or close the legend.</span>
-            </div>
-            <div className="shortcut-row">
-              <span className="shortcut-key">U</span>
-              <span className="shortcut-copy">
-                Undo the latest demo misfire while the retract window is live.
-              </span>
-            </div>
-          </div>
-        </section>
-      ) : null}
+      {shortcutsOpen ? <ShortcutPanel onClose={() => setShortcutsOpen(false)} /> : null}
 
       {visibleItems.length === 0 ? (
         <section className="detail-card board-empty-state">
@@ -701,90 +830,19 @@ export default function PlayRoute() {
         </section>
       ) : null}
 
-      {sections.map((section) => {
-        if (section.items.length === 0) return null;
-
-        return (
-          <section key={section.id} className="board-section">
-            <header className="board-section-header">{section.title}</header>
-
-            <div className="board-grid">
-              {section.items.map((item) => {
-                const isFired = firedItems.has(item.id);
-                const deliveryStatus = deliveryByEventId[item.id];
-                const isArmed = armedItemId === item.id && !isFired;
-                const hasError = errorItemId === item.id && !isFired;
-                const isNextUp = nextUpItem?.id === item.id && !isArmed && !isFired && !hasError;
-                const artifactSize = getArtifactSize(
-                  section.id,
-                  section.items.indexOf(item),
-                  section.items.length,
-                );
-
-                return (
-                  <button
-                    key={item.id}
-                    className={`trigger-card is-${item.kind} is-${artifactSize}${isFired ? ' is-fired' : ''}${isArmed ? ' is-armed' : ''}${hasError ? ' is-error' : ''}${isNextUp ? ' is-next-up' : ''}${selectedItem?.id === item.id ? ' is-selected' : ''}`}
-                    onFocus={() => setSelectedItemId(item.id)}
-                    onPointerDown={(e) => {
-                      if (!isFired) handlePointerDown(e, item.id);
-                    }}
-                    onPointerUp={() => handlePointerUp(item.id)}
-                    type="button"
-                  >
-                    <span className="trigger-type-row">
-                      <span className="trigger-type">
-                        {item.kind === 'message' ? 'DM' : item.kind}
-                      </span>
-                      {item.sceneLabel ? (
-                        <span className="trigger-scene">{item.sceneLabel}</span>
-                      ) : null}
-                    </span>
-                    <strong className="trigger-name">{item.name}</strong>
-                    {item.target ? <span className="trigger-target">{item.target}</span> : null}
-                    {item.preview ? (
-                      <span className="trigger-preview">{item.preview}</span>
-                    ) : (
-                      <span className="trigger-meta">{item.meta}</span>
-                    )}
-                    {!isFired && !isArmed ? (
-                      <span className="trigger-gesture-hint">Hold 1s · Enter twice</span>
-                    ) : null}
-                    {isFired ? (
-                      <span className="trigger-flag">
-                        {deliveryStatus === 'pending'
-                          ? 'Awaiting Discord'
-                          : deliveryStatus === 'failed'
-                            ? 'Delivery retrying'
-                            : deliveryStatus === 'delivered'
-                              ? 'Delivered'
-                              : 'Fired'}
-                      </span>
-                    ) : isNextUp ? (
-                      <span className="trigger-flag is-next-up-flag">Next up</span>
-                    ) : isArmed ? (
-                      <span className="trigger-flag">Hold to fire</span>
-                    ) : hasError ? (
-                      <span className="trigger-flag is-error-flag">Cancelled</span>
-                    ) : null}
-                    {isArmed ? (
-                      <span
-                        className="trigger-progress"
-                        style={
-                          {
-                            '--progress': holdProgress,
-                          } as React.CSSProperties
-                        }
-                        aria-hidden="true"
-                      />
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        );
-      })}
+      <TriggerBoardSections
+        sections={sections}
+        firedItems={firedItems}
+        deliveryByEventId={deliveryByEventId}
+        armedItemId={armedItemId}
+        errorItemId={errorItemId}
+        nextUpItem={nextUpItem}
+        selectedItem={selectedItem}
+        holdProgress={holdProgress}
+        onSelect={setSelectedItemId}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+      />
 
       {selectedItem?.kind === 'test' && !isDemoMode ? (
         <TestInstancePanel

@@ -15,10 +15,15 @@ import {
   type KnownPlayerRef,
 } from '@/components/npcs/block-registry';
 import { postRouteAction } from '@/lib/route-action-client';
+import { parseStringArrayFormValue } from '@/lib/form-data';
 import { KnownToPicker } from '@/components/npcs/known-to-picker';
 import { NpcPortraitFallback } from '@/components/npcs/npc-portrait-fallback';
 import { SystemBlockRenderer } from '@/components/npcs/system-block-renderer';
-import { buildRecipientOptions, type WarRoomContext } from '@/lib/war-room-data';
+import {
+  buildRecipientOptions,
+  type RecipientOption,
+  type WarRoomContext,
+} from '@/lib/war-room-data';
 import { demoNpcs } from '@/lib/demo-npcs';
 import { handleUploadImageAction } from '@/lib/upload-image-action.server';
 
@@ -75,21 +80,6 @@ function normalizeApiNpc(input: ApiNpc): CampaignNpc {
 
 type ApiNpc = ListNpcs200DataItem;
 
-function asStringArray(input: FormDataEntryValue | null): string[] {
-  if (typeof input !== 'string' || input.length === 0) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(input) as unknown;
-    return Array.isArray(parsed)
-      ? parsed.filter((entry): entry is string => typeof entry === 'string')
-      : [];
-  } catch {
-    return [];
-  }
-}
-
 export async function loader({ request }: LoaderFunctionArgs) {
   const pathname = new URL(request.url).pathname;
 
@@ -116,8 +106,8 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const campaignId = formData.get('campaignId');
   const npcId = formData.get('npcId');
-  const npcFactIds = asStringArray(formData.get('npcFactIds'));
-  const discordUserIds = asStringArray(formData.get('discordUserIds'));
+  const npcFactIds = parseStringArrayFormValue(formData.get('npcFactIds'));
+  const discordUserIds = parseStringArrayFormValue(formData.get('discordUserIds'));
 
   if (
     typeof campaignId !== 'string' ||
@@ -168,6 +158,404 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 }
 
+type DossierTab = 'access' | 'system' | 'facts';
+type DossierRecipient = RecipientOption & { knownFacts: number };
+const DOSSIER_TABS: { id: DossierTab; label: string }[] = [
+  { id: 'access', label: 'Access' },
+  { id: 'system', label: 'System' },
+  { id: 'facts', label: 'Facts' },
+];
+
+function NpcIndex({
+  npcs,
+  selectedNpcId,
+  onSelect,
+}: {
+  npcs: CampaignNpc[];
+  selectedNpcId: string | null;
+  onSelect: (npcId: string) => void;
+}) {
+  return (
+    <aside className="npc-rail">
+      <div className="npc-rail-header">
+        <p className="detail-label">Dossier index</p>
+        <span>{npcs.length} active</span>
+      </div>
+      {npcs.map((npc) => {
+        const knownCount = npc.facts.filter((fact) => fact.knownTo.length > 0).length;
+        const primaryBlock = readPrimarySystemBlock(npc);
+        return (
+          <button
+            key={npc.id}
+            className={`npc-rail-card${selectedNpcId === npc.id ? ' is-active' : ''}`}
+            type="button"
+            aria-pressed={selectedNpcId === npc.id}
+            onClick={() => onSelect(npc.id)}
+          >
+            <div>
+              <p className="detail-label">
+                {primaryBlock
+                  ? `${primaryBlock.label}: ${formatSystemBlockValue(primaryBlock.value)}`
+                  : 'No system block'}
+              </p>
+              <h2>{npc.name}</h2>
+            </div>
+            <p className="npc-rail-meta">
+              {npc.facts.length} fact{npc.facts.length === 1 ? '' : 's'} · {knownCount} in the wild
+            </p>
+          </button>
+        );
+      })}
+    </aside>
+  );
+}
+
+function NpcDossierHeader({
+  campaignName,
+  npc,
+  recipients,
+  setupBase,
+}: {
+  campaignName: string;
+  npc: CampaignNpc;
+  recipients: DossierRecipient[];
+  setupBase: string;
+}) {
+  const primaryBlock = readPrimarySystemBlock(npc);
+
+  return (
+    <>
+      <div className="npc-dossier-strip">
+        <span>GM dossier</span>
+        <span>{campaignName}</span>
+        <span>Private workspace</span>
+      </div>
+
+      <div className="npc-focus-header npc-focus-header-dossier">
+        <div className="npc-portrait-shell npc-portrait-shell-dossier">
+          {npc.imageUrl ? (
+            <img className="npc-portrait" src={npc.imageUrl} alt={`${npc.name} portrait`} />
+          ) : (
+            <NpcPortraitFallback name={npc.name} />
+          )}
+        </div>
+
+        <div className="npc-focus-copy npc-focus-copy-dossier">
+          <div className="npc-focus-toolbar">
+            <div>
+              <p className="eyebrow">
+                {primaryBlock
+                  ? `${primaryBlock.label}: ${formatSystemBlockValue(primaryBlock.value)}`
+                  : 'Unclassified'}
+              </p>
+              <h2>{npc.name}</h2>
+            </div>
+            <Link className="ghost-action ghost-action-inline" to={`${setupBase}/npcs/${npc.id}`}>
+              Edit in setup
+            </Link>
+          </div>
+
+          <dl className="npc-evidence-ledger">
+            <div>
+              <dt>Facts on file</dt>
+              <dd>{npc.facts.length}</dd>
+            </div>
+            <div>
+              <dt>Facts in the wild</dt>
+              <dd>{npc.facts.filter((fact) => fact.knownTo.length > 0).length}</dd>
+            </div>
+            <div>
+              <dt>Players with access</dt>
+              <dd>{recipients.filter((entry) => entry.knownFacts > 0).length}</dd>
+            </div>
+          </dl>
+
+          <p>{npc.description || 'No narrative summary has been written yet.'}</p>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function NpcAccessPanel({
+  npc,
+  recipients,
+  isDemoCampaign,
+  copiedLinkRecipientId,
+  onCopy,
+}: {
+  npc: CampaignNpc;
+  recipients: DossierRecipient[];
+  isDemoCampaign: boolean;
+  copiedLinkRecipientId: string | null;
+  onCopy: (discordUserId: string) => void;
+}) {
+  return (
+    <div
+      className="npc-dossier-panel"
+      id="npc-panel-access"
+      role="tabpanel"
+      aria-labelledby="npc-tab-access"
+    >
+      <section className="npc-panel-section">
+        <div className="setup-subsection-header">
+          <div>
+            <p className="detail-label">Player dossier links</p>
+            <p className="form-hint">
+              Copy a player-safe page. It only shows the facts that have already been revealed to
+              that player.
+            </p>
+          </div>
+        </div>
+
+        {recipients.length > 0 ? (
+          <div className="npc-share-list">
+            {recipients.map((recipient) => (
+              <article key={recipient.id} className="npc-share-row">
+                <div className="npc-share-identity">
+                  <p className="detail-label">{recipient.secondaryLabel}</p>
+                  <strong>{recipient.displayName}</strong>
+                </div>
+                <span className="npc-share-count">
+                  {recipient.knownFacts} known fact{recipient.knownFacts === 1 ? '' : 's'}
+                </span>
+                {isDemoCampaign && recipient.knownFacts > 0 ? (
+                  <Link
+                    className="ghost-action ghost-action-inline"
+                    to={`/demo/player/npcs/${npc.id}`}
+                  >
+                    View demo
+                  </Link>
+                ) : (
+                  <button
+                    className="ghost-action ghost-action-inline"
+                    type="button"
+                    disabled={isDemoCampaign || recipient.knownFacts === 0}
+                    onClick={() => onCopy(recipient.discordUserId)}
+                  >
+                    {isDemoCampaign
+                      ? 'No demo dossier'
+                      : recipient.knownFacts === 0
+                        ? 'No dossier yet'
+                        : copiedLinkRecipientId === recipient.discordUserId
+                          ? 'Copied'
+                          : 'Copy link'}
+                  </button>
+                )}
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="form-hint">
+            Player identities are still loading. Dossier links appear once participants are synced.
+          </p>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function NpcSystemPanel({ npc, systemId }: { npc: CampaignNpc; systemId: string }) {
+  return (
+    <div
+      className="npc-dossier-panel"
+      id="npc-panel-system"
+      role="tabpanel"
+      aria-labelledby="npc-tab-system"
+    >
+      <section className="npc-panel-section">
+        <div className="setup-subsection-header">
+          <div>
+            <p className="detail-label">System blocks</p>
+            <p className="form-hint">
+              Full GM reference, including stat-backed blocks that never appear on player dossiers.
+            </p>
+          </div>
+        </div>
+
+        {npc.systemBlocks.length > 0 ? (
+          <div className="npc-block-render-grid">
+            {npc.systemBlocks.map((block) => (
+              <SystemBlockRenderer
+                key={`${block.systemId ?? 'core'}:${block.blockType}`}
+                systemId={systemId}
+                block={block}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="form-hint">No system blocks recorded for this dossier yet.</p>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function NpcFactsPanel({
+  npc,
+  setupBase,
+  pendingAssignments,
+  recipientOptions,
+  assigningFactId,
+  onToggle,
+  onApply,
+}: {
+  npc: CampaignNpc;
+  setupBase: string;
+  pendingAssignments: Record<string, string[]>;
+  recipientOptions: RecipientOption[];
+  assigningFactId: string | null;
+  onToggle: (factId: string, recipientId: string) => void;
+  onApply: (fact: CampaignNpcFact) => void;
+}) {
+  return (
+    <div
+      className="npc-dossier-panel"
+      id="npc-panel-facts"
+      role="tabpanel"
+      aria-labelledby="npc-tab-facts"
+    >
+      <div className="npc-facts-panel">
+        <div className="setup-subsection-header">
+          <div>
+            <p className="detail-label">Facts on file</p>
+            <p className="form-hint">
+              Reveal one fact at a time. Knowledge only expands from here — the board remembers.
+            </p>
+          </div>
+          <Link className="ghost-action ghost-action-inline" to={`${setupBase}/npcs/${npc.id}`}>
+            Add or edit facts
+          </Link>
+        </div>
+
+        <div className="npc-facts-grid">
+          {npc.facts.map((fact, index) => {
+            const pending = pendingAssignments[fact.id] ?? [];
+            return (
+              <article key={fact.id} className="npc-fact-card">
+                <div className="npc-fact-card-header">
+                  <span className="npc-fact-number">{String(index + 1).padStart(2, '0')}</span>
+                  <div>
+                    <p className="detail-label">Known to</p>
+                    {fact.knownTo.length > 0 ? (
+                      <div className="npc-chip-row">
+                        {fact.knownTo.map((player) => (
+                          <span key={player.discordUserId} className="npc-chip is-known">
+                            {player.displayName}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="form-hint">GM only.</p>
+                    )}
+                  </div>
+                </div>
+
+                <p className="npc-fact-copy">{fact.content}</p>
+
+                <KnownToPicker
+                  fact={fact}
+                  recipientOptions={recipientOptions}
+                  pending={pending}
+                  assigning={assigningFactId === fact.id}
+                  onToggle={(recipientId) => onToggle(fact.id, recipientId)}
+                  onApply={() => onApply(fact)}
+                />
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NpcDossier({
+  campaignName,
+  systemId,
+  npc,
+  recipients,
+  recipientOptions,
+  pendingAssignments,
+  setupBase,
+  isDemoCampaign,
+  activeTab,
+  assigningFactId,
+  copiedLinkRecipientId,
+  onTabChange,
+  onToggleAssignment,
+  onApplyFact,
+  onCopyLink,
+}: {
+  campaignName: string;
+  systemId: string;
+  npc: CampaignNpc;
+  recipients: DossierRecipient[];
+  recipientOptions: RecipientOption[];
+  pendingAssignments: Record<string, string[]>;
+  setupBase: string;
+  isDemoCampaign: boolean;
+  activeTab: DossierTab;
+  assigningFactId: string | null;
+  copiedLinkRecipientId: string | null;
+  onTabChange: (tab: DossierTab) => void;
+  onToggleAssignment: (factId: string, recipientId: string) => void;
+  onApplyFact: (fact: CampaignNpcFact) => void;
+  onCopyLink: (discordUserId: string) => void;
+}) {
+  return (
+    <section className="npc-focus detail-card">
+      <div className="npc-dossier-sheet">
+        <NpcDossierHeader
+          campaignName={campaignName}
+          npc={npc}
+          recipients={recipients}
+          setupBase={setupBase}
+        />
+
+        <div className="npc-tab-row" role="tablist" aria-label="NPC dossier panels">
+          {DOSSIER_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              className={`npc-tab${activeTab === tab.id ? ' is-active' : ''}`}
+              type="button"
+              role="tab"
+              id={`npc-tab-${tab.id}`}
+              aria-controls={`npc-panel-${tab.id}`}
+              aria-selected={activeTab === tab.id}
+              onClick={() => onTabChange(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'access' ? (
+          <NpcAccessPanel
+            npc={npc}
+            recipients={recipients}
+            isDemoCampaign={isDemoCampaign}
+            copiedLinkRecipientId={copiedLinkRecipientId}
+            onCopy={onCopyLink}
+          />
+        ) : null}
+        {activeTab === 'system' ? <NpcSystemPanel npc={npc} systemId={systemId} /> : null}
+        {activeTab === 'facts' ? (
+          <NpcFactsPanel
+            npc={npc}
+            setupBase={setupBase}
+            pendingAssignments={pendingAssignments}
+            recipientOptions={recipientOptions}
+            assigningFactId={assigningFactId}
+            onToggle={onToggleAssignment}
+            onApply={onApplyFact}
+          />
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 export default function NpcsRoute() {
   const initialNpcs = useLoaderData<typeof loader>();
   const warRoom = useOutletContext<WarRoomContext>();
@@ -185,7 +573,7 @@ export default function NpcsRoute() {
   const [pendingAssignments, setPendingAssignments] = useState<Record<string, string[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [assigningFactId, setAssigningFactId] = useState<string | null>(null);
-  const [activeDossierTab, setActiveDossierTab] = useState<'access' | 'system' | 'facts'>('access');
+  const [activeDossierTab, setActiveDossierTab] = useState<DossierTab>('access');
   const [copiedLinkRecipientId, setCopiedLinkRecipientId] = useState<string | null>(null);
   const setupBase = getSetupBase(warRoom);
 
@@ -196,33 +584,27 @@ export default function NpcsRoute() {
 
   useEffect(() => {
     setNpcs(initialNpcs);
-    setSelectedNpcId(
-      (current) =>
-        (requestedNpcId !== null && initialNpcs.some((npc) => npc.id === requestedNpcId)
-          ? requestedNpcId
-          : current) ??
-        initialNpcs[0]?.id ??
-        null,
-    );
+    setSelectedNpcId((current) => {
+      if (requestedNpcId !== null && initialNpcs.some((npc) => npc.id === requestedNpcId)) {
+        return requestedNpcId;
+      }
+      if (current !== null && initialNpcs.some((npc) => npc.id === current)) {
+        return current;
+      }
+      return initialNpcs[0]?.id ?? null;
+    });
     setError(null);
-  }, [initialNpcs, requestedNpcId]);
-
-  useEffect(() => {
-    if (selectedNpcId && npcs.some((npc) => npc.id === selectedNpcId)) {
-      return;
-    }
-
-    setSelectedNpcId(npcs[0]?.id ?? null);
-  }, [npcs, selectedNpcId]);
-
-  useEffect(() => {
     setActiveDossierTab('access');
     setCopiedLinkRecipientId(null);
-  }, [selectedNpcId]);
+  }, [initialNpcs, requestedNpcId]);
+
+  const selectNpc = (npcId: string) => {
+    setSelectedNpcId(npcId);
+    setActiveDossierTab('access');
+    setCopiedLinkRecipientId(null);
+  };
 
   const selectedNpc = npcs.find((npc) => npc.id === selectedNpcId) ?? null;
-  const selectedNpcPrimaryBlock = selectedNpc ? readPrimarySystemBlock(selectedNpc) : null;
-
   const playerDossierRecipients = useMemo(() => {
     if (!selectedNpc) {
       return [];
@@ -261,6 +643,7 @@ export default function NpcsRoute() {
       setError(null);
 
       if (isDemoCampaign) {
+        const discordUserIdSet = new Set(discordUserIds);
         setNpcs((current) =>
           current.map((entry) => {
             if (entry.id !== npc.id) {
@@ -274,14 +657,18 @@ export default function NpcsRoute() {
                   return entryFact;
                 }
 
-                const additions = recipientOptions
-                  .filter((option) => discordUserIds.includes(option.id))
-                  .map((option) => ({
-                    characterId: option.characterId ?? option.id,
-                    discordUserId: option.discordUserId,
-                    displayName: option.displayName,
-                    secondaryLabel: option.secondaryLabel,
-                  }));
+                const additions = recipientOptions.flatMap((option) =>
+                  discordUserIdSet.has(option.id)
+                    ? [
+                        {
+                          characterId: option.characterId ?? option.id,
+                          discordUserId: option.discordUserId,
+                          displayName: option.displayName,
+                          secondaryLabel: option.secondaryLabel,
+                        },
+                      ]
+                    : [],
+                );
 
                 return {
                   ...entryFact,
@@ -382,296 +769,24 @@ export default function NpcsRoute() {
         </section>
       ) : selectedNpc ? (
         <div className="npc-workbench">
-          <aside className="npc-rail">
-            <div className="npc-rail-header">
-              <p className="detail-label">Dossier index</p>
-              <span>{npcs.length} active</span>
-            </div>
-            {npcs.map((npc) => {
-              const knownCount = npc.facts.filter((fact) => fact.knownTo.length > 0).length;
-              const primaryBlock = readPrimarySystemBlock(npc);
-              return (
-                <button
-                  key={npc.id}
-                  className={`npc-rail-card${selectedNpcId === npc.id ? ' is-active' : ''}`}
-                  type="button"
-                  aria-pressed={selectedNpcId === npc.id}
-                  onClick={() => setSelectedNpcId(npc.id)}
-                >
-                  <div>
-                    <p className="detail-label">
-                      {primaryBlock
-                        ? `${primaryBlock.label}: ${formatSystemBlockValue(primaryBlock.value)}`
-                        : 'No system block'}
-                    </p>
-                    <h2>{npc.name}</h2>
-                  </div>
-                  <p className="npc-rail-meta">
-                    {npc.facts.length} fact{npc.facts.length === 1 ? '' : 's'} · {knownCount} in the
-                    wild
-                  </p>
-                </button>
-              );
-            })}
-          </aside>
-
-          <section className="npc-focus detail-card">
-            <div className="npc-dossier-sheet">
-              <div className="npc-dossier-strip">
-                <span>GM dossier</span>
-                <span>{warRoom.campaign.name}</span>
-                <span>Private workspace</span>
-              </div>
-
-              <div className="npc-focus-header npc-focus-header-dossier">
-                <div className="npc-portrait-shell npc-portrait-shell-dossier">
-                  {selectedNpc.imageUrl ? (
-                    <img
-                      className="npc-portrait"
-                      src={selectedNpc.imageUrl}
-                      alt={`${selectedNpc.name} portrait`}
-                    />
-                  ) : (
-                    <NpcPortraitFallback name={selectedNpc.name} />
-                  )}
-                </div>
-
-                <div className="npc-focus-copy npc-focus-copy-dossier">
-                  <div className="npc-focus-toolbar">
-                    <div>
-                      <p className="eyebrow">
-                        {selectedNpcPrimaryBlock
-                          ? `${selectedNpcPrimaryBlock.label}: ${formatSystemBlockValue(selectedNpcPrimaryBlock.value)}`
-                          : 'Unclassified'}
-                      </p>
-                      <h2>{selectedNpc.name}</h2>
-                    </div>
-                    <Link
-                      className="ghost-action ghost-action-inline"
-                      to={`${setupBase}/npcs/${selectedNpc.id}`}
-                    >
-                      Edit in setup
-                    </Link>
-                  </div>
-
-                  <dl className="npc-evidence-ledger">
-                    <div>
-                      <dt>Facts on file</dt>
-                      <dd>{selectedNpc.facts.length}</dd>
-                    </div>
-                    <div>
-                      <dt>Facts in the wild</dt>
-                      <dd>{selectedNpc.facts.filter((fact) => fact.knownTo.length > 0).length}</dd>
-                    </div>
-                    <div>
-                      <dt>Players with access</dt>
-                      <dd>
-                        {playerDossierRecipients.filter((entry) => entry.knownFacts > 0).length}
-                      </dd>
-                    </div>
-                  </dl>
-
-                  <p>{selectedNpc.description || 'No narrative summary has been written yet.'}</p>
-                </div>
-              </div>
-
-              <div className="npc-tab-row" role="tablist" aria-label="NPC dossier panels">
-                {[
-                  { id: 'access', label: 'Access' },
-                  { id: 'system', label: 'System' },
-                  { id: 'facts', label: 'Facts' },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    className={`npc-tab${activeDossierTab === tab.id ? ' is-active' : ''}`}
-                    type="button"
-                    role="tab"
-                    id={`npc-tab-${tab.id}`}
-                    aria-controls={`npc-panel-${tab.id}`}
-                    aria-selected={activeDossierTab === tab.id}
-                    onClick={() => setActiveDossierTab(tab.id as 'access' | 'system' | 'facts')}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              {activeDossierTab === 'access' ? (
-                <div
-                  className="npc-dossier-panel"
-                  id="npc-panel-access"
-                  role="tabpanel"
-                  aria-labelledby="npc-tab-access"
-                >
-                  <section className="npc-panel-section">
-                    <div className="setup-subsection-header">
-                      <div>
-                        <p className="detail-label">Player dossier links</p>
-                        <p className="form-hint">
-                          Copy a player-safe page. It only shows the facts that have already been
-                          revealed to that player.
-                        </p>
-                      </div>
-                    </div>
-
-                    {playerDossierRecipients.length > 0 ? (
-                      <div className="npc-share-list">
-                        {playerDossierRecipients.map((recipient) => (
-                          <article key={recipient.id} className="npc-share-row">
-                            <div className="npc-share-identity">
-                              <p className="detail-label">{recipient.secondaryLabel}</p>
-                              <strong>{recipient.displayName}</strong>
-                            </div>
-                            <span className="npc-share-count">
-                              {recipient.knownFacts} known fact
-                              {recipient.knownFacts === 1 ? '' : 's'}
-                            </span>
-                            {isDemoCampaign && recipient.knownFacts > 0 ? (
-                              <Link
-                                className="ghost-action ghost-action-inline"
-                                to={`/demo/player/npcs/${selectedNpc.id}`}
-                              >
-                                View demo
-                              </Link>
-                            ) : (
-                              <button
-                                className="ghost-action ghost-action-inline"
-                                type="button"
-                                disabled={isDemoCampaign || recipient.knownFacts === 0}
-                                onClick={() => {
-                                  void copyPlayerDossierLink(recipient.discordUserId);
-                                }}
-                              >
-                                {isDemoCampaign
-                                  ? 'No demo dossier'
-                                  : recipient.knownFacts === 0
-                                    ? 'No dossier yet'
-                                    : copiedLinkRecipientId === recipient.discordUserId
-                                      ? 'Copied'
-                                      : 'Copy link'}
-                              </button>
-                            )}
-                          </article>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="form-hint">
-                        Player identities are still loading. Dossier links appear once participants
-                        are synced.
-                      </p>
-                    )}
-                  </section>
-                </div>
-              ) : null}
-
-              {activeDossierTab === 'system' ? (
-                <div
-                  className="npc-dossier-panel"
-                  id="npc-panel-system"
-                  role="tabpanel"
-                  aria-labelledby="npc-tab-system"
-                >
-                  <section className="npc-panel-section">
-                    <div className="setup-subsection-header">
-                      <div>
-                        <p className="detail-label">System blocks</p>
-                        <p className="form-hint">
-                          Full GM reference, including stat-backed blocks that never appear on
-                          player dossiers.
-                        </p>
-                      </div>
-                    </div>
-
-                    {selectedNpc.systemBlocks.length > 0 ? (
-                      <div className="npc-block-render-grid">
-                        {selectedNpc.systemBlocks.map((block) => (
-                          <SystemBlockRenderer
-                            key={`${block.systemId ?? 'core'}:${block.blockType}`}
-                            systemId={warRoom.system.id}
-                            block={block}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="form-hint">No system blocks recorded for this dossier yet.</p>
-                    )}
-                  </section>
-                </div>
-              ) : null}
-
-              {activeDossierTab === 'facts' ? (
-                <div
-                  className="npc-dossier-panel"
-                  id="npc-panel-facts"
-                  role="tabpanel"
-                  aria-labelledby="npc-tab-facts"
-                >
-                  <div className="npc-facts-panel">
-                    <div className="setup-subsection-header">
-                      <div>
-                        <p className="detail-label">Facts on file</p>
-                        <p className="form-hint">
-                          Reveal one fact at a time. Knowledge only expands from here — the board
-                          remembers.
-                        </p>
-                      </div>
-                      <Link
-                        className="ghost-action ghost-action-inline"
-                        to={`${setupBase}/npcs/${selectedNpc.id}`}
-                      >
-                        Add or edit facts
-                      </Link>
-                    </div>
-
-                    <div className="npc-facts-grid">
-                      {selectedNpc.facts.map((fact, index) => {
-                        const pending = pendingAssignments[fact.id] ?? [];
-                        return (
-                          <article key={fact.id} className="npc-fact-card">
-                            <div className="npc-fact-card-header">
-                              <span className="npc-fact-number">
-                                {String(index + 1).padStart(2, '0')}
-                              </span>
-                              <div>
-                                <p className="detail-label">Known to</p>
-                                {fact.knownTo.length > 0 ? (
-                                  <div className="npc-chip-row">
-                                    {fact.knownTo.map((player) => (
-                                      <span
-                                        key={player.discordUserId}
-                                        className="npc-chip is-known"
-                                      >
-                                        {player.displayName}
-                                      </span>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <p className="form-hint">GM only.</p>
-                                )}
-                              </div>
-                            </div>
-
-                            <p className="npc-fact-copy">{fact.content}</p>
-
-                            <KnownToPicker
-                              fact={fact}
-                              recipientOptions={recipientOptions}
-                              pending={pending}
-                              assigning={assigningFactId === fact.id}
-                              onToggle={(recipientId) =>
-                                togglePendingAssignment(fact.id, recipientId)
-                              }
-                              onApply={() => void applyFactKnowledge(fact)}
-                            />
-                          </article>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          </section>
+          <NpcIndex npcs={npcs} selectedNpcId={selectedNpcId} onSelect={selectNpc} />
+          <NpcDossier
+            campaignName={warRoom.campaign.name}
+            systemId={warRoom.system.id}
+            npc={selectedNpc}
+            recipients={playerDossierRecipients}
+            recipientOptions={recipientOptions}
+            pendingAssignments={pendingAssignments}
+            setupBase={setupBase}
+            isDemoCampaign={isDemoCampaign}
+            activeTab={activeDossierTab}
+            assigningFactId={assigningFactId}
+            copiedLinkRecipientId={copiedLinkRecipientId}
+            onTabChange={setActiveDossierTab}
+            onToggleAssignment={togglePendingAssignment}
+            onApplyFact={(fact) => void applyFactKnowledge(fact)}
+            onCopyLink={(discordUserId) => void copyPlayerDossierLink(discordUserId)}
+          />
         </div>
       ) : null}
     </ManagementWorkspace>
