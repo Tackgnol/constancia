@@ -1,6 +1,7 @@
 import { fromNodeHeaders } from 'better-auth/node';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { auth } from '../auth.js';
+import { clientIp } from './client-ip.js';
 
 function readForwardedHeader(value: string | string[] | undefined): string | undefined {
   const rawValue = Array.isArray(value) ? value[0] : value;
@@ -82,6 +83,8 @@ export async function forwardToBetterAuth(
   },
 ) {
   const headers = fromNodeHeaders(request.headers);
+  // Better Auth's sign-in limiter reads only x-forwarded-for; overwrite any client-sent value.
+  headers.set('x-forwarded-for', clientIp(request));
   const url = new URL(path, resolveOrigin(request));
   const body = buildRequestBody(init.body);
 
