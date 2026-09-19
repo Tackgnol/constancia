@@ -93,6 +93,7 @@ describe('bot HTTP server', () => {
         headers: { 'x-bot-key': 'test-key' },
         payload: {
           kind: 'test-instance',
+          instanceId: 'instance-7',
           eventId: 'event-7',
           campaignId: 'campaign-3',
           discordChannelId: 'channel-1',
@@ -128,7 +129,7 @@ describe('bot HTTP server', () => {
       );
       expect(sentPayload.embeds[0].data).not.toHaveProperty('fields');
       expect(sentPayload.components[0].components[0].data.custom_id).toBe(
-        'test-instance:submit:event-7',
+        'test-instance:submit:instance-7',
       );
       expect(sentPayload.components[0].components[0].data.label).toBe('Submit Result');
       expect(sentPayload.components[0].components[1].data.custom_id).toBe('message-report:event-7');

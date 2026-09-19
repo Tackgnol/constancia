@@ -6,27 +6,18 @@ import type {
 } from '@constancia/contracts';
 import { PipelineRunner } from '@constancia/core';
 import type { PrismaClient } from '@constancia/db';
+import { randomUUID } from 'node:crypto';
 import { buildBlockRegistry } from '../blocks.js';
-import type {
-  EventExecutionPlanner,
-  FireEventCommand,
-  PlannedEventExecution,
-  SubmitTestResultCommand,
+import {
+  EventExecutionRequestError,
+  type EventExecutionPlanner,
+  type FireEventCommand,
+  type PlannedEventExecution,
+  type SubmitTestResultCommand,
 } from './event-execution.js';
 import { filterInsightResolutionPipeline, resolveInsightScore } from './insight-event.js';
 import { assertCampaignActive } from './moderation-enforcement.js';
 import { buildTestInstancePayload, filterManualTestResolutionPipeline } from './test-instance.js';
-
-export class EventExecutionRequestError extends Error {
-  constructor(
-    readonly statusCode: number,
-    readonly code: string,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'EventExecutionRequestError';
-  }
-}
 
 export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventExecutionPlanner {
   const createRunner = () => new PipelineRunner(buildBlockRegistry());
@@ -39,6 +30,7 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
           id: true,
           name: true,
           type: true,
+          status: true,
           campaignId: true,
           channelId: true,
           pipeline: true,
@@ -54,14 +46,25 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
       // Bot API-key routes bypass campaign-admin authorization.
       assertCampaignActive(event.campaign);
 
+      if (event.status !== 'ready') {
+        throw new EventExecutionRequestError(
+          409,
+          'EVENT_NOT_READY',
+          'Only ready Events can be fired. Reset the Event to ready in Setup first.',
+        );
+      }
+
       const pipeline = parsePipeline(event.pipeline);
 
       if (event.type === 'test') {
+        const instanceId = randomUUID();
         const payload = buildTestInstancePayload(
           { ...event, pipeline },
           event.channel.discordChannelId,
+          instanceId,
         );
-        return plan(event, [], [], false, payload ? [payload] : []);
+        const planned = plan(event, [], [], false, payload ? [payload] : []);
+        return payload ? { ...planned, testInstanceId: instanceId } : planned;
       }
 
       if (event.type === 'insight') {
@@ -118,38 +121,55 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
     },
 
     async planTestResult(command: SubmitTestResultCommand): Promise<PlannedEventExecution> {
-      const event = await prisma.event.findUnique({
-        where: { id: command.eventId },
+      const instance = await prisma.testInstance.findUnique({
+        where: { id: command.instanceId },
         select: {
-          id: true,
-          type: true,
-          campaignId: true,
-          channelId: true,
-          pipeline: true,
-          channel: { select: { discordChannelId: true } },
-          campaign: { select: { disabledAt: true, disabledPublicReason: true } },
+          status: true,
+          event: {
+            select: {
+              id: true,
+              campaignId: true,
+              channelId: true,
+              pipeline: true,
+              channel: { select: { discordChannelId: true } },
+              campaign: { select: { disabledAt: true, disabledPublicReason: true } },
+            },
+          },
+          submissions: {
+            where: { discordUserId: command.discordUserId },
+            select: { id: true },
+          },
         },
       });
 
-      if (!event) {
-        throw new EventExecutionRequestError(404, 'EVENT_NOT_FOUND', 'Event not found.');
+      if (!instance) {
+        throw new EventExecutionRequestError(404, 'TEST_NOT_FOUND', 'Test not found.');
       }
 
+      const { event } = instance;
       assertCampaignActive(event.campaign);
-
-      if (event.type !== 'test') {
-        throw new EventExecutionRequestError(
-          409,
-          'EVENT_IS_NOT_TEST',
-          'Only test Events accept player scores.',
-        );
-      }
 
       if (event.channel.discordChannelId !== command.discordChannelId) {
         throw new EventExecutionRequestError(
           403,
           'EVENT_CHANNEL_MISMATCH',
           'The Discord channel does not own this Event.',
+        );
+      }
+
+      if (instance.status === 'closed') {
+        throw new EventExecutionRequestError(
+          409,
+          'TEST_CLOSED',
+          'The GM has closed this Test to new results.',
+        );
+      }
+
+      if (instance.submissions.length > 0) {
+        throw new EventExecutionRequestError(
+          409,
+          'ALREADY_SUBMITTED',
+          'You already submitted a result for this Test. Ask the GM to reopen your submission.',
         );
       }
 
@@ -182,13 +202,20 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
         },
       );
 
-      return plan(
-        event,
-        result.messages,
-        result.effects,
-        result.halted,
-        messageDeliveries(event, result.messages),
-      );
+      return {
+        ...plan(
+          event,
+          result.messages,
+          result.effects,
+          result.halted,
+          messageDeliveries(event, result.messages),
+        ),
+        testSubmission: {
+          instanceId: command.instanceId,
+          discordUserId: command.discordUserId,
+          playerScore: command.playerScore,
+        },
+      };
     },
   };
 }

@@ -3,9 +3,36 @@ import {
   accessRevokedMessage,
   BotAccessRevokedError,
   BotCampaignAdminRequiredError,
+  BotTestSubmissionRejectedError,
   errorReplyContent,
   isRoutineBotError,
+  requireApiData,
+  testSubmissionRejectedMessage,
 } from '../backend/access-revoked.js';
+
+describe('test submission rejections', () => {
+  it.each(['TEST_CLOSED', 'ALREADY_SUBMITTED'])('maps %s to a routine, replyable error', (code) => {
+    const response = { status: 'error', data: { message: 'Friendly reason.', code } };
+
+    expect(testSubmissionRejectedMessage(response)).toBe('Friendly reason.');
+    expect(() => requireApiData(response, 'submit test result')).toThrow(
+      BotTestSubmissionRejectedError,
+    );
+
+    const error = new BotTestSubmissionRejectedError('Friendly reason.');
+    expect(isRoutineBotError(error)).toBe(true);
+    expect(errorReplyContent(error)).toBe('Friendly reason.');
+  });
+
+  it('ignores other error codes', () => {
+    expect(
+      testSubmissionRejectedMessage({
+        status: 'error',
+        data: { message: 'x', code: 'REQUEST_FAILED' },
+      }),
+    ).toBeNull();
+  });
+});
 
 describe('accessRevokedMessage', () => {
   it('extracts only ACCESS_REVOKED messages', () => {

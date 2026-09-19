@@ -23,8 +23,32 @@ export async function startServer() {
   }
 }
 
+// A rolling deploy/restart sends SIGTERM before killing the process. Without
+// this, in-flight requests get dropped mid-response instead of finishing —
+// app.close() already waits for Fastify's in-flight requests to drain.
+function registerGracefulShutdown(app: Awaited<ReturnType<typeof buildApp>>): void {
+  let shuttingDown = false;
+
+  const shutdown = async (signal: NodeJS.Signals) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    app.log.info(`Received ${signal}, draining in-flight requests before shutdown.`);
+    try {
+      await app.close();
+      process.exit(0);
+    } catch (error) {
+      app.log.error(error);
+      process.exit(1);
+    }
+  };
+
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+  process.on('SIGINT', () => void shutdown('SIGINT'));
+}
+
 const entryUrl = process.argv[1] ? pathToFileURL(process.argv[1]).href : undefined;
 
 if (entryUrl === import.meta.url) {
-  await startServer();
+  const app = await startServer();
+  registerGracefulShutdown(app);
 }

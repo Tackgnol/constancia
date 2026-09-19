@@ -36,10 +36,12 @@ describe('test-instance helpers', () => {
         ] satisfies BlockInstance[],
       },
       'channel-1',
+      'instance-1',
     );
 
     expect(payload).toEqual({
       kind: 'test-instance',
+      instanceId: 'instance-1',
       eventId: 'event-1',
       campaignId: 'campaign-1',
       discordChannelId: 'channel-1',
@@ -63,6 +65,7 @@ describe('test-instance helpers', () => {
           pipeline: [{ blockType: 'message-channel', config: { content: 'Just narration.' } }],
         },
         'channel-1',
+        'instance-1',
       ),
     ).toBeNull();
   });

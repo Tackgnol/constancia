@@ -37,7 +37,7 @@ import { assertCampaignActive, assertNotBanned } from '../services/moderation-en
 import { requireBotCampaignAdmin } from '../services/campaign-access.js';
 
 interface BotTestResultBody {
-  eventId: string;
+  instanceId: string;
   discordUserId: string;
   discordChannelId: string;
   playerScore: number;
@@ -225,16 +225,19 @@ const botRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request) => {
-      const { eventId, discordUserId, discordChannelId, playerScore, idempotencyKey } =
+      const { instanceId, discordUserId, discordChannelId, playerScore, idempotencyKey } =
         request.body;
       const receipt = await app.eventExecution.submitTestResult({
-        eventId,
+        instanceId,
         discordUserId,
         discordChannelId,
         playerScore,
         idempotencyKey,
       });
-      return ok(receipt);
+      const submittedCount = await getPrismaClient().testSubmission.count({
+        where: { instanceId },
+      });
+      return ok({ ...receipt, submittedCount });
     },
   );
 

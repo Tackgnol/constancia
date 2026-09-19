@@ -4,11 +4,13 @@ import { useOutletContext } from 'react-router';
 
 import { sendPlayerMessage } from '@constancia/api-client/endpoints/messages/messages';
 import type { ListEvents200DataItem } from '@constancia/api-client/model';
+import { TestInstancePanel } from '@/components/war-room/test-instance-panel';
 import { buildServerApiOptions } from '@/lib/api-proxy.server';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import { fireCampaignEvent } from '@/lib/fire-event-action.server';
 import type { DeliveryViewState, FireReceiptView } from '@/lib/fire-event-receipt';
 import { postRouteAction } from '@/lib/route-action-client';
+import { handleTestInstanceAction } from '@/lib/test-instance-action.server';
 import { handleUploadImageAction } from '@/lib/upload-image-action.server';
 import type { TriggerKind, WarRoomContext } from '@/lib/war-room-data';
 
@@ -80,6 +82,11 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
+    const testInstanceResponse = await handleTestInstanceAction(request, formData, campaignId);
+    if (testInstanceResponse) {
+      return testInstanceResponse;
+    }
+
     if (intent === 'fire-event') {
       const result = await fireCampaignEvent(request, {
         campaignId,
@@ -294,6 +301,8 @@ function buildTriggerSections(
   const sectionByKind = new Map(sections.map((section) => [section.id, section]));
 
   for (const event of events) {
+    if (event.status === 'draft' || event.status === 'archived') continue;
+
     const kind = event.type as TriggerKind;
     const section = sectionByKind.get(kind) ?? sectionByKind.get('message');
     if (!section) continue;
@@ -776,6 +785,16 @@ export default function PlayRoute() {
           </section>
         );
       })}
+
+      {selectedItem?.kind === 'test' && !isDemoMode ? (
+        <TestInstancePanel
+          key={selectedItem.id}
+          actionPath={actionPath}
+          campaignId={warRoom.campaign.id}
+          eventId={selectedItem.id}
+          eventName={selectedItem.name}
+        />
+      ) : null}
     </div>
   );
 }

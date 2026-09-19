@@ -16,7 +16,11 @@ import {
   gameEventSchema,
   listResponseSchema,
   singleResponseSchema,
+  testInstanceParamsSchema,
+  testInstanceSchema,
+  testSubmissionParamsSchema,
 } from '../schemas.js';
+import { listTestInstanceDetails } from '../services/test-instance-detail.js';
 import {
   assertPipelineUploadAssetsAttachable,
   deleteEventUploadAssets,
@@ -32,6 +36,14 @@ interface CampaignParams {
 interface EventParams {
   id: string;
   eventId: string;
+}
+
+interface TestInstanceParams extends EventParams {
+  instanceId: string;
+}
+
+interface TestSubmissionParams extends TestInstanceParams {
+  discordUserId: string;
 }
 
 interface IdempotencyHeaders {
@@ -128,7 +140,6 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
           campaignId: request.campaignScope.campaignId,
           shortCircuit: shortCircuit ?? false,
           pipeline: pipeline as unknown as Prisma.InputJsonValue,
-          status: 'draft',
         },
         select: eventSelect,
       });
@@ -284,6 +295,123 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
         eventId,
       });
       return ok(receipt);
+    },
+  );
+
+  app.get<{ Params: EventParams }>(
+    '/:eventId/test-instances',
+    {
+      schema: {
+        tags: ['events'],
+        summary: 'List Test instances for an event, newest first',
+        operationId: 'listTestInstances',
+        params: eventParamsSchema,
+        response: {
+          200: listResponseSchema(testInstanceSchema),
+        },
+      },
+    },
+    async (request) => {
+      const prisma = getPrismaClient();
+      const { eventId } = request.params;
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'event',
+        id: eventId,
+      });
+      return ok(
+        await listTestInstanceDetails(prisma, {
+          campaignId: request.campaignScope.campaignId,
+          eventId,
+        }),
+      );
+    },
+  );
+
+  const testInstanceAction = (
+    action: 'close' | 'reopen',
+    summary: string,
+    data: Prisma.TestInstanceUpdateInput,
+  ) =>
+    app.post<{ Params: TestInstanceParams }>(
+      `/:eventId/test-instances/:instanceId/${action}`,
+      {
+        schema: {
+          tags: ['events'],
+          summary,
+          operationId: `${action}TestInstance`,
+          params: testInstanceParamsSchema,
+          response: {
+            200: singleResponseSchema(testInstanceSchema),
+          },
+        },
+      },
+      async (request, reply) => {
+        const prisma = getPrismaClient();
+        const { eventId, instanceId } = request.params;
+        await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+          kind: 'event',
+          id: eventId,
+        });
+        const updated = await prisma.testInstance.updateMany({
+          where: { id: instanceId, eventId },
+          data,
+        });
+        if (updated.count !== 1) {
+          return sendNotFound(reply, 'Test instance not found');
+        }
+        const [detail] = await listTestInstanceDetails(prisma, {
+          campaignId: request.campaignScope.campaignId,
+          eventId,
+          instanceId,
+        });
+        return ok(detail);
+      },
+    );
+
+  testInstanceAction('close', 'Close a Test instance to new results', {
+    status: 'closed',
+    closedAt: new Date(),
+  });
+  testInstanceAction('reopen', 'Reopen a closed Test instance', {
+    status: 'open',
+    closedAt: null,
+  });
+
+  // Reopening a player only frees their slot to resubmit; effects already applied stay.
+  app.post<{ Params: TestSubmissionParams }>(
+    '/:eventId/test-instances/:instanceId/submissions/:discordUserId/reopen',
+    {
+      schema: {
+        tags: ['events'],
+        summary: "Reopen one player's submission so they can resubmit",
+        operationId: 'reopenTestSubmission',
+        params: testSubmissionParamsSchema,
+        response: {
+          200: singleResponseSchema(testInstanceSchema),
+        },
+      },
+    },
+    async (request, reply) => {
+      const prisma = getPrismaClient();
+      const { eventId, instanceId, discordUserId } = request.params;
+      await createCampaignAccess(prisma).requireResource(request.campaignScope, {
+        kind: 'event',
+        id: eventId,
+      });
+      const owned = await prisma.testInstance.findFirst({
+        where: { id: instanceId, eventId },
+        select: { id: true },
+      });
+      if (owned === null) {
+        return sendNotFound(reply, 'Test instance not found');
+      }
+      await prisma.testSubmission.deleteMany({ where: { instanceId, discordUserId } });
+      const [detail] = await listTestInstanceDetails(prisma, {
+        campaignId: request.campaignScope.campaignId,
+        eventId,
+        instanceId,
+      });
+      return ok(detail);
     },
   );
 };

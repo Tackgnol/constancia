@@ -4029,6 +4029,18 @@
                                               },
                                               "text": {
                                                 "type": "string"
+                                              },
+                                              "loreEntryIds": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "npcFactIds": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
                                               }
                                             },
                                             "required": ["threshold", "text"]
@@ -4389,6 +4401,18 @@
                                       },
                                       "text": {
                                         "type": "string"
+                                      },
+                                      "loreEntryIds": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "npcFactIds": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
                                       }
                                     },
                                     "required": ["threshold", "text"]
@@ -4757,6 +4781,18 @@
                                             },
                                             "text": {
                                               "type": "string"
+                                            },
+                                            "loreEntryIds": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "npcFactIds": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string"
+                                              }
                                             }
                                           },
                                           "required": ["threshold", "text"]
@@ -5153,6 +5189,18 @@
                                             },
                                             "text": {
                                               "type": "string"
+                                            },
+                                            "loreEntryIds": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "npcFactIds": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string"
+                                              }
                                             }
                                           },
                                           "required": ["threshold", "text"]
@@ -5516,6 +5564,18 @@
                                       },
                                       "text": {
                                         "type": "string"
+                                      },
+                                      "loreEntryIds": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "npcFactIds": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
                                       }
                                     },
                                     "required": ["threshold", "text"]
@@ -5891,6 +5951,18 @@
                                             },
                                             "text": {
                                               "type": "string"
+                                            },
+                                            "loreEntryIds": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "npcFactIds": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string"
+                                              }
                                             }
                                           },
                                           "required": ["threshold", "text"]
@@ -6254,6 +6326,417 @@
                         "createdAt",
                         "completedAt"
                       ]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/{id}/events/{eventId}/test-instances": {
+      "get": {
+        "operationId": "listTestInstances",
+        "summary": "List Test instances for an event, newest first",
+        "tags": ["events"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "eventId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "eventId": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": ["open", "closed"]
+                          },
+                          "closedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "participants": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "discordUserId": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "submitted": {
+                                  "type": "boolean"
+                                },
+                                "playerScore": {
+                                  "type": "number"
+                                },
+                                "submittedAt": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                }
+                              },
+                              "required": ["discordUserId", "label", "submitted"]
+                            }
+                          }
+                        },
+                        "required": ["id", "eventId", "status", "createdAt", "participants"]
+                      }
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/{id}/events/{eventId}/test-instances/{instanceId}/close": {
+      "post": {
+        "operationId": "closeTestInstance",
+        "summary": "Close a Test instance to new results",
+        "tags": ["events"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "eventId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "instanceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "eventId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["open", "closed"]
+                        },
+                        "closedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "participants": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "discordUserId": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "submitted": {
+                                "type": "boolean"
+                              },
+                              "playerScore": {
+                                "type": "number"
+                              },
+                              "submittedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            },
+                            "required": ["discordUserId", "label", "submitted"]
+                          }
+                        }
+                      },
+                      "required": ["id", "eventId", "status", "createdAt", "participants"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/{id}/events/{eventId}/test-instances/{instanceId}/reopen": {
+      "post": {
+        "operationId": "reopenTestInstance",
+        "summary": "Reopen a closed Test instance",
+        "tags": ["events"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "eventId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "instanceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "eventId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["open", "closed"]
+                        },
+                        "closedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "participants": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "discordUserId": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "submitted": {
+                                "type": "boolean"
+                              },
+                              "playerScore": {
+                                "type": "number"
+                              },
+                              "submittedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            },
+                            "required": ["discordUserId", "label", "submitted"]
+                          }
+                        }
+                      },
+                      "required": ["id", "eventId", "status", "createdAt", "participants"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/{id}/events/{eventId}/test-instances/{instanceId}/submissions/{discordUserId}/reopen": {
+      "post": {
+        "operationId": "reopenTestSubmission",
+        "summary": "Reopen one player's submission so they can resubmit",
+        "tags": ["events"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "eventId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "instanceId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "discordUserId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "eventId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["open", "closed"]
+                        },
+                        "closedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "participants": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "discordUserId": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "submitted": {
+                                "type": "boolean"
+                              },
+                              "playerScore": {
+                                "type": "number"
+                              },
+                              "submittedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            },
+                            "required": ["discordUserId", "label", "submitted"]
+                          }
+                        }
+                      },
+                      "required": ["id", "eventId", "status", "createdAt", "participants"]
                     }
                   },
                   "required": ["status", "data"]
@@ -10857,8 +11340,9 @@
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
-                  "eventId": {
-                    "type": "string"
+                  "instanceId": {
+                    "type": "string",
+                    "minLength": 1
                   },
                   "discordUserId": {
                     "type": "string"
@@ -10875,7 +11359,7 @@
                   }
                 },
                 "required": [
-                  "eventId",
+                  "instanceId",
                   "discordUserId",
                   "discordChannelId",
                   "playerScore",
@@ -11037,6 +11521,10 @@
                         "completedAt": {
                           "type": "string",
                           "format": "date-time"
+                        },
+                        "submittedCount": {
+                          "type": "integer",
+                          "minimum": 0
                         }
                       },
                       "required": [
@@ -11050,7 +11538,8 @@
                         "halted",
                         "deliveries",
                         "createdAt",
-                        "completedAt"
+                        "completedAt",
+                        "submittedCount"
                       ]
                     }
                   },
@@ -11787,6 +12276,18 @@
                                               },
                                               "text": {
                                                 "type": "string"
+                                              },
+                                              "loreEntryIds": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "npcFactIds": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
                                               }
                                             },
                                             "required": ["threshold", "text"]

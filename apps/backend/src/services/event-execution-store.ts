@@ -6,15 +6,17 @@ import {
 } from '@constancia/contracts';
 import type { Prisma, PrismaClient } from '@constancia/db';
 import { parseGameDate } from '@constancia/systems';
-import type {
-  BotDeliveryResult,
-  EventDeliveryStatus,
-  EventExecutionDraft,
-  EventExecutionKind,
-  EventExecutionReceipt,
-  EventExecutionStatus,
-  EventExecutionStore,
-  RetryableDelivery,
+import { Sentry } from '../instrument.js';
+import {
+  EventExecutionRequestError,
+  type BotDeliveryResult,
+  type EventDeliveryStatus,
+  type EventExecutionDraft,
+  type EventExecutionKind,
+  type EventExecutionReceipt,
+  type EventExecutionStatus,
+  type EventExecutionStore,
+  type RetryableDelivery,
 } from './event-execution.js';
 import { toGameDateJson } from './game-date.js';
 
@@ -25,6 +27,19 @@ const executionInclude = {
 type StoredExecution = Prisma.EventExecutionGetPayload<{
   include: typeof executionInclude;
 }>;
+
+// A delivery gets 6 attempts total, backing off 5s -> 30s -> 2m -> 10m (then
+// holding at 10m for any remaining attempts), ~20 minutes end to end. Beyond
+// that it's cancelled rather than retried forever — a permanently-broken
+// delivery (bad channel id, revoked permission) should surface, not hammer
+// Discord's API for hours. The GM re-sends it manually in Discord.
+const MAX_DELIVERY_ATTEMPTS = 6;
+const RETRY_BACKOFF_MS = [5_000, 30_000, 120_000, 600_000];
+
+function nextRetryDelayMs(attemptsSoFar: number): number {
+  const index = Math.min(attemptsSoFar - 1, RETRY_BACKOFF_MS.length - 1);
+  return RETRY_BACKOFF_MS[index];
+}
 
 export function createPrismaEventExecutionStore(prisma: PrismaClient): EventExecutionStore {
   async function findByIdempotencyKey(kind: EventExecutionKind, idempotencyKey: string) {
@@ -67,14 +82,34 @@ export function createPrismaEventExecutionStore(prisma: PrismaClient): EventExec
           });
 
           if (draft.markEventFired) {
+            // Guarding on `ready` makes concurrent fires with different idempotency keys
+            // race safely: the loser rolls back its execution instead of double-firing.
             const updated = await tx.event.updateMany({
-              where: { id: draft.eventId, campaignId: draft.campaignId },
+              where: { id: draft.eventId, campaignId: draft.campaignId, status: 'ready' },
               data: { status: 'fired' },
             });
 
             if (updated.count !== 1) {
-              throw new Error('The Event no longer belongs to the Campaign.');
+              throw new EventExecutionRequestError(
+                409,
+                'EVENT_NOT_READY',
+                'Only ready Events can be fired. Reset the Event to ready in Setup first.',
+              );
             }
+          }
+
+          if (draft.testInstanceId) {
+            await tx.testInstance.create({
+              data: {
+                id: draft.testInstanceId,
+                eventId: draft.eventId,
+                executionId: createdExecution.id,
+              },
+            });
+          }
+
+          if (draft.testSubmission) {
+            await tx.testSubmission.create({ data: draft.testSubmission });
           }
 
           for (const effect of draft.effects) {
@@ -93,6 +128,14 @@ export function createPrismaEventExecutionStore(prisma: PrismaClient): EventExec
         const existing = await findByIdempotencyKey(draft.kind, draft.idempotencyKey);
 
         if (!existing) {
+          // No execution owns this key, so the conflict was the one-submission-per-player rule.
+          if (draft.testSubmission) {
+            throw new EventExecutionRequestError(
+              409,
+              'ALREADY_SUBMITTED',
+              'You already submitted a result for this Test. Ask the GM to reopen your submission.',
+            );
+          }
           throw error;
         }
 
@@ -129,28 +172,56 @@ export function createPrismaEventExecutionStore(prisma: PrismaClient): EventExec
     },
 
     async recordDeliveryResult(deliveryId, result: BotDeliveryResult) {
-      const delivery = await prisma.eventDelivery.update({
-        where: { id: deliveryId },
-        data:
-          result.status === 'delivered'
-            ? {
-                status: 'delivered',
-                attempts: { increment: 1 },
-                lastError: null,
-                deliveredAt: new Date(),
-              }
-            : result.status === 'cancelled'
-              ? { status: 'cancelled', lastError: null }
-              : {
-                  status: 'failed',
-                  attempts: { increment: 1 },
-                  lastError: result.error,
-                  nextAttemptAt: new Date(),
-                },
-        select: { executionId: true },
-      });
+      let executionId: string;
+
+      if (result.status === 'delivered') {
+        ({ executionId } = await prisma.eventDelivery.update({
+          where: { id: deliveryId },
+          data: {
+            status: 'delivered',
+            attempts: { increment: 1 },
+            lastError: null,
+            deliveredAt: new Date(),
+          },
+          select: { executionId: true },
+        }));
+      } else if (result.status === 'cancelled') {
+        ({ executionId } = await prisma.eventDelivery.update({
+          where: { id: deliveryId },
+          data: { status: 'cancelled', lastError: null },
+          select: { executionId: true },
+        }));
+      } else {
+        const current = await prisma.eventDelivery.findUniqueOrThrow({
+          where: { id: deliveryId },
+          select: { attempts: true, executionId: true },
+        });
+        const attempts = current.attempts + 1;
+        const exhausted = attempts >= MAX_DELIVERY_ATTEMPTS;
+
+        await prisma.eventDelivery.update({
+          where: { id: deliveryId },
+          data: exhausted
+            ? { status: 'cancelled', attempts, lastError: result.error }
+            : {
+                status: 'failed',
+                attempts,
+                lastError: result.error,
+                nextAttemptAt: new Date(Date.now() + nextRetryDelayMs(attempts)),
+              },
+        });
+
+        if (exhausted) {
+          Sentry.captureException(new Error(`Delivery exhausted retries: ${result.error}`), {
+            tags: { deliveryId, executionId: current.executionId },
+          });
+        }
+
+        executionId = current.executionId;
+      }
+
       const execution = await prisma.eventExecution.findUniqueOrThrow({
-        where: { id: delivery.executionId },
+        where: { id: executionId },
         include: executionInclude,
       });
       return mapExecution(execution);
