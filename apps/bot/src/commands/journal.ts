@@ -12,14 +12,19 @@ import type { BotBackend, BotJournal, BotJournalQuestEntry } from '../backend/bo
 import { botBackend } from '../backend/bot-backend.js';
 import { loadBotConfig } from '../config.js';
 import type { BotChatCommand, BotComponentHandler } from '../discord/command-types.js';
+import {
+  buildJournalBackCustomId,
+  buildJournalCategoryCustomId,
+  buildJournalDetailCustomId,
+  JOURNAL_COMPONENT_PREFIX,
+  parseJournalBackCustomId,
+  parseJournalCategoryCustomId,
+  parseJournalDetailCustomId,
+  type JournalCategory,
+} from './journal-custom-id.js';
 
-const JOURNAL_COMPONENT_PREFIX = 'journal:';
-const JOURNAL_CATEGORY_PREFIX = `${JOURNAL_COMPONENT_PREFIX}category:`;
-const JOURNAL_DETAIL_PREFIX = `${JOURNAL_COMPONENT_PREFIX}detail:`;
-const JOURNAL_BACK_PREFIX = `${JOURNAL_COMPONENT_PREFIX}back:`;
 const MAX_DETAIL_BUTTONS = 20;
 
-type JournalCategory = 'quests' | 'npcs' | 'lore';
 type JournalQuest = BotJournal['quests'][number];
 type JournalNpc = BotJournal['npcs'][number];
 type JournalLoreEntry = BotJournal['lore'][number];
@@ -29,14 +34,6 @@ interface JournalContext {
   campaignId: string;
   journal: BotJournal;
   journalUrl: string;
-}
-
-function encodeCustomIdPart(value: string): string {
-  return encodeURIComponent(value);
-}
-
-function decodeCustomIdPart(value: string): string {
-  return decodeURIComponent(value);
 }
 
 function buildJournalUrlFallback(campaignId: string): string {
@@ -112,7 +109,7 @@ function createWebJournalButton(journalUrl: string): ButtonBuilder {
 
 function createBackButton(context: JournalContext): ButtonBuilder {
   return new ButtonBuilder()
-    .setCustomId(`${JOURNAL_BACK_PREFIX}${encodeCustomIdPart(context.guildId)}`)
+    .setCustomId(buildJournalBackCustomId(context.guildId))
     .setLabel('Back')
     .setStyle(ButtonStyle.Secondary);
 }
@@ -136,17 +133,17 @@ function buildHomeComponents(context: JournalContext): ActionRowBuilder<ButtonBu
   return [
     new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
-        .setCustomId(`${JOURNAL_CATEGORY_PREFIX}${encodeCustomIdPart(context.guildId)}:quests`)
+        .setCustomId(buildJournalCategoryCustomId(context.guildId, 'quests'))
         .setLabel('Quests')
         .setStyle(ButtonStyle.Primary)
         .setDisabled(context.journal.quests.length === 0),
       new ButtonBuilder()
-        .setCustomId(`${JOURNAL_CATEGORY_PREFIX}${encodeCustomIdPart(context.guildId)}:npcs`)
+        .setCustomId(buildJournalCategoryCustomId(context.guildId, 'npcs'))
         .setLabel('NPCs')
         .setStyle(ButtonStyle.Primary)
         .setDisabled(context.journal.npcs.length === 0),
       new ButtonBuilder()
-        .setCustomId(`${JOURNAL_CATEGORY_PREFIX}${encodeCustomIdPart(context.guildId)}:lore`)
+        .setCustomId(buildJournalCategoryCustomId(context.guildId, 'lore'))
         .setLabel('Lore')
         .setStyle(ButtonStyle.Primary)
         .setDisabled(context.journal.lore.length === 0),
@@ -196,26 +193,20 @@ function buildCategoryComponents(
     category === 'quests'
       ? context.journal.quests.slice(0, MAX_DETAIL_BUTTONS).map((quest) =>
           new ButtonBuilder()
-            .setCustomId(
-              `${JOURNAL_DETAIL_PREFIX}${encodeCustomIdPart(context.guildId)}:quests:${encodeCustomIdPart(quest.id)}`,
-            )
+            .setCustomId(buildJournalDetailCustomId(context.guildId, 'quests', quest.id))
             .setLabel(quest.name.slice(0, 80))
             .setStyle(ButtonStyle.Secondary),
         )
       : category === 'npcs'
         ? context.journal.npcs.slice(0, MAX_DETAIL_BUTTONS).map((npc) =>
             new ButtonBuilder()
-              .setCustomId(
-                `${JOURNAL_DETAIL_PREFIX}${encodeCustomIdPart(context.guildId)}:npcs:${encodeCustomIdPart(npc.id)}`,
-              )
+              .setCustomId(buildJournalDetailCustomId(context.guildId, 'npcs', npc.id))
               .setLabel(npc.name.slice(0, 80))
               .setStyle(ButtonStyle.Secondary),
           )
         : context.journal.lore.slice(0, MAX_DETAIL_BUTTONS).map((loreEntry) =>
             new ButtonBuilder()
-              .setCustomId(
-                `${JOURNAL_DETAIL_PREFIX}${encodeCustomIdPart(context.guildId)}:lore:${encodeCustomIdPart(loreEntry.id)}`,
-              )
+              .setCustomId(buildJournalDetailCustomId(context.guildId, 'lore', loreEntry.id))
               .setLabel(loreEntry.title.slice(0, 80))
               .setStyle(ButtonStyle.Secondary),
           );
@@ -285,7 +276,7 @@ function buildDetailComponents(
   return [
     new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
-        .setCustomId(`${JOURNAL_CATEGORY_PREFIX}${encodeCustomIdPart(context.guildId)}:${category}`)
+        .setCustomId(buildJournalCategoryCustomId(context.guildId, category))
         .setLabel(
           category === 'quests'
             ? 'Back to quests'
@@ -309,57 +300,6 @@ function findNpc(journal: BotJournal, npcId: string): JournalNpc | null {
 
 function findLoreEntry(journal: BotJournal, loreId: string): JournalLoreEntry | null {
   return journal.lore.find((loreEntry) => loreEntry.id === loreId) ?? null;
-}
-
-function parseCategoryCustomId(
-  customId: string,
-): { guildId: string; category: JournalCategory } | null {
-  if (!customId.startsWith(JOURNAL_CATEGORY_PREFIX)) {
-    return null;
-  }
-
-  const [guildIdPart, category, ...rest] = customId
-    .slice(JOURNAL_CATEGORY_PREFIX.length)
-    .split(':');
-  if (!guildIdPart || rest.length > 0 || !isJournalCategory(category)) {
-    return null;
-  }
-
-  return { guildId: decodeCustomIdPart(guildIdPart), category };
-}
-
-function parseDetailCustomId(
-  customId: string,
-): { guildId: string; category: JournalCategory; id: string } | null {
-  if (!customId.startsWith(JOURNAL_DETAIL_PREFIX)) {
-    return null;
-  }
-
-  const [guildIdPart, category, idPart, ...rest] = customId
-    .slice(JOURNAL_DETAIL_PREFIX.length)
-    .split(':');
-  if (!guildIdPart || !idPart || rest.length > 0 || !isJournalCategory(category)) {
-    return null;
-  }
-
-  return {
-    guildId: decodeCustomIdPart(guildIdPart),
-    category,
-    id: decodeCustomIdPart(idPart),
-  };
-}
-
-function parseBackCustomId(customId: string): { guildId: string } | null {
-  if (!customId.startsWith(JOURNAL_BACK_PREFIX)) {
-    return null;
-  }
-
-  const guildIdPart = customId.slice(JOURNAL_BACK_PREFIX.length);
-  return guildIdPart ? { guildId: decodeCustomIdPart(guildIdPart) } : null;
-}
-
-function isJournalCategory(value: string | undefined): value is JournalCategory {
-  return value === 'quests' || value === 'npcs' || value === 'lore';
 }
 
 export async function handleJournal(
@@ -404,7 +344,7 @@ export const journalComponentHandler: BotComponentHandler = {
 async function handleJournalButton(interaction: ButtonInteraction): Promise<void> {
   await interaction.deferUpdate();
 
-  const categoryTarget = parseCategoryCustomId(interaction.customId);
+  const categoryTarget = parseJournalCategoryCustomId(interaction.customId);
   if (categoryTarget) {
     const context = await loadJournalContext(categoryTarget.guildId, interaction.user.id);
     await interaction.editReply({
@@ -414,7 +354,7 @@ async function handleJournalButton(interaction: ButtonInteraction): Promise<void
     return;
   }
 
-  const detailTarget = parseDetailCustomId(interaction.customId);
+  const detailTarget = parseJournalDetailCustomId(interaction.customId);
   if (detailTarget) {
     const context = await loadJournalContext(detailTarget.guildId, interaction.user.id);
 
@@ -459,7 +399,7 @@ async function handleJournalButton(interaction: ButtonInteraction): Promise<void
     return;
   }
 
-  const backTarget = parseBackCustomId(interaction.customId);
+  const backTarget = parseJournalBackCustomId(interaction.customId);
   if (backTarget) {
     const context = await loadJournalContext(backTarget.guildId, interaction.user.id);
     await interaction.editReply({
