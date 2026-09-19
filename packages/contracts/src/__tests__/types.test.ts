@@ -112,6 +112,7 @@ describe('Contract types', () => {
     expect(
       botDeliveryPayloadSchema.safeParse({
         kind: 'test-instance',
+        instanceId: 'instance-1',
         eventId: 'event-1',
         campaignId: 'campaign-1',
         discordChannelId: 'channel-1',

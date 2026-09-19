@@ -92,6 +92,7 @@ function extractDescription(pipeline: BlockInstance[]): string | undefined {
 export function buildTestInstancePayload(
   event: GameEventLike,
   discordChannelId: string,
+  instanceId: string,
 ): SendTestInstancePayload | null {
   if (!isBlockInstanceArray(event.pipeline)) {
     return null;
@@ -104,6 +105,7 @@ export function buildTestInstancePayload(
 
   return {
     kind: 'test-instance',
+    instanceId,
     eventId: event.id,
     campaignId: event.campaignId,
     discordChannelId,

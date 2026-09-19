@@ -129,6 +129,10 @@ describe('backend app', () => {
         '/api/v1/campaigns/{id}/events/',
         '/api/v1/campaigns/{id}/events/{eventId}',
         '/api/v1/campaigns/{id}/events/{eventId}/fire',
+        '/api/v1/campaigns/{id}/events/{eventId}/test-instances',
+        '/api/v1/campaigns/{id}/events/{eventId}/test-instances/{instanceId}/close',
+        '/api/v1/campaigns/{id}/events/{eventId}/test-instances/{instanceId}/reopen',
+        '/api/v1/campaigns/{id}/events/{eventId}/test-instances/{instanceId}/submissions/{discordUserId}/reopen',
         '/api/v1/campaigns/{id}/messages/channel',
         '/api/v1/campaigns/{id}/messages/players',
         '/api/v1/campaigns/{id}/quests',
@@ -344,6 +348,26 @@ describe('backend app', () => {
       },
       { method: 'POST', url: '/api/v1/campaigns/campaign-1/events/event-1/fire', statusCode: 401 },
       {
+        method: 'GET',
+        url: '/api/v1/campaigns/campaign-1/events/event-1/test-instances',
+        statusCode: 401,
+      },
+      {
+        method: 'POST',
+        url: '/api/v1/campaigns/campaign-1/events/event-1/test-instances/instance-1/close',
+        statusCode: 401,
+      },
+      {
+        method: 'POST',
+        url: '/api/v1/campaigns/campaign-1/events/event-1/test-instances/instance-1/reopen',
+        statusCode: 401,
+      },
+      {
+        method: 'POST',
+        url: '/api/v1/campaigns/campaign-1/events/event-1/test-instances/instance-1/submissions/discord-user-1/reopen',
+        statusCode: 401,
+      },
+      {
         method: 'DELETE',
         url: '/api/v1/campaigns/campaign-1/events/event-1',
         statusCode: 401,
@@ -492,7 +516,7 @@ describe('backend app', () => {
         url: '/api/v1/bot/test-result',
         statusCode: 401,
         payload: {
-          eventId: 'event-1',
+          instanceId: 'instance-1',
           campaignId: 'campaign-1',
           channelId: 'channel-1',
           discordUserId: 'discord-user-1',

@@ -16,6 +16,15 @@ export class BotCampaignAdminRequiredError extends Error {
   }
 }
 
+export class BotTestSubmissionRejectedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'BotTestSubmissionRejectedError';
+  }
+}
+
+const TEST_SUBMISSION_REJECTED_CODES = ['TEST_CLOSED', 'ALREADY_SUBMITTED'];
+
 export interface ApiEnvelope<T> {
   status: string;
   data: T;
@@ -43,17 +52,25 @@ export function campaignAdminRequiredMessage(response: unknown): string | null {
   return structuredErrorMessage(response, CAMPAIGN_ADMIN_REQUIRED_CODE);
 }
 
-export function errorReplyContent(error: unknown): string {
-  return error instanceof BotAccessRevokedError || error instanceof BotCampaignAdminRequiredError
-    ? error.message
-    : GENERIC_ERROR_CONTENT;
+export function testSubmissionRejectedMessage(response: unknown): string | null {
+  return (
+    TEST_SUBMISSION_REJECTED_CODES.map((code) => structuredErrorMessage(response, code)).find(
+      (message) => message !== null,
+    ) ?? null
+  );
 }
 
-// Access-revoked and admin-required are routine, expected outcomes (a banned
-// user, an unauthorized caller) — not worth a GlitchTip capture. Everything
-// else reaching the interaction router's catch block is unexpected.
+// Routine, expected outcomes (banned user, non-GM, closed/duplicate Test) skip GlitchTip capture.
 export function isRoutineBotError(error: unknown): boolean {
-  return error instanceof BotAccessRevokedError || error instanceof BotCampaignAdminRequiredError;
+  return (
+    error instanceof BotAccessRevokedError ||
+    error instanceof BotCampaignAdminRequiredError ||
+    error instanceof BotTestSubmissionRejectedError
+  );
+}
+
+export function errorReplyContent(error: unknown): string {
+  return error instanceof Error && isRoutineBotError(error) ? error.message : GENERIC_ERROR_CONTENT;
 }
 
 export function requireApiData<T>(response: ApiEnvelope<T>, operation: string): T {
@@ -62,6 +79,8 @@ export function requireApiData<T>(response: ApiEnvelope<T>, operation: string): 
     if (revoked !== null) throw new BotAccessRevokedError(revoked);
     const adminRequired = campaignAdminRequiredMessage(response);
     if (adminRequired !== null) throw new BotCampaignAdminRequiredError(adminRequired);
+    const rejected = testSubmissionRejectedMessage(response);
+    if (rejected !== null) throw new BotTestSubmissionRejectedError(rejected);
     throw new Error(`Backend failed to ${operation}`);
   }
   return response.data;

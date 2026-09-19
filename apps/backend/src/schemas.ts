@@ -71,6 +71,55 @@ export const eventParamsSchema = {
   required: ['id', 'eventId'],
 } as const;
 
+export const testInstanceParamsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    eventId: { type: 'string' },
+    instanceId: { type: 'string' },
+  },
+  required: ['id', 'eventId', 'instanceId'],
+} as const;
+
+export const testSubmissionParamsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    ...testInstanceParamsSchema.properties,
+    discordUserId: { type: 'string' },
+  },
+  required: ['id', 'eventId', 'instanceId', 'discordUserId'],
+} as const;
+
+export const testInstanceSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'string' },
+    eventId: { type: 'string' },
+    status: { type: 'string', enum: ['open', 'closed'] },
+    closedAt: { type: 'string', format: 'date-time' },
+    createdAt: { type: 'string', format: 'date-time' },
+    participants: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          discordUserId: { type: 'string' },
+          label: { type: 'string' },
+          submitted: { type: 'boolean' },
+          playerScore: { type: 'number' },
+          submittedAt: { type: 'string', format: 'date-time' },
+        },
+        required: ['discordUserId', 'label', 'submitted'],
+      },
+    },
+  },
+  required: ['id', 'eventId', 'status', 'createdAt', 'participants'],
+} as const;
+
 export const questParamsSchema = {
   type: 'object',
   additionalProperties: false,
@@ -561,13 +610,13 @@ export const botTestResultBodySchema = {
   type: 'object',
   additionalProperties: false,
   properties: {
-    eventId: { type: 'string' },
+    instanceId: { type: 'string', minLength: 1 },
     discordUserId: { type: 'string' },
     discordChannelId: { type: 'string' },
     playerScore: { type: 'number' },
     idempotencyKey: { type: 'string', minLength: 1 },
   },
-  required: ['eventId', 'discordUserId', 'discordChannelId', 'playerScore', 'idempotencyKey'],
+  required: ['instanceId', 'discordUserId', 'discordChannelId', 'playerScore', 'idempotencyKey'],
 } as const;
 
 export const idempotencyKeyHeaderSchema = {
@@ -1077,7 +1126,14 @@ export const channelMessageResultSchema = {
   required: ['campaignId', 'channelId', 'delivered', 'skipped'],
 } as const;
 
-export const botTestResultResponseSchema = fireEventResultSchema;
+export const botTestResultResponseSchema = {
+  ...fireEventResultSchema,
+  properties: {
+    ...fireEventResultSchema.properties,
+    submittedCount: { type: 'integer', minimum: 0 },
+  },
+  required: [...fireEventResultSchema.required, 'submittedCount'],
+} as const;
 
 export const botCampaignDateSchema = {
   type: 'object',

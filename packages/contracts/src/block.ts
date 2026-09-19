@@ -35,6 +35,7 @@ export const testThresholdSchema = z.object({
 
 export const sendTestInstancePayloadSchema = z.object({
   kind: z.literal('test-instance'),
+  instanceId: z.string().min(1),
   eventId: z.string().min(1),
   campaignId: z.string().min(1),
   discordChannelId: z.string().min(1),

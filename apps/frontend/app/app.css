@@ -5393,3 +5393,31 @@ h3 {
   outline: 2px solid var(--focus-ring, Highlight);
   outline-offset: 2px;
 }
+
+.test-instance-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.test-instance-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.test-instance-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.test-instance-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: 'IBM Plex Mono', monospace;
+}

@@ -43,6 +43,9 @@ const eventSaveError =
 const eventDeleteError =
   "We couldn't delete this event. It remains on the board; reopen it from Setup and try again.";
 
+const eventStatusError =
+  "We couldn't change this event's status. It keeps its current status; try again.";
+
 function getSetupBase(warRoom: WarRoomContext) {
   return warRoom.demoMode ? '/demo/setup' : '/setup';
 }
@@ -189,6 +192,25 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ status: 'success' });
     }
 
+    if (intent === 'set-event-status') {
+      const nextStatus = formData.get('status');
+      if (
+        typeof eventId !== 'string' ||
+        eventId.length === 0 ||
+        (nextStatus !== 'ready' && nextStatus !== 'archived')
+      ) {
+        return Response.json({ status: 'error', message: eventStatusError }, { status: 400 });
+      }
+
+      const response = await updateEvent(
+        { id: campaignId, eventId },
+        { status: nextStatus },
+        apiOptions,
+      );
+      assertApiOk(response, eventStatusError);
+      return Response.json({ status: 'success' });
+    }
+
     if (!payload) {
       return Response.json(
         {
@@ -314,6 +336,32 @@ export default function SetupEventRoute() {
     }
   };
 
+  const changeStatus = async (status: 'ready' | 'archived') => {
+    if (!isEditing || !eventId) {
+      return;
+    }
+
+    try {
+      setEventError(null);
+
+      const response = await postRouteAction(location.pathname, {
+        intent: 'set-event-status',
+        campaignId: warRoom.campaign.id,
+        eventId,
+        status,
+      });
+
+      if (response.status !== 'success') {
+        throw new Error(response.message);
+      }
+
+      await revalidator.revalidate();
+    } catch (err) {
+      console.error('Change event status error:', err);
+      setEventError(getApiErrorMessage(err, eventStatusError));
+    }
+  };
+
   return (
     <ManagementWorkspace
       eyebrow="Setup / Events"
@@ -327,6 +375,7 @@ export default function SetupEventRoute() {
         <div className="setup-hero-note">
           <p className="detail-label">{isEditing ? 'Editing' : 'New event'}</p>
           <p>{editingEvent ? editingEvent.name : 'Draft the trigger now; fire it from Play.'}</p>
+          {editingEvent ? <p>Status: {editingEvent.status}</p> : null}
         </div>
       }
     >
@@ -370,6 +419,24 @@ export default function SetupEventRoute() {
           />
           {isEditing ? (
             <div className="form-actions">
+              {editingEvent && editingEvent.status !== 'ready' && !isDemoCampaign ? (
+                <button
+                  className="ghost-action ghost-action-inline"
+                  type="button"
+                  onClick={() => void changeStatus('ready')}
+                >
+                  Reset to ready
+                </button>
+              ) : null}
+              {editingEvent && editingEvent.status !== 'archived' && !isDemoCampaign ? (
+                <button
+                  className="ghost-action ghost-action-inline"
+                  type="button"
+                  onClick={() => void changeStatus('archived')}
+                >
+                  Archive event
+                </button>
+              ) : null}
               <button
                 className="ghost-action ghost-action-inline"
                 type="button"

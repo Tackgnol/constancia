@@ -19,10 +19,10 @@ model User {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
-  sessions       Session[]
-  accounts       Account[]
-  uploadAssets   UploadAsset[]
-  messageReports MessageReport[]
+  sessions        Session[]
+  accounts        Account[]
+  uploadAssets    UploadAsset[]
+  messageReports  MessageReport[]
   discordUserBans DiscordUserBan[] @relation("DiscordUserBanIssuer")
 
   @@map("user")
@@ -145,17 +145,17 @@ model Verification {
 }
 
 model Campaign {
-  id             String   @id @default(cuid())
-  name           String
-  discordGuildId String   @unique
-  gameSystemId   String
-  gameDate       Json?
+  id                   String    @id @default(cuid())
+  name                 String
+  discordGuildId       String    @unique
+  gameSystemId         String
+  gameDate             Json?
   disabledAt           DateTime?
   disabledInternalNote String?
   disabledPublicReason String?
   disabledByUserId     String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   channels        Channel[]
   characters      Character[]
@@ -289,16 +289,17 @@ model Event {
   channelId    String
   campaignId   String
   pipeline     Json        @default("[]")
-  status       EventStatus @default(draft)
+  status       EventStatus @default(ready)
   shortCircuit Boolean     @default(false)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
-  channel      Channel          @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  campaign     Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  uploadAssets UploadAsset[]
-  executions   EventExecution[]
-  pegs         ScenePeg[]
+  channel       Channel          @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  campaign      Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  uploadAssets  UploadAsset[]
+  executions    EventExecution[]
+  pegs          ScenePeg[]
+  testInstances TestInstance[]
 
   @@map("events")
 }
@@ -325,9 +326,10 @@ model EventExecution {
   createdAt          DateTime @default(now())
   completedAt        DateTime @default(now())
 
-  event      Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  campaign   Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  deliveries EventDelivery[]
+  event        Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  campaign     Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  deliveries   EventDelivery[]
+  testInstance TestInstance?
 
   @@unique([kind, idempotencyKey])
   @@index([eventId, createdAt])
@@ -352,6 +354,40 @@ model EventDelivery {
   @@index([status, nextAttemptAt])
   @@index([executionId])
   @@map("event_deliveries")
+}
+
+enum TestInstanceStatus {
+  open
+  closed
+}
+
+model TestInstance {
+  id          String             @id
+  eventId     String
+  executionId String             @unique
+  status      TestInstanceStatus @default(open)
+  closedAt    DateTime?
+  createdAt   DateTime           @default(now())
+
+  event       Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  execution   EventExecution   @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  submissions TestSubmission[]
+
+  @@index([eventId, createdAt])
+  @@map("test_instances")
+}
+
+model TestSubmission {
+  id            String   @id @default(cuid())
+  instanceId    String
+  discordUserId String
+  playerScore   Int
+  createdAt     DateTime @default(now())
+
+  instance TestInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@unique([instanceId, discordUserId])
+  @@map("test_submissions")
 }
 
 model Quest {
@@ -437,9 +473,9 @@ model Scene {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  campaign  Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  mapAsset  UploadAsset? @relation("SceneMapAsset")
-  pegs      ScenePeg[]
+  campaign Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  mapAsset UploadAsset? @relation("SceneMapAsset")
+  pegs     ScenePeg[]
 
   @@index([campaignId, createdAt])
   @@map("scenes")

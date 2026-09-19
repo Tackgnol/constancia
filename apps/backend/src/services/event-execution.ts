@@ -14,9 +14,15 @@ export interface FireEventCommand {
 export interface SubmitTestResultCommand {
   kind: 'test-result';
   idempotencyKey: string;
-  eventId: string;
+  instanceId: string;
   discordUserId: string;
   discordChannelId: string;
+  playerScore: number;
+}
+
+export interface PlannedTestSubmission {
+  instanceId: string;
+  discordUserId: string;
   playerScore: number;
 }
 
@@ -27,6 +33,10 @@ export interface PlannedEventExecution {
   effects: BlockEffect[];
   halted: boolean;
   deliveries: BotDeliveryPayload[];
+  /** Set when firing a test Event: the TestInstance persisted with this execution. */
+  testInstanceId?: string;
+  /** Set when resolving a test result: the one submission this player is allowed per instance. */
+  testSubmission?: PlannedTestSubmission;
 }
 
 export interface EventExecutionPlanner {
@@ -119,6 +129,17 @@ export class IdempotencyConflictError extends Error {
   constructor(readonly idempotencyKey: string) {
     super(`Idempotency key "${idempotencyKey}" was already used for a different command.`);
     this.name = 'IdempotencyConflictError';
+  }
+}
+
+export class EventExecutionRequestError extends Error {
+  constructor(
+    readonly statusCode: number,
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'EventExecutionRequestError';
   }
 }
 
@@ -265,11 +286,18 @@ function assertPlanMatchesCommand(
   command: FireEventCommand | SubmitTestResultCommand,
   plan: PlannedEventExecution,
 ): void {
+  if (command.kind === 'test-result') {
+    if (plan.testSubmission?.instanceId !== command.instanceId) {
+      throw new Error('The planned submission does not match the requested Test instance.');
+    }
+    return;
+  }
+
   if (command.eventId !== plan.eventId) {
     throw new Error('The planned Event does not match the requested Event.');
   }
 
-  if (command.kind === 'fire' && command.campaignId !== plan.campaignId) {
+  if (command.campaignId !== plan.campaignId) {
     throw new Error('The planned Event does not belong to the requested Campaign.');
   }
 }
@@ -279,7 +307,7 @@ function commandFingerprint(command: FireEventCommand | SubmitTestResultCommand)
     ? `fire:${command.campaignId}:${command.eventId}`
     : [
         'test-result',
-        command.eventId,
+        command.instanceId,
         command.discordUserId,
         command.discordChannelId,
         command.playerScore,

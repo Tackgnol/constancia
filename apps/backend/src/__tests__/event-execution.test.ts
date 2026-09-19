@@ -152,8 +152,13 @@ describe('EventExecution', () => {
     const store = new InMemoryEventExecutionStore();
     const delivery = new InMemoryBotDeliveryPort();
     const planTestResult = vi.fn(async (command: SubmitTestResultCommand) => ({
-      eventId: command.eventId,
+      eventId: 'event-3',
       campaignId: 'campaign-1',
+      testSubmission: {
+        instanceId: command.instanceId,
+        discordUserId: command.discordUserId,
+        playerScore: command.playerScore,
+      },
       messages: [
         {
           target: 'player' as const,
@@ -166,7 +171,7 @@ describe('EventExecution', () => {
       deliveries: [
         {
           kind: 'messages' as const,
-          eventId: command.eventId,
+          eventId: 'event-3',
           discordChannelId: command.discordChannelId,
           messages: [
             {
@@ -187,7 +192,7 @@ describe('EventExecution', () => {
     const execution = createEventExecution({ store, planner, delivery });
     const command = {
       idempotencyKey: 'discord-interaction-1',
-      eventId: 'event-3',
+      instanceId: 'instance-3',
       discordUserId: 'discord-player-1',
       discordChannelId: 'discord-channel-1',
       playerScore: 4,
