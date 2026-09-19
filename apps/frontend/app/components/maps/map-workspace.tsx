@@ -60,6 +60,100 @@ function LiveMapWorkspace({ projection }: { projection: MapWorkspaceProjection }
   );
 }
 
+function SceneIndexPanel({
+  commands,
+  demoMode,
+  scenes,
+  selectedScene,
+  isRenaming,
+  open,
+  onOpenChange,
+  onRenamingChange,
+}: {
+  commands: SceneCommands;
+  demoMode: boolean;
+  scenes: SceneSummaryProjection[];
+  selectedScene: SceneDetailProjection | null;
+  isRenaming: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onRenamingChange: (renaming: boolean) => void;
+}) {
+  return (
+    <section
+      aria-label="Scene index"
+      className={`map-panel map-panel-scenes${open ? '' : ' is-collapsed'}`}
+    >
+      <div className="map-panel-header">
+        <div className="map-panel-heading">
+          <p className="detail-label">Scenes · {scenes.length}</p>
+          {selectedScene !== null && !isRenaming ? (
+            <div className="map-panel-heading-row">
+              <h2>{selectedScene.name}</h2>
+              <Button
+                aria-label="Rename scene"
+                className="icon-hit-44"
+                onClick={() => onRenamingChange(true)}
+                size="icon-sm"
+                type="button"
+                variant="ghost"
+              >
+                <Pencil aria-hidden="true" />
+              </Button>
+            </div>
+          ) : null}
+        </div>
+        <Button
+          aria-label={open ? 'Collapse scenes panel' : 'Expand scenes panel'}
+          className="icon-hit-44"
+          onClick={() => onOpenChange(!open)}
+          size="icon-sm"
+          type="button"
+          variant="ghost"
+        >
+          {open ? <ChevronLeft aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
+        </Button>
+      </div>
+
+      {open ? (
+        <div className="map-panel-body">
+          {selectedScene !== null && isRenaming ? (
+            <SceneForm
+              compact
+              defaultName={selectedScene.name}
+              label="Rename scene"
+              onCancel={() => onRenamingChange(false)}
+              onSubmit={async (name) => {
+                await commands.rename(selectedScene.id, name);
+                onRenamingChange(false);
+              }}
+              pending={commands.pending}
+              pendingLabel="Saving…"
+              submitLabel="Save"
+            />
+          ) : null}
+
+          <SceneIndex
+            demoMode={demoMode}
+            onDelete={(sceneId) => void commands.remove(sceneId)}
+            pending={commands.pending}
+            scenes={scenes}
+            selectedSceneId={selectedScene?.id ?? null}
+          />
+          <SceneForm
+            compact
+            label="New scene"
+            onSubmit={commands.create}
+            pending={commands.pending}
+            pendingLabel="Creating…"
+            submitLabel="Add"
+          />
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 /**
  * Layout and interaction state for the Map workspace: armed-placement state, armed-fire
  * idempotency-key state, receipt state, rename-mode toggle, the Escape-key handler, focus
@@ -215,81 +309,16 @@ function MapWorkspace({
           )}
         </section>
 
-        <section
-          aria-label="Scene index"
-          className={`map-panel map-panel-scenes${scenesOpen ? '' : ' is-collapsed'}`}
-        >
-          <div className="map-panel-header">
-            <div className="map-panel-heading">
-              <p className="detail-label">Scenes · {scenes.length}</p>
-              {selectedScene !== null && !isRenaming ? (
-                <div className="map-panel-heading-row">
-                  <h2>{selectedScene.name}</h2>
-                  <Button
-                    aria-label="Rename scene"
-                    className="icon-hit-44"
-                    onClick={() => setIsRenaming(true)}
-                    size="icon-sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Pencil aria-hidden="true" />
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-            <Button
-              aria-label={scenesOpen ? 'Collapse scenes panel' : 'Expand scenes panel'}
-              className="icon-hit-44"
-              onClick={() => setScenesOpen((open) => !open)}
-              size="icon-sm"
-              type="button"
-              variant="ghost"
-            >
-              {scenesOpen ? (
-                <ChevronLeft aria-hidden="true" />
-              ) : (
-                <ChevronRight aria-hidden="true" />
-              )}
-            </Button>
-          </div>
-
-          {scenesOpen ? (
-            <div className="map-panel-body">
-              {selectedScene !== null && isRenaming ? (
-                <SceneForm
-                  compact
-                  defaultName={selectedScene.name}
-                  label="Rename scene"
-                  onCancel={() => setIsRenaming(false)}
-                  onSubmit={async (name) => {
-                    await commands.rename(selectedScene.id, name);
-                    setIsRenaming(false);
-                  }}
-                  pending={commands.pending}
-                  pendingLabel="Saving…"
-                  submitLabel="Save"
-                />
-              ) : null}
-
-              <SceneIndex
-                demoMode={projection.demoMode}
-                onDelete={(sceneId) => void commands.remove(sceneId)}
-                pending={commands.pending}
-                scenes={scenes}
-                selectedSceneId={selectedScene?.id ?? null}
-              />
-              <SceneForm
-                compact
-                label="New scene"
-                onSubmit={commands.create}
-                pending={commands.pending}
-                pendingLabel="Creating…"
-                submitLabel="Add"
-              />
-            </div>
-          ) : null}
-        </section>
+        <SceneIndexPanel
+          commands={commands}
+          demoMode={projection.demoMode}
+          scenes={scenes}
+          selectedScene={selectedScene}
+          isRenaming={isRenaming}
+          open={scenesOpen}
+          onOpenChange={setScenesOpen}
+          onRenamingChange={setIsRenaming}
+        />
 
         {selectedScene !== null ? (
           <>

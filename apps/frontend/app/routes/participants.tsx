@@ -28,6 +28,10 @@ const participantFormSchema = z.object({
 
 type ParticipantFormValues = z.infer<typeof participantFormSchema>;
 
+function getFallbackName(char: ListCharacters200DataItem) {
+  return char.discordName || char.name;
+}
+
 export async function action({ request }: ActionFunctionArgs) {
   const cookie = request.headers.get('Cookie') || '';
   const formData = await request.formData();
@@ -69,10 +73,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function ParticipantsRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
-
-  const getFallbackName = (char: ListCharacters200DataItem) => {
-    return char.discordName || char.name;
-  };
 
   return (
     <ManagementWorkspace

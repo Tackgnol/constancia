@@ -1,5 +1,6 @@
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { NO_PAN_CLASS, useMapImageRect } from '@/components/maps/map-viewport';
+import { NO_PAN_CLASS } from '@/components/maps/map-viewport';
+import { useMapImageRect } from '@/hooks/use-map-image-rect';
 import {
   arrowKeyDelta,
   normalizePointInRect,

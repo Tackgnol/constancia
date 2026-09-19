@@ -14,14 +14,13 @@ import { ManagementWorkspace } from '@/components/layout/management-workspace';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import { buildServerApiOptions } from '@/lib/api-proxy.server';
 import { postRouteAction } from '@/lib/route-action-client';
+import {
+  normalizeQuestEntryStatus,
+  normalizeQuestStatus,
+  sortQuestEntries,
+} from '@/lib/quest-status';
 import { GAME_DATE_UPDATE_ERROR } from '@/lib/war-room-feedback';
 import type { WarRoomContext } from '@/lib/war-room-data';
-
-const QUEST_STATUSES = ['active', 'completed', 'failed'] as const;
-const ENTRY_STATUSES = ['pending', 'done'] as const;
-
-type QuestStatus = (typeof QUEST_STATUSES)[number];
-type QuestEntryStatus = (typeof ENTRY_STATUSES)[number];
 
 function parseSubmittedGameDate(value: FormDataEntryValue | null): GameDate | null {
   if (typeof value !== 'string' || value.length === 0) {
@@ -74,22 +73,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
 function getSetupBase(warRoom: WarRoomContext) {
   return warRoom.demoMode ? '/demo/setup' : '/setup';
-}
-
-function normalizeQuestStatus(status: string): QuestStatus {
-  return QUEST_STATUSES.includes(status as QuestStatus) ? (status as QuestStatus) : 'active';
-}
-
-function normalizeEntryStatus(status: string): QuestEntryStatus {
-  return ENTRY_STATUSES.includes(status as QuestEntryStatus)
-    ? (status as QuestEntryStatus)
-    : 'pending';
-}
-
-function sortQuestEntries(
-  entries: ListQuests200DataItemEntriesItem[] | undefined,
-): ListQuests200DataItemEntriesItem[] {
-  return [...(entries ?? [])].sort((left, right) => left.sortOrder - right.sortOrder);
 }
 
 export default function LogRoute() {
@@ -299,7 +282,7 @@ function QuestCard({ quest, setupBase }: { quest: ListQuests200DataItem; setupBa
 }
 
 function QuestEntrySummaryRow({ entry }: { entry: ListQuests200DataItemEntriesItem }) {
-  const status = normalizeEntryStatus(entry.status);
+  const status = normalizeQuestEntryStatus(entry.status);
 
   return (
     <div className="quest-entry-summary-row">

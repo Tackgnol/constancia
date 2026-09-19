@@ -141,6 +141,7 @@ export function useDemoSceneCommands(_projection: MapWorkspaceProjection): {
     // Demo never calls the upload API; the chosen file is previewed from the page session. Each
     // preview URL pins its File in memory, so the one it replaces is revoked.
     replaceMap: async (sceneId, file) => {
+      // react-doctor-disable-next-line react-doctor/no-create-object-url-without-revoke
       const preview = URL.createObjectURL(file);
       revokePreview(sceneId);
       previewUrls.current.set(sceneId, preview);

@@ -21,6 +21,7 @@ export function KnownToPicker({
   onApply: () => void;
 }) {
   const unrevealedRecipients = recipientOptions.filter((option) => !isKnownToPlayer(fact, option));
+  const pendingIds = new Set(pending);
 
   if (recipientOptions.length === 0) {
     return (
@@ -40,7 +41,7 @@ export function KnownToPicker({
       <div className="npc-chip-row">
         {recipientOptions.map((option) => {
           const isKnown = isKnownToPlayer(fact, option);
-          const isPending = pending.includes(option.id);
+          const isPending = pendingIds.has(option.id);
           return (
             <button
               key={option.id}
@@ -62,12 +63,20 @@ export function KnownToPicker({
       </div>
 
       <div className="npc-fact-actions">
-        <button className="form-submit" type="button" disabled={pending.length === 0 || assigning} onClick={onApply}>
-          {assigning ? 'Revealing…' : pending.length > 0 ? `Mark known to ${pending.length}` : 'Select players'}
+        <button
+          className="form-submit"
+          type="button"
+          disabled={pending.length === 0 || assigning}
+          onClick={onApply}
+        >
+          {assigning
+            ? 'Revealing…'
+            : pending.length > 0
+              ? `Mark known to ${pending.length}`
+              : 'Select players'}
         </button>
         <span className="form-hint">This only grants knowledge; it does not retract it.</span>
       </div>
     </>
   );
 }
-

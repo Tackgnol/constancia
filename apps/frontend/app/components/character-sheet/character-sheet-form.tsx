@@ -1,6 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm, useWatch } from 'react-hook-form';
+import {
+  Controller,
+  useForm,
+  useWatch,
+  type FieldErrors,
+  type UseFormRegister,
+} from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,6 +59,120 @@ function getArchetypeLabel(sheet: CharacterSheetData): string | null {
   return null;
 }
 
+function CharacterIdentitySection({
+  sheet,
+  audience,
+  archetypeLabel,
+  register,
+  errors,
+  backstoryLength,
+  notesLength,
+}: {
+  sheet: CharacterSheetData;
+  audience: 'gm' | 'player';
+  archetypeLabel: string | null;
+  register: UseFormRegister<CharacterSheetFormValues>;
+  errors: FieldErrors<CharacterSheetFormValues>;
+  backstoryLength: number;
+  notesLength: number;
+}) {
+  return (
+    <>
+      <section className="form-section">
+        <div className="sheet-meta-grid">
+          <article className="sheet-meta-card">
+            <p className="detail-label">Discord identity</p>
+            <strong>{sheet.character.discordName || sheet.character.name}</strong>
+            <span>{sheet.character.discordUserId}</span>
+          </article>
+          <article className="sheet-meta-card">
+            <p className="detail-label">System</p>
+            <strong>{sheet.system.name}</strong>
+            <span>
+              {sheet.access.mode === 'gm' ? 'GM editing scope' : 'Player self-edit scope'}
+            </span>
+          </article>
+          <article className="sheet-meta-card">
+            <p className="detail-label">
+              {audience === 'player' ? 'Character role' : 'Current archetype'}
+            </p>
+            <strong>{archetypeLabel ?? 'Unassigned'}</strong>
+            <span>{sheet.character.gameName || 'Discord name fallback active'}</span>
+          </article>
+        </div>
+      </section>
+
+      <section className="form-section">
+        <div className="sheet-section-header">
+          <div>
+            <p className="detail-label">Identity</p>
+            <p className="form-hint">The public-facing name and longform notes live here.</p>
+          </div>
+        </div>
+
+        <div className="grid gap-1.5">
+          <Label htmlFor="sheet-game-name" className="form-label">
+            In-Game Name
+          </Label>
+          <Input
+            id="sheet-game-name"
+            placeholder="Lucien Vale"
+            maxLength={GAME_NAME_MAX}
+            {...register('gameName')}
+          />
+          {errors.gameName ? <span className="form-error">{errors.gameName.message}</span> : null}
+        </div>
+
+        <div className="sheet-copy-grid">
+          <div className="grid gap-1.5">
+            <Label htmlFor="sheet-backstory" className="form-label">
+              Backstory
+            </Label>
+            <Textarea
+              id="sheet-backstory"
+              className="sheet-longform"
+              placeholder="Core history, unresolved trauma, or the lie they tell about themselves."
+              maxLength={LONGFORM_MAX}
+              {...register('backstory')}
+            />
+            <div className="sheet-field-footer">
+              {errors.backstory ? (
+                <span className="form-error">{errors.backstory.message}</span>
+              ) : (
+                <span />
+              )}
+              <span
+                className={`sheet-char-count${backstoryLength >= LONGFORM_MAX ? ' is-maxed' : ''}`}
+              >
+                {backstoryLength}/{LONGFORM_MAX}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="sheet-notes" className="form-label">
+              Notes
+            </Label>
+            <Textarea
+              id="sheet-notes"
+              className="sheet-longform"
+              placeholder="Recent changes, ambitions, feeding notes, debts, or table reminders."
+              maxLength={LONGFORM_MAX}
+              {...register('notes')}
+            />
+            <div className="sheet-field-footer">
+              {errors.notes ? <span className="form-error">{errors.notes.message}</span> : <span />}
+              <span className={`sheet-char-count${notesLength >= LONGFORM_MAX ? ' is-maxed' : ''}`}>
+                {notesLength}/{LONGFORM_MAX}
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
 export function CharacterSheetForm({
   sheet,
   audience,
@@ -87,6 +207,7 @@ export function CharacterSheetForm({
   } = useForm<CharacterSheetFormValues>({
     resolver: zodResolver(sheetFormSchema),
     defaultValues: buildDefaultValues(sheet),
+    values: buildDefaultValues(sheet),
   });
 
   const StatRow = resolveStatRow(sheet.system.id);
@@ -95,20 +216,12 @@ export function CharacterSheetForm({
   const notesLength = (useWatch({ control, name: 'notes' }) ?? '').length;
 
   const watchedStats = useWatch({ control, name: 'stats' }) ?? sheet.stats;
-  const visibleGroups = sheet.system.statSchema.groups
-    .map((group) => ({
-      group,
-      fields: hideZeros
-        ? group.fields.filter((field) => !isZeroStat(watchedStats[field.key]))
-        : group.fields,
-    }))
-    .filter((entry) => entry.fields.length > 0);
-
-  useEffect(() => {
-    reset(buildDefaultValues(sheet));
-    setSaveState('idle');
-    setSaveMessage(null);
-  }, [reset, sheet]);
+  const visibleGroups = sheet.system.statSchema.groups.flatMap((group) => {
+    const fields = hideZeros
+      ? group.fields.filter((field) => !isZeroStat(watchedStats[field.key]))
+      : group.fields;
+    return fields.length > 0 ? [{ group, fields }] : [];
+  });
 
   const hasValidationErrors = submitCount > 0 && Object.keys(errors).some((key) => key !== 'root');
 
@@ -142,7 +255,13 @@ export function CharacterSheetForm({
   return (
     <>
       {audience === 'player' && sheet.system.id === 'vtm-v5' && onImportProgeny ? (
-        <ProgenyImportForm onImport={onImportProgeny} />
+        <ProgenyImportForm
+          onImport={async (source) => {
+            setSaveState('idle');
+            setSaveMessage(null);
+            return onImportProgeny(source);
+          }}
+        />
       ) : null}
 
       <form className="event-form" onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -165,103 +284,15 @@ export function CharacterSheetForm({
           </div>
         ) : null}
 
-        <section className="form-section">
-          <div className="sheet-meta-grid">
-            <article className="sheet-meta-card">
-              <p className="detail-label">Discord identity</p>
-              <strong>{sheet.character.discordName || sheet.character.name}</strong>
-              <span>{sheet.character.discordUserId}</span>
-            </article>
-            <article className="sheet-meta-card">
-              <p className="detail-label">System</p>
-              <strong>{sheet.system.name}</strong>
-              <span>
-                {sheet.access.mode === 'gm' ? 'GM editing scope' : 'Player self-edit scope'}
-              </span>
-            </article>
-            <article className="sheet-meta-card">
-              <p className="detail-label">
-                {audience === 'player' ? 'Character role' : 'Current archetype'}
-              </p>
-              <strong>{archetypeLabel ?? 'Unassigned'}</strong>
-              <span>{sheet.character.gameName || 'Discord name fallback active'}</span>
-            </article>
-          </div>
-        </section>
-
-        <section className="form-section">
-          <div className="sheet-section-header">
-            <div>
-              <p className="detail-label">Identity</p>
-              <p className="form-hint">The public-facing name and longform notes live here.</p>
-            </div>
-          </div>
-
-          <div className="grid gap-1.5">
-            <Label htmlFor="sheet-game-name" className="form-label">
-              In-Game Name
-            </Label>
-            <Input
-              id="sheet-game-name"
-              placeholder="Lucien Vale"
-              maxLength={GAME_NAME_MAX}
-              {...register('gameName')}
-            />
-            {errors.gameName ? <span className="form-error">{errors.gameName.message}</span> : null}
-          </div>
-
-          <div className="sheet-copy-grid">
-            <div className="grid gap-1.5">
-              <Label htmlFor="sheet-backstory" className="form-label">
-                Backstory
-              </Label>
-              <Textarea
-                id="sheet-backstory"
-                className="sheet-longform"
-                placeholder="Core history, unresolved trauma, or the lie they tell about themselves."
-                maxLength={LONGFORM_MAX}
-                {...register('backstory')}
-              />
-              <div className="sheet-field-footer">
-                {errors.backstory ? (
-                  <span className="form-error">{errors.backstory.message}</span>
-                ) : (
-                  <span />
-                )}
-                <span
-                  className={`sheet-char-count${backstoryLength >= LONGFORM_MAX ? ' is-maxed' : ''}`}
-                >
-                  {backstoryLength}/{LONGFORM_MAX}
-                </span>
-              </div>
-            </div>
-
-            <div className="grid gap-1.5">
-              <Label htmlFor="sheet-notes" className="form-label">
-                Notes
-              </Label>
-              <Textarea
-                id="sheet-notes"
-                className="sheet-longform"
-                placeholder="Recent changes, ambitions, feeding notes, debts, or table reminders."
-                maxLength={LONGFORM_MAX}
-                {...register('notes')}
-              />
-              <div className="sheet-field-footer">
-                {errors.notes ? (
-                  <span className="form-error">{errors.notes.message}</span>
-                ) : (
-                  <span />
-                )}
-                <span
-                  className={`sheet-char-count${notesLength >= LONGFORM_MAX ? ' is-maxed' : ''}`}
-                >
-                  {notesLength}/{LONGFORM_MAX}
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
+        <CharacterIdentitySection
+          sheet={sheet}
+          audience={audience}
+          archetypeLabel={archetypeLabel}
+          register={register}
+          errors={errors}
+          backstoryLength={backstoryLength}
+          notesLength={notesLength}
+        />
 
         <section className="form-section">
           <div className="sheet-section-header">

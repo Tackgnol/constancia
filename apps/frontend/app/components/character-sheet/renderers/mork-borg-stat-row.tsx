@@ -48,17 +48,12 @@ export function MorkBorgStatRow(props: StatRowProps) {
   return (
     <div
       aria-disabled={disabled}
-      aria-invalid={error ? true : undefined}
       aria-labelledby={labelId}
-      aria-valuemin={min}
-      aria-valuemax={max}
-      aria-valuenow={current}
       className={`stat-segmented${disabled ? ' is-disabled' : ''}${error ? ' is-invalid' : ''}`}
       id={inputId}
       onBlur={onBlur}
       onKeyDown={onKeyDown}
-      role="slider"
-      tabIndex={disabled ? -1 : 0}
+      role="group"
     >
       <span className="stat-pip-row-sr" id={labelId}>
         {field.label}
@@ -74,7 +69,6 @@ export function MorkBorgStatRow(props: StatRowProps) {
             event.preventDefault();
             commit(option);
           }}
-          tabIndex={-1}
           type="button"
         >
           {formatSigned(option)}
