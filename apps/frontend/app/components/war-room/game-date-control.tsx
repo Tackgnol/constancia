@@ -1,7 +1,7 @@
 import type { GameCalendarDefinition, GameDate } from '@constancia/contracts';
 import { formatGameDate, getCalendarMonthDays, validateGameDate } from '@constancia/systems';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -36,7 +36,18 @@ function gameDateKey(value: GameDate | null): string {
   return value ? `${value.calendarId}:${value.year}:${value.monthId}:${value.day}` : 'not-set';
 }
 
-export function GameDateControl({
+export function GameDateControl({ calendar, value, ...props }: GameDateControlProps) {
+  return (
+    <GameDateControlForm
+      key={`${calendar.id}:${gameDateKey(value)}`}
+      calendar={calendar}
+      value={value}
+      {...props}
+    />
+  );
+}
+
+function GameDateControlForm({
   calendar,
   value,
   busy = false,
@@ -45,9 +56,6 @@ export function GameDateControl({
   onDraftChange,
 }: GameDateControlProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const valueKey = gameDateKey(value);
-  const inputKey = `${calendar.id}:${valueKey}`;
-  const previousInputKey = useRef(inputKey);
   const schema = useMemo(
     () =>
       z
@@ -80,16 +88,6 @@ export function GameDateControl({
   const monthId = useWatch({ control, name: 'monthId' });
   const year = useWatch({ control, name: 'year' });
   const maxDay = getCalendarMonthDays(calendar, monthId, Number.isInteger(year) ? year : 1) ?? 1;
-
-  useEffect(() => {
-    if (previousInputKey.current !== inputKey) {
-      reset(defaultValues(calendar, value));
-      if (!busy && error === null) {
-        setIsEditing(false);
-      }
-    }
-    previousInputKey.current = inputKey;
-  }, [busy, calendar, error, inputKey, reset, value]);
 
   if (!isEditing) {
     return (

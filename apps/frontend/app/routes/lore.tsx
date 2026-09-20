@@ -10,6 +10,7 @@ import { buildServerApiOptions } from '@/lib/api-proxy.server';
 import { ManagementWorkspace } from '@/components/layout/management-workspace';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
+import { parseStringArrayFormValue } from '@/lib/form-data';
 import { postRouteAction } from '@/lib/route-action-client';
 import {
   buildRecipientOptions,
@@ -59,26 +60,11 @@ function knownPlayerFromOption(option: RecipientOption): KnownPlayer {
   };
 }
 
-function asStringArray(input: FormDataEntryValue | null): string[] {
-  if (typeof input !== 'string' || input.length === 0) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(input) as unknown;
-    return Array.isArray(parsed)
-      ? parsed.filter((entry): entry is string => typeof entry === 'string')
-      : [];
-  } catch {
-    return [];
-  }
-}
-
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const campaignId = formData.get('campaignId');
   const loreId = formData.get('loreId');
-  const discordUserIds = asStringArray(formData.get('discordUserIds'));
+  const discordUserIds = parseStringArrayFormValue(formData.get('discordUserIds'));
 
   if (
     typeof campaignId !== 'string' ||
@@ -164,7 +150,8 @@ export default function LoreRoute() {
 
   const applyLoreKnowledge = async (loreEntry: LoreEntry) => {
     const pending = pendingAssignments[loreEntry.id] ?? [];
-    const selectedRecipients = recipientOptions.filter((option) => pending.includes(option.id));
+    const pendingIds = new Set(pending);
+    const selectedRecipients = recipientOptions.filter((option) => pendingIds.has(option.id));
     const discordUserIds = selectedRecipients.map((option) => option.discordUserId);
 
     if (discordUserIds.length === 0) {
@@ -184,9 +171,9 @@ export default function LoreRoute() {
                     ...entry,
                     knownTo: [
                       ...entry.knownTo,
-                      ...selectedRecipients
-                        .filter((recipient) => !isKnownToPlayer(entry, recipient))
-                        .map(knownPlayerFromOption),
+                      ...selectedRecipients.flatMap((recipient) =>
+                        isKnownToPlayer(entry, recipient) ? [] : [knownPlayerFromOption(recipient)],
+                      ),
                     ],
                   }
                 : entry,
@@ -389,6 +376,7 @@ function LoreRevealPicker({
   const unrevealedRecipients = recipientOptions.filter(
     (option) => !isKnownToPlayer(loreEntry, option),
   );
+  const pendingIds = new Set(pending);
 
   if (recipientOptions.length === 0) {
     return (
@@ -409,7 +397,7 @@ function LoreRevealPicker({
         <p className="detail-label">Select players to reveal</p>
         <div className="npc-chip-row">
           {unrevealedRecipients.map((option) => {
-            const isPending = pending.includes(option.id);
+            const isPending = pendingIds.has(option.id);
             return (
               <button
                 key={option.id}

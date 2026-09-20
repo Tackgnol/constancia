@@ -1,5 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type FormEventHandler,
+  type SetStateAction,
+} from 'react';
+import { Controller, useForm, type UseFormReturn } from 'react-hook-form';
 import type { ActionFunctionArgs } from 'react-router';
 import {
   Link,
@@ -44,10 +51,15 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
+import {
+  normalizeQuestEntryStatus,
+  normalizeQuestStatus,
+  QUEST_ENTRY_STATUSES,
+  QUEST_STATUSES,
+  sortQuestEntries,
+} from '@/lib/quest-status';
 import type { WarRoomContext } from '@/lib/war-room-data';
 
-const QUEST_STATUSES = ['active', 'completed', 'failed'] as const;
-const ENTRY_STATUSES = ['pending', 'done'] as const;
 const questSaveError =
   "We couldn't save this quest. Your draft is still in the form; review the highlighted fields and try again.";
 const questStepSaveError =
@@ -56,9 +68,6 @@ const questDeleteError =
   "We couldn't delete this quest. It is still on the Quests board; reopen it and try again.";
 const questStepDeleteError =
   "We couldn't delete this quest step. It is still in the quest; reopen the step and try again.";
-
-type QuestStatus = (typeof QUEST_STATUSES)[number];
-type QuestEntryStatus = (typeof ENTRY_STATUSES)[number];
 
 const questEditSchema = z.object({
   name: z.string().trim().min(1, 'Give the quest a name.'),
@@ -69,7 +78,7 @@ const questEditSchema = z.object({
 
 const questEntrySchema = z.object({
   content: z.string().trim().min(1, 'Quest steps cannot be blank.'),
-  status: z.enum(ENTRY_STATUSES),
+  status: z.enum(QUEST_ENTRY_STATUSES),
 });
 
 type QuestEditValues = z.infer<typeof questEditSchema>;
@@ -81,22 +90,6 @@ function getSetupBase(warRoom: WarRoomContext) {
 
 function getQuestBoardPath(warRoom: WarRoomContext) {
   return warRoom.demoMode ? '/demo/log' : '/log';
-}
-
-function normalizeQuestStatus(status: string): QuestStatus {
-  return QUEST_STATUSES.includes(status as QuestStatus) ? (status as QuestStatus) : 'active';
-}
-
-function normalizeEntryStatus(status: string): QuestEntryStatus {
-  return ENTRY_STATUSES.includes(status as QuestEntryStatus)
-    ? (status as QuestEntryStatus)
-    : 'pending';
-}
-
-function sortQuestEntries(
-  entries: ListQuests200DataItemEntriesItem[] | undefined,
-): ListQuests200DataItemEntriesItem[] {
-  return [...(entries ?? [])].sort((left, right) => left.sortOrder - right.sortOrder);
 }
 
 function nextEntrySortOrder(quest: ListQuests200DataItem): number {
@@ -282,6 +275,298 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 }
 
+function createQuestEntryActions({
+  campaignId,
+  isDemoMode,
+  pathname,
+  recordActivity,
+  revalidate,
+  setEditingEntryId,
+  setError,
+  setLocalQuests,
+  setNotice,
+}: {
+  campaignId: string;
+  isDemoMode: boolean;
+  pathname: string;
+  recordActivity: ((message: string) => void) | undefined;
+  revalidate: () => void;
+  setEditingEntryId: Dispatch<SetStateAction<string | null>>;
+  setError: Dispatch<SetStateAction<string | null>>;
+  setLocalQuests: Dispatch<SetStateAction<ListQuests200DataItem[]>>;
+  setNotice: Dispatch<SetStateAction<string | null>>;
+}) {
+  const saveQuestEntry = async (targetQuest: ListQuests200DataItem, values: QuestEntryValues) => {
+    const payload: CreateQuestEntryBody = {
+      content: values.content.trim(),
+      status: values.status,
+      sortOrder: nextEntrySortOrder(targetQuest),
+    };
+
+    try {
+      setError(null);
+      if (isDemoMode) {
+        setLocalQuests((current) =>
+          current.map((entry) =>
+            entry.id === targetQuest.id
+              ? {
+                  ...entry,
+                  entries: [
+                    ...(entry.entries ?? []),
+                    {
+                      id: createLocalId('quest-entry'),
+                      questId: targetQuest.id,
+                      content: payload.content,
+                      status: payload.status ?? 'pending',
+                      sortOrder: payload.sortOrder ?? 0,
+                    },
+                  ],
+                }
+              : entry,
+          ),
+        );
+      } else {
+        const response = await postRouteAction(pathname, {
+          intent: 'create-quest-entry',
+          campaignId,
+          questId: targetQuest.id,
+          payload: JSON.stringify(payload),
+        });
+
+        if (response.status !== 'success') {
+          throw new Error(response.message);
+        }
+
+        revalidate();
+      }
+
+      const message = `Quest step added: ${targetQuest.name}`;
+      setNotice(message);
+      recordActivity?.(message);
+    } catch (caught) {
+      console.error('Create quest entry error:', caught);
+      setNotice(null);
+      setError(getApiErrorMessage(caught, questStepSaveError));
+      throw caught;
+    }
+  };
+
+  const patchQuestEntry = async (
+    targetQuest: ListQuests200DataItem,
+    entry: ListQuests200DataItemEntriesItem,
+    values: QuestEntryValues,
+  ) => {
+    const payload: UpdateQuestEntryBody = {
+      content: values.content.trim(),
+      status: values.status,
+      sortOrder: entry.sortOrder,
+    };
+
+    try {
+      setError(null);
+      if (isDemoMode) {
+        setLocalQuests((current) =>
+          current.map((candidate) =>
+            candidate.id === targetQuest.id
+              ? {
+                  ...candidate,
+                  entries: (candidate.entries ?? []).map((candidateEntry) =>
+                    candidateEntry.id === entry.id
+                      ? { ...candidateEntry, ...payload }
+                      : candidateEntry,
+                  ),
+                }
+              : candidate,
+          ),
+        );
+      } else {
+        const response = await postRouteAction(pathname, {
+          intent: 'update-quest-entry',
+          campaignId,
+          questId: targetQuest.id,
+          entryId: entry.id,
+          payload: JSON.stringify(payload),
+        });
+
+        if (response.status !== 'success') {
+          throw new Error(response.message);
+        }
+
+        revalidate();
+      }
+
+      const message = `Quest step updated: ${targetQuest.name}`;
+      setNotice(message);
+      setEditingEntryId(null);
+      recordActivity?.(message);
+    } catch (caught) {
+      console.error('Update quest entry error:', caught);
+      setNotice(null);
+      setError(getApiErrorMessage(caught, questStepSaveError));
+      throw caught;
+    }
+  };
+
+  const removeQuestEntry = async (
+    targetQuest: ListQuests200DataItem,
+    entry: ListQuests200DataItemEntriesItem,
+  ) => {
+    try {
+      setError(null);
+      if (isDemoMode) {
+        setLocalQuests((current) =>
+          current.map((candidate) =>
+            candidate.id === targetQuest.id
+              ? {
+                  ...candidate,
+                  entries: (candidate.entries ?? []).filter(
+                    (candidateEntry) => candidateEntry.id !== entry.id,
+                  ),
+                }
+              : candidate,
+          ),
+        );
+      } else {
+        const response = await postRouteAction(pathname, {
+          intent: 'delete-quest-entry',
+          campaignId,
+          questId: targetQuest.id,
+          entryId: entry.id,
+        });
+
+        if (response.status !== 'success') {
+          throw new Error(response.message);
+        }
+
+        revalidate();
+      }
+
+      const message = `Quest step removed: ${targetQuest.name}`;
+      setNotice(message);
+      setEditingEntryId(null);
+      recordActivity?.(message);
+    } catch (caught) {
+      console.error('Delete quest entry error:', caught);
+      setNotice(null);
+      setError(getApiErrorMessage(caught, questStepDeleteError));
+    }
+  };
+
+  return { saveQuestEntry, patchQuestEntry, removeQuestEntry };
+}
+
+function QuestRecordForm({
+  form,
+  isEditing,
+  onSubmit,
+  onDelete,
+}: {
+  form: UseFormReturn<QuestEditValues>;
+  isEditing: boolean;
+  onSubmit: FormEventHandler<HTMLFormElement>;
+  onDelete: () => void;
+}) {
+  const {
+    register,
+    control,
+    formState: { errors, isSubmitting },
+  } = form;
+
+  return (
+    <form className="quest-create-panel" onSubmit={onSubmit} noValidate>
+      <div className="form-workbench-heading">
+        <div>
+          <p className="detail-label">Quest record</p>
+          <h2>{isEditing ? 'Edit the objective' : 'Define the objective'}</h2>
+        </div>
+        <p className="form-hint">
+          Keep the brief operational. Individual beats belong in quest steps after the quest exists.
+        </p>
+      </div>
+
+      {errors.root?.serverError?.message ? (
+        <div className="form-status form-status-error" role="alert">
+          {errors.root.serverError.message}
+        </div>
+      ) : null}
+
+      <div className="quest-create-grid">
+        <div className={`grid gap-1.5${isEditing ? '' : ' setup-field-wide'}`}>
+          <Label htmlFor="setup-quest-name">Quest name</Label>
+          <Input
+            id="setup-quest-name"
+            placeholder="Recover the blood ledger"
+            {...register('name')}
+          />
+          {errors.name ? <span className="form-error">{errors.name.message}</span> : null}
+        </div>
+
+        {isEditing ? (
+          <div className="grid gap-1.5">
+            <Label htmlFor="setup-quest-status">Status</Label>
+            <Controller
+              control={control}
+              name="status"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id="setup-quest-status" className="quest-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {QUEST_STATUSES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+        ) : null}
+
+        <div className="grid gap-1.5 setup-field-wide">
+          <Label htmlFor="setup-quest-description">Brief</Label>
+          <Textarea
+            id="setup-quest-description"
+            placeholder="What the players need to do, why it matters, and what changes when they finish."
+            {...register('description')}
+          />
+          {errors.description ? (
+            <span className="form-error">{errors.description.message}</span>
+          ) : null}
+        </div>
+
+        <Controller
+          control={control}
+          name="visible"
+          render={({ field }) => (
+            <label className="quest-toggle-row" htmlFor="setup-quest-visible">
+              <Checkbox
+                id="setup-quest-visible"
+                checked={field.value}
+                onCheckedChange={(checked) => field.onChange(checked === true)}
+              />
+              <span>Reveal to player journals</span>
+            </label>
+          )}
+        />
+      </div>
+
+      <div className="form-actions form-action-dock">
+        <button className="form-submit" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving…' : isEditing ? 'Save quest' : 'Create quest'}
+        </button>
+        {isEditing ? (
+          <button className="ghost-action ghost-action-inline" type="button" onClick={onDelete}>
+            Delete quest
+          </button>
+        ) : null}
+      </div>
+    </form>
+  );
+}
+
 export default function SetupQuestRoute() {
   const warRoom = useOutletContext<WarRoomContext>();
   const { questId } = useParams();
@@ -313,14 +598,7 @@ export default function SetupQuestRoute() {
     defaultValues: defaultQuestValues(quest),
   });
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    reset,
-    setError: setFormError,
-    formState: { errors, isSubmitting },
-  } = form;
+  const { handleSubmit, reset, setError: setFormError } = form;
 
   useEffect(() => {
     reset(defaultQuestValues(quest));
@@ -387,161 +665,17 @@ export default function SetupQuestRoute() {
     }
   });
 
-  const saveQuestEntry = async (targetQuest: ListQuests200DataItem, values: QuestEntryValues) => {
-    const payload: CreateQuestEntryBody = {
-      content: values.content.trim(),
-      status: values.status,
-      sortOrder: nextEntrySortOrder(targetQuest),
-    };
-
-    try {
-      setError(null);
-      if (isDemoMode) {
-        setLocalQuests((current) =>
-          current.map((entry) =>
-            entry.id === targetQuest.id
-              ? {
-                  ...entry,
-                  entries: [
-                    ...(entry.entries ?? []),
-                    {
-                      id: createLocalId('quest-entry'),
-                      questId: targetQuest.id,
-                      content: payload.content,
-                      status: payload.status ?? 'pending',
-                      sortOrder: payload.sortOrder ?? 0,
-                    },
-                  ],
-                }
-              : entry,
-          ),
-        );
-      } else {
-        const response = await postRouteAction(location.pathname, {
-          intent: 'create-quest-entry',
-          campaignId: warRoom.campaign.id,
-          questId: targetQuest.id,
-          payload: JSON.stringify(payload),
-        });
-
-        if (response.status !== 'success') {
-          throw new Error(response.message);
-        }
-
-        revalidator.revalidate();
-      }
-
-      const message = `Quest step added: ${targetQuest.name}`;
-      setNotice(message);
-      warRoom.recordActivity?.(message);
-    } catch (caught) {
-      console.error('Create quest entry error:', caught);
-      setNotice(null);
-      setError(getApiErrorMessage(caught, questStepSaveError));
-      throw caught;
-    }
-  };
-
-  const patchQuestEntry = async (
-    targetQuest: ListQuests200DataItem,
-    entry: ListQuests200DataItemEntriesItem,
-    values: QuestEntryValues,
-  ) => {
-    const payload: UpdateQuestEntryBody = {
-      content: values.content.trim(),
-      status: values.status,
-      sortOrder: entry.sortOrder,
-    };
-
-    try {
-      setError(null);
-      if (isDemoMode) {
-        setLocalQuests((current) =>
-          current.map((candidate) =>
-            candidate.id === targetQuest.id
-              ? {
-                  ...candidate,
-                  entries: (candidate.entries ?? []).map((candidateEntry) =>
-                    candidateEntry.id === entry.id
-                      ? { ...candidateEntry, ...payload }
-                      : candidateEntry,
-                  ),
-                }
-              : candidate,
-          ),
-        );
-      } else {
-        const response = await postRouteAction(location.pathname, {
-          intent: 'update-quest-entry',
-          campaignId: warRoom.campaign.id,
-          questId: targetQuest.id,
-          entryId: entry.id,
-          payload: JSON.stringify(payload),
-        });
-
-        if (response.status !== 'success') {
-          throw new Error(response.message);
-        }
-
-        revalidator.revalidate();
-      }
-
-      const message = `Quest step updated: ${targetQuest.name}`;
-      setNotice(message);
-      setEditingEntryId(null);
-      warRoom.recordActivity?.(message);
-    } catch (caught) {
-      console.error('Update quest entry error:', caught);
-      setNotice(null);
-      setError(getApiErrorMessage(caught, questStepSaveError));
-      throw caught;
-    }
-  };
-
-  const removeQuestEntry = async (
-    targetQuest: ListQuests200DataItem,
-    entry: ListQuests200DataItemEntriesItem,
-  ) => {
-    try {
-      setError(null);
-      if (isDemoMode) {
-        setLocalQuests((current) =>
-          current.map((candidate) =>
-            candidate.id === targetQuest.id
-              ? {
-                  ...candidate,
-                  entries: (candidate.entries ?? []).filter(
-                    (candidateEntry) => candidateEntry.id !== entry.id,
-                  ),
-                }
-              : candidate,
-          ),
-        );
-      } else {
-        const response = await postRouteAction(location.pathname, {
-          intent: 'delete-quest-entry',
-          campaignId: warRoom.campaign.id,
-          questId: targetQuest.id,
-          entryId: entry.id,
-        });
-
-        if (response.status !== 'success') {
-          throw new Error(response.message);
-        }
-
-        revalidator.revalidate();
-      }
-
-      const message = `Quest step removed: ${targetQuest.name}`;
-      setNotice(message);
-      setEditingEntryId(null);
-      warRoom.recordActivity?.(message);
-    } catch (caught) {
-      console.error('Delete quest entry error:', caught);
-      setNotice(null);
-      setError(getApiErrorMessage(caught, questStepDeleteError));
-    }
-  };
+  const { saveQuestEntry, patchQuestEntry, removeQuestEntry } = createQuestEntryActions({
+    campaignId: warRoom.campaign.id,
+    isDemoMode,
+    pathname: location.pathname,
+    recordActivity: warRoom.recordActivity,
+    revalidate: revalidator.revalidate,
+    setEditingEntryId,
+    setError,
+    setLocalQuests,
+    setNotice,
+  });
 
   const removeQuest = async () => {
     if (!isEditing || !questId) {
@@ -623,102 +757,12 @@ export default function SetupQuestRoute() {
 
       {!isEditing || quest ? (
         <section className="setup-panel">
-          <form className="quest-create-panel" onSubmit={onSubmit} noValidate>
-            <div className="form-workbench-heading">
-              <div>
-                <p className="detail-label">Quest record</p>
-                <h2>{isEditing ? 'Edit the objective' : 'Define the objective'}</h2>
-              </div>
-              <p className="form-hint">
-                Keep the brief operational. Individual beats belong in quest steps after the quest
-                exists.
-              </p>
-            </div>
-
-            {errors.root?.serverError?.message ? (
-              <div className="form-status form-status-error" role="alert">
-                {errors.root.serverError.message}
-              </div>
-            ) : null}
-
-            <div className="quest-create-grid">
-              <div className={`grid gap-1.5${isEditing ? '' : ' setup-field-wide'}`}>
-                <Label htmlFor="setup-quest-name">Quest name</Label>
-                <Input
-                  id="setup-quest-name"
-                  placeholder="Recover the blood ledger"
-                  {...register('name')}
-                />
-                {errors.name ? <span className="form-error">{errors.name.message}</span> : null}
-              </div>
-
-              {isEditing ? (
-                <div className="grid gap-1.5">
-                  <Label htmlFor="setup-quest-status">Status</Label>
-                  <Controller
-                    control={control}
-                    name="status"
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger id="setup-quest-status" className="quest-select">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {QUEST_STATUSES.map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {status}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
-              ) : null}
-
-              <div className="grid gap-1.5 setup-field-wide">
-                <Label htmlFor="setup-quest-description">Brief</Label>
-                <Textarea
-                  id="setup-quest-description"
-                  placeholder="What the players need to do, why it matters, and what changes when they finish."
-                  {...register('description')}
-                />
-                {errors.description ? (
-                  <span className="form-error">{errors.description.message}</span>
-                ) : null}
-              </div>
-
-              <Controller
-                control={control}
-                name="visible"
-                render={({ field }) => (
-                  <label className="quest-toggle-row" htmlFor="setup-quest-visible">
-                    <Checkbox
-                      id="setup-quest-visible"
-                      checked={field.value}
-                      onCheckedChange={(checked) => field.onChange(checked === true)}
-                    />
-                    <span>Reveal to player journals</span>
-                  </label>
-                )}
-              />
-            </div>
-
-            <div className="form-actions form-action-dock">
-              <button className="form-submit" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving…' : isEditing ? 'Save quest' : 'Create quest'}
-              </button>
-              {isEditing ? (
-                <button
-                  className="ghost-action ghost-action-inline"
-                  type="button"
-                  onClick={() => void removeQuest()}
-                >
-                  Delete quest
-                </button>
-              ) : null}
-            </div>
-          </form>
+          <QuestRecordForm
+            form={form}
+            isEditing={isEditing}
+            onSubmit={onSubmit}
+            onDelete={() => void removeQuest()}
+          />
 
           {isEditing && quest ? (
             <QuestStepEditor
@@ -855,7 +899,7 @@ function QuestEntryCreateForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ENTRY_STATUSES.map((status) => (
+                {QUEST_ENTRY_STATUSES.map((status) => (
                   <SelectItem key={status} value={status}>
                     {status}
                   </SelectItem>
@@ -893,7 +937,7 @@ function QuestEntrySummaryRow({
   entry: ListQuests200DataItemEntriesItem;
   onEdit: () => void;
 }) {
-  const status = normalizeEntryStatus(entry.status);
+  const status = normalizeQuestEntryStatus(entry.status);
 
   return (
     <div className="quest-entry-summary-row">
@@ -942,14 +986,14 @@ function QuestEntryEditForm({
     resolver: zodResolver(questEntrySchema),
     defaultValues: {
       content: entry.content,
-      status: normalizeEntryStatus(entry.status),
+      status: normalizeQuestEntryStatus(entry.status),
     },
   });
 
   useEffect(() => {
     reset({
       content: entry.content,
-      status: normalizeEntryStatus(entry.status),
+      status: normalizeQuestEntryStatus(entry.status),
     });
   }, [entry.content, entry.status, reset]);
 
@@ -966,7 +1010,7 @@ function QuestEntryEditForm({
 
   return (
     <form className="quest-entry-row" onSubmit={onSubmit} noValidate>
-      <span className={`quest-entry-led quest-entry-${normalizeEntryStatus(entry.status)}`}>
+      <span className={`quest-entry-led quest-entry-${normalizeQuestEntryStatus(entry.status)}`}>
         {String(entry.sortOrder + 1).padStart(2, '0')}
       </span>
 
@@ -985,7 +1029,7 @@ function QuestEntryEditForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {ENTRY_STATUSES.map((status) => (
+              {QUEST_ENTRY_STATUSES.map((status) => (
                 <SelectItem key={status} value={status}>
                   {status}
                 </SelectItem>

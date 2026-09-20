@@ -39,7 +39,7 @@ export function EventSetupForm({
   } = methods;
   const eventType = methods.watch('type');
   const selectedChannelId = methods.watch('channelId');
-  const pipeline = methods.watch('pipeline') ?? [];
+  const pipeline = methods.watch('pipeline');
   const previousTypeRef = useRef(eventType);
   const hasValidationErrors = submitCount > 0 && Object.keys(errors).some((key) => key !== 'root');
 
@@ -61,7 +61,11 @@ export function EventSetupForm({
       return;
     }
 
-    if (pipeline.length === 0 || isPipelineEqualToEventDefault(previousType, pipeline)) {
+    if (
+      pipeline === undefined ||
+      pipeline.length === 0 ||
+      isPipelineEqualToEventDefault(previousType, pipeline)
+    ) {
       methods.setValue('pipeline', getDefaultPipelineForEventType(eventType), {
         shouldDirty: true,
         shouldTouch: true,

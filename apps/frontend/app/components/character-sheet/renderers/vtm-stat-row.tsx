@@ -51,17 +51,12 @@ export function VtmStatRow(props: StatRowProps) {
   return (
     <div
       aria-disabled={disabled}
-      aria-invalid={error ? true : undefined}
       aria-labelledby={labelId}
-      aria-valuemin={min}
-      aria-valuemax={max}
-      aria-valuenow={current}
       className={`stat-pip-row${disabled ? ' is-disabled' : ''}${error ? ' is-invalid' : ''}`}
       id={inputId}
       onBlur={onBlur}
       onKeyDown={onKeyDown}
-      role="slider"
-      tabIndex={disabled ? -1 : 0}
+      role="group"
     >
       <span className="stat-pip-row-sr" id={labelId}>
         {field.label}
@@ -83,7 +78,6 @@ export function VtmStatRow(props: StatRowProps) {
               event.preventDefault();
               commit(current - 1);
             }}
-            tabIndex={-1}
             type="button"
           />
         );

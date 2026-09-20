@@ -59,6 +59,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const verification = await verifyMagicLinkForFrontend(request, token);
 
     if (verification.verified) {
+      // react-doctor-disable-next-line react-doctor/clickjacking-redirect-risk
       return redirect(next, { headers: verification.headers });
     }
 

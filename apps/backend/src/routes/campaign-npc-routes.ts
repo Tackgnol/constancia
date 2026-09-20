@@ -19,6 +19,11 @@ import { getPrismaClient } from '../auth/prisma.js';
 import { isPrismaNotFoundError, ok, sendNotFound, deleted } from '../http-responses.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
 import { createCampaignAccess } from '../services/campaign-access.js';
+import {
+  normalizeNpcSystemBlocks,
+  toNpcSystemBlocksInput,
+  type NpcSystemBlockInput,
+} from '../services/npc-system-blocks.js';
 
 interface CampaignParams {
   id: string;
@@ -28,13 +33,6 @@ interface NpcParams {
   id: string;
   npcId: string;
 }
-
-type NpcSystemBlockInput = {
-  systemId?: string;
-  blockType: string;
-  label: string;
-  value: Prisma.InputJsonValue;
-};
 
 interface NpcBody {
   name: string;
@@ -63,13 +61,6 @@ interface NpcRevealBody {
   npcFactIds: string[];
   discordUserIds: string[];
 }
-
-type NpcSystemBlockRecord = {
-  systemId?: string;
-  blockType: string;
-  label: string;
-  value: Prisma.JsonValue;
-};
 
 type KnownCharacterRecord = {
   id: string;
@@ -165,51 +156,6 @@ const npcWithKnowledgeSelect = {
     },
   },
 } satisfies Prisma.NpcSelect;
-
-function isRecord(value: Prisma.JsonValue): value is Record<string, Prisma.JsonValue> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function normalizeNpcSystemBlocks(input: Prisma.JsonValue): NpcSystemBlockRecord[] {
-  if (!Array.isArray(input)) {
-    return [];
-  }
-
-  return input.flatMap((entry) => {
-    if (!isRecord(entry)) {
-      return [];
-    }
-
-    const blockType = typeof entry.blockType === 'string' ? entry.blockType : null;
-    const label = typeof entry.label === 'string' ? entry.label : null;
-
-    if (blockType === null || label === null || !('value' in entry)) {
-      return [];
-    }
-
-    const systemId = typeof entry.systemId === 'string' ? entry.systemId : undefined;
-
-    return [
-      {
-        systemId,
-        blockType,
-        label,
-        value: entry.value,
-      },
-    ];
-  });
-}
-
-function toNpcSystemBlocksInput(
-  systemBlocks: NpcSystemBlockInput[] | undefined,
-): Prisma.InputJsonValue {
-  return (systemBlocks ?? []).map((block) => ({
-    systemId: block.systemId,
-    blockType: block.blockType,
-    label: block.label,
-    value: block.value,
-  })) as Prisma.InputJsonValue;
-}
 
 function mapKnownPlayer(character: KnownCharacterRecord) {
   const displayName = character.gameName || character.discordName || character.name;

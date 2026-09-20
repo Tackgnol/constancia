@@ -1,37 +1,9 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch';
 import { Button } from '@/components/ui/button';
-import {
-  normalizePointInRect,
-  type NormalizedPoint,
-  type RenderedRect,
-} from '@/lib/map-coordinates';
-
-type ImageRectReader = () => RenderedRect | null;
-
-const MapImageRectContext = createContext<ImageRectReader | null>(null);
-
-/**
- * Gives descendants the live bounding box of the map image — the one coordinate frame pegs are
- * measured against — without exposing the viewport library or the image element itself.
- */
-export function useMapImageRect(): ImageRectReader {
-  const reader = useContext(MapImageRectContext);
-  if (reader === null) {
-    throw new Error('Map coordinates are only available inside a MapViewport.');
-  }
-
-  return reader;
-}
+import { normalizePointInRect, type NormalizedPoint } from '@/lib/map-coordinates';
+import { MapImageRectContext, type ImageRectReader } from '@/hooks/use-map-image-rect';
 
 /**
  * Elements carrying this class never start a viewport pan, so dragging a peg moves the peg rather
