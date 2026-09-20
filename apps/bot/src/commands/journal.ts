@@ -385,7 +385,8 @@ export async function handleJournal(
 export const journalCommand: BotChatCommand = {
   data: {
     name: 'journal',
-    description: 'View your quest journal, session summaries, and known NPC facts',
+    description:
+      '[Player] Browse your quest journal, session summaries and known NPC facts (private to you)',
   },
   execute: handleJournal,
 };

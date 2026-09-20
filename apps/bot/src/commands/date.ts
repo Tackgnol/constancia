@@ -40,7 +40,7 @@ export async function handleDate(
 export const dateCommand: BotChatCommand = {
   data: {
     name: 'date',
-    description: 'Show the current in-game date',
+    description: '[Player] Show the current in-game date of the campaign (visible to the channel)',
   },
   execute: handleDate,
 };

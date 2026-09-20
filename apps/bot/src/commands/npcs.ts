@@ -88,12 +88,13 @@ export async function handleNpcs(
 export const npcCommand: BotChatCommand = {
   data: {
     name: 'npc',
-    description: 'Inspect a known NPC dossier',
+    description:
+      '[Player] Look up the dossier of an NPC your character knows (visible to the channel)',
     options: [
       {
         name: NPC_NAME_OPTION,
         type: ApplicationCommandOptionType.String,
-        description: 'The NPC name you want to inspect',
+        description: 'Name of the NPC to look up, as your character knows them',
         required: true,
       },
     ],

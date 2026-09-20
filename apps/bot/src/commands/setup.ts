@@ -121,12 +121,14 @@ export async function handleSetup(
 export const setupCommand: BotChatCommand = {
   data: {
     name: 'setup',
-    description: 'Initialize this channel and server for use with Constancia',
+    description:
+      '[GM] Link this server and channel to a Constancia campaign - run once before anything else',
     options: [
       {
         name: GAME_SYSTEM_OPTION_NAME,
         type: ApplicationCommandOptionType.String,
-        description: 'Choose the game system for the linked campaign',
+        description:
+          'Game system for the campaign (start typing to search); leave empty to keep the default',
         required: false,
         autocomplete: true,
       },

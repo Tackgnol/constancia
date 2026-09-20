@@ -19,7 +19,25 @@ describe('command registry', () => {
       'sheet',
       'setup',
       'participants',
+      'help',
     ]);
+  });
+
+  it('keeps every description within the 100-character Discord limit and tags the audience', () => {
+    const descriptions = (
+      options: readonly { description: string; options?: readonly unknown[] }[],
+    ): string[] =>
+      options.flatMap((option) => [
+        option.description,
+        ...descriptions((option.options ?? []) as typeof options),
+      ]);
+
+    for (const command of getChatCommandData()) {
+      for (const description of [command.description, ...descriptions(command.options ?? [])]) {
+        expect(description.length).toBeLessThanOrEqual(100);
+      }
+      if (command.name !== 'help') expect(command.description).toMatch(/^\[(Player|GM)\] /);
+    }
   });
 
   it('registers the npc command with a required name option', () => {
@@ -29,7 +47,7 @@ describe('command registry', () => {
       {
         name: 'name',
         type: 3,
-        description: 'The NPC name you want to inspect',
+        description: 'Name of the NPC to look up, as your character knows them',
         required: true,
       },
     ]);
@@ -42,12 +60,12 @@ describe('command registry', () => {
       {
         name: 'add',
         type: 1,
-        description: 'Add a player as a participant',
+        description: 'Add a player so they can use /sheet and /journal',
         options: [
           {
             name: 'user',
             type: 6,
-            description: 'The Discord user to add',
+            description: 'The Discord user to add to the campaign',
             required: true,
           },
         ],
@@ -55,12 +73,12 @@ describe('command registry', () => {
       {
         name: 'remove',
         type: 1,
-        description: 'Remove a participant from the campaign',
+        description: 'Remove a player from the campaign',
         options: [
           {
             name: 'user',
             type: 6,
-            description: 'The Discord user to remove',
+            description: 'The Discord user to remove from the campaign',
             required: true,
           },
         ],
@@ -68,7 +86,7 @@ describe('command registry', () => {
       {
         name: 'list',
         type: 1,
-        description: 'List current campaign participants',
+        description: 'List everyone currently in the campaign',
       },
     ]);
   });
@@ -80,7 +98,8 @@ describe('command registry', () => {
       {
         name: 'game-system',
         type: 3,
-        description: 'Choose the game system for the linked campaign',
+        description:
+          'Game system for the campaign (start typing to search); leave empty to keep the default',
         required: false,
         autocomplete: true,
       },
