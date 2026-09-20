@@ -29,7 +29,8 @@ export async function handleRoll(
 export const rollCommand: BotChatCommand = {
   data: {
     name: 'roll',
-    description: 'Fire the active event in this channel',
+    description:
+      '[Player] Check the active event in this channel and how to answer it (visible to the channel)',
   },
   execute: handleRoll,
 };

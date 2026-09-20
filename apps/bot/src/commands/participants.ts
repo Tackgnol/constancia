@@ -83,17 +83,17 @@ export async function handleParticipants(
 export const participantsCommand: BotChatCommand = {
   data: {
     name: 'participants',
-    description: 'Manage campaign participants',
+    description: '[GM] Add, remove or list the players in this campaign (private to you)',
     options: [
       {
         name: 'add',
         type: ApplicationCommandOptionType.Subcommand,
-        description: 'Add a player as a participant',
+        description: 'Add a player so they can use /sheet and /journal',
         options: [
           {
             name: 'user',
             type: ApplicationCommandOptionType.User,
-            description: 'The Discord user to add',
+            description: 'The Discord user to add to the campaign',
             required: true,
           },
         ],
@@ -101,12 +101,12 @@ export const participantsCommand: BotChatCommand = {
       {
         name: 'remove',
         type: ApplicationCommandOptionType.Subcommand,
-        description: 'Remove a participant from the campaign',
+        description: 'Remove a player from the campaign',
         options: [
           {
             name: 'user',
             type: ApplicationCommandOptionType.User,
-            description: 'The Discord user to remove',
+            description: 'The Discord user to remove from the campaign',
             required: true,
           },
         ],
@@ -114,7 +114,7 @@ export const participantsCommand: BotChatCommand = {
       {
         name: 'list',
         type: ApplicationCommandOptionType.Subcommand,
-        description: 'List current campaign participants',
+        description: 'List everyone currently in the campaign',
       },
     ],
   },

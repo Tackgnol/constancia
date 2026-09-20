@@ -1,4 +1,5 @@
 import { dateCommand } from '../commands/date.js';
+import { helpCommand } from '../commands/help.js';
 import { journalCommand, journalComponentHandler } from '../commands/journal.js';
 import { loginCommand } from '../commands/login.js';
 import { npcCommand } from '../commands/npcs.js';
@@ -24,6 +25,7 @@ export const chatCommands = [
   sheetCommand,
   setupCommand,
   participantsCommand,
+  helpCommand,
 ] as const satisfies readonly BotChatCommand[];
 
 const commandMap = new Map<string, BotChatCommand>(

@@ -37,7 +37,7 @@ export async function handleSheet(
 export const sheetCommand: BotChatCommand = {
   data: {
     name: 'sheet',
-    description: 'Get a magic link to your player sheet',
+    description: '[Player] Get a private one-time link to view and edit your character sheet',
   },
   execute: handleSheet,
 };

@@ -39,7 +39,8 @@ export async function handleLogin(
 export const loginCommand: BotChatCommand = {
   data: {
     name: 'login',
-    description: 'Get a magic link to log in to the web dashboard',
+    description:
+      '[GM] Get a private one-time link to the War Room web dashboard (campaign GMs only)',
   },
   execute: handleLogin,
 };
