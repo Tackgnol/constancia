@@ -7,7 +7,7 @@ when:
 
 steps:
   quality-checks:
-    image: node:22-bookworm
+    image: node:22.23.4-bookworm
     commands:
       - npm ci --no-audit --no-fund
       - npm run lint
