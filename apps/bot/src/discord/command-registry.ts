@@ -7,6 +7,11 @@ import { participantsCommand } from '../commands/participants.js';
 import { rollCommand } from '../commands/roll.js';
 import { sheetCommand } from '../commands/sheet.js';
 import { setupCommand } from '../commands/setup.js';
+import {
+  prototypeTestModalCommand,
+  prototypeTestModalComponentHandler,
+  prototypeTestModalModalHandler,
+} from '../commands/prototype-test-modal.js';
 import { messageReportComponentHandler } from './message-reports.js';
 import { testInstanceComponentHandler, testInstanceModalHandler } from './test-instances.js';
 import type {
@@ -26,6 +31,7 @@ export const chatCommands = [
   setupCommand,
   participantsCommand,
   helpCommand,
+  prototypeTestModalCommand,
 ] as const satisfies readonly BotChatCommand[];
 
 const commandMap = new Map<string, BotChatCommand>(
@@ -36,8 +42,12 @@ export const componentHandlers: readonly BotComponentHandler[] = [
   testInstanceComponentHandler,
   journalComponentHandler,
   messageReportComponentHandler,
+  prototypeTestModalComponentHandler,
 ];
-export const modalHandlers: readonly BotModalHandler[] = [testInstanceModalHandler];
+export const modalHandlers: readonly BotModalHandler[] = [
+  testInstanceModalHandler,
+  prototypeTestModalModalHandler,
+];
 
 const componentMap = new Map<string, BotComponentHandler>(
   componentHandlers
