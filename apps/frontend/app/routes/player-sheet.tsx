@@ -6,13 +6,14 @@ import {
   type ProgenyVtmCharacterExport,
 } from '@constancia/systems';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
-import { Link, useLoaderData, useLocation } from 'react-router';
+import { Link, useLoaderData, useLocation, useSearchParams } from 'react-router';
 import {
   getPlayerCharacterSheet,
   importPlayerCharacterFromProgeny,
   updatePlayerCharacterSheet,
 } from '@constancia/api-client/endpoints/characters/characters';
 import { CharacterSheetForm } from '@/components/character-sheet/character-sheet-form';
+import { DndSheetPrototype } from '@/components/character-sheet/dnd-sheet.prototype';
 import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import { buildServerApiOptions } from '@/lib/api-proxy.server';
 import {
@@ -147,6 +148,7 @@ export function meta() {
 export default function PlayerSheetRoute() {
   const loaderSheet = useLoaderData<typeof loader>();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [sheet, setSheet] = useState<CharacterSheetData>(loaderSheet);
   const isDemo = sheet.campaign.id.startsWith('demo-');
   const playerBasePath = isDemo ? '/demo/player' : `/player/campaigns/${sheet.campaign.id}`;
@@ -252,12 +254,16 @@ export default function PlayerSheetRoute() {
           </p>
         </section>
 
-        <CharacterSheetForm
-          sheet={sheet}
-          audience="player"
-          onSave={handleSave}
-          onImportProgeny={handleProgenyImport}
-        />
+        {isDemo && searchParams.has('variant') ? (
+          <DndSheetPrototype />
+        ) : (
+          <CharacterSheetForm
+            sheet={sheet}
+            audience="player"
+            onSave={handleSave}
+            onImportProgeny={handleProgenyImport}
+          />
+        )}
       </article>
     </main>
   );
