@@ -151,6 +151,7 @@ export default function PlayerSheetRoute() {
   const [searchParams] = useSearchParams();
   const [sheet, setSheet] = useState<CharacterSheetData>(loaderSheet);
   const isDemo = sheet.campaign.id.startsWith('demo-');
+  const isPrototype = isDemo && searchParams.has('variant');
   const playerBasePath = isDemo ? '/demo/player' : `/player/campaigns/${sheet.campaign.id}`;
 
   const handleSave = async (payload: CharacterSheetPatchBody) => {
@@ -231,7 +232,7 @@ export default function PlayerSheetRoute() {
         <div className="player-dossier-strip">
           <span>Player sheet</span>
           <span>{sheet.campaign.name}</span>
-          <span>{sheet.system.name}</span>
+          <span>{isPrototype ? '5E (SRD 5.2.1) prototype' : sheet.system.name}</span>
         </div>
 
         <div className="player-journal-nav">
@@ -245,16 +246,20 @@ export default function PlayerSheetRoute() {
           </Link>
         </div>
 
-        <section className="player-dossier-copy sheet-intro">
-          <p className="eyebrow">Character file</p>
-          <h1>{sheet.character.gameName || sheet.character.discordName || sheet.character.name}</h1>
-          <p>
-            This is your live campaign sheet. Updating it here changes the same system-backed stats
-            the GM sees in the war room.
-          </p>
-        </section>
+        {isPrototype ? null : (
+          <section className="player-dossier-copy sheet-intro">
+            <p className="eyebrow">Character file</p>
+            <h1>
+              {sheet.character.gameName || sheet.character.discordName || sheet.character.name}
+            </h1>
+            <p>
+              This is your live campaign sheet. Updating it here changes the same system-backed
+              stats the GM sees in the war room.
+            </p>
+          </section>
+        )}
 
-        {isDemo && searchParams.has('variant') ? (
+        {isPrototype ? (
           <DndSheetPrototype />
         ) : (
           <CharacterSheetForm

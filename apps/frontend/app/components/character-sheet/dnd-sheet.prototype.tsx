@@ -3,8 +3,10 @@
 // The question: how 5e fits StatSchema (number|string|boolean only), whether expertise is a
 // 0/1/2 number or two booleans, and where derived values (mods, PB, skill totals, passives) live.
 import { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router';
 import type { StatGroup, StatSchema } from '@constancia/contracts';
+import './dnd-sheet.prototype.css';
 
 type Ability = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
 const ABILITIES: { key: Ability; label: string }[] = [
@@ -36,6 +38,7 @@ const SKILLS: { key: string; label: string; ability: Ability }[] = [
   { key: 'persuasion', label: 'Persuasion', ability: 'cha' },
 ];
 const PASSIVES = ['perception', 'insight', 'investigation'];
+const TIER_NAME = ['Untrained', 'Proficient', 'Expertise'];
 
 // Encoding A/C: one number per skill, 0 none, 1 proficient, 2 expertise.
 // Save keys get a `Save` suffix because extractSystemStats flattens every group into one key space.
@@ -120,6 +123,7 @@ const SCHEMA_BOOLS: StatSchema = {
 };
 
 type Stats = Record<string, number | boolean>;
+type SetStat = (k: string, v: number | boolean) => void;
 
 const seed: Stats = {
   level: 5,
@@ -175,30 +179,28 @@ function derive(stats: Stats, encoding: 'tier' | 'bools') {
   return { pb, mod, saves, skills, passives };
 }
 
-const signed = (n: number) => (n >= 0 ? `+${n}` : `${n}`);
-const box: React.CSSProperties = {
-  border: '1px solid #1b2028',
-  background: '#161b22',
-  padding: 8,
-  borderRadius: 4,
-};
-const mono: React.CSSProperties = { fontFamily: 'IBM Plex Mono, monospace', fontSize: 12 };
+const signed = (n: number) => (n >= 0 ? `+${n}` : `−${Math.abs(n)}`);
+const labelOf = (key: string) => SKILLS.find((s) => s.key === key)?.label ?? key;
 
 function NumberIn({
   value,
   onChange,
   min,
   max,
+  label,
+  className = '',
 }: {
   value: number;
   onChange: (n: number) => void;
   min: number;
   max: number;
+  label: string;
+  className?: string;
 }) {
   return (
     <input
-      className="form-input"
-      style={{ width: 64 }}
+      aria-label={label}
+      className={`dnd-num ${className}`}
       type="number"
       min={min}
       max={max}
@@ -208,57 +210,93 @@ function NumberIn({
   );
 }
 
+/** Three-state proficiency pip: cycles untrained > proficient > expertise. */
+function TierPip({
+  tier,
+  label,
+  onCycle,
+}: {
+  tier: 0 | 1 | 2;
+  label: string;
+  onCycle?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="dnd-pip"
+      data-tier={tier}
+      aria-label={`${label}: ${TIER_NAME[tier]}. Change`}
+      title={TIER_NAME[tier]}
+      onClick={onCycle}
+    />
+  );
+}
+
 function StatePanel({ stats, derived }: { stats: Stats; derived: ReturnType<typeof derive> }) {
   return (
-    <details open style={{ ...box, marginTop: 16 }}>
-      <summary className="detail-label">State: stored systemData vs derived (never stored)</summary>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, ...mono }}>
-        <pre>{JSON.stringify(stats, null, 1)}</pre>
-        <pre>{JSON.stringify(derived, null, 1)}</pre>
+    <details className="dnd-state">
+      <summary>Inspect state: stored systemData vs derived values</summary>
+      <div className="dnd-state-grid">
+        <div>
+          <p className="dnd-label">Stored ({Object.keys(stats).length} keys)</p>
+          <pre>{JSON.stringify(stats, null, 1)}</pre>
+        </div>
+        <div>
+          <p className="dnd-label">Derived, never stored</p>
+          <pre>{JSON.stringify(derived, null, 1)}</pre>
+        </div>
       </div>
     </details>
   );
 }
 
 // A: today's generic per-field grid unchanged, plus a derived strip computed by the shared function.
-function VariantA({ stats, set }: { stats: Stats; set: (k: string, v: number | boolean) => void }) {
+function VariantA({ stats, set }: { stats: Stats; set: SetStat }) {
   const d = derive(stats, 'tier');
   return (
-    <div>
-      <p className="form-hint">
-        A: existing per-row renderer, tier encoding (0/1/2 number). Derived values can't sit in the
-        rows (a row only sees its own field), so they live in a separate summary strip.
+    <div className="dnd-variant">
+      <p className="dnd-thesis">
+        Today’s per-row renderer, unchanged. A row sees only its own field, so totals can’t sit
+        beside their inputs; they live in a derived ledger above the form.
       </p>
-      <div style={{ ...box, display: 'flex', flexWrap: 'wrap', gap: 16, ...mono }}>
-        <span>PB {signed(d.pb)}</span>
+      <dl className="dnd-ledger">
+        <div>
+          <dt>Prof</dt>
+          <dd>{signed(d.pb)}</dd>
+        </div>
         {ABILITIES.map((a) => (
-          <span key={a.key}>
-            {a.key.toUpperCase()} {signed(d.mod[a.key])}
-          </span>
+          <div key={a.key}>
+            <dt>{a.key}</dt>
+            <dd>{signed(d.mod[a.key])}</dd>
+          </div>
         ))}
         {PASSIVES.map((p) => (
-          <span key={p}>
-            Passive {p} {d.passives[p]}
-          </span>
+          <div key={p} className="is-passive">
+            <dt>Passive {labelOf(p)}</dt>
+            <dd>{d.passives[p]}</dd>
+          </div>
         ))}
-      </div>
+      </dl>
       {SCHEMA_TIER.groups.map((g) => (
-        <details key={g.key} open className="sheet-stat-group" style={{ marginTop: 8 }}>
+        <details key={g.key} open className="sheet-stat-group">
           <summary className="sheet-stat-group-header">
             <span className="detail-label">{g.label}</span>
+            <span className="sheet-stat-group-count">{g.fields.length} fields</span>
           </summary>
-          <div className="sheet-stat-grid">
+          <div className="dnd-a-grid">
             {g.fields.map((f) => (
-              <label key={f.key} className="sheet-stat-cell">
-                <span className="form-label">{f.label}</span>
+              <label key={f.key} className="dnd-a-cell">
+                <span className="dnd-label">{f.label}</span>
                 {f.type === 'boolean' ? (
                   <input
+                    className="dnd-check"
                     type="checkbox"
                     checked={stats[f.key] === true}
                     onChange={(e) => set(f.key, e.target.checked)}
                   />
                 ) : (
                   <NumberIn
+                    label={f.label}
                     value={Number(stats[f.key] ?? f.defaultValue ?? 0)}
                     min={f.min ?? 0}
                     max={f.max ?? 99}
@@ -276,74 +314,78 @@ function VariantA({ stats, set }: { stats: Stats; set: (k: string, v: number | b
 }
 
 // B: two booleans per skill, derived total inline in a table row.
-function VariantB({ stats, set }: { stats: Stats; set: (k: string, v: number | boolean) => void }) {
+function VariantB({ stats, set }: { stats: Stats; set: SetStat }) {
   const d = derive(stats, 'bools');
   return (
-    <div>
-      <p className="form-hint">
-        B: two-boolean encoding ({SCHEMA_BOOLS.groups.at(-1)?.fields.length} skill fields). Tick
-        Expertise without Proficient to see the invalid state the schema allows.
+    <div className="dnd-variant">
+      <p className="dnd-thesis">
+        Two booleans per skill: {SCHEMA_BOOLS.groups.at(-1)?.fields.length} fields where tiers need
+        18. Tick Expertise without Proficient to see the state this encoding lets through.
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 16 }}>
-        <div style={box}>
-          <div style={mono}>
-            Level{' '}
+      <div className="dnd-b">
+        <aside className="dnd-b-rail">
+          <label className="dnd-b-level">
+            <span className="dnd-label">Level</span>
             <NumberIn
+              label="Level"
               value={Number(stats.level)}
               min={1}
               max={20}
               onChange={(n) => set('level', n)}
-            />{' '}
-            PB {signed(d.pb)}
-          </div>
+            />
+            <strong title="Proficiency bonus">{signed(d.pb)}</strong>
+          </label>
           {ABILITIES.map((a) => (
-            <div
-              key={a.key}
-              style={{ ...mono, display: 'flex', justifyContent: 'space-between', marginTop: 6 }}
-            >
-              <span>{a.label}</span>
+            <div key={a.key} className="dnd-b-ability">
+              <span className="dnd-label">{a.label}</span>
               <NumberIn
+                label={a.label}
                 value={Number(stats[a.key])}
                 min={1}
                 max={30}
                 onChange={(n) => set(a.key, n)}
               />
-              <span>{signed(d.mod[a.key])}</span>
+              <strong>{signed(d.mod[a.key])}</strong>
             </div>
           ))}
-        </div>
-        <table style={{ ...mono, width: '100%' }}>
+        </aside>
+        <table className="dnd-b-table">
           <thead>
             <tr>
-              <th align="left">Skill</th>
-              <th>Prof</th>
-              <th>Exp</th>
-              <th>Total</th>
+              <th scope="col">Skill</th>
+              <th scope="col">Prof</th>
+              <th scope="col">Exp</th>
+              <th scope="col">Total</th>
             </tr>
           </thead>
           <tbody>
             {SKILLS.map((s) => {
               const bad = stats[`${s.key}Exp`] === true && stats[`${s.key}Prof`] !== true;
               return (
-                <tr key={s.key} style={bad ? { color: '#f85149' } : undefined}>
+                <tr key={s.key} className={bad ? 'is-invalid' : undefined}>
+                  <th scope="row">
+                    {s.label} <span className="dnd-abbr">{s.ability}</span>
+                    {bad ? <span className="dnd-flag">Exp without prof</span> : null}
+                  </th>
                   <td>
-                    {s.label} <span style={{ opacity: 0.5 }}>({s.ability})</span>
-                  </td>
-                  <td align="center">
                     <input
+                      className="dnd-check"
+                      aria-label={`${s.label} proficient`}
                       type="checkbox"
                       checked={stats[`${s.key}Prof`] === true}
                       onChange={(e) => set(`${s.key}Prof`, e.target.checked)}
                     />
                   </td>
-                  <td align="center">
+                  <td>
                     <input
+                      className="dnd-check"
+                      aria-label={`${s.label} expertise`}
                       type="checkbox"
                       checked={stats[`${s.key}Exp`] === true}
                       onChange={(e) => set(`${s.key}Exp`, e.target.checked)}
                     />
                   </td>
-                  <td align="center">{signed(d.skills[s.key])}</td>
+                  <td className="dnd-total">{signed(d.skills[s.key])}</td>
                 </tr>
               );
             })}
@@ -355,87 +397,129 @@ function VariantB({ stats, set }: { stats: Stats; set: (k: string, v: number | b
   );
 }
 
-const TIER_GLYPH = ['○', '◐', '●'];
-
-// C: a whole-sheet renderer (not per-row): ability blocks own their saves and skills, tier pip cycles 0>1>2>0.
-function VariantC({ stats, set }: { stats: Stats; set: (k: string, v: number | boolean) => void }) {
+// C: a whole-sheet renderer (not per-row): ability blocks own their saves and skills.
+function VariantC({ stats, set }: { stats: Stats; set: SetStat }) {
   const d = derive(stats, 'tier');
+  const hpMax = Math.max(1, Number(stats.hpMax));
+  const hp = Math.min(hpMax, Number(stats.hpCurrent));
   return (
-    <div>
-      <p className="form-hint">
-        C: sheet-level renderer, tier encoding. Click a pip to cycle none / proficient / expertise.
-        Needs the renderer contract to receive the whole stats record, not one field.
+    <div className="dnd-variant">
+      <p className="dnd-thesis">
+        A sheet-level renderer: each ability owns its save and skills, and every total sits beside
+        the pip that changes it. Needs the renderer to receive the whole stats record.
       </p>
-      <div style={{ ...box, display: 'flex', gap: 24, ...mono, marginBottom: 12 }}>
-        <span>
-          Level{' '}
+
+      <header className="dnd-c-head">
+        <div className="dnd-c-vital">
+          <span className="dnd-label">Level</span>
           <NumberIn
+            className="dnd-num-display"
+            label="Level"
             value={Number(stats.level)}
             min={1}
             max={20}
             onChange={(n) => set('level', n)}
           />
-        </span>
-        <span>PB {signed(d.pb)}</span>
-        <span>AC {String(stats.ac)}</span>
-        <span>
-          HP {String(stats.hpCurrent)}/{String(stats.hpMax)}
-        </span>
-        {PASSIVES.map((p) => (
-          <span key={p}>
-            Passive {p.slice(0, 5)} {d.passives[p]}
+        </div>
+        <div className="dnd-c-vital">
+          <span className="dnd-label">Proficiency</span>
+          <strong className="dnd-display">{signed(d.pb)}</strong>
+        </div>
+        <div className="dnd-c-vital">
+          <span className="dnd-label">Armor class</span>
+          <strong className="dnd-display">{String(stats.ac)}</strong>
+        </div>
+        <div className="dnd-c-vital dnd-c-hp">
+          <span className="dnd-label">
+            Hit points <span className="dnd-quiet">display only</span>
+          </span>
+          <strong className="dnd-display">
+            {hp}
+            <span className="dnd-quiet"> / {hpMax}</span>
+          </strong>
+          <div
+            className="dnd-hp-track"
+            role="meter"
+            aria-label="Hit points"
+            aria-valuemin={0}
+            aria-valuemax={hpMax}
+            aria-valuenow={hp}
+          >
+            <span style={{ inlineSize: `${(hp / hpMax) * 100}%` }} />
+          </div>
+        </div>
+        <dl className="dnd-c-passives">
+          {PASSIVES.map((p) => (
+            <div key={p}>
+              <dt>Passive {labelOf(p)}</dt>
+              <dd>{d.passives[p]}</dd>
+            </div>
+          ))}
+        </dl>
+      </header>
+
+      <div className="dnd-c-grid">
+        {ABILITIES.map((a) => {
+          const saveProf = stats[`${a.key}Save`] === true;
+          return (
+            <section key={a.key} className="dnd-c-ability" aria-label={a.label}>
+              <div className="dnd-c-ability-head">
+                <h3>{a.label}</h3>
+                <strong className="dnd-c-mod">{signed(d.mod[a.key])}</strong>
+                <label className="dnd-c-score">
+                  <span className="dnd-label">Score</span>
+                  <NumberIn
+                    label={`${a.label} score`}
+                    value={Number(stats[a.key])}
+                    min={1}
+                    max={30}
+                    onChange={(n) => set(a.key, n)}
+                  />
+                </label>
+              </div>
+              <ul className="dnd-c-rows">
+                <li className="dnd-c-row is-save">
+                  <TierPip
+                    tier={saveProf ? 1 : 0}
+                    label={`${a.label} saving throw`}
+                    onCycle={() => set(`${a.key}Save`, !saveProf)}
+                  />
+                  <span>Saving throw</span>
+                  <span className="dnd-total">{signed(d.saves[a.key])}</span>
+                </li>
+                {SKILLS.some((s) => s.ability === a.key) ? null : (
+                  <li className="dnd-c-row is-empty">No skills use {a.label}</li>
+                )}
+                {SKILLS.filter((s) => s.ability === a.key).map((s) => {
+                  const t = tierOf(stats, s.key, 'tier');
+                  return (
+                    <li key={s.key} className="dnd-c-row" data-tier={t}>
+                      <TierPip tier={t} label={s.label} onCycle={() => set(s.key, (t + 1) % 3)} />
+                      <span>{s.label}</span>
+                      <span className="dnd-total">{signed(d.skills[s.key])}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          );
+        })}
+      </div>
+      <p className="dnd-legend">
+        {TIER_NAME.map((name, t) => (
+          <span key={name}>
+            <span className="dnd-pip" data-tier={t} aria-hidden="true" />
+            {t === 2 ? `${name} (double proficiency)` : name}
           </span>
         ))}
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-        {ABILITIES.map((a) => (
-          <section key={a.key} style={box}>
-            <div
-              style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}
-            >
-              <span className="detail-label">{a.label}</span>
-              <span style={{ fontSize: 22 }}>{signed(d.mod[a.key])}</span>
-            </div>
-            <NumberIn
-              value={Number(stats[a.key])}
-              min={1}
-              max={30}
-              onChange={(n) => set(a.key, n)}
-            />
-            <div style={{ ...mono, marginTop: 6 }}>
-              <button
-                type="button"
-                onClick={() => set(`${a.key}Save`, stats[`${a.key}Save`] !== true)}
-              >
-                {stats[`${a.key}Save`] === true ? '●' : '○'}
-              </button>{' '}
-              Save {signed(d.saves[a.key])}
-            </div>
-            {SKILLS.filter((s) => s.ability === a.key).map((s) => {
-              const t = tierOf(stats, s.key, 'tier');
-              return (
-                <div key={s.key} style={mono}>
-                  <button
-                    type="button"
-                    aria-label={`${s.label} tier ${t}`}
-                    onClick={() => set(s.key, (t + 1) % 3)}
-                  >
-                    {TIER_GLYPH[t]}
-                  </button>{' '}
-                  {s.label} {signed(d.skills[s.key])}
-                </div>
-              );
-            })}
-          </section>
-        ))}
-      </div>
+      </p>
       <StatePanel stats={stats} derived={d} />
     </div>
   );
 }
 
 const VARIANTS = [
-  { key: 'A', name: 'Generic grid + derived strip', C: VariantA },
+  { key: 'A', name: 'Generic grid + derived ledger', C: VariantA },
   { key: 'B', name: 'Two booleans, skill table', C: VariantB },
   { key: 'C', name: 'Sheet-level renderer, tier pips', C: VariantC },
 ];
@@ -464,31 +548,15 @@ function PrototypeSwitcher({ current }: { current: string }) {
 
   if (import.meta.env.PROD) return null;
   return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: 16,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        background: '#fff',
-        color: '#000',
-        borderRadius: 999,
-        padding: '6px 14px',
-        boxShadow: '0 4px 16px rgba(0,0,0,.5)',
-        display: 'flex',
-        gap: 12,
-        zIndex: 1000,
-        ...mono,
-      }}
-    >
-      <button type="button" onClick={() => go(-1)}>
-        ←
+    <div className="dnd-switcher">
+      <button type="button" aria-label="Previous variant" onClick={() => go(-1)}>
+        <ChevronLeft size={16} />
       </button>
       <span>
-        {VARIANTS[index].key} ({VARIANTS[index].name})
+        <b>{VARIANTS[index].key}</b> <i>{VARIANTS[index].name}</i>
       </span>
-      <button type="button" onClick={() => go(1)}>
-        →
+      <button type="button" aria-label="Next variant" onClick={() => go(1)}>
+        <ChevronRight size={16} />
       </button>
     </div>
   );
@@ -498,11 +566,15 @@ export function DndSheetPrototype() {
   const [params] = useSearchParams();
   const current = params.get('variant') ?? 'A';
   const [stats, setStats] = useState<Stats>(seed);
-  const set = (k: string, v: number | boolean) => setStats((s) => ({ ...s, [k]: v }));
+  const set: SetStat = (k, v) => setStats((s) => ({ ...s, [k]: v }));
   const Variant = (VARIANTS.find((v) => v.key === current) ?? VARIANTS[0]).C;
   return (
-    <section className="form-section">
-      <p className="eyebrow">PROTOTYPE: 5e (SRD 5.2.1) sheet, Mira (Rogue 5, Halfling)</p>
+    <section className="dnd-proto">
+      <div className="dnd-proto-head">
+        <h2>Mira Thistledown</h2>
+        <p>Rogue 5 · Halfling · 5E (SRD 5.2.1)</p>
+        <span className="dnd-proto-tag">Prototype · variant {current}</span>
+      </div>
       <Variant stats={stats} set={set} />
       <PrototypeSwitcher current={current} />
     </section>
