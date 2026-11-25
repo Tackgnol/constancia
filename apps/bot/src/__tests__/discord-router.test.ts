@@ -20,6 +20,7 @@ describe('command registry', () => {
       'setup',
       'participants',
       'help',
+      'prototype-test-modal',
     ]);
   });
 
