@@ -12,6 +12,14 @@ _Avoid_: Workspace, tenant
 The rules adapter selected by a Campaign, including its character-data schema, test configuration, system-specific pipeline blocks, and NPC system block definitions.
 _Avoid_: Ruleset map, system switch
 
+**Archetype**:
+A named category a Game System sorts characters into, chosen from that system's fixed list (a VTM clan, a Mörk Borg class, a D&D class or species). A Game System defines any number of archetypes; a character holds at most one choice per archetype.
+_Avoid_: Clan (as a generic term), race
+
+**Primary archetype**:
+The archetype a Game System puts first, which identifies a character at a glance wherever space allows only one.
+_Avoid_: Main class
+
 **Event**:
 A prepared live-play cue whose persisted pipeline can be fired by a GM or completed with player input.
 _Avoid_: Trigger, command
@@ -45,5 +53,5 @@ The Discord-facing prompt created when a test Event is fired, shared by every pl
 _Avoid_: Roll
 
 **Test submission**:
-One player's resolved score for a Test instance; a player has at most one per instance. Reopening a submission frees that player to resubmit but does not undo effects (Lore/NPC grants, journal entries) already applied.
+One player's final result for a Test instance, either typed by the player after rolling at the table or rolled by the backend when the player chooses Roll for me. A player has at most one per instance. Reopening a submission frees that player to resubmit but does not undo effects (Lore/NPC grants, journal entries) already applied.
 _Avoid_: Roll, result
