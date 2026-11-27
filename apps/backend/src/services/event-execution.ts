@@ -17,7 +17,15 @@ export interface SubmitTestResultCommand {
   instanceId: string;
   discordUserId: string;
   discordChannelId: string;
+  /** The player's typed final result; absent when the player asked the backend to roll. */
+  playerScore?: number;
+  rollForMe?: boolean;
+}
+
+/** What a backend roll produced, returned to the bot for the player's private reply; never stored. */
+export interface TestRollResult {
   playerScore: number;
+  breakdown: string[];
 }
 
 export interface PlannedTestSubmission {
@@ -37,6 +45,7 @@ export interface PlannedEventExecution {
   testInstanceId?: string;
   /** Set when resolving a test result: the one submission this player is allowed per instance. */
   testSubmission?: PlannedTestSubmission;
+  roll?: TestRollResult;
 }
 
 export interface EventExecutionPlanner {
@@ -63,6 +72,7 @@ export interface EventExecutionReceipt {
   messages: BlockMessage[];
   deliveries: EventDeliveryReceipt[];
   error?: { code: string; message: string };
+  roll?: TestRollResult;
   createdAt: string;
   completedAt: string;
 }
@@ -225,7 +235,8 @@ export function createEventExecution(input: {
       limit: 100,
     });
 
-    return receipt ?? persisted.receipt;
+    const finalReceipt = receipt ?? persisted.receipt;
+    return plan.roll ? { ...finalReceipt, roll: plan.roll } : finalReceipt;
   }
 
   async function retryDeliveries(
@@ -310,7 +321,7 @@ function commandFingerprint(command: FireEventCommand | SubmitTestResultCommand)
         command.instanceId,
         command.discordUserId,
         command.discordChannelId,
-        command.playerScore,
+        command.rollForMe ? 'roll' : command.playerScore,
       ].join(':');
 }
 

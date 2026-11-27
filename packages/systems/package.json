@@ -28,7 +28,8 @@
   },
   "dependencies": {
     "@constancia/block-catalogue": "*",
-    "@constancia/contracts": "*"
+    "@constancia/contracts": "*",
+    "@tackgnol/rpg-tools-roller": "^0.0.1"
   },
   "devDependencies": {
     "vitest": "^3.2.4"

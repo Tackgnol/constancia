@@ -8,7 +8,12 @@ when:
 steps:
   quality-checks:
     image: node:22.23.4-bookworm
+    environment:
+      # GitHub Packages token for @tackgnol/* (rpg-tools-roller); same secret scvmrack uses.
+      NPMRC_CONTENT:
+        from_secret: npmrc_content
     commands:
+      - printf '%s\n' "$NPMRC_CONTENT" >> .npmrc
       - npm ci --no-audit --no-fund
       - npm run lint
       - npm run typecheck
@@ -34,9 +39,12 @@ steps:
       DISCORD_TOKEN: ci-discord-token
       DISCORD_CLIENT_ID: ci-discord-client-id
       VITE_DISCORD_AUTH_ENABLED: 'false'
+      NPMRC_CONTENT:
+        from_secret: npmrc_content
     commands:
       - |
         set -e
+        printf '%s\n' "$NPMRC_CONTENT" >> .npmrc
         cleanup() {
           docker compose -f compose.prod.yaml down --rmi local --volumes --remove-orphans || true
         }

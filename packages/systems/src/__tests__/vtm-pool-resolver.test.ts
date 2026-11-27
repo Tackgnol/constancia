@@ -1,10 +1,16 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { vtmPoolResolverBlock } from '../vtm-v5/pool-resolver.js';
+import { rollDice } from '../dice.js';
 import type { BlockContext } from '@constancia/contracts';
 
-// Math.floor(Math.random() * 10) + 1 == v  ←→  Math.random() returns (v-1)/10
-function mockForDie(value: number): number {
-  return (value - 1) / 10;
+vi.mock('../dice.js', () => ({ rollDice: vi.fn() }));
+
+const queuedDice: number[] = [];
+const rollDiceMock = vi.mocked(rollDice);
+
+/** Queues die faces; the mocked roller hands them out in order. */
+function queueDice(...values: number[]): void {
+  queuedDice.push(...values);
 }
 
 function makeContext(overrides?: Partial<BlockContext>): BlockContext {
@@ -18,25 +24,16 @@ function makeContext(overrides?: Partial<BlockContext>): BlockContext {
 }
 
 describe('vtmPoolResolverBlock', () => {
-  let randomSpy: ReturnType<typeof vi.spyOn>;
-
   beforeEach(() => {
-    randomSpy = vi.spyOn(Math, 'random');
-  });
-
-  afterEach(() => {
-    randomSpy.mockRestore();
+    queuedDice.length = 0;
+    rollDiceMock.mockReset();
+    rollDiceMock.mockImplementation(async (count) => queuedDice.splice(0, count));
   });
 
   it('returns success for a normal roll with enough successes', async () => {
     // pool=4, hunger=0, default difficulty=1
     // dice: [7, 8, 3, 4] → 2 successes (7 and 8), no 10s, no hungerOnes
-    randomSpy
-      .mockReturnValueOnce(mockForDie(7))
-      .mockReturnValueOnce(mockForDie(8))
-      .mockReturnValueOnce(mockForDie(3))
-      .mockReturnValueOnce(mockForDie(4));
-
+    queueDice(7, 8, 3, 4);
     const ctx = makeContext({
       characterData: { attributes: { strength: 2 }, skills: { brawl: 2 } },
     });
@@ -70,12 +67,7 @@ describe('vtmPoolResolverBlock', () => {
   it('returns critical_success when two 10s are rolled with no hunger', async () => {
     // pool=4, hunger=0, default difficulty=1
     // dice: [10, 10, 3, 4] → base=2 successes, critPairs=1, bonus=+2, total=4, no hunger10s
-    randomSpy
-      .mockReturnValueOnce(mockForDie(10))
-      .mockReturnValueOnce(mockForDie(10))
-      .mockReturnValueOnce(mockForDie(3))
-      .mockReturnValueOnce(mockForDie(4));
-
+    queueDice(10, 10, 3, 4);
     const ctx = makeContext({
       characterData: { attributes: { dexterity: 2 }, skills: { firearms: 2 } },
     });
@@ -100,10 +92,7 @@ describe('vtmPoolResolverBlock', () => {
     // pool=3, hunger=1 → normalDiceCount=2, hungerDiceCount=1
     // normal dice: [10, 3], hunger dice: [10]
     // normal10s=1, hunger10s=1 → critPairs=1 → messy_critical
-    randomSpy
-      .mockReturnValueOnce(mockForDie(10)) // normal die 1
-      .mockReturnValueOnce(mockForDie(3)) // normal die 2
-      .mockReturnValueOnce(mockForDie(10)); // hunger die 1
+    queueDice(10, 3, 10);
 
     const ctx = makeContext({
       characterData: {
@@ -127,11 +116,7 @@ describe('vtmPoolResolverBlock', () => {
   it('returns failure when no successes and no hunger ones', async () => {
     // pool=3, hunger=0, default difficulty=1
     // dice: [1, 2, 3] → 0 successes
-    randomSpy
-      .mockReturnValueOnce(mockForDie(1))
-      .mockReturnValueOnce(mockForDie(2))
-      .mockReturnValueOnce(mockForDie(3));
-
+    queueDice(1, 2, 3);
     const ctx = makeContext({
       characterData: { attributes: { intelligence: 1 }, skills: { academics: 2 } },
     });
@@ -155,8 +140,7 @@ describe('vtmPoolResolverBlock', () => {
   it('returns bestial_failure when hunger die shows 1 and no successes', async () => {
     // pool=2, hunger=2 → normalDiceCount=0, hungerDiceCount=2
     // hunger dice: [1, 2] → 0 successes, hungerOnes=1 → bestial_failure
-    randomSpy.mockReturnValueOnce(mockForDie(1)).mockReturnValueOnce(mockForDie(2));
-
+    queueDice(1, 2);
     const ctx = makeContext({
       characterData: {
         attributes: { resolve: 1 },
@@ -186,7 +170,7 @@ describe('vtmPoolResolverBlock', () => {
   });
 
   it('returns immediate failure with empty dice arrays when pool is zero', async () => {
-    // Missing attribute/skill → pool=0 → immediate failure, Math.random never called
+    // Missing attribute/skill → pool=0 → immediate failure, the roller is never called
     const ctx = makeContext({
       characterData: { attributes: {}, skills: {} },
     });
@@ -209,13 +193,12 @@ describe('vtmPoolResolverBlock', () => {
     expect(output.hungerDice).toEqual([]);
     expect(output.successes).toBe(0);
     expect(output.outcome).toBe('failure');
-    expect(randomSpy).not.toHaveBeenCalled();
+    expect(rollDiceMock).not.toHaveBeenCalled();
   });
 
   it('emits player and channel messages', async () => {
     // pool=2, hunger=0, default difficulty=1, dice: [7, 8]
-    randomSpy.mockReturnValueOnce(mockForDie(7)).mockReturnValueOnce(mockForDie(8));
-
+    queueDice(7, 8);
     const ctx = makeContext({
       characterData: { attributes: { stamina: 1 }, skills: { athletics: 1 } },
     });

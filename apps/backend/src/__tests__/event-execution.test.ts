@@ -157,7 +157,7 @@ describe('EventExecution', () => {
       testSubmission: {
         instanceId: command.instanceId,
         discordUserId: command.discordUserId,
-        playerScore: command.playerScore,
+        playerScore: command.playerScore ?? 0,
       },
       messages: [
         {

@@ -614,9 +614,10 @@ export const botTestResultBodySchema = {
     discordUserId: { type: 'string' },
     discordChannelId: { type: 'string' },
     playerScore: { type: 'number' },
+    rollForMe: { type: 'boolean' },
     idempotencyKey: { type: 'string', minLength: 1 },
   },
-  required: ['instanceId', 'discordUserId', 'discordChannelId', 'playerScore', 'idempotencyKey'],
+  required: ['instanceId', 'discordUserId', 'discordChannelId', 'idempotencyKey'],
 } as const;
 
 export const idempotencyKeyHeaderSchema = {
@@ -1131,6 +1132,15 @@ export const botTestResultResponseSchema = {
   properties: {
     ...fireEventResultSchema.properties,
     submittedCount: { type: 'integer', minimum: 0 },
+    roll: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        playerScore: { type: 'number' },
+        breakdown: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['playerScore', 'breakdown'],
+    },
   },
   required: [...fireEventResultSchema.required, 'submittedCount'],
 } as const;

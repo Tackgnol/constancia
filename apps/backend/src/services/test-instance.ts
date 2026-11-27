@@ -1,4 +1,11 @@
-import type { BlockInstance, SendTestInstancePayload, TestThreshold } from '@constancia/contracts';
+import type {
+  BlockContext,
+  BlockInstance,
+  SendTestInstancePayload,
+  TestThreshold,
+} from '@constancia/contracts';
+import type { PipelineRunner } from '@constancia/core';
+import { EventExecutionRequestError, type TestRollResult } from './event-execution.js';
 
 interface GameEventLike {
   id: string;
@@ -113,6 +120,39 @@ export function buildTestInstancePayload(
     description: extractDescription(event.pipeline),
     imageUrl: extractImageUrl(event.pipeline),
     thresholds,
+  };
+}
+
+const ROLL_BLOCK_TYPES = new Set(['test-resolver']);
+
+/**
+ * Runs only the pipeline's roll blocks for Roll for me. The resolver's player messages become the
+ * private dice breakdown; its channel messages are dropped so nothing new is posted publicly.
+ */
+export async function rollTestResult(
+  runner: PipelineRunner,
+  pipeline: BlockInstance[],
+  ctx: BlockContext,
+): Promise<TestRollResult> {
+  const rollBlocks = pipeline.filter((block) => ROLL_BLOCK_TYPES.has(block.blockType));
+  if (!rollBlocks.some((block) => block.blockType === 'test-resolver')) {
+    throw new EventExecutionRequestError(
+      422,
+      'ROLL_UNSUPPORTED',
+      'This Test has no resolver, so it cannot roll for you. Enter your final result instead.',
+    );
+  }
+
+  const result = await runner.run(rollBlocks, ctx);
+  if (result.playerScore === undefined) {
+    throw new Error('test-resolver finished without setting playerScore.');
+  }
+
+  return {
+    playerScore: result.playerScore,
+    breakdown: result.messages
+      .filter((message) => message.target === 'player')
+      .map((message) => message.content),
   };
 }
 

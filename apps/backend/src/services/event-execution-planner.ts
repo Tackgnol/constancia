@@ -17,7 +17,11 @@ import {
 } from './event-execution.js';
 import { filterInsightResolutionPipeline, resolveInsightScore } from './insight-event.js';
 import { assertCampaignActive } from './moderation-enforcement.js';
-import { buildTestInstancePayload, filterManualTestResolutionPipeline } from './test-instance.js';
+import {
+  buildTestInstancePayload,
+  filterManualTestResolutionPipeline,
+  rollTestResult,
+} from './test-instance.js';
 
 export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventExecutionPlanner {
   const createRunner = (gameSystemId: string) =>
@@ -207,15 +211,28 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
         );
       }
 
+      const pipeline = parsePipeline(event.pipeline);
+      const playerCtx = {
+        campaignId: event.campaignId,
+        channelId: event.channelId,
+        playerId: command.discordUserId,
+        characterData: parseCharacterData(character.systemData),
+      };
+      const roll = command.rollForMe
+        ? await rollTestResult(createRunner(event.campaign.gameSystemId), pipeline, playerCtx)
+        : undefined;
+      const playerScore = roll?.playerScore ?? command.playerScore;
+      if (playerScore === undefined) {
+        throw new EventExecutionRequestError(
+          400,
+          'SCORE_REQUIRED',
+          'Enter your final result or ask the backend to roll for you.',
+        );
+      }
+
       const result = await createRunner(event.campaign.gameSystemId).run(
-        filterManualTestResolutionPipeline(parsePipeline(event.pipeline)),
-        {
-          campaignId: event.campaignId,
-          channelId: event.channelId,
-          playerId: command.discordUserId,
-          playerScore: command.playerScore,
-          characterData: parseCharacterData(character.systemData),
-        },
+        filterManualTestResolutionPipeline(pipeline),
+        { ...playerCtx, playerScore },
       );
 
       return {
@@ -229,8 +246,9 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
         testSubmission: {
           instanceId: command.instanceId,
           discordUserId: command.discordUserId,
-          playerScore: command.playerScore,
+          playerScore,
         },
+        ...(roll ? { roll } : {}),
       };
     },
   };
