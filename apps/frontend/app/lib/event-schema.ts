@@ -83,6 +83,7 @@ export const outcomeEntrySchema = z.object({
 export const outcomeMapConfigSchema = z.object({
   outcomes: z.array(outcomeEntrySchema).min(1, 'Add at least one outcome'),
   shortCircuit: z.boolean().optional(),
+  comparison: z.enum(['gt', 'gte']).optional(),
 });
 
 export const retrieveDataConfigSchema = z.object({

@@ -4048,6 +4048,11 @@
                                         },
                                         "shortCircuit": {
                                           "type": "boolean"
+                                        },
+                                        "comparison": {
+                                          "type": "string",
+                                          "enum": ["gt", "gte"],
+                                          "description": "How the score is compared with each threshold; missing means gt."
                                         }
                                       },
                                       "required": ["outcomes"]
@@ -4394,6 +4399,11 @@
                                 },
                                 "shortCircuit": {
                                   "type": "boolean"
+                                },
+                                "comparison": {
+                                  "type": "string",
+                                  "enum": ["gt", "gte"],
+                                  "description": "How the score is compared with each threshold; missing means gt."
                                 }
                               },
                               "required": ["outcomes"]
@@ -4748,6 +4758,11 @@
                                       },
                                       "shortCircuit": {
                                         "type": "boolean"
+                                      },
+                                      "comparison": {
+                                        "type": "string",
+                                        "enum": ["gt", "gte"],
+                                        "description": "How the score is compared with each threshold; missing means gt."
                                       }
                                     },
                                     "required": ["outcomes"]
@@ -5130,6 +5145,11 @@
                                       },
                                       "shortCircuit": {
                                         "type": "boolean"
+                                      },
+                                      "comparison": {
+                                        "type": "string",
+                                        "enum": ["gt", "gte"],
+                                        "description": "How the score is compared with each threshold; missing means gt."
                                       }
                                     },
                                     "required": ["outcomes"]
@@ -5479,6 +5499,11 @@
                                 },
                                 "shortCircuit": {
                                   "type": "boolean"
+                                },
+                                "comparison": {
+                                  "type": "string",
+                                  "enum": ["gt", "gte"],
+                                  "description": "How the score is compared with each threshold; missing means gt."
                                 }
                               },
                               "required": ["outcomes"]
@@ -5840,6 +5865,11 @@
                                       },
                                       "shortCircuit": {
                                         "type": "boolean"
+                                      },
+                                      "comparison": {
+                                        "type": "string",
+                                        "enum": ["gt", "gte"],
+                                        "description": "How the score is compared with each threshold; missing means gt."
                                       }
                                     },
                                     "required": ["outcomes"]
@@ -12139,6 +12169,11 @@
                                         },
                                         "shortCircuit": {
                                           "type": "boolean"
+                                        },
+                                        "comparison": {
+                                          "type": "string",
+                                          "enum": ["gt", "gte"],
+                                          "description": "How the score is compared with each threshold; missing means gt."
                                         }
                                       },
                                       "required": ["outcomes"]

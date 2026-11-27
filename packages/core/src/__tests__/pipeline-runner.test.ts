@@ -285,4 +285,38 @@ describe('PipelineRunner', () => {
     );
     expect(execute).not.toHaveBeenCalled();
   });
+
+  it('merges a context patch before the next block runs', async () => {
+    const registry = new BlockRegistry();
+    const seen: BlockContext['rollModifiers'][] = [];
+    registry.register({
+      type: 'advantage',
+      label: 'Advantage',
+      configSchema: { type: 'object' },
+      execute: async () => ({
+        output: null,
+        contextPatch: { rollModifiers: { mode: 'advantage' as const } },
+      }),
+    });
+    registry.register({
+      type: 'read',
+      label: 'Read',
+      configSchema: { type: 'object' },
+      execute: async (_config: unknown, ctx: BlockContext) => {
+        seen.push(ctx.rollModifiers);
+        return { output: null };
+      },
+    });
+
+    await new PipelineRunner(registry).run(
+      [
+        { blockType: 'read', config: {} },
+        { blockType: 'advantage', config: {} },
+        { blockType: 'read', config: {} },
+      ],
+      createContext(),
+    );
+
+    expect(seen).toEqual([undefined, { mode: 'advantage' }]);
+  });
 });

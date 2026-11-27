@@ -55,4 +55,3 @@ describe('MessageGroup block', () => {
     expect(result.messages).toEqual([]);
   });
 });
-
