@@ -19,6 +19,16 @@ import {
 } from '../services/character-sheets.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
 import { createCampaignAccess } from '../services/campaign-access.js';
+import { gameSystemRegistry, validateArchetypeChoices } from '@constancia/systems';
+
+/** Rejects archetype choices the campaign's Game System doesn't define. */
+function findArchetypeError(
+  gameSystemId: string,
+  systemData: Record<string, unknown> | undefined,
+): string | null {
+  const system = gameSystemRegistry.get(gameSystemId);
+  return system ? validateArchetypeChoices(system, systemData) : null;
+}
 
 interface CampaignParams {
   id: string;
@@ -106,6 +116,8 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
       const { name, discordUserId, backstory, notes, systemData } = request.body;
+      const archetypeError = findArchetypeError(request.campaignScope.gameSystemId, systemData);
+      if (archetypeError) return sendError(reply, 400, archetypeError);
       const character = await prisma.character.create({
         data: {
           campaignId: request.campaignScope.campaignId,
@@ -173,6 +185,8 @@ const characterRoutes: FastifyPluginAsync = async (app) => {
         id: charId,
       });
       const { name, gameName, backstory, notes, systemData } = request.body;
+      const archetypeError = findArchetypeError(request.campaignScope.gameSystemId, systemData);
+      if (archetypeError) return sendError(reply, 400, archetypeError);
       const data: Partial<{
         name: string;
         gameName: string;

@@ -7,7 +7,7 @@ import { listLoreEntries } from '@constancia/api-client/endpoints/lore/lore';
 import { getServiceHealth } from '@constancia/api-client/endpoints/meta/meta';
 import { listNpcs } from '@constancia/api-client/endpoints/npcs/npcs';
 import { listGameSystems } from '@constancia/api-client/endpoints/systems/systems';
-import { parseGameDate } from '@constancia/systems';
+import { gameSystemRegistry, getPrimaryArchetypeChoice, parseGameDate } from '@constancia/systems';
 import { buildServerApiOptions } from './api-proxy.server.js';
 import {
   fallbackCampaign,
@@ -69,13 +69,15 @@ export async function loadLiveWarRoomProjection(
         }))
       : [];
   const rawCharacters = charactersResponse?.status === 'ok' ? charactersResponse.data : [];
+  const archetypeSystem = gameSystemRegistry.get(campaignRecord?.gameSystemId ?? '');
   const players: PlayerPresence[] = rawCharacters.map((character) => {
-    const clan =
-      typeof character.systemData?.clan === 'string' ? character.systemData.clan : 'Unknown';
+    const archetype =
+      (archetypeSystem && getPrimaryArchetypeChoice(archetypeSystem, character.systemData)?.name) ||
+      'Unknown';
     return {
       id: character.id,
       name: character.gameName || character.discordName || character.name,
-      character: clan,
+      character: archetype,
       player: character.discordName || character.name,
       status: 'online',
     };

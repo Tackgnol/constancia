@@ -1,6 +1,6 @@
 import type { BlockDefinition, GameSystem } from '@constancia/contracts';
-import { MB_NPC_BLOCKS, MB_STAT_SCHEMA } from './mork-borg/data.js';
-import { VTM_NPC_BLOCKS, VTM_STAT_SCHEMA } from './vtm-v5/data.js';
+import { MB_CLASSES, MB_NPC_BLOCKS, MB_STAT_SCHEMA } from './mork-borg/data.js';
+import { VTM_CLANS, VTM_NPC_BLOCKS, VTM_STAT_SCHEMA } from './vtm-v5/data.js';
 import { vtmInsightResolverBlock } from './vtm-v5/insight-resolver.js';
 import { vtmPoolResolverBlock } from './vtm-v5/pool-resolver.js';
 import { GREGORIAN_CALENDAR } from './calendar.js';
@@ -95,6 +95,7 @@ export const vtmV5GameSystem: GameSystemAdapter = {
   defaultCalendarId: GREGORIAN_CALENDAR.id,
   calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
   statSchema: VTM_STAT_SCHEMA,
+  archetypes: [{ key: 'clan', label: 'Clan', options: VTM_CLANS }],
   testConfig: {
     label: 'VTM V5 Test',
     fields: [
@@ -115,6 +116,7 @@ export const morkBorgGameSystem: GameSystemAdapter = {
   defaultCalendarId: GREGORIAN_CALENDAR.id,
   calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
   statSchema: MB_STAT_SCHEMA,
+  archetypes: [{ key: 'class', label: 'Class', options: MB_CLASSES }],
   testConfig: { label: 'Mork Borg Test', fields: [] },
   npcBlocks: MB_NPC_BLOCKS,
   blocks: [],

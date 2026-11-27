@@ -17,6 +17,7 @@ import { resolveStatRow } from '@/components/character-sheet/renderers';
 import type { StatValue } from '@/components/character-sheet/renderers';
 import type { CharacterSheetData, CharacterSheetPatchBody } from '@/lib/character-sheet';
 import type { ProgenyVtmCharacterExport } from '@constancia/systems';
+import { gameSystemRegistry, getPrimaryArchetypeChoice } from '@constancia/systems';
 
 const GAME_NAME_MAX = 80;
 const LONGFORM_MAX = 4000;
@@ -47,16 +48,10 @@ function isZeroStat(value: unknown): boolean {
 }
 
 function getArchetypeLabel(sheet: CharacterSheetData): string | null {
-  const systemData = sheet.character.systemData;
-  if (typeof systemData.clan === 'string' && systemData.clan.length > 0) {
-    return systemData.clan;
-  }
-
-  if (typeof systemData['creature-type'] === 'string' && systemData['creature-type'].length > 0) {
-    return systemData['creature-type'];
-  }
-
-  return null;
+  const system = gameSystemRegistry.get(sheet.system.id);
+  return system
+    ? (getPrimaryArchetypeChoice(system, sheet.character.systemData)?.name ?? null)
+    : null;
 }
 
 function CharacterIdentitySection({

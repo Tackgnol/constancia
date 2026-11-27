@@ -1,10 +1,4 @@
-import type { NpcSystemBlockDefinition, StatSchema } from '@constancia/contracts';
-
-export interface Archetype {
-  name: string;
-  icon: string;
-  description: string;
-}
+import type { ArchetypeOption, NpcSystemBlockDefinition, StatSchema } from '@constancia/contracts';
 
 export interface VtmStatOption {
   value: string;
@@ -82,7 +76,7 @@ export const VTM_STAT_SCHEMA: StatSchema = {
   ],
 };
 
-export const VTM_CLANS: Archetype[] = [
+export const VTM_CLANS: ArchetypeOption[] = [
   {
     name: 'Banu Haqim',
     icon: 'Banu icon.png',

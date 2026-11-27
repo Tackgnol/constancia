@@ -52,6 +52,7 @@ describe('GameSystemRegistry', () => {
       defaultCalendarId: GREGORIAN_CALENDAR.id,
       calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
       statSchema: { groups: [] },
+      archetypes: [],
       testConfig: { label: 'Test', fields: [] },
       blocks: [],
     };
