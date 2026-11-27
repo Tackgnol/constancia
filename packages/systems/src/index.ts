@@ -7,11 +7,14 @@ export * from './stat-schemas.js';
 export * from './calendar.js';
 export * from './archetypes.js';
 export * from './role-blocks.js';
+export * from './5e-srd/data.js';
+export * from './5e-srd/derived.js';
 export {
   DuplicateGameSystemKeyError,
   GAME_SYSTEM_ADAPTERS,
   PROGENY_IMPORTER_ID,
   findImporter,
+  fiveESrdGameSystem,
   GameSystemRegistry,
   UnknownGameSystemError,
   buildGameSystemRegistry,

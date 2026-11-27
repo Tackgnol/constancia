@@ -6,6 +6,12 @@ import { vtmInsightResolverBlock, vtmInsightResolverSpec } from './vtm-v5/insigh
 import { vtmPoolHint, vtmPoolResolverBlock, vtmPoolResolverSpec } from './vtm-v5/pool-resolver.js';
 import type { RoleBlockImplementations } from './role-blocks.js';
 import { GREGORIAN_CALENDAR } from './calendar.js';
+import {
+  FIVE_E_CLASSES,
+  FIVE_E_SPECIES,
+  FIVE_E_STAT_SCHEMA,
+  SRD_5E_ATTRIBUTION,
+} from './5e-srd/data.js';
 
 /** A character importer with its parser; the frontend keys its import form by `id`. */
 export interface CharacterImporterAdapter extends CharacterImporter {
@@ -153,9 +159,30 @@ export const morkBorgGameSystem: GameSystemAdapter = {
   roleBlocks: {},
 };
 
+export const fiveESrdGameSystem: GameSystemAdapter = {
+  id: '5e-srd',
+  aliases: ['5e', 'srd-5e', 'srd-5.2.1', 'fifth-edition'],
+  name: '5E (SRD 5.2.1)',
+  version: '0.1.0',
+  defaultCalendarId: GREGORIAN_CALENDAR.id,
+  calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
+  statSchema: FIVE_E_STAT_SCHEMA,
+  archetypes: [
+    { key: 'class', label: 'Class', options: FIVE_E_CLASSES },
+    { key: 'species', label: 'Species', options: FIVE_E_SPECIES },
+  ],
+  testConfig: { label: '5E Check or Save', fields: [] },
+  npcBlocks: [],
+  importers: [],
+  attribution: SRD_5E_ATTRIBUTION,
+  blocks: [],
+  roleBlocks: {},
+};
+
 export const GAME_SYSTEM_ADAPTERS = [
   vtmV5GameSystem,
   morkBorgGameSystem,
+  fiveESrdGameSystem,
 ] as const satisfies readonly GameSystemAdapter[];
 
 export function buildGameSystemRegistry(): GameSystemRegistry {
