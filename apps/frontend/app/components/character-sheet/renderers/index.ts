@@ -1,18 +1,26 @@
 import { FallbackStatRow } from './fallback-stat-row';
 import { MorkBorgStatRow } from './mork-borg-stat-row';
-import type { StatRowComponent } from './types';
+import { FiveESheet } from './FiveESheet/FiveESheet';
+import type { SheetRendererComponent, StatRowComponent } from './types';
 import { VtmStatRow } from './vtm-stat-row';
 
 const REGISTRY: Record<string, StatRowComponent> = {
   'vtm-v5': VtmStatRow,
   'mork-borg': MorkBorgStatRow,
-  // shortcut: plain rows until the 5E sheet-level renderer (#39) replaces this entry.
-  '5e-srd': FallbackStatRow,
 };
+
+/** Systems whose sheet needs the whole stats record at once rather than one row per field. */
+const SHEET_REGISTRY: Record<string, SheetRendererComponent> = {
+  '5e-srd': FiveESheet,
+};
+
+export function resolveSheetRenderer(systemId: string | undefined): SheetRendererComponent | null {
+  return systemId ? (SHEET_REGISTRY[systemId] ?? null) : null;
+}
 
 /** Whether a Game System has its own row renderer rather than the fallback. */
 export function hasStatRowRenderer(systemId: string): boolean {
-  return systemId in REGISTRY;
+  return systemId in REGISTRY || systemId in SHEET_REGISTRY;
 }
 
 export function resolveStatRow(systemId: string | undefined): StatRowComponent {
@@ -21,4 +29,10 @@ export function resolveStatRow(systemId: string | undefined): StatRowComponent {
 }
 
 export { VtmStatRow, MorkBorgStatRow, FallbackStatRow };
-export type { StatRowProps, StatRowComponent, StatValue } from './types';
+export type {
+  SheetRendererComponent,
+  SheetRendererProps,
+  StatRowProps,
+  StatRowComponent,
+  StatValue,
+} from './types';

@@ -1,0 +1,306 @@
+.five-e-variant {
+  display: grid;
+  gap: 1rem;
+}
+
+.five-e-label,
+.five-e-sheet dt {
+  color: var(--muted-strong);
+  font:
+    600 0.68rem/1.2 'IBM Plex Mono',
+    monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.five-e-quiet {
+  color: var(--muted);
+  font-size: 0.6em;
+  letter-spacing: 0.04em;
+}
+
+.five-e-display {
+  font:
+    500 2rem/1 'Newsreader',
+    serif;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.five-e-total {
+  font:
+    600 0.9rem/1 'IBM Plex Mono',
+    monospace;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+/* Inputs: filled, square, no line. */
+.five-e-num {
+  inline-size: 4.25rem;
+  min-block-size: 2.75rem;
+  padding: 0 0.6rem;
+  border: 0;
+  border-radius: 0;
+  background: var(--surface-highest);
+  color: var(--text);
+  font:
+    500 0.95rem/1 'IBM Plex Mono',
+    monospace;
+  font-variant-numeric: tabular-nums;
+  caret-color: var(--primary-glow);
+}
+
+.five-e-num:focus-visible,
+.five-e-pip:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.five-e-num-display {
+  inline-size: 4.5rem;
+  background: transparent;
+  padding: 0;
+  font:
+    500 2rem/1 'Newsreader',
+    serif;
+  box-shadow: inset 0 -2px 0 var(--surface-bright);
+}
+
+/* Proficiency pip: hollow ring, half fill, full oxblood with glow ring for expertise. */
+.five-e-pip {
+  position: relative;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-low);
+  box-shadow: inset 0 0 0 2px var(--surface-bright);
+  cursor: pointer;
+  transition:
+    background 140ms ease-out,
+    box-shadow 140ms ease-out;
+}
+
+button.five-e-pip::before {
+  content: '';
+  position: absolute;
+  inset: -0.75rem;
+}
+
+.five-e-pip[data-tier='1'] {
+  /* oxblood alone is under 3:1 on the surface; lift it toward the glow */
+  background: color-mix(in oklch, var(--primary) 55%, var(--primary-glow));
+  box-shadow: none;
+}
+
+.five-e-pip[data-tier='2'] {
+  background: var(--primary-glow);
+  box-shadow:
+    inset 0 0 0 3px var(--primary),
+    0 0 0 2px var(--primary);
+}
+
+button.five-e-pip:hover {
+  box-shadow: inset 0 0 0 2px var(--primary-glow);
+}
+
+/* ── Variant C ───────────────────────────────────── */
+
+.five-e-c-head {
+  display: grid;
+  grid-template-columns: auto auto auto minmax(12rem, 1fr) auto;
+  gap: 2px;
+  background: var(--surface-low);
+}
+
+.five-e-c-vital {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+  padding: 0.9rem 1.1rem;
+  background: var(--surface-high);
+}
+
+.five-e-c-hp {
+  background: var(--five-e-group);
+}
+
+.five-e-hp-track {
+  block-size: 0.4rem;
+  background: var(--surface-low);
+}
+
+.five-e-hp-track > span {
+  display: block;
+  block-size: 100%;
+  background: var(--primary);
+  box-shadow: 0 0 12px rgb(from var(--primary-glow) r g b / 0.25);
+}
+
+.five-e-c-passives {
+  display: grid;
+  align-content: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.9rem 1.1rem;
+  background: var(--surface);
+}
+
+.five-e-c-passives > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1.5rem;
+}
+
+.five-e-c-passives dd {
+  margin: 0;
+  font:
+    600 1rem/1 'IBM Plex Mono',
+    monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.five-e-c-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.five-e-c-ability {
+  display: grid;
+  align-content: start;
+  background: var(--surface);
+}
+
+.five-e-c-ability-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name score'
+    'mod score';
+  align-items: end;
+  gap: 0.1rem 0.75rem;
+  padding: 0.9rem 1rem 1rem;
+  background: var(--five-e-group);
+  background-image: radial-gradient(
+    ellipse at 0% 100%,
+    var(--primary-glow-soft) 0%,
+    transparent 70%
+  );
+}
+
+.five-e-c-ability-head h3 {
+  grid-area: name;
+  margin: 0;
+  color: var(--text-secondary);
+  font:
+    600 0.72rem/1.2 'IBM Plex Mono',
+    monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.five-e-c-mod {
+  grid-area: mod;
+  font:
+    500 3rem/0.95 'Newsreader',
+    serif;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.02em;
+}
+
+.five-e-c-score {
+  grid-area: score;
+  display: grid;
+  gap: 0.3rem;
+  justify-items: end;
+}
+
+.five-e-c-rows {
+  display: grid;
+  margin: 0;
+  padding: 0.35rem 0;
+  list-style: none;
+}
+
+.five-e-c-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-block-size: 2.5rem;
+  padding: 0 1rem;
+  color: var(--muted-strong);
+  transition: background 120ms ease-out;
+}
+
+.five-e-c-row:hover {
+  background: var(--surface-high);
+}
+
+.five-e-c-row[data-tier='1'],
+.five-e-c-row[data-tier='2'] {
+  color: var(--text);
+}
+
+.five-e-c-row[data-tier='2'] .five-e-total {
+  color: var(--primary-glow);
+}
+
+.five-e-c-row.is-save {
+  margin-block-end: 0.35rem;
+  background: var(--surface-low);
+  font:
+    600 0.72rem/1.2 'IBM Plex Mono',
+    monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.five-e-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.6rem;
+  margin: 0;
+  color: var(--muted);
+  font:
+    500 0.72rem/1 'IBM Plex Mono',
+    monospace;
+  letter-spacing: 0.06em;
+}
+
+.five-e-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-inline-end: 1rem;
+}
+
+.five-e-legend .five-e-pip {
+  cursor: default;
+}
+
+.five-e-c-row.is-empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.five-e-c-row.is-empty:hover {
+  background: none;
+}
+
+.five-e-hp-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.five-e-attribution {
+  margin-top: 1rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}

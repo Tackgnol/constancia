@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ProgenyImportForm } from '@/components/character-sheet/progeny-import-form';
-import { resolveStatRow } from '@/components/character-sheet/renderers';
+import { resolveSheetRenderer, resolveStatRow } from '@/components/character-sheet/renderers';
 import type { StatValue } from '@/components/character-sheet/renderers';
 import type { CharacterSheetData, CharacterSheetPatchBody } from '@/lib/character-sheet';
 import type { ProgenyVtmCharacterExport } from '@constancia/systems';
@@ -203,6 +203,7 @@ export function CharacterSheetForm({
     handleSubmit,
     reset,
     setError,
+    setValue,
     formState: { errors, isDirty, isSubmitting, submitCount },
   } = useForm<CharacterSheetFormValues>({
     resolver: zodResolver(sheetFormSchema),
@@ -211,6 +212,8 @@ export function CharacterSheetForm({
   });
 
   const StatRow = resolveStatRow(sheet.system.id);
+  const SheetRenderer = resolveSheetRenderer(sheet.system.id);
+  const attribution = gameSystemRegistry.get(sheet.system.id)?.attribution;
 
   const backstoryLength = (useWatch({ control, name: 'backstory' }) ?? '').length;
   const notesLength = (useWatch({ control, name: 'notes' }) ?? '').length;
@@ -305,7 +308,7 @@ export function CharacterSheetForm({
                 editing the same canonical shape.
               </p>
             </div>
-            {sheet.system.statSchema.groups.length > 0 ? (
+            {sheet.system.statSchema.groups.length > 0 && !SheetRenderer ? (
               <label className="sheet-zero-toggle">
                 <input
                   type="checkbox"
@@ -318,7 +321,14 @@ export function CharacterSheetForm({
             ) : null}
           </div>
 
-          {sheet.system.statSchema.groups.length === 0 ? (
+          {SheetRenderer ? (
+            <SheetRenderer
+              stats={watchedStats as Record<string, StatValue>}
+              onChange={(key, value) =>
+                setValue(`stats.${key}`, value, { shouldDirty: true, shouldValidate: true })
+              }
+            />
+          ) : sheet.system.statSchema.groups.length === 0 ? (
             <div className="sheet-empty">
               This system does not have a structured sheet configured yet. You can still maintain
               the player name and notes above.
@@ -404,6 +414,7 @@ export function CharacterSheetForm({
               ))}
             </div>
           )}
+          {attribution ? <p className="five-e-attribution">{attribution}</p> : null}
         </section>
 
         <div className="form-actions form-action-dock sheet-save-bar">
