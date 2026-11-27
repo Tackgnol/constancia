@@ -995,6 +995,7 @@ export const gameSystemSchema = {
     version: { type: 'string' },
     defaultCalendarId: { type: 'string' },
     calendars: { type: 'object', additionalProperties: gameCalendarSchema },
+    attribution: { type: 'string' },
   },
   required: ['id', 'name', 'version', 'defaultCalendarId', 'calendars'],
 } as const;

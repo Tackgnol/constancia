@@ -20,4 +20,11 @@ describe('buildHelpText', () => {
     expect(text).toContain('/setup');
     expect(text).not.toContain('/sheet');
   });
+
+  it('lists Game System credits when a system has an attribution', () => {
+    const text = buildHelpText(false, false, ['SRD 5.2.1 credit line']);
+    expect(text).toContain('**Credits**');
+    expect(text).toContain('-# SRD 5.2.1 credit line');
+    expect(buildHelpText(false, false)).not.toContain('Credits');
+  });
 });

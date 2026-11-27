@@ -7,18 +7,20 @@ export interface GameSystemSummary {
   version: string;
   defaultCalendarId: string;
   calendars: Record<string, GameCalendarDefinition>;
+  attribution?: string;
 }
 
 type SystemStatValue = number | string | boolean;
 
 export const GAME_SYSTEM_SUMMARIES: readonly GameSystemSummary[] = gameSystemRegistry
   .list()
-  .map(({ id, name, version, defaultCalendarId, calendars }) => ({
+  .map(({ id, name, version, defaultCalendarId, calendars, attribution }) => ({
     id,
     name,
     version,
     defaultCalendarId,
     calendars,
+    ...(attribution ? { attribution } : {}),
   }));
 
 export function resolveGameSystemId(systemId: string): string {

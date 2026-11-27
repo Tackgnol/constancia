@@ -4,6 +4,7 @@ import {
   type ChatInputCommandInteraction,
   type InteractionReplyOptions,
 } from 'discord.js';
+import { botBackend } from '../backend/bot-backend.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
 const PLAYER_OPTION = 'player';
@@ -26,21 +27,32 @@ const GM_HELP = [
 ].join('\n');
 
 /** Builds the help text for the requested audience; neither or both flags set shows everything. */
-export function buildHelpText(player: boolean, gm: boolean): string {
+export function buildHelpText(player: boolean, gm: boolean, attributions: string[] = []): string {
   const showAll = player === gm;
   const sections = [
     ...(showAll || player ? [PLAYER_HELP] : []),
     ...(showAll || gm ? [GM_HELP] : []),
   ];
-  return `**Constancia help** – use \`/help player:true\` or \`/help gm:true\` to filter.\n\n${sections.join('\n\n')}`;
+  const credits =
+    attributions.length > 0
+      ? `\n\n**Credits**\n${attributions.map((line) => `-# ${line}`).join('\n')}`
+      : '';
+  return `**Constancia help** – use \`/help player:true\` or \`/help gm:true\` to filter.\n\n${sections.join('\n\n')}${credits}`;
 }
 
 export async function handleHelp(interaction: ChatInputCommandInteraction): Promise<void> {
   const player = interaction.options.getBoolean(PLAYER_OPTION) ?? false;
   const gm = interaction.options.getBoolean(GM_OPTION) ?? false;
 
+  const attributions = await botBackend
+    .listGameSystems()
+    .then((systems) =>
+      systems.flatMap((system) => (system.attribution ? [system.attribution] : [])),
+    )
+    .catch(() => []);
+
   await interaction.reply({
-    content: buildHelpText(player, gm),
+    content: buildHelpText(player, gm, attributions),
     flags: MessageFlags.Ephemeral,
   } as InteractionReplyOptions);
 }
