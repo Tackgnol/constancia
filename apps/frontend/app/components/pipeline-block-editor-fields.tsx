@@ -1,10 +1,15 @@
-import { useState, type ComponentType, type ReactNode } from 'react';
-import { Controller, useFormContext, type FieldPath } from 'react-hook-form';
+import { useEffect, useState, type ComponentType, type ReactNode } from 'react';
+import { Controller, useFormContext, useWatch, type FieldPath } from 'react-hook-form';
 import { useLocation, useOutletContext } from 'react-router';
 import type { PipelineEditorField } from '@constancia/block-catalogue';
 import { getStatSchemaForSystem } from '@constancia/systems';
 import { ImageUploadField } from '@/components/forms/image-upload-field';
-import { getBlockSpecForSystem, type BlockType, type EventFormValues } from '@/lib/event-schema';
+import {
+  getBlockSpecForSystem,
+  isEditorFieldVisible,
+  type BlockType,
+  type EventFormValues,
+} from '@/lib/event-schema';
 import { buildRecipientOptions, type WarRoomContext } from '@/lib/war-room-data';
 import {
   Command,
@@ -142,6 +147,9 @@ function JsonFieldAdapter({ field, name }: FieldAdapterProps) {
   );
 }
 
+// Radix Select can't hold an empty value, so an optional select uses this stand-in for "unset".
+const NO_SELECTION = '__none__';
+
 function SelectFieldAdapter({ field, name }: FieldAdapterProps) {
   const { control } = useFormContext<EventFormValues>();
   if (field.kind !== 'select') return null;
@@ -151,13 +159,20 @@ function SelectFieldAdapter({ field, name }: FieldAdapterProps) {
       name={name}
       render={({ field: formField }) => (
         <Select
-          value={typeof formField.value === 'string' ? formField.value : undefined}
-          onValueChange={formField.onChange}
+          value={
+            typeof formField.value === 'string'
+              ? formField.value
+              : field.optional
+                ? NO_SELECTION
+                : undefined
+          }
+          onValueChange={(value) => formField.onChange(value === NO_SELECTION ? undefined : value)}
         >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            {field.optional ? <SelectItem value={NO_SELECTION}>None</SelectItem> : null}
             {field.options.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
@@ -461,9 +476,24 @@ const spanClasses = {
 export function BlockConfigFields({ index, blockType }: Props) {
   const warRoom = useOutletContext<WarRoomContext>();
   const {
+    setValue,
     formState: { errors },
   } = useFormContext<EventFormValues>();
+  const config = useWatch<EventFormValues>({ name: `pipeline.${index}.config` }) as
+    | Record<string, unknown>
+    | undefined;
   const spec = getBlockSpecForSystem(blockType, warRoom.campaign.gameSystemId);
+  const hiddenPaths = (spec?.editor.fields ?? [])
+    .filter((field) => !isEditorFieldVisible(field, config) && config?.[field.path] !== undefined)
+    .map((field) => field.path)
+    .join('|');
+
+  useEffect(() => {
+    for (const path of hiddenPaths ? hiddenPaths.split('|') : []) {
+      setValue(configPath(index, path), undefined);
+    }
+  }, [hiddenPaths, index, setValue]);
+
   if (!spec) {
     return <p className="form-error">This Game System does not support this block.</p>;
   }
@@ -474,17 +504,19 @@ export function BlockConfigFields({ index, blockType }: Props) {
   const columns = spec.editor.columns ?? 1;
   return (
     <div className={gridClasses[columns]}>
-      {spec.editor.fields.map((field) => {
-        const Adapter = pipelineEditorFieldAdapters[field.kind];
-        const name = configPath(index, field.path);
-        return (
-          <div key={field.path} className={spanClasses[field.columnSpan ?? 1]}>
-            <ConfigField field={field} error={blockErrors[field.path]?.message}>
-              <Adapter field={field} index={index} name={name} warRoom={warRoom} />
-            </ConfigField>
-          </div>
-        );
-      })}
+      {spec.editor.fields
+        .filter((field) => isEditorFieldVisible(field, config))
+        .map((field) => {
+          const Adapter = pipelineEditorFieldAdapters[field.kind];
+          const name = configPath(index, field.path);
+          return (
+            <div key={field.path} className={spanClasses[field.columnSpan ?? 1]}>
+              <ConfigField field={field} error={blockErrors[field.path]?.message}>
+                <Adapter field={field} index={index} name={name} warRoom={warRoom} />
+              </ConfigField>
+            </div>
+          );
+        })}
     </div>
   );
 }

@@ -28,4 +28,16 @@ describe('per-campaign block registry', () => {
       /Unknown block type/,
     );
   });
+
+  it('validates 5E test config: no skill on saves, any skill with any ability', () => {
+    const pipeline = (config: Record<string, unknown>) => [{ blockType: 'test-resolver', config }];
+
+    expect(findPipelineError('5e-srd', pipeline({ mode: 'save', ability: 'dex' }))).toBeNull();
+    expect(
+      findPipelineError('5e-srd', pipeline({ mode: 'check', ability: 'cha', skill: 'stealth' })),
+    ).toBeNull();
+    expect(
+      findPipelineError('5e-srd', pipeline({ mode: 'save', ability: 'dex', skill: 'stealth' })),
+    ).toMatch(/Invalid config/);
+  });
 });
