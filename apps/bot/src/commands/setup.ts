@@ -10,7 +10,6 @@ import { botBackend, type BotBackend } from '../backend/bot-backend.js';
 import { BotAccessRevokedError, BotCampaignAdminRequiredError } from '../backend/access-revoked.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
-const DEFAULT_GAME_SYSTEM_ID = 'vtm-v5';
 const GAME_SYSTEM_OPTION_NAME = 'game-system';
 
 export async function autocompleteSetup(
@@ -68,8 +67,7 @@ export async function handleSetup(
       return;
     }
 
-    const gameSystemId =
-      interaction.options.getString(GAME_SYSTEM_OPTION_NAME) ?? DEFAULT_GAME_SYSTEM_ID;
+    const gameSystemId = interaction.options.getString(GAME_SYSTEM_OPTION_NAME, true);
 
     const { campaign, channel, created } = await backend.setupChannel({
       guildId,
@@ -127,9 +125,8 @@ export const setupCommand: BotChatCommand = {
       {
         name: GAME_SYSTEM_OPTION_NAME,
         type: ApplicationCommandOptionType.String,
-        description:
-          'Game system for the campaign (start typing to search); leave empty to keep the default',
-        required: false,
+        description: 'Game system for the campaign (start typing to search)',
+        required: true,
         autocomplete: true,
       },
     ],

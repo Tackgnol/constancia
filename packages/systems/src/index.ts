@@ -10,6 +10,8 @@ export * from './role-blocks.js';
 export {
   DuplicateGameSystemKeyError,
   GAME_SYSTEM_ADAPTERS,
+  PROGENY_IMPORTER_ID,
+  findImporter,
   GameSystemRegistry,
   UnknownGameSystemError,
   buildGameSystemRegistry,
@@ -18,7 +20,7 @@ export {
   normalizeGameSystemLookupKey,
   vtmV5GameSystem,
 } from './game-system-registry.js';
-export type { GameSystemAdapter } from './game-system-registry.js';
+export type { CharacterImporterAdapter, GameSystemAdapter } from './game-system-registry.js';
 
 import type { NpcSystemBlockDefinition } from '@constancia/contracts';
 import { gameSystemRegistry as registeredGameSystems } from './game-system-registry.js';

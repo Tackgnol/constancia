@@ -32,6 +32,14 @@ export interface NpcSystemBlockDefinition {
   options?: NpcSystemBlockOption[];
   defaultValue?: NpcSystemBlockValue;
   renderVariant?: 'chip' | 'panel' | 'stats';
+  /** Headline blocks show in declared order on NPC cards (the first is primary); detail blocks only in the dossier. */
+  display: 'headline' | 'detail';
+}
+
+/** A character importer a Game System offers, such as Progeny for VTM. */
+export interface CharacterImporter {
+  id: string;
+  label: string;
 }
 
 export interface ArchetypeOption {
@@ -57,5 +65,6 @@ export interface GameSystem {
   archetypes: ArchetypeDefinition[];
   testConfig: TestConfig;
   npcBlocks?: NpcSystemBlockDefinition[];
+  importers: CharacterImporter[];
   blocks: BlockDefinition[];
 }

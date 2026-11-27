@@ -5,7 +5,9 @@ import {
   getGameSystemSummary,
   getStatSchemaForSystem,
   mergeSystemStats,
-  parseProgenyVtmCharacter,
+  PROGENY_IMPORTER_ID,
+  findImporter,
+  gameSystemRegistry,
   type JsonObject,
 } from '@constancia/systems';
 
@@ -285,11 +287,12 @@ export async function importPlayerCharacterFromProgeny(
   if (current === null) {
     return { status: 'not-found' };
   }
-  if (current.system.id !== 'vtm-v5') {
+  const importer = findImporter(gameSystemRegistry.get(current.system.id), PROGENY_IMPORTER_ID);
+  if (!importer) {
     return { status: 'unsupported-system' };
   }
 
-  const imported = parseProgenyVtmCharacter(source);
+  const imported = importer.parse(source);
   const updated = await prisma.character.update({
     where: {
       discordUserId_campaignId: {

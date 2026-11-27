@@ -98,9 +98,8 @@ describe('command registry', () => {
       {
         name: 'game-system',
         type: 3,
-        description:
-          'Game system for the campaign (start typing to search); leave empty to keep the default',
-        required: false,
+        description: 'Game system for the campaign (start typing to search)',
+        required: true,
         autocomplete: true,
       },
     ]);

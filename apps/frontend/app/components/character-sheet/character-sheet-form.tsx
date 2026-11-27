@@ -17,7 +17,12 @@ import { resolveStatRow } from '@/components/character-sheet/renderers';
 import type { StatValue } from '@/components/character-sheet/renderers';
 import type { CharacterSheetData, CharacterSheetPatchBody } from '@/lib/character-sheet';
 import type { ProgenyVtmCharacterExport } from '@constancia/systems';
-import { gameSystemRegistry, getPrimaryArchetypeChoice } from '@constancia/systems';
+import {
+  PROGENY_IMPORTER_ID,
+  findImporter,
+  gameSystemRegistry,
+  getPrimaryArchetypeChoice,
+} from '@constancia/systems';
 
 const GAME_NAME_MAX = 80;
 const LONGFORM_MAX = 4000;
@@ -249,7 +254,9 @@ export function CharacterSheetForm({
 
   return (
     <>
-      {audience === 'player' && sheet.system.id === 'vtm-v5' && onImportProgeny ? (
+      {audience === 'player' &&
+      findImporter(gameSystemRegistry.get(sheet.system.id), PROGENY_IMPORTER_ID) &&
+      onImportProgeny ? (
         <ProgenyImportForm
           onImport={async (source) => {
             setSaveState('idle');

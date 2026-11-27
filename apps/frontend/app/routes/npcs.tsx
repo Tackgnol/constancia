@@ -168,10 +168,12 @@ const DOSSIER_TABS: { id: DossierTab; label: string }[] = [
 
 function NpcIndex({
   npcs,
+  systemId,
   selectedNpcId,
   onSelect,
 }: {
   npcs: CampaignNpc[];
+  systemId: string;
   selectedNpcId: string | null;
   onSelect: (npcId: string) => void;
 }) {
@@ -183,7 +185,7 @@ function NpcIndex({
       </div>
       {npcs.map((npc) => {
         const knownCount = npc.facts.filter((fact) => fact.knownTo.length > 0).length;
-        const primaryBlock = readPrimarySystemBlock(npc);
+        const primaryBlock = readPrimarySystemBlock(npc, systemId);
         return (
           <button
             key={npc.id}
@@ -213,15 +215,17 @@ function NpcIndex({
 function NpcDossierHeader({
   campaignName,
   npc,
+  systemId,
   recipients,
   setupBase,
 }: {
   campaignName: string;
   npc: CampaignNpc;
+  systemId: string;
   recipients: DossierRecipient[];
   setupBase: string;
 }) {
-  const primaryBlock = readPrimarySystemBlock(npc);
+  const primaryBlock = readPrimarySystemBlock(npc, systemId);
 
   return (
     <>
@@ -509,6 +513,7 @@ function NpcDossier({
         <NpcDossierHeader
           campaignName={campaignName}
           npc={npc}
+          systemId={systemId}
           recipients={recipients}
           setupBase={setupBase}
         />
@@ -769,7 +774,12 @@ export default function NpcsRoute() {
         </section>
       ) : selectedNpc ? (
         <div className="npc-workbench">
-          <NpcIndex npcs={npcs} selectedNpcId={selectedNpcId} onSelect={selectNpc} />
+          <NpcIndex
+            npcs={npcs}
+            systemId={warRoom.system.id}
+            selectedNpcId={selectedNpcId}
+            onSelect={selectNpc}
+          />
           <NpcDossier
             campaignName={warRoom.campaign.name}
             systemId={warRoom.system.id}
