@@ -8,6 +8,7 @@ import type { RoleBlockImplementations } from './role-blocks.js';
 import { GREGORIAN_CALENDAR } from './calendar.js';
 import {
   FIVE_E_CLASSES,
+  FIVE_E_NPC_BLOCKS,
   FIVE_E_SPECIES,
   FIVE_E_STAT_SCHEMA,
   SRD_5E_ATTRIBUTION,
@@ -184,7 +185,7 @@ export const fiveESrdGameSystem: GameSystemAdapter = {
     { key: 'species', label: 'Species', options: FIVE_E_SPECIES },
   ],
   testConfig: { label: '5E Check or Save', fields: [] },
-  npcBlocks: [],
+  npcBlocks: FIVE_E_NPC_BLOCKS,
   importers: [],
   attribution: SRD_5E_ATTRIBUTION,
   blocks: [],
