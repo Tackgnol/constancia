@@ -17,6 +17,8 @@ export interface PipelineEditorFieldPresentation {
   hint?: string;
   rows?: number;
   columnSpan?: 1 | 2 | 3;
+  /** Show the field only while another config field holds one of these values; hidden values are cleared. */
+  visibleWhen?: { path: string; equals: readonly string[] };
 }
 
 export type PipelineEditorField = PipelineEditorFieldPresentation &

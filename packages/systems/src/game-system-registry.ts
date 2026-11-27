@@ -12,6 +12,13 @@ import {
   FIVE_E_STAT_SCHEMA,
   SRD_5E_ATTRIBUTION,
 } from './5e-srd/data.js';
+import {
+  fiveEInsightResolverBlock,
+  fiveEInsightResolverSpec,
+  fiveEModifierHint,
+  fiveETestResolverBlock,
+  fiveETestResolverSpec,
+} from './5e-srd/resolvers.js';
 
 /** A character importer with its parser; the frontend keys its import form by `id`. */
 export interface CharacterImporterAdapter extends CharacterImporter {
@@ -24,6 +31,8 @@ export interface GameSystemAdapter extends Omit<GameSystem, 'blocks' | 'importer
   /** Blocks only this system has that fill no role; their block types carry a `<systemId>-` prefix. */
   blocks: readonly BlockDefinition<never>[];
   roleBlocks: RoleBlockImplementations;
+  /** How new test Events compare scores in outcome-map; 5E's "meet the DC" is gte. */
+  testOutcomeComparison?: 'gt' | 'gte';
 }
 
 export class DuplicateGameSystemKeyError extends Error {
@@ -176,7 +185,15 @@ export const fiveESrdGameSystem: GameSystemAdapter = {
   importers: [],
   attribution: SRD_5E_ATTRIBUTION,
   blocks: [],
-  roleBlocks: {},
+  roleBlocks: {
+    'test-resolver': {
+      spec: fiveETestResolverSpec,
+      block: fiveETestResolverBlock,
+      hint: fiveEModifierHint,
+    },
+    'insight-resolver': { spec: fiveEInsightResolverSpec, block: fiveEInsightResolverBlock },
+  },
+  testOutcomeComparison: 'gte',
 };
 
 export const GAME_SYSTEM_ADAPTERS = [

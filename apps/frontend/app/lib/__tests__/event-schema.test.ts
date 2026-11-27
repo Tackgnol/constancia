@@ -8,6 +8,7 @@ import {
   getBlockSpecForSystem,
   getDefaultPipelineForEventType,
   getEventTypesForSystem,
+  isEditorFieldVisible,
   getSuggestedBlockTypesForEventType,
   isPipelineEqualToEventDefault,
   normalizeEventFormValues,
@@ -331,5 +332,26 @@ describe('role blocks follow the campaign Game System', () => {
     });
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe('5E Event Setup defaults', () => {
+  it('defaults a new 5E test Event to meet-the-DC comparison', () => {
+    const outcomeMap = getDefaultPipelineForEventType('test', '5e-srd').find(
+      (block) => block.blockType === 'outcome-map',
+    );
+    expect(outcomeMap?.config.comparison).toBe('gte');
+    expect(
+      getDefaultPipelineForEventType('test', VTM).find((block) => block.blockType === 'outcome-map')
+        ?.config.comparison,
+    ).toBeUndefined();
+  });
+
+  it('hides the skill field in save mode', () => {
+    const skill = getBlockSpecForSystem('test-resolver', '5e-srd')?.editor.fields.find(
+      (field) => field.path === 'skill',
+    );
+    expect(skill && isEditorFieldVisible(skill, { mode: 'check' })).toBe(true);
+    expect(skill && isEditorFieldVisible(skill, { mode: 'save' })).toBe(false);
   });
 });

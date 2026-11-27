@@ -135,6 +135,16 @@ export function getBlockSpecForSystem(
   return spec?.availability.kind === 'common' ? spec : undefined;
 }
 
+/** Whether an editor field shows for this config, following its `visibleWhen` rule. */
+export function isEditorFieldVisible(
+  field: PipelineBlockSpec['editor']['fields'][number],
+  config: Record<string, unknown> | undefined,
+): boolean {
+  if (!field.visibleWhen) return true;
+  const value = config?.[field.visibleWhen.path];
+  return typeof value === 'string' && field.visibleWhen.equals.includes(value);
+}
+
 export function isBlockTypeAvailable(blockType: BlockType, gameSystemId: string): boolean {
   return getBlockSpecForSystem(blockType, gameSystemId) !== undefined;
 }
@@ -214,9 +224,16 @@ export function getDefaultPipelineForEventType(
   type: EventType,
   gameSystemId: string,
 ): PipelineBlock[] {
+  const comparison =
+    type === 'test' ? gameSystemRegistry.get(gameSystemId)?.testOutcomeComparison : undefined;
   return DEFAULT_PIPELINE_BLOCKS_BY_EVENT_TYPE[type]
     .filter((blockType) => isBlockTypeAvailable(blockType, gameSystemId))
-    .map((blockType) => createPipelineBlock(blockType, gameSystemId));
+    .map((blockType) => {
+      const block = createPipelineBlock(blockType, gameSystemId);
+      return blockType === 'outcome-map' && comparison
+        ? { ...block, config: { ...block.config, comparison } }
+        : block;
+    });
 }
 
 export function getSuggestedBlockTypesForEventType(
