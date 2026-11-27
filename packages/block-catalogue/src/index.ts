@@ -358,6 +358,11 @@ export const PIPELINE_BLOCK_SPECS = [
           },
         },
         shortCircuit: { type: 'boolean' },
+        comparison: {
+          type: 'string',
+          enum: ['gt', 'gte'],
+          description: 'How the score is compared with each threshold; missing means gt.',
+        },
       },
       required: ['outcomes'],
     },
@@ -366,7 +371,19 @@ export const PIPELINE_BLOCK_SPECS = [
       shortCircuit: true,
     },
     editor: {
-      fields: [{ kind: 'outcome-list', path: 'outcomes', label: 'Outcomes' }],
+      fields: [
+        {
+          kind: 'select',
+          path: 'comparison',
+          label: 'Score must be',
+          optional: true,
+          options: [
+            { value: 'gt', label: 'Above the threshold' },
+            { value: 'gte', label: 'At or above the threshold' },
+          ],
+        },
+        { kind: 'outcome-list', path: 'outcomes', label: 'Outcomes' },
+      ],
     },
   },
   {

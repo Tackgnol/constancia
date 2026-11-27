@@ -93,4 +93,26 @@ describe('OutcomeMap block', () => {
     const result = await outcomeMapBlock.execute(config, systemCtx);
     expect(result.effects).toEqual([]);
   });
+
+  it('compares with gt by default, so a score equal to a threshold does not match it', async () => {
+    const result = await outcomeMapBlock.execute(
+      { outcomes: [{ threshold: 3, text: 'DC 3 met' }] },
+      ctx,
+    );
+    expect(result.messages).toHaveLength(0);
+  });
+
+  it('matches a score equal to the threshold with gte', async () => {
+    const result = await outcomeMapBlock.execute(
+      {
+        comparison: 'gte',
+        outcomes: [
+          { threshold: 3, text: 'DC 3 met' },
+          { threshold: 4, text: 'DC 4 met' },
+        ],
+      },
+      ctx,
+    );
+    expect(result.messages?.map((message) => message.content)).toEqual(['DC 3 met']);
+  });
 });

@@ -16,6 +16,7 @@ interface Outcome {
 interface OutcomeMapConfig {
   outcomes: Outcome[];
   shortCircuit?: boolean;
+  comparison?: 'gt' | 'gte';
 }
 
 const spec = requirePipelineBlockSpec('outcome-map');
@@ -33,7 +34,9 @@ export const outcomeMapBlock: BlockDefinition<OutcomeMapConfig> = {
         ? ctx.playerId
         : undefined;
     const matched = config.outcomes
-      .filter((outcome) => score > outcome.threshold)
+      .filter((outcome) =>
+        config.comparison === 'gte' ? score >= outcome.threshold : score > outcome.threshold,
+      )
       .sort((left, right) => right.threshold - left.threshold);
     const selectedOutcomes =
       config.shortCircuit === false ? matched.reverse() : matched.slice(0, 1);

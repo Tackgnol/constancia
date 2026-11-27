@@ -79,12 +79,22 @@ export function resolveMessageRecipients(
   return userIds.length > 0 ? { target: 'group', userIds } : null;
 }
 
+export interface RollModifiers {
+  mode?: 'advantage' | 'disadvantage';
+}
+
 export interface BlockContext {
   campaignId: string;
   channelId: string;
   playerId: string;
   playerScore?: number;
   characterData: Record<string, unknown>;
+  rollModifiers?: RollModifiers;
+}
+
+/** Context a block hands to the blocks after it; the runner merges it before the next block runs. */
+export interface BlockContextPatch {
+  rollModifiers?: RollModifiers;
 }
 
 export interface BlockDefinition<TConfig = unknown> {
@@ -123,6 +133,7 @@ export interface BlockResult {
   output: unknown;
   /** Set by resolver blocks; the runner carries it to later blocks as `ctx.playerScore`. */
   playerScore?: number;
+  contextPatch?: BlockContextPatch;
   messages?: BlockMessage[];
   effects?: BlockEffect[];
   halt?: boolean;

@@ -9,6 +9,8 @@ export type {
 
 export type {
   BlockContext,
+  BlockContextPatch,
+  RollModifiers,
   BlockDefinition,
   BlockEffect,
   BlockResult,

@@ -138,6 +138,12 @@ export class PipelineRunner {
       if (result.playerScore !== undefined) {
         ctx = { ...ctx, playerScore: result.playerScore };
       }
+      if (result.contextPatch?.rollModifiers) {
+        ctx = {
+          ...ctx,
+          rollModifiers: { ...ctx.rollModifiers, ...result.contextPatch.rollModifiers },
+        };
+      }
 
       if (result.messages) {
         messages.push(...normalizeMessages(result.messages, ctx));
