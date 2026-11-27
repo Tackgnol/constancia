@@ -6,6 +6,8 @@ import { VtmStatRow } from './vtm-stat-row';
 const REGISTRY: Record<string, StatRowComponent> = {
   'vtm-v5': VtmStatRow,
   'mork-borg': MorkBorgStatRow,
+  // shortcut: plain rows until the 5E sheet-level renderer (#39) replaces this entry.
+  '5e-srd': FallbackStatRow,
 };
 
 /** Whether a Game System has its own row renderer rather than the fallback. */

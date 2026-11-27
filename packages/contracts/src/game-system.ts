@@ -66,5 +66,7 @@ export interface GameSystem {
   testConfig: TestConfig;
   npcBlocks?: NpcSystemBlockDefinition[];
   importers: CharacterImporter[];
+  /** Licence credit shown wherever the system's content appears (e.g. CC-BY for an SRD). */
+  attribution?: string;
   blocks: BlockDefinition[];
 }

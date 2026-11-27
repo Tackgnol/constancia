@@ -17,7 +17,11 @@ import {
 
 describe('GameSystemRegistry', () => {
   it('registers the concrete VTM V5 and Mork Borg adapters', () => {
-    expect(gameSystemRegistry.list().map((system) => system.id)).toEqual(['vtm-v5', 'mork-borg']);
+    expect(gameSystemRegistry.list().map((system) => system.id)).toEqual([
+      'vtm-v5',
+      'mork-borg',
+      '5e-srd',
+    ]);
   });
 
   it('resolves canonical IDs and normalized aliases', () => {
