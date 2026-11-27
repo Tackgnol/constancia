@@ -1,4 +1,9 @@
-import type { ArchetypeOption, StatField, StatSchema } from '@constancia/contracts';
+import type {
+  ArchetypeOption,
+  NpcSystemBlockDefinition,
+  StatField,
+  StatSchema,
+} from '@constancia/contracts';
 
 export const SRD_5E_ATTRIBUTION =
   'This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode. Class and species summaries are adapted from the SRD 5.2.1.';
@@ -203,5 +208,58 @@ export const FIVE_E_SPECIES: ArchetypeOption[] = [
     name: 'Tiefling',
     description:
       'Folk touched by a fiendish legacy (Abyssal, Chthonic or Infernal) that grants resistance and innate spells.',
+  },
+];
+
+/** SRD 5.2.1 creature types. */
+export const FIVE_E_CREATURE_TYPES = [
+  'Aberration',
+  'Beast',
+  'Celestial',
+  'Construct',
+  'Dragon',
+  'Elemental',
+  'Fey',
+  'Fiend',
+  'Giant',
+  'Humanoid',
+  'Monstrosity',
+  'Ooze',
+  'Plant',
+  'Undead',
+] as const;
+
+/** NPC system blocks the GM fills in by hand; there is no monster library. */
+export const FIVE_E_NPC_BLOCKS: NpcSystemBlockDefinition[] = [
+  {
+    blockType: '5e-srd-creature-type',
+    label: 'Creature type',
+    description: 'What kind of creature this NPC is.',
+    editor: 'select',
+    options: FIVE_E_CREATURE_TYPES.map((type) => ({ value: type, label: type })),
+    renderVariant: 'chip',
+    display: 'headline',
+    defaultValue: 'Humanoid',
+  },
+  {
+    blockType: '5e-srd-challenge-rating',
+    label: 'Challenge rating',
+    description: 'How dangerous the NPC is, for example 1/4, 2 or 13.',
+    editor: 'text',
+    placeholder: 'CR 1/4, 2, 13…',
+    renderVariant: 'chip',
+    display: 'headline',
+    defaultValue: '',
+  },
+  {
+    blockType: '5e-srd-stat-summary',
+    label: 'Stat summary',
+    description: 'A compact stat line: Armor Class, hit points and the six ability scores.',
+    editor: 'json',
+    placeholder:
+      '{"ac": 15, "hp": 52, "str": 16, "dex": 12, "con": 14, "int": 10, "wis": 11, "cha": 13}',
+    renderVariant: 'stats',
+    display: 'detail',
+    defaultValue: { ac: 10, hp: 10, str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
   },
 ];

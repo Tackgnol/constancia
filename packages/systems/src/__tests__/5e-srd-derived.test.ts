@@ -61,4 +61,14 @@ describe('5E derived values', () => {
     expect(system.archetypes[1]?.options).toHaveLength(9);
     expect(system.attribution).toContain('SRD 5.2.1');
   });
+
+  it('declares creature type and CR as headline blocks and the stat summary as detail', () => {
+    const blocks = gameSystemRegistry.require('5e-srd').npcBlocks ?? [];
+    expect(blocks.map((block) => [block.blockType, block.display])).toEqual([
+      ['5e-srd-creature-type', 'headline'],
+      ['5e-srd-challenge-rating', 'headline'],
+      ['5e-srd-stat-summary', 'detail'],
+    ]);
+    expect(blocks[0]?.options).toHaveLength(14);
+  });
 });
