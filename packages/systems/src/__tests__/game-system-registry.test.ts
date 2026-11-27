@@ -74,6 +74,7 @@ describe('GameSystemRegistry', () => {
       testConfig: { label: 'Test', fields: [] },
       blocks: [],
       roleBlocks: {},
+      importers: [],
     };
 
     expect(() => registry.register(duplicate)).toThrow(DuplicateGameSystemKeyError);

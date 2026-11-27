@@ -143,13 +143,17 @@ export function createEditorBlock(systemId: string, blockType: string): NpcEdito
   };
 }
 
-export function readPrimarySystemBlock(npc: Pick<CampaignNpc, 'systemBlocks'>) {
-  return (
-    npc.systemBlocks.find((block) => block.blockType === 'clan') ??
-    npc.systemBlocks.find((block) => block.label.toLowerCase().includes('clan')) ??
-    npc.systemBlocks[0] ??
-    null
-  );
+/** The NPC's headline blocks, in the order the Game System declares them. */
+export function listHeadlineSystemBlocks(npc: Pick<CampaignNpc, 'systemBlocks'>, systemId: string) {
+  return getNpcSystemBlockDefinitions(systemId)
+    .filter((definition) => definition.display === 'headline')
+    .flatMap((definition) =>
+      npc.systemBlocks.filter((block) => block.blockType === definition.blockType),
+    );
+}
+
+export function readPrimarySystemBlock(npc: Pick<CampaignNpc, 'systemBlocks'>, systemId: string) {
+  return listHeadlineSystemBlocks(npc, systemId)[0] ?? npc.systemBlocks[0] ?? null;
 }
 
 export function formatSystemBlockValue(value: NpcSystemBlockValue): string {
@@ -171,4 +175,3 @@ export function normalizeNpc(input: CampaignNpc): CampaignNpc {
     facts: [...(input.facts ?? [])].sort((left, right) => left.sortOrder - right.sortOrder),
   };
 }
-

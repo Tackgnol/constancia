@@ -38,6 +38,7 @@ export type {
   TestConfigField,
   ArchetypeDefinition,
   ArchetypeOption,
+  CharacterImporter,
   GameSystem,
   NpcSystemBlockDefinition,
   NpcSystemBlockOption,

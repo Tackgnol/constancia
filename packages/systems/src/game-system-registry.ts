@@ -1,4 +1,5 @@
-import type { BlockDefinition, GameSystem } from '@constancia/contracts';
+import type { BlockDefinition, CharacterImporter, GameSystem } from '@constancia/contracts';
+import { parseProgenyVtmCharacter, type ProgenyVtmSheetImport } from './vtm-v5/progeny.js';
 import { MB_CLASSES, MB_NPC_BLOCKS, MB_STAT_SCHEMA } from './mork-borg/data.js';
 import { VTM_CLANS, VTM_NPC_BLOCKS, VTM_STAT_SCHEMA } from './vtm-v5/data.js';
 import { vtmInsightResolverBlock, vtmInsightResolverSpec } from './vtm-v5/insight-resolver.js';
@@ -6,7 +7,13 @@ import { vtmPoolHint, vtmPoolResolverBlock, vtmPoolResolverSpec } from './vtm-v5
 import type { RoleBlockImplementations } from './role-blocks.js';
 import { GREGORIAN_CALENDAR } from './calendar.js';
 
-export interface GameSystemAdapter extends Omit<GameSystem, 'blocks'> {
+/** A character importer with its parser; the frontend keys its import form by `id`. */
+export interface CharacterImporterAdapter extends CharacterImporter {
+  parse: (source: unknown) => ProgenyVtmSheetImport;
+}
+
+export interface GameSystemAdapter extends Omit<GameSystem, 'blocks' | 'importers'> {
+  importers: readonly CharacterImporterAdapter[];
   aliases: readonly string[];
   /** Blocks only this system has that fill no role; their block types carry a `<systemId>-` prefix. */
   blocks: readonly BlockDefinition<never>[];
@@ -84,6 +91,16 @@ export class GameSystemRegistry {
   }
 }
 
+export const PROGENY_IMPORTER_ID = 'progeny';
+
+/** The system's importer with this id, if it offers one. */
+export function findImporter(
+  system: Pick<GameSystemAdapter, 'importers'> | undefined,
+  importerId: string,
+): CharacterImporterAdapter | undefined {
+  return system?.importers.find((importer) => importer.id === importerId);
+}
+
 export const vtmV5GameSystem: GameSystemAdapter = {
   id: 'vtm-v5',
   aliases: [
@@ -108,6 +125,7 @@ export const vtmV5GameSystem: GameSystemAdapter = {
     ],
   },
   npcBlocks: VTM_NPC_BLOCKS,
+  importers: [{ id: PROGENY_IMPORTER_ID, label: 'Progeny', parse: parseProgenyVtmCharacter }],
   blocks: [],
   roleBlocks: {
     'test-resolver': {
@@ -130,6 +148,7 @@ export const morkBorgGameSystem: GameSystemAdapter = {
   archetypes: [{ key: 'class', label: 'Class', options: MB_CLASSES }],
   testConfig: { label: 'Mork Borg Test', fields: [] },
   npcBlocks: MB_NPC_BLOCKS,
+  importers: [],
   blocks: [],
   roleBlocks: {},
 };

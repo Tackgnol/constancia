@@ -51,6 +51,7 @@ export const MB_NPC_BLOCKS: NpcSystemBlockDefinition[] = [
     editor: 'text',
     placeholder: 'Wretched Royalty, undead brute, apostate…',
     renderVariant: 'chip',
+    display: 'headline',
     defaultValue: '',
   },
   {
@@ -60,6 +61,7 @@ export const MB_NPC_BLOCKS: NpcSystemBlockDefinition[] = [
     editor: 'textarea',
     placeholder: 'Rot in the air, bells at the edge of hearing…',
     renderVariant: 'panel',
+    display: 'detail',
     defaultValue: '',
   },
   {
@@ -69,6 +71,7 @@ export const MB_NPC_BLOCKS: NpcSystemBlockDefinition[] = [
     editor: 'json',
     placeholder: '{"hp": 12, "morale": 7, "dr": 14}',
     renderVariant: 'stats',
+    display: 'detail',
     defaultValue: {},
   },
 ];

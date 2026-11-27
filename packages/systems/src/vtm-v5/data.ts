@@ -188,6 +188,7 @@ export const VTM_NPC_BLOCKS: NpcSystemBlockDefinition[] = [
       icon: clan.icon,
     })),
     renderVariant: 'chip',
+    display: 'headline',
     defaultValue: '',
   },
   {
@@ -197,6 +198,7 @@ export const VTM_NPC_BLOCKS: NpcSystemBlockDefinition[] = [
     editor: 'text',
     placeholder: 'Prince, Sheriff, Regent…',
     renderVariant: 'chip',
+    display: 'headline',
     defaultValue: '',
   },
   {
@@ -206,6 +208,7 @@ export const VTM_NPC_BLOCKS: NpcSystemBlockDefinition[] = [
     editor: 'textarea',
     placeholder: 'Cold, ceremonial, always speaking like a verdict…',
     renderVariant: 'panel',
+    display: 'detail',
     defaultValue: '',
   },
   {
@@ -215,6 +218,7 @@ export const VTM_NPC_BLOCKS: NpcSystemBlockDefinition[] = [
     editor: 'json',
     placeholder: '{"physical": {"strength": 3}, "disciplines": {"dominate": 4}}',
     renderVariant: 'stats',
+    display: 'detail',
     defaultValue: {},
   },
 ];

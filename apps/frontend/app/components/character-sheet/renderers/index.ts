@@ -8,6 +8,11 @@ const REGISTRY: Record<string, StatRowComponent> = {
   'mork-borg': MorkBorgStatRow,
 };
 
+/** Whether a Game System has its own row renderer rather than the fallback. */
+export function hasStatRowRenderer(systemId: string): boolean {
+  return systemId in REGISTRY;
+}
+
 export function resolveStatRow(systemId: string | undefined): StatRowComponent {
   if (!systemId) return FallbackStatRow;
   return REGISTRY[systemId] ?? FallbackStatRow;
