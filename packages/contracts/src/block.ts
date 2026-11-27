@@ -42,6 +42,8 @@ export const sendTestInstancePayloadSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
   imageUrl: z.string().optional(),
+  /** The one test detail the card shows, e.g. "🎲 Roll with advantage". */
+  rollModifierLine: z.string().optional(),
   thresholds: z.array(testThresholdSchema).min(1),
 });
 

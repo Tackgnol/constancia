@@ -14,6 +14,8 @@ export interface RoleBlockImplementation {
   block: BlockDefinition<never>;
   /** One line telling a player their modifier for this config, e.g. "Your pool: **6 dice**." */
   hint?: (config: Record<string, unknown>, characterData: Record<string, unknown>) => string | null;
+  /** For roll-modifier: the line the test card shows for this config, e.g. "🎲 Roll with advantage". */
+  cardLine?: (config: Record<string, unknown>) => string | null;
 }
 
 export type RoleBlockImplementations = Partial<Record<PipelineBlockRole, RoleBlockImplementation>>;

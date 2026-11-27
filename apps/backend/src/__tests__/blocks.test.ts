@@ -40,4 +40,15 @@ describe('per-campaign block registry', () => {
       findPipelineError('5e-srd', pipeline({ mode: 'save', ability: 'dex', skill: 'stealth' })),
     ).toMatch(/Invalid config/);
   });
+
+  it('requires roll-modifier before test-resolver and hides it from VTM', () => {
+    const modifier = { blockType: 'roll-modifier', config: { mode: 'advantage' } };
+    const resolver = { blockType: 'test-resolver', config: { mode: 'check', ability: 'dex' } };
+
+    expect(findPipelineError('5e-srd', [modifier, resolver])).toBeNull();
+    expect(findPipelineError('5e-srd', [resolver, modifier])).toMatch(/before the test resolver/);
+    expect(findPipelineError('vtm-v5', [modifier])).toBe(
+      'This Game System does not support "roll-modifier".',
+    );
+  });
 });

@@ -16,6 +16,9 @@ import {
   fiveEInsightResolverBlock,
   fiveEInsightResolverSpec,
   fiveEModifierHint,
+  fiveERollModifierBlock,
+  fiveERollModifierCardLine,
+  fiveERollModifierSpec,
   fiveETestResolverBlock,
   fiveETestResolverSpec,
 } from './5e-srd/resolvers.js';
@@ -192,6 +195,11 @@ export const fiveESrdGameSystem: GameSystemAdapter = {
       hint: fiveEModifierHint,
     },
     'insight-resolver': { spec: fiveEInsightResolverSpec, block: fiveEInsightResolverBlock },
+    'roll-modifier': {
+      spec: fiveERollModifierSpec,
+      block: fiveERollModifierBlock,
+      cardLine: fiveERollModifierCardLine,
+    },
   },
   testOutcomeComparison: 'gte',
 };

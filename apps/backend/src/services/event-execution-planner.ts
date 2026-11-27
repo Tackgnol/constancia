@@ -71,7 +71,7 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
       if (event.type === 'test') {
         const instanceId = randomUUID();
         const payload = buildTestInstancePayload(
-          { ...event, pipeline },
+          { ...event, gameSystemId, pipeline },
           event.channel.discordChannelId,
           instanceId,
         );

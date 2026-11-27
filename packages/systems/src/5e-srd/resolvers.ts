@@ -189,6 +189,50 @@ export const fiveEInsightResolverBlock: BlockDefinition<FiveEInsightConfig> = {
   },
 };
 
+export interface FiveERollModifierConfig {
+  mode: 'advantage' | 'disadvantage';
+}
+
+export const fiveERollModifierSpec: RoleBlockImplementationSpec = {
+  configSchema: {
+    type: 'object',
+    additionalProperties: false,
+    properties: { mode: { type: 'string', enum: ['advantage', 'disadvantage'] } },
+    required: ['mode'],
+  },
+  defaultConfig: { mode: 'advantage' },
+  editor: {
+    fields: [
+      {
+        kind: 'select',
+        path: 'mode',
+        label: 'Roll with',
+        options: [
+          { value: 'advantage', label: 'Advantage' },
+          { value: 'disadvantage', label: 'Disadvantage' },
+        ],
+        hint: 'Applies when the backend rolls for the player; the card tells players rolling physical dice.',
+      },
+    ],
+  },
+};
+
+export const fiveERollModifierBlock: BlockDefinition<FiveERollModifierConfig> = {
+  type: 'roll-modifier',
+  label: requirePipelineBlockSpec('roll-modifier').label,
+  configSchema: fiveERollModifierSpec.configSchema,
+  execute: async (config: FiveERollModifierConfig) => ({
+    output: config,
+    contextPatch: { rollModifiers: { mode: config.mode } },
+  }),
+};
+
+export function fiveERollModifierCardLine(config: Record<string, unknown>): string | null {
+  return config.mode === 'advantage' || config.mode === 'disadvantage'
+    ? `🎲 Roll with ${config.mode}`
+    : null;
+}
+
 function isAbility(value: unknown): value is FiveEAbility {
   return typeof value === 'string' && abilityValues.some((ability) => ability === value);
 }

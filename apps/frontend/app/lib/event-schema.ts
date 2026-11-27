@@ -107,6 +107,7 @@ const pipelineBlockConfigSchemas = {
   'retrieve-data': retrieveDataConfigSchema,
   'test-resolver': roleBlockConfigSchema,
   'insight-resolver': roleBlockConfigSchema,
+  'roll-modifier': roleBlockConfigSchema,
 } as const satisfies Record<PipelineBlockType, z.ZodType>;
 
 // ── Block types ───────────────────────────────────────────────────────────────
@@ -171,6 +172,7 @@ const DEFAULT_PIPELINE_BLOCKS_BY_EVENT_TYPE: Record<EventType, readonly BlockTyp
 
 const SUGGESTED_BLOCK_TYPES_BY_EVENT_TYPE: Record<EventType, readonly BlockType[]> = {
   test: [
+    'roll-modifier',
     'test-resolver',
     'outcome-map',
     'conditional-gate',

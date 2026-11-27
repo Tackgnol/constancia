@@ -4106,6 +4106,21 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
+                                      "enum": ["roll-modifier"]
+                                    },
+                                    "config": {
+                                      "type": "object",
+                                      "additionalProperties": true
+                                    }
+                                  },
+                                  "required": ["blockType", "config"]
+                                },
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "blockType": {
+                                      "type": "string",
                                       "enum": ["insight-resolver"]
                                     },
                                     "config": {
@@ -4443,6 +4458,21 @@
                             "blockType": {
                               "type": "string",
                               "enum": ["test-resolver"]
+                            },
+                            "config": {
+                              "type": "object",
+                              "additionalProperties": true
+                            }
+                          },
+                          "required": ["blockType", "config"]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "blockType": {
+                              "type": "string",
+                              "enum": ["roll-modifier"]
                             },
                             "config": {
                               "type": "object",
@@ -4802,6 +4832,21 @@
                                   "blockType": {
                                     "type": "string",
                                     "enum": ["test-resolver"]
+                                  },
+                                  "config": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                  }
+                                },
+                                "required": ["blockType", "config"]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "blockType": {
+                                    "type": "string",
+                                    "enum": ["roll-modifier"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -5203,6 +5248,21 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
+                                    "enum": ["roll-modifier"]
+                                  },
+                                  "config": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                  }
+                                },
+                                "required": ["blockType", "config"]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "blockType": {
+                                    "type": "string",
                                     "enum": ["insight-resolver"]
                                   },
                                   "config": {
@@ -5543,6 +5603,21 @@
                             "blockType": {
                               "type": "string",
                               "enum": ["test-resolver"]
+                            },
+                            "config": {
+                              "type": "object",
+                              "additionalProperties": true
+                            }
+                          },
+                          "required": ["blockType", "config"]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "blockType": {
+                              "type": "string",
+                              "enum": ["roll-modifier"]
                             },
                             "config": {
                               "type": "object",
@@ -5909,6 +5984,21 @@
                                   "blockType": {
                                     "type": "string",
                                     "enum": ["test-resolver"]
+                                  },
+                                  "config": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                  }
+                                },
+                                "required": ["blockType", "config"]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "blockType": {
+                                    "type": "string",
+                                    "enum": ["roll-modifier"]
                                   },
                                   "config": {
                                     "type": "object",
@@ -12282,6 +12372,21 @@
                                     "blockType": {
                                       "type": "string",
                                       "enum": ["test-resolver"]
+                                    },
+                                    "config": {
+                                      "type": "object",
+                                      "additionalProperties": true
+                                    }
+                                  },
+                                  "required": ["blockType", "config"]
+                                },
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "blockType": {
+                                      "type": "string",
+                                      "enum": ["roll-modifier"]
                                     },
                                     "config": {
                                       "type": "object",

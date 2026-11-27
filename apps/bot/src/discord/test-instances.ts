@@ -85,8 +85,9 @@ function buildTestInstanceEmbed(payload: SendTestInstancePayload): EmbedBuilder 
     .setColor(0x58a6ff)
     .setFooter({ text: testInstanceFooter() });
 
-  if (payload.description) {
-    embed.setDescription(payload.description);
+  const description = [payload.description, payload.rollModifierLine].filter(Boolean).join('\n\n');
+  if (description) {
+    embed.setDescription(description);
   }
 
   if (payload.imageUrl) {

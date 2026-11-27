@@ -4,7 +4,7 @@ export type JsonPrimitive = boolean | number | string | null;
 export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
 export type JsonObject = { [key: string]: JsonValue };
 
-export const PIPELINE_BLOCK_ROLES = ['test-resolver', 'insight-resolver'] as const;
+export const PIPELINE_BLOCK_ROLES = ['test-resolver', 'insight-resolver', 'roll-modifier'] as const;
 export type PipelineBlockRole = (typeof PIPELINE_BLOCK_ROLES)[number];
 
 export type PipelineBlockAvailability =
@@ -420,6 +420,16 @@ export const PIPELINE_BLOCK_SPECS = [
     version: 1,
     label: 'Test resolver',
     availability: { kind: 'role', role: 'test-resolver' },
+    // Open on purpose: the campaign's Game System supplies and validates the real shape.
+    configSchema: { type: 'object', additionalProperties: true },
+    defaultConfig: {},
+    editor: { fields: [] },
+  },
+  {
+    blockType: 'roll-modifier',
+    version: 1,
+    label: 'Roll modifier',
+    availability: { kind: 'role', role: 'roll-modifier' },
     // Open on purpose: the campaign's Game System supplies and validates the real shape.
     configSchema: { type: 'object', additionalProperties: true },
     defaultConfig: {},
