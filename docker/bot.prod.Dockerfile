@@ -8,7 +8,8 @@ COPY package.json package-lock.json .npmrc turbo.json tsconfig.base.json orval.c
 COPY apps ./apps
 COPY packages ./packages
 COPY scripts ./scripts
-RUN npm ci
+# CI appends a GitHub Packages token to .npmrc; drop it so it never reaches the runtime image.
+RUN npm ci && rm -f .npmrc
 
 FROM deps AS build
 RUN npx turbo run build --filter=@constancia/bot...

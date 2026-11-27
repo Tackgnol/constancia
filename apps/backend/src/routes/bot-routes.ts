@@ -40,7 +40,8 @@ interface BotTestResultBody {
   instanceId: string;
   discordUserId: string;
   discordChannelId: string;
-  playerScore: number;
+  playerScore?: number;
+  rollForMe?: boolean;
   idempotencyKey: string;
 }
 
@@ -225,14 +226,20 @@ const botRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request) => {
-      const { instanceId, discordUserId, discordChannelId, playerScore, idempotencyKey } =
-        request.body;
-      const receipt = await app.eventExecution.submitTestResult({
+      const {
         instanceId,
         discordUserId,
         discordChannelId,
         playerScore,
+        rollForMe,
         idempotencyKey,
+      } = request.body;
+      const receipt = await app.eventExecution.submitTestResult({
+        instanceId,
+        discordUserId,
+        discordChannelId,
+        idempotencyKey,
+        ...(rollForMe ? { rollForMe: true } : { playerScore }),
       });
       const submittedCount = await getPrismaClient().testSubmission.count({
         where: { instanceId },

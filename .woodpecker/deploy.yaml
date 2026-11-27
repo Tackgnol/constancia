@@ -89,9 +89,12 @@ steps:
         from_secret: r2_secret_access_key
       R2_BUCKET:
         from_secret: r2_bucket
+      NPMRC_CONTENT:
+        from_secret: npmrc_content
     commands:
       - |
         set -e
+        printf '%s\n' "$NPMRC_CONTENT" >> .npmrc
 
         deployment_tag="${CI_COMMIT_SHA:-local}-${CI_PIPELINE_NUMBER:-0}"
         export BACKEND_IMAGE="constancia-backend:$deployment_tag"

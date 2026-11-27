@@ -3,6 +3,7 @@ import {
   requirePipelineBlockSpec,
   type RoleBlockImplementationSpec,
 } from '@constancia/block-catalogue';
+import { rollDice } from '../dice.js';
 
 interface VtmPoolResolverConfig {
   attribute: string;
@@ -19,18 +20,6 @@ interface VtmPoolResult {
   hungerOnes: number;
   outcome: 'critical_success' | 'messy_critical' | 'success' | 'failure' | 'bestial_failure';
   difficulty: number;
-}
-
-function rollDie(): number {
-  return Math.floor(Math.random() * 10) + 1;
-}
-
-function rollDice(count: number): number[] {
-  const results: number[] = [];
-  for (let i = 0; i < count; i++) {
-    results.push(rollDie());
-  }
-  return results;
 }
 
 function readNumberRecord(value: unknown): Record<string, number> {
@@ -159,8 +148,8 @@ export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
     const hungerDiceCount = Math.min(Math.max(0, hunger), pool);
     const normalDiceCount = pool - hungerDiceCount;
 
-    const normalDice = rollDice(normalDiceCount);
-    const hungerDice = rollDice(hungerDiceCount);
+    const normalDice = await rollDice(normalDiceCount, 10);
+    const hungerDice = await rollDice(hungerDiceCount, 10);
 
     const normal10s = normalDice.filter((d) => d === 10).length;
     const hunger10s = hungerDice.filter((d) => d === 10).length;

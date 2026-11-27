@@ -11227,18 +11227,15 @@
                   "playerScore": {
                     "type": "number"
                   },
+                  "rollForMe": {
+                    "type": "boolean"
+                  },
                   "idempotencyKey": {
                     "type": "string",
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "instanceId",
-                  "discordUserId",
-                  "discordChannelId",
-                  "playerScore",
-                  "idempotencyKey"
-                ]
+                "required": ["instanceId", "discordUserId", "discordChannelId", "idempotencyKey"]
               }
             }
           }
@@ -11399,6 +11396,22 @@
                         "submittedCount": {
                           "type": "integer",
                           "minimum": 0
+                        },
+                        "roll": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "playerScore": {
+                              "type": "number"
+                            },
+                            "breakdown": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": ["playerScore", "breakdown"]
                         }
                       },
                       "required": [
