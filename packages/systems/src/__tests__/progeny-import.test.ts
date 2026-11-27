@@ -43,7 +43,8 @@ describe('Progeny VTM import', () => {
     expect(imported.gameName).toBe('Dr. Henryk Miedziński');
     expect(imported.backstory).toBe('A spectral surgeon turned apex predator.');
     expect(imported.notes).toBe('Keep the tools clean.');
-    expect(imported.systemData.clan).toBe('Lasombra');
+    expect(imported.systemData.clan).toBeUndefined();
+    expect(imported.systemData.archetypes).toEqual({ clan: 'Lasombra' });
     expect(imported.systemData.attributes).toMatchObject({
       strength: 4,
       charisma: 2,

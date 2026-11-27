@@ -12,7 +12,7 @@ const demoCharacters: ListCharacters200DataItem[] = players.map((player) => ({
   campaignId: 'demo-crimson-dynasty',
   backstory: '',
   notes: '',
-  systemData: { clan: player.character },
+  systemData: { archetypes: { clan: player.character } },
 }));
 
 // `demoContext.tags` is derived from `demoContext.channels` (same shape the live

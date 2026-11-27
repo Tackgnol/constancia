@@ -34,6 +34,19 @@ export interface NpcSystemBlockDefinition {
   renderVariant?: 'chip' | 'panel' | 'stats';
 }
 
+export interface ArchetypeOption {
+  name: string;
+  description: string;
+  icon?: string;
+}
+
+/** A fixed list a Game System sorts characters into; the system's first archetype is its primary archetype. */
+export interface ArchetypeDefinition {
+  key: string;
+  label: string;
+  options: ArchetypeOption[];
+}
+
 export interface GameSystem {
   id: string;
   name: string;
@@ -41,6 +54,7 @@ export interface GameSystem {
   defaultCalendarId: string;
   calendars: Record<string, GameCalendarDefinition>;
   statSchema: StatSchema;
+  archetypes: ArchetypeDefinition[];
   testConfig: TestConfig;
   npcBlocks?: NpcSystemBlockDefinition[];
   blocks: BlockDefinition[];

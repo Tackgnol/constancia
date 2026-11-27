@@ -1,11 +1,10 @@
-import type { Archetype } from '../vtm-v5/data.js';
-import type { NpcSystemBlockDefinition, StatSchema } from '@constancia/contracts';
+import type { ArchetypeOption, NpcSystemBlockDefinition, StatSchema } from '@constancia/contracts';
 
 export const MB_STAT_SCHEMA: StatSchema = {
   groups: [],
 };
 
-export const MB_CLASSES: Archetype[] = [
+export const MB_CLASSES: ArchetypeOption[] = [
   {
     name: 'Fanged Deserter',
     icon: 'Fanged Deserter icon.png',

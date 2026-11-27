@@ -18,7 +18,7 @@ export const demoPlayerSheet: CharacterSheetData = {
     notes:
       'Owes one public boon to Prince Voss. Privately suspects the Harpy is using the missing ledger to isolate the coterie.',
     systemData: {
-      clan: 'Brujah',
+      archetypes: { clan: 'Brujah' },
       attributes: {
         strength: 3,
         dexterity: 2,

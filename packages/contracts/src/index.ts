@@ -34,6 +34,8 @@ export {
 export type {
   TestConfig,
   TestConfigField,
+  ArchetypeDefinition,
+  ArchetypeOption,
   GameSystem,
   NpcSystemBlockDefinition,
   NpcSystemBlockOption,

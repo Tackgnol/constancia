@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useFetcher, useOutletContext } from 'react-router';
@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { VTM_CLANS, MB_CLASSES } from '@constancia/systems';
+import { gameSystemRegistry, getPrimaryArchetype, readArchetypeChoices } from '@constancia/systems';
 import type { WarRoomContext } from '@/lib/war-room-data';
 import type { ActionFunctionArgs } from 'react-router';
 import type { ListCharacters200DataItem } from '@constancia/api-client/model';
@@ -23,7 +23,7 @@ import { formFieldLabelClassName } from '@/components/forms/field-label';
 
 const participantFormSchema = z.object({
   gameName: z.string().trim().max(80, 'Keep the in-game name concise.'),
-  archetype: z.string().trim(),
+  archetypes: z.record(z.string(), z.string().trim()),
 });
 
 type ParticipantFormValues = z.infer<typeof participantFormSchema>;
@@ -42,7 +42,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const campaignId = readString('campaignId');
   const charId = readString('charId');
   const gameName = readString('gameName');
-  const archetype = readString('archetype');
+  const archetypesRaw = readString('archetypes');
   const systemDataRaw = readString('systemData');
 
   if (!campaignId || !charId) return null;
@@ -55,9 +55,8 @@ export async function action({ request }: ActionFunctionArgs) {
       !Array.isArray(parsedSystemData)
         ? { ...parsedSystemData }
         : {};
-    if (archetype) {
-      systemData.clan = archetype;
-    }
+    const parsedArchetypes: unknown = archetypesRaw ? JSON.parse(archetypesRaw) : {};
+    systemData.archetypes = readArchetypeChoices({ archetypes: parsedArchetypes });
 
     await updateCharacter(
       { id: campaignId, charId },
@@ -142,9 +141,11 @@ function ParticipantRow({
   const [demoMessage, setDemoMessage] = useState<string | null>(null);
   const isSaving = !demoMode && fetcher.state !== 'idle';
 
-  const archetypes = gameSystemId === 'mork-borg' ? MB_CLASSES : VTM_CLANS;
+  const system = gameSystemRegistry.get(gameSystemId);
+  const archetypes = system?.archetypes ?? [];
+  const primaryArchetype = system ? getPrimaryArchetype(system) : undefined;
   const systemData: Record<string, unknown> = { ...(char.systemData ?? {}) };
-  const currentArchetype = typeof systemData.clan === 'string' ? systemData.clan : '';
+  const currentArchetypes = useMemo(() => readArchetypeChoices(char.systemData), [char.systemData]);
 
   const {
     register,
@@ -157,19 +158,25 @@ function ParticipantRow({
     resolver: zodResolver(participantFormSchema),
     defaultValues: {
       gameName: currentGameName,
-      archetype: currentArchetype,
+      archetypes: currentArchetypes,
     },
   });
 
   useEffect(() => {
     reset({
       gameName: currentGameName,
-      archetype: currentArchetype,
+      archetypes: currentArchetypes,
     });
-  }, [currentArchetype, currentGameName, reset]);
+  }, [currentArchetypes, currentGameName, reset]);
 
-  const selectedArchetypeName = watch('archetype');
-  const selectedArchetype = archetypes.find((a) => a.name === selectedArchetypeName);
+  const selectedArchetypes = watch('archetypes');
+  const selectedOptions = archetypes.flatMap((archetype) => {
+    const option = archetype.options.find((o) => o.name === selectedArchetypes[archetype.key]);
+    return option ? [{ archetype, option }] : [];
+  });
+  const selectedPrimary = selectedOptions.find(
+    ({ archetype }) => archetype.key === primaryArchetype?.key,
+  );
 
   const onSubmit = (values: ParticipantFormValues) => {
     if (demoMode) {
@@ -185,7 +192,7 @@ function ParticipantRow({
         campaignId,
         systemData: JSON.stringify(systemData),
         gameName: values.gameName.trim(),
-        archetype: values.archetype,
+        archetypes: JSON.stringify(values.archetypes),
       },
       { action: actionPath, method: 'post' },
     );
@@ -208,14 +215,16 @@ function ParticipantRow({
           <p>{char.discordUserId}</p>
         </div>
 
-        {selectedArchetype && (
+        {selectedPrimary && (
           <div className="participant-archetype">
             <div className="participant-archetype-icon">
-              <span aria-hidden="true">{selectedArchetype.name.slice(0, 2).toUpperCase()}</span>
+              <span aria-hidden="true">
+                {selectedPrimary.option.name.slice(0, 2).toUpperCase()}
+              </span>
             </div>
             <div>
-              <p className="detail-label">{gameSystemId === 'mork-borg' ? 'Class' : 'Clan'}</p>
-              <strong>{selectedArchetype.name}</strong>
+              <p className="detail-label">{selectedPrimary.archetype.label}</p>
+              <strong>{selectedPrimary.option.name}</strong>
             </div>
           </div>
         )}
@@ -236,39 +245,41 @@ function ParticipantRow({
             {errors.gameName ? <span className="form-error">{errors.gameName.message}</span> : null}
           </div>
 
-          <div className="grid gap-1.5">
-            <Label htmlFor={`archetype-${char.id}`} className={formFieldLabelClassName}>
-              {gameSystemId === 'mork-borg' ? 'Character class' : 'Vampire clan'}
-            </Label>
-            <Controller
-              control={control}
-              name="archetype"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id={`archetype-${char.id}`} className="w-full">
-                    <SelectValue placeholder="Select archetype" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {archetypes.map((a) => (
-                      <SelectItem key={a.name} value={a.name}>
-                        {a.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.archetype ? (
-              <span className="form-error">{errors.archetype.message}</span>
-            ) : null}
-          </div>
+          {archetypes.map((archetype) => (
+            <div key={archetype.key} className="grid gap-1.5">
+              <Label
+                htmlFor={`archetype-${archetype.key}-${char.id}`}
+                className={formFieldLabelClassName}
+              >
+                {archetype.label}
+              </Label>
+              <Controller
+                control={control}
+                name={`archetypes.${archetype.key}`}
+                render={({ field }) => (
+                  <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                    <SelectTrigger id={`archetype-${archetype.key}-${char.id}`} className="w-full">
+                      <SelectValue placeholder={`Select ${archetype.label.toLowerCase()}`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {archetype.options.map((option) => (
+                        <SelectItem key={option.name} value={option.name}>
+                          {option.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+          ))}
         </div>
 
-        {selectedArchetype && (
-          <div className="participant-archetype-note">
-            <p>{selectedArchetype.description}</p>
+        {selectedOptions.map(({ archetype, option }) => (
+          <div key={archetype.key} className="participant-archetype-note">
+            <p>{option.description}</p>
           </div>
-        )}
+        ))}
 
         <div className="participant-form-footer">
           {saveMessage ? (

@@ -26,7 +26,7 @@ const baseRecord = {
   backstory: 'Backstory',
   notes: 'Notes',
   systemData: {
-    clan: 'Toreador',
+    archetypes: { clan: 'Toreador' },
     attributes: { wits: 3, resolve: 2 },
     skills: { awareness: 2, occult: 1 },
   },
@@ -110,7 +110,7 @@ describe('character sheet service', () => {
       ...baseRecord,
       gameName: 'Lucien Vale',
       systemData: {
-        clan: 'Toreador',
+        archetypes: { clan: 'Toreador' },
         attributes: {
           strength: 0,
           dexterity: 0,
@@ -174,7 +174,7 @@ describe('character sheet service', () => {
         data: expect.objectContaining({
           gameName: 'Lucien Vale',
           systemData: expect.objectContaining({
-            clan: 'Toreador',
+            archetypes: { clan: 'Toreador' },
             attributes: expect.objectContaining({ wits: 4, resolve: 2 }),
             skills: expect.objectContaining({ awareness: 3, occult: 1 }),
           }),
@@ -193,7 +193,7 @@ describe('character sheet service', () => {
       backstory: 'A spectral surgeon.',
       notes: 'Keep the tools clean.',
       systemData: {
-        clan: 'Lasombra',
+        archetypes: { clan: 'Lasombra' },
         attributes: { strength: 4, dexterity: 0, stamina: 0 },
         skills: { animalKen: 2, medicine: 1 },
         disciplines: [{ name: 'Cloud Memory', discipline: 'dominate', level: 1 }],
@@ -231,7 +231,7 @@ describe('character sheet service', () => {
           gameName: 'Dr. Henryk Miedziński',
           backstory: 'A spectral surgeon.',
           systemData: expect.objectContaining({
-            clan: 'Lasombra',
+            archetypes: { clan: 'Lasombra' },
             attributes: expect.objectContaining({ strength: 4 }),
             skills: expect.objectContaining({ animalKen: 2, medicine: 1 }),
             disciplines: [{ name: 'Cloud Memory', discipline: 'dominate', level: 1 }],

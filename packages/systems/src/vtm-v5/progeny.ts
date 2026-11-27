@@ -1,4 +1,4 @@
-import { VTM_ATTRIBUTES, VTM_SKILLS } from './data.js';
+import { VTM_ATTRIBUTES, VTM_CLANS, VTM_SKILLS } from './data.js';
 
 export type JsonPrimitive = boolean | number | string | null;
 export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
@@ -211,6 +211,10 @@ export function parseProgenyVtmCharacter(value: unknown): ProgenyVtmSheetImport 
       systemData[key] = entry;
     }
   }
+  delete systemData.clan;
+  delete systemData.archetypes;
+  const clan = findVtmClan(source.clan);
+  if (clan) systemData.archetypes = { clan: clan.name };
   systemData.attributes = attributes;
   systemData.skills = skills;
   systemData.progeny = buildProgenyMetadata(source, version);
@@ -233,4 +237,10 @@ export function parseProgenyVtmCharacter(value: unknown): ProgenyVtmSheetImport 
     notes,
     systemData,
   };
+}
+
+function findVtmClan(value: unknown) {
+  if (typeof value !== 'string') return undefined;
+  const wanted = value.trim().toLowerCase();
+  return VTM_CLANS.find((clan) => clan.name.toLowerCase() === wanted);
 }
