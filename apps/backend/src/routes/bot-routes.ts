@@ -25,7 +25,10 @@ import {
   standardResponseSchema,
   syncParticipantsBodySchema,
   syncParticipantsDataSchema,
+  testHintParamsSchema,
+  testHintSchema,
 } from '../schemas.js';
+import { getTestModifierHint } from '../services/test-hint.js';
 import {
   listVisibleNpcRecordsForPlayer,
   mapPlayerVisibleNpc,
@@ -308,6 +311,25 @@ const botRoutes: FastifyPluginAsync = async (app) => {
       return ok({
         formatted: formatCampaignGameDate(campaign.gameSystemId, campaign.gameDate),
       });
+    },
+  );
+
+  app.get<{ Params: { instanceId: string; discordUserId: string } }>(
+    '/test-instances/:instanceId/hint/:discordUserId',
+    {
+      schema: {
+        tags: ['bot'],
+        summary: "Get a player's modifier hint for a Test instance",
+        operationId: 'getBotTestHint',
+        params: testHintParamsSchema,
+        response: {
+          200: singleResponseSchema(testHintSchema),
+        },
+      },
+    },
+    async (request) => {
+      const { instanceId, discordUserId } = request.params;
+      return ok({ hint: await getTestModifierHint(getPrismaClient(), instanceId, discordUserId) });
     },
   );
 

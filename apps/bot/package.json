@@ -17,7 +17,7 @@
     "@constancia/api-client": "*",
     "@constancia/contracts": "*",
     "@sentry/node": "^10.75.0",
-    "discord.js": "^14.0.0",
+    "discord.js": "^14.26.0",
     "fastify": "^5.3.3"
   },
   "devDependencies": {

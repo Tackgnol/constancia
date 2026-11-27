@@ -4,6 +4,7 @@ import {
   type RoleBlockImplementationSpec,
 } from '@constancia/block-catalogue';
 import { rollDice } from '../dice.js';
+import { VTM_ATTRIBUTES, VTM_SKILLS } from './data.js';
 
 interface VtmPoolResolverConfig {
   attribute: string;
@@ -98,6 +99,28 @@ export const vtmPoolResolverSpec: RoleBlockImplementationSpec = {
     ],
   },
 };
+
+function readConfigString(config: Record<string, unknown>, key: string): string {
+  const value = config[key];
+  return typeof value === 'string' ? value : '';
+}
+
+/** The VTM modifier hint: the player's dice pool for the Test's attribute and skill. */
+export function vtmPoolHint(
+  config: Record<string, unknown>,
+  characterData: Record<string, unknown>,
+): string | null {
+  const attribute = readConfigString(config, 'attribute');
+  const skill = readConfigString(config, 'skill');
+  if (!attribute || !skill) return null;
+
+  const pool =
+    (readNumberRecord(characterData.attributes)[attribute] ?? 0) +
+    (readNumberRecord(characterData.skills)[skill] ?? 0);
+  const attributeLabel = VTM_ATTRIBUTES.find((o) => o.value === attribute)?.label ?? attribute;
+  const skillLabel = VTM_SKILLS.find((o) => o.value === skill)?.label ?? skill;
+  return `Your pool: **${pool} ${pool === 1 ? 'die' : 'dice'}** (${attributeLabel} + ${skillLabel}).`;
+}
 
 export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
   type: 'test-resolver',

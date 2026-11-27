@@ -1145,6 +1145,25 @@ export const botTestResultResponseSchema = {
   required: [...fireEventResultSchema.required, 'submittedCount'],
 } as const;
 
+export const testHintParamsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    instanceId: { type: 'string', minLength: 1 },
+    discordUserId: { type: 'string', minLength: 1 },
+  },
+  required: ['instanceId', 'discordUserId'],
+} as const;
+
+export const testHintSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    hint: { type: 'string', nullable: true },
+  },
+  required: ['hint'],
+} as const;
+
 export const botCampaignDateSchema = {
   type: 'object',
   additionalProperties: false,

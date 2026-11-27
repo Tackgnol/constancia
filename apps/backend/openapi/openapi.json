@@ -11560,6 +11560,62 @@
         }
       }
     },
+    "/api/v1/bot/test-instances/{instanceId}/hint/{discordUserId}": {
+      "get": {
+        "operationId": "getBotTestHint",
+        "summary": "Get a player's modifier hint for a Test instance",
+        "tags": ["bot"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "instanceId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "discordUserId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "hint": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": ["hint"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/bot/campaigns/{id}/visible-npcs/{discordUserId}": {
       "get": {
         "operationId": "listBotVisibleNpcsForPlayer",
