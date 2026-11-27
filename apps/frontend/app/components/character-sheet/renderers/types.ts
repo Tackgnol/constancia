@@ -14,6 +14,15 @@ export interface StatRowProps {
 
 export type StatRowComponent = (props: StatRowProps) => React.ReactElement;
 
+/** Props for a renderer that draws a Game System's whole sheet from the flat stats record. */
+export interface SheetRendererProps {
+  stats: Record<string, StatValue>;
+  onChange: (key: string, value: StatValue) => void;
+  disabled?: boolean;
+}
+
+export type SheetRendererComponent = (props: SheetRendererProps) => React.ReactElement;
+
 export function clampNumeric(value: number, min?: number, max?: number): number {
   let next = value;
   if (typeof min === 'number' && next < min) next = min;
