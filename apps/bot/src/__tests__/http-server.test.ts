@@ -120,7 +120,7 @@ describe('bot HTTP server', () => {
           title: 'Dexterity + Stealth',
           description: 'Cross the gallery unseen.',
           footer: expect.objectContaining({
-            text: 'Submit your actual result. The bot does not roll for you.',
+            text: 'Enter your final result, or let the bot roll for you.',
           }),
           image: {
             url: 'https://example.com/gallery.jpg',
@@ -131,9 +131,13 @@ describe('bot HTTP server', () => {
       expect(sentPayload.components[0].components[0].data.custom_id).toBe(
         'test-instance:submit:instance-7',
       );
-      expect(sentPayload.components[0].components[0].data.label).toBe('Submit Result');
-      expect(sentPayload.components[0].components[1].data.custom_id).toBe('message-report:event-7');
-      expect(sentPayload.components[0].components[1].data.label).toBe('Report');
+      expect(sentPayload.components[0].components[0].data.label).toBe('Enter result');
+      expect(sentPayload.components[0].components[1].data.custom_id).toBe(
+        'test-instance:roll:instance-7',
+      );
+      expect(sentPayload.components[0].components[1].data.label).toBe('🎲 Roll for me');
+      expect(sentPayload.components[0].components[2].data.custom_id).toBe('message-report:event-7');
+      expect(sentPayload.components[0].components[2].data.label).toBe('Report');
     } finally {
       await app.close();
     }

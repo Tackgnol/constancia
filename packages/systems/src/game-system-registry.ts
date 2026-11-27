@@ -2,7 +2,7 @@ import type { BlockDefinition, GameSystem } from '@constancia/contracts';
 import { MB_CLASSES, MB_NPC_BLOCKS, MB_STAT_SCHEMA } from './mork-borg/data.js';
 import { VTM_CLANS, VTM_NPC_BLOCKS, VTM_STAT_SCHEMA } from './vtm-v5/data.js';
 import { vtmInsightResolverBlock, vtmInsightResolverSpec } from './vtm-v5/insight-resolver.js';
-import { vtmPoolResolverBlock, vtmPoolResolverSpec } from './vtm-v5/pool-resolver.js';
+import { vtmPoolHint, vtmPoolResolverBlock, vtmPoolResolverSpec } from './vtm-v5/pool-resolver.js';
 import type { RoleBlockImplementations } from './role-blocks.js';
 import { GREGORIAN_CALENDAR } from './calendar.js';
 
@@ -110,7 +110,11 @@ export const vtmV5GameSystem: GameSystemAdapter = {
   npcBlocks: VTM_NPC_BLOCKS,
   blocks: [],
   roleBlocks: {
-    'test-resolver': { spec: vtmPoolResolverSpec, block: vtmPoolResolverBlock },
+    'test-resolver': {
+      spec: vtmPoolResolverSpec,
+      block: vtmPoolResolverBlock,
+      hint: vtmPoolHint,
+    },
     'insight-resolver': { spec: vtmInsightResolverSpec, block: vtmInsightResolverBlock },
   },
 };

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { vtmPoolResolverBlock } from '../vtm-v5/pool-resolver.js';
+import { vtmPoolHint, vtmPoolResolverBlock } from '../vtm-v5/pool-resolver.js';
 import { rollDice } from '../dice.js';
 import type { BlockContext } from '@constancia/contracts';
 
@@ -241,5 +241,20 @@ describe('vtmPoolResolverBlock', () => {
       },
       { target: 'channel', content: '❌ Failure — no dice in pool.' },
     ]);
+  });
+});
+
+describe('vtmPoolHint', () => {
+  it("tells the player their dice pool for the Test's attribute and skill", () => {
+    expect(
+      vtmPoolHint(
+        { attribute: 'dexterity', skill: 'stealth' },
+        { attributes: { dexterity: 3 }, skills: { stealth: 3 } },
+      ),
+    ).toBe('Your pool: **6 dice** (Dexterity + Stealth).');
+    expect(
+      vtmPoolHint({ attribute: 'wits', skill: 'awareness' }, { attributes: { wits: 1 } }),
+    ).toBe('Your pool: **1 die** (Wits + Awareness).');
+    expect(vtmPoolHint({ attribute: '', skill: 'stealth' }, {})).toBeNull();
   });
 });

@@ -9,6 +9,7 @@ import {
   getBotCampaignDate,
   getBotJournalForPlayer,
   getCampaignByGuild,
+  getBotTestHint,
   getChannelEvents,
   listBotVisibleNpcsForPlayer,
   removeParticipant,
@@ -86,6 +87,7 @@ export interface BotBackend {
   requestPlayerJournalMagicLink(discordUserId: string, guildId: string): Promise<BotMagicLink>;
   submitMessageReport(input: BotMessageReportInput): Promise<void>;
   submitTestResult(input: BotTestResultInput): Promise<BotTestResult>;
+  getTestHint(instanceId: string, discordUserId: string): Promise<string | null>;
 }
 
 function parseMagicLink(payload: unknown, requireCampaign: boolean): BotMagicLink {
@@ -197,6 +199,11 @@ export function createGeneratedBotBackend(
     },
     submitTestResult: async (input) =>
       requireApiData(await submitBotTestResult(input, requestOptions()), 'submit test result'),
+    getTestHint: async (instanceId, discordUserId) =>
+      requireApiData(
+        await getBotTestHint({ instanceId, discordUserId }, requestOptions()),
+        'get test hint',
+      ).hint ?? null,
   };
 }
 
@@ -222,6 +229,7 @@ export function createInMemoryBotBackend(overrides: Partial<BotBackend> = {}): B
     requestPlayerJournalMagicLink: notConfigured,
     submitMessageReport: notConfigured,
     submitTestResult: notConfigured,
+    getTestHint: notConfigured,
     ...overrides,
   };
 }
