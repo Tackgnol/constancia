@@ -428,6 +428,9 @@
                               },
                               "required": ["id", "name", "months", "monthOrder"]
                             }
+                          },
+                          "attribution": {
+                            "type": "string"
                           }
                         },
                         "required": ["id", "name", "version", "defaultCalendarId", "calendars"]
@@ -573,6 +576,9 @@
                             },
                             "required": ["id", "name", "months", "monthOrder"]
                           }
+                        },
+                        "attribution": {
+                          "type": "string"
                         }
                       },
                       "required": ["id", "name", "version", "defaultCalendarId", "calendars"]

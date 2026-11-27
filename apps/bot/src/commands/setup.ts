@@ -89,6 +89,11 @@ export async function handleSetup(
         '\n\nSince this is a new campaign, you might want to visit the dashboard to configure it.';
     }
 
+    const attribution = await findSystemAttribution(backend, gameSystemId);
+    if (attribution) {
+      message += `\n\n-# ${attribution}`;
+    }
+
     // Auto-register the GM who ran /setup as the first participant (non-fatal)
     try {
       const member = interaction.member as GuildMember | null;
@@ -113,6 +118,16 @@ export async function handleSetup(
     }
     console.error('Setup command error:', error);
     await interaction.editReply('Failed to setup channel. Please try again later.');
+  }
+}
+
+/** The chosen system's licence credit, or null when it has none or the lookup fails. */
+async function findSystemAttribution(backend: BotBackend, gameSystemId: string) {
+  try {
+    const systems = await backend.listGameSystems();
+    return systems.find((system) => system.id === gameSystemId)?.attribution ?? null;
+  } catch {
+    return null;
   }
 }
 
