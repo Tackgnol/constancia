@@ -25,6 +25,7 @@ import {
   type WarRoomContext,
 } from '@/lib/war-room-data';
 import { demoNpcs } from '@/lib/demo-npcs';
+import { demo5eNpcs, isDemo5eRequest } from '@/lib/demo-5e-data';
 import { handleUploadImageAction } from '@/lib/upload-image-action.server';
 
 type ApiKnownPlayer = {
@@ -84,7 +85,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const pathname = new URL(request.url).pathname;
 
   if (pathname.startsWith('/demo/')) {
-    return demoNpcs.map(normalizeNpc);
+    return (isDemo5eRequest(request) ? demo5eNpcs : demoNpcs).map(normalizeNpc);
   }
 
   const campaignId = await resolveCurrentCampaignId(request);

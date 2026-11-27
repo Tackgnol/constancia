@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, useLoaderData, useLocation } from 'react-router';
+import { Outlet, useLoaderData, useLocation, type LoaderFunctionArgs } from 'react-router';
 import { WarRoomModeTabs } from '@/components/war-room/mode-tabs';
 import { GameDateControl } from '@/components/war-room/game-date-control';
 import { PlayerRail } from '@/components/war-room/player-rail';
@@ -8,10 +8,11 @@ import { quickNarrationActivityLabel } from '@/components/war-room/quick-narrati
 import { buildWarRoomModeTabs } from '@/components/war-room/war-room-navigation';
 import { ChannelRailExtras } from '@/components/war-room/channel-rail-extras';
 import { loadDemoWarRoomProjection } from '@/lib/demo-war-room-projection';
+import { isDemo5eRequest } from '@/lib/demo-5e-data';
 import type { GameDate } from '@constancia/contracts';
 
-export function loader() {
-  return loadDemoWarRoomProjection();
+export function loader({ request }: LoaderFunctionArgs) {
+  return loadDemoWarRoomProjection(isDemo5eRequest(request));
 }
 
 const tabs = buildWarRoomModeTabs('/demo', { includePlayer: true });

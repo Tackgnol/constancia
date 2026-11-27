@@ -1,7 +1,9 @@
-import { demoContext } from './demo-data.js';
+import { demo5eContext } from './demo-5e-data.js';
+import { demoContext as vtmDemoContext } from './demo-data.js';
 import { countEventsByChannel, type WarRoomProjection } from './war-room-projection.js';
 
-export function loadDemoWarRoomProjection(): WarRoomProjection {
+export function loadDemoWarRoomProjection(fiveE = false): WarRoomProjection {
+  const demoContext = fiveE ? demo5eContext : vtmDemoContext;
   return {
     campaign: demoContext.campaign,
     channels: demoContext.channels,
