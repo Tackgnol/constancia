@@ -12,6 +12,7 @@ describe('test-instance helpers', () => {
         id: 'event-1',
         name: 'Sneak Past the Hounds',
         campaignId: 'campaign-1',
+        gameSystemId: 'vtm-v5',
         pipeline: [
           {
             blockType: 'message-channel',
@@ -62,6 +63,7 @@ describe('test-instance helpers', () => {
           id: 'event-1',
           name: 'No Thresholds',
           campaignId: 'campaign-1',
+          gameSystemId: 'vtm-v5',
           pipeline: [{ blockType: 'message-channel', config: { content: 'Just narration.' } }],
         },
         'channel-1',
@@ -80,5 +82,29 @@ describe('test-instance helpers', () => {
         { blockType: 'message-channel', config: { content: 'Alarm bells ring.' } },
       ]),
     ).toEqual([{ blockType: 'outcome-map', config: { outcomes: [] } }]);
+  });
+
+  it('puts the roll-modifier line on the card and keeps the block out of manual resolution', () => {
+    const pipeline = [
+      { blockType: 'roll-modifier', config: { mode: 'advantage' } },
+      { blockType: 'test-resolver', config: { mode: 'check', ability: 'dex' } },
+      { blockType: 'outcome-map', config: { outcomes: [{ threshold: 15, text: 'You slip by.' }] } },
+    ];
+    const payload = buildTestInstancePayload(
+      {
+        id: 'event-2',
+        name: 'Stealth',
+        campaignId: 'campaign-1',
+        gameSystemId: '5e-srd',
+        pipeline,
+      },
+      'discord-channel-1',
+      'instance-2',
+    );
+
+    expect(payload?.rollModifierLine).toBe('🎲 Roll with advantage');
+    expect(filterManualTestResolutionPipeline(pipeline).map((block) => block.blockType)).toEqual([
+      'outcome-map',
+    ]);
   });
 });

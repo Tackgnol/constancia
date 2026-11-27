@@ -5,12 +5,14 @@ import type {
   TestThreshold,
 } from '@constancia/contracts';
 import type { PipelineRunner } from '@constancia/core';
+import { gameSystemRegistry } from '@constancia/systems';
 import { EventExecutionRequestError, type TestRollResult } from './event-execution.js';
 
 interface GameEventLike {
   id: string;
   name: string;
   campaignId: string;
+  gameSystemId: string;
   pipeline: unknown;
 }
 
@@ -109,6 +111,13 @@ export function buildTestInstancePayload(
   if (thresholds.length === 0) {
     return null;
   }
+  const rollModifier = event.pipeline.find((block) => block.blockType === 'roll-modifier');
+  const cardLine = gameSystemRegistry.get(event.gameSystemId)?.roleBlocks['roll-modifier']
+    ?.cardLine;
+  const rollModifierLine =
+    rollModifier && cardLine && isRecord(rollModifier.config)
+      ? (cardLine(rollModifier.config) ?? undefined)
+      : undefined;
 
   return {
     kind: 'test-instance',
@@ -119,11 +128,12 @@ export function buildTestInstancePayload(
     title: event.name,
     description: extractDescription(event.pipeline),
     imageUrl: extractImageUrl(event.pipeline),
+    ...(rollModifierLine ? { rollModifierLine } : {}),
     thresholds,
   };
 }
 
-const ROLL_BLOCK_TYPES = new Set(['test-resolver']);
+const ROLL_BLOCK_TYPES = new Set(['roll-modifier', 'test-resolver']);
 
 /**
  * Runs only the pipeline's roll blocks for Roll for me. The resolver's player messages become the
@@ -157,6 +167,11 @@ export async function rollTestResult(
 }
 
 export function filterManualTestResolutionPipeline(blocks: BlockInstance[]): BlockInstance[] {
-  const manualMetadataBlocks = new Set(['test-resolver', 'message-channel', 'display-image']);
+  const manualMetadataBlocks = new Set([
+    'roll-modifier',
+    'test-resolver',
+    'message-channel',
+    'display-image',
+  ]);
   return blocks.filter((block) => !manualMetadataBlocks.has(block.blockType));
 }

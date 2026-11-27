@@ -54,9 +54,11 @@ describe('BLOCK_TYPES / BLOCK_LABELS / defaultBlockConfigs completeness', () => 
     }
   });
 
-  it('gives every block type a VTM spec with a default config', () => {
+  it('gives every block type a default config in at least one Game System', () => {
     for (const blockType of BLOCK_TYPES) {
-      expect(getBlockSpecForSystem(blockType, VTM)?.defaultConfig, blockType).toBeDefined();
+      const spec =
+        getBlockSpecForSystem(blockType, VTM) ?? getBlockSpecForSystem(blockType, '5e-srd');
+      expect(spec?.defaultConfig, blockType).toBeDefined();
     }
   });
 

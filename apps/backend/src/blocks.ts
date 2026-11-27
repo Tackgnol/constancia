@@ -76,6 +76,12 @@ export function buildBlockRegistry(gameSystemId: string): BlockRegistry {
 
 /** Returns why a pipeline can't run under the campaign's Game System, or null when it can. */
 export function findPipelineError(gameSystemId: string, pipeline: BlockInstance[]): string | null {
+  const resolverIndex = pipeline.findIndex((block) => block.blockType === 'test-resolver');
+  const modifierIndex = pipeline.findIndex((block) => block.blockType === 'roll-modifier');
+  if (modifierIndex !== -1 && resolverIndex !== -1 && modifierIndex > resolverIndex) {
+    return 'Put the roll modifier before the test resolver so the roll can use it.';
+  }
+
   try {
     new PipelineRunner(buildBlockRegistry(gameSystemId)).validate(pipeline);
     return null;

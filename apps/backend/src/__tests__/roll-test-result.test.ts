@@ -40,4 +40,17 @@ describe('rollTestResult', () => {
       ),
     ).rejects.toBeInstanceOf(EventExecutionRequestError);
   });
+
+  it('passes a roll-modifier to the 5E resolver so advantage rolls two dice', async () => {
+    const roll = await rollTestResult(
+      new PipelineRunner(buildBlockRegistry('5e-srd')),
+      [
+        { blockType: 'roll-modifier', config: { mode: 'advantage' } },
+        { blockType: 'test-resolver', config: { mode: 'check', ability: 'dex' } },
+      ],
+      { ...ctx, characterData: { abilities: { dex: 14 } } },
+    );
+
+    expect(roll.breakdown[0]).toMatch(/^🎲 d20 \[\d+, \d+\] advantage \+2 DEX = \d+$/);
+  });
 });
