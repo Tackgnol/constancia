@@ -22,13 +22,14 @@ import {
   type CharacterSheetPatchBody,
 } from '@/lib/character-sheet';
 import { demoPlayerSheet } from '@/lib/demo-player-data';
+import { demo5ePlayerSheet, isDemo5eRequest } from '@/lib/demo-5e-data';
 import { postRouteAction } from '@/lib/route-action-client';
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const campaignId = params.campaignId ?? 'demo-crimson-dynasty';
 
   if (campaignId.startsWith('demo-')) {
-    return demoPlayerSheet;
+    return isDemo5eRequest(request) ? demo5ePlayerSheet : demoPlayerSheet;
   }
 
   try {
