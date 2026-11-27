@@ -4086,26 +4086,11 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": ["vtm-pool-resolver"]
+                                      "enum": ["test-resolver"]
                                     },
                                     "config": {
                                       "type": "object",
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "attribute": {
-                                          "type": "string",
-                                          "description": "Key into characterData.attributes"
-                                        },
-                                        "skill": {
-                                          "type": "string",
-                                          "description": "Key into characterData.skills"
-                                        },
-                                        "difficulty": {
-                                          "type": "number",
-                                          "description": "Number of successes needed to succeed"
-                                        }
-                                      },
-                                      "required": ["attribute", "skill"]
+                                      "additionalProperties": true
                                     }
                                   },
                                   "required": ["blockType", "config"]
@@ -4116,22 +4101,11 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": ["vtm-insight-resolver"]
+                                      "enum": ["insight-resolver"]
                                     },
                                     "config": {
                                       "type": "object",
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "attribute": {
-                                          "type": "string",
-                                          "description": "Key into characterData.attributes"
-                                        },
-                                        "skill": {
-                                          "type": "string",
-                                          "description": "Key into characterData.skills"
-                                        }
-                                      },
-                                      "required": ["attribute", "skill"]
+                                      "additionalProperties": true
                                     }
                                   },
                                   "required": ["blockType", "config"]
@@ -4458,26 +4432,11 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": ["vtm-pool-resolver"]
+                              "enum": ["test-resolver"]
                             },
                             "config": {
                               "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "attribute": {
-                                  "type": "string",
-                                  "description": "Key into characterData.attributes"
-                                },
-                                "skill": {
-                                  "type": "string",
-                                  "description": "Key into characterData.skills"
-                                },
-                                "difficulty": {
-                                  "type": "number",
-                                  "description": "Number of successes needed to succeed"
-                                }
-                              },
-                              "required": ["attribute", "skill"]
+                              "additionalProperties": true
                             }
                           },
                           "required": ["blockType", "config"]
@@ -4488,22 +4447,11 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": ["vtm-insight-resolver"]
+                              "enum": ["insight-resolver"]
                             },
                             "config": {
                               "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "attribute": {
-                                  "type": "string",
-                                  "description": "Key into characterData.attributes"
-                                },
-                                "skill": {
-                                  "type": "string",
-                                  "description": "Key into characterData.skills"
-                                }
-                              },
-                              "required": ["attribute", "skill"]
+                              "additionalProperties": true
                             }
                           },
                           "required": ["blockType", "config"]
@@ -4838,26 +4786,11 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": ["vtm-pool-resolver"]
+                                    "enum": ["test-resolver"]
                                   },
                                   "config": {
                                     "type": "object",
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "attribute": {
-                                        "type": "string",
-                                        "description": "Key into characterData.attributes"
-                                      },
-                                      "skill": {
-                                        "type": "string",
-                                        "description": "Key into characterData.skills"
-                                      },
-                                      "difficulty": {
-                                        "type": "number",
-                                        "description": "Number of successes needed to succeed"
-                                      }
-                                    },
-                                    "required": ["attribute", "skill"]
+                                    "additionalProperties": true
                                   }
                                 },
                                 "required": ["blockType", "config"]
@@ -4868,22 +4801,11 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": ["vtm-insight-resolver"]
+                                    "enum": ["insight-resolver"]
                                   },
                                   "config": {
                                     "type": "object",
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "attribute": {
-                                        "type": "string",
-                                        "description": "Key into characterData.attributes"
-                                      },
-                                      "skill": {
-                                        "type": "string",
-                                        "description": "Key into characterData.skills"
-                                      }
-                                    },
-                                    "required": ["attribute", "skill"]
+                                    "additionalProperties": true
                                   }
                                 },
                                 "required": ["blockType", "config"]
@@ -5246,26 +5168,11 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": ["vtm-pool-resolver"]
+                                    "enum": ["test-resolver"]
                                   },
                                   "config": {
                                     "type": "object",
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "attribute": {
-                                        "type": "string",
-                                        "description": "Key into characterData.attributes"
-                                      },
-                                      "skill": {
-                                        "type": "string",
-                                        "description": "Key into characterData.skills"
-                                      },
-                                      "difficulty": {
-                                        "type": "number",
-                                        "description": "Number of successes needed to succeed"
-                                      }
-                                    },
-                                    "required": ["attribute", "skill"]
+                                    "additionalProperties": true
                                   }
                                 },
                                 "required": ["blockType", "config"]
@@ -5276,22 +5183,11 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": ["vtm-insight-resolver"]
+                                    "enum": ["insight-resolver"]
                                   },
                                   "config": {
                                     "type": "object",
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "attribute": {
-                                        "type": "string",
-                                        "description": "Key into characterData.attributes"
-                                      },
-                                      "skill": {
-                                        "type": "string",
-                                        "description": "Key into characterData.skills"
-                                      }
-                                    },
-                                    "required": ["attribute", "skill"]
+                                    "additionalProperties": true
                                   }
                                 },
                                 "required": ["blockType", "config"]
@@ -5621,26 +5517,11 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": ["vtm-pool-resolver"]
+                              "enum": ["test-resolver"]
                             },
                             "config": {
                               "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "attribute": {
-                                  "type": "string",
-                                  "description": "Key into characterData.attributes"
-                                },
-                                "skill": {
-                                  "type": "string",
-                                  "description": "Key into characterData.skills"
-                                },
-                                "difficulty": {
-                                  "type": "number",
-                                  "description": "Number of successes needed to succeed"
-                                }
-                              },
-                              "required": ["attribute", "skill"]
+                              "additionalProperties": true
                             }
                           },
                           "required": ["blockType", "config"]
@@ -5651,22 +5532,11 @@
                           "properties": {
                             "blockType": {
                               "type": "string",
-                              "enum": ["vtm-insight-resolver"]
+                              "enum": ["insight-resolver"]
                             },
                             "config": {
                               "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "attribute": {
-                                  "type": "string",
-                                  "description": "Key into characterData.attributes"
-                                },
-                                "skill": {
-                                  "type": "string",
-                                  "description": "Key into characterData.skills"
-                                }
-                              },
-                              "required": ["attribute", "skill"]
+                              "additionalProperties": true
                             }
                           },
                           "required": ["blockType", "config"]
@@ -6008,26 +5878,11 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": ["vtm-pool-resolver"]
+                                    "enum": ["test-resolver"]
                                   },
                                   "config": {
                                     "type": "object",
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "attribute": {
-                                        "type": "string",
-                                        "description": "Key into characterData.attributes"
-                                      },
-                                      "skill": {
-                                        "type": "string",
-                                        "description": "Key into characterData.skills"
-                                      },
-                                      "difficulty": {
-                                        "type": "number",
-                                        "description": "Number of successes needed to succeed"
-                                      }
-                                    },
-                                    "required": ["attribute", "skill"]
+                                    "additionalProperties": true
                                   }
                                 },
                                 "required": ["blockType", "config"]
@@ -6038,22 +5893,11 @@
                                 "properties": {
                                   "blockType": {
                                     "type": "string",
-                                    "enum": ["vtm-insight-resolver"]
+                                    "enum": ["insight-resolver"]
                                   },
                                   "config": {
                                     "type": "object",
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "attribute": {
-                                        "type": "string",
-                                        "description": "Key into characterData.attributes"
-                                      },
-                                      "skill": {
-                                        "type": "string",
-                                        "description": "Key into characterData.skills"
-                                      }
-                                    },
-                                    "required": ["attribute", "skill"]
+                                    "additionalProperties": true
                                   }
                                 },
                                 "required": ["blockType", "config"]
@@ -12333,26 +12177,11 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": ["vtm-pool-resolver"]
+                                      "enum": ["test-resolver"]
                                     },
                                     "config": {
                                       "type": "object",
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "attribute": {
-                                          "type": "string",
-                                          "description": "Key into characterData.attributes"
-                                        },
-                                        "skill": {
-                                          "type": "string",
-                                          "description": "Key into characterData.skills"
-                                        },
-                                        "difficulty": {
-                                          "type": "number",
-                                          "description": "Number of successes needed to succeed"
-                                        }
-                                      },
-                                      "required": ["attribute", "skill"]
+                                      "additionalProperties": true
                                     }
                                   },
                                   "required": ["blockType", "config"]
@@ -12363,22 +12192,11 @@
                                   "properties": {
                                     "blockType": {
                                       "type": "string",
-                                      "enum": ["vtm-insight-resolver"]
+                                      "enum": ["insight-resolver"]
                                     },
                                     "config": {
                                       "type": "object",
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "attribute": {
-                                          "type": "string",
-                                          "description": "Key into characterData.attributes"
-                                        },
-                                        "skill": {
-                                          "type": "string",
-                                          "description": "Key into characterData.skills"
-                                        }
-                                      },
-                                      "required": ["attribute", "skill"]
+                                      "additionalProperties": true
                                     }
                                   },
                                   "required": ["blockType", "config"]

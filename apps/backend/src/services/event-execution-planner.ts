@@ -7,7 +7,7 @@ import type {
 import { PipelineRunner } from '@constancia/core';
 import type { PrismaClient } from '@constancia/db';
 import { randomUUID } from 'node:crypto';
-import { buildBlockRegistry } from '../blocks.js';
+import { buildBlockRegistry, findPipelineError } from '../blocks.js';
 import {
   EventExecutionRequestError,
   type EventExecutionPlanner,
@@ -20,7 +20,8 @@ import { assertCampaignActive } from './moderation-enforcement.js';
 import { buildTestInstancePayload, filterManualTestResolutionPipeline } from './test-instance.js';
 
 export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventExecutionPlanner {
-  const createRunner = () => new PipelineRunner(buildBlockRegistry());
+  const createRunner = (gameSystemId: string) =>
+    new PipelineRunner(buildBlockRegistry(gameSystemId));
 
   return {
     async planFire(command: FireEventCommand): Promise<PlannedEventExecution> {
@@ -35,7 +36,9 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
           channelId: true,
           pipeline: true,
           channel: { select: { discordChannelId: true } },
-          campaign: { select: { disabledAt: true, disabledPublicReason: true } },
+          campaign: {
+            select: { disabledAt: true, disabledPublicReason: true, gameSystemId: true },
+          },
         },
       });
 
@@ -55,6 +58,11 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
       }
 
       const pipeline = parsePipeline(event.pipeline);
+      const { gameSystemId } = event.campaign;
+      const pipelineError = findPipelineError(gameSystemId, pipeline);
+      if (pipelineError) {
+        throw new EventExecutionRequestError(422, 'PIPELINE_UNSUPPORTED', pipelineError);
+      }
 
       if (event.type === 'test') {
         const instanceId = randomUUID();
@@ -74,24 +82,30 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
         });
         const resolutionPipeline = filterInsightResolutionPipeline(pipeline);
         const messages: BlockMessage[] = [];
-        const eventEffects = await createRunner().run(filterEventEffectPipeline(pipeline), {
-          campaignId: event.campaignId,
-          channelId: event.channelId,
-          playerId: 'system',
-          characterData: {},
-        });
+        const registry = buildBlockRegistry(gameSystemId);
+        const eventEffects = await new PipelineRunner(registry).run(
+          filterEventEffectPipeline(pipeline),
+          {
+            campaignId: event.campaignId,
+            channelId: event.channelId,
+            playerId: 'system',
+            characterData: {},
+          },
+        );
 
         for (const character of characters) {
-          const characterData = parseCharacterData(character.systemData);
-          const score = resolveInsightScore(pipeline, characterData);
-          if (!score) continue;
-
-          const result = await createRunner().run(resolutionPipeline, {
+          const playerCtx = {
             campaignId: event.campaignId,
             channelId: event.channelId,
             playerId: character.discordUserId,
+            characterData: parseCharacterData(character.systemData),
+          };
+          const score = await resolveInsightScore(registry, pipeline, playerCtx);
+          if (!score) continue;
+
+          const result = await new PipelineRunner(registry).run(resolutionPipeline, {
+            ...playerCtx,
             playerScore: score.score,
-            characterData,
           });
           messages.push(...result.messages);
         }
@@ -105,7 +119,7 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
         );
       }
 
-      const result = await createRunner().run(pipeline, {
+      const result = await createRunner(gameSystemId).run(pipeline, {
         campaignId: event.campaignId,
         channelId: event.channelId,
         playerId: 'system',
@@ -132,7 +146,9 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
               channelId: true,
               pipeline: true,
               channel: { select: { discordChannelId: true } },
-              campaign: { select: { disabledAt: true, disabledPublicReason: true } },
+              campaign: {
+                select: { disabledAt: true, disabledPublicReason: true, gameSystemId: true },
+              },
             },
           },
           submissions: {
@@ -191,7 +207,7 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
         );
       }
 
-      const result = await createRunner().run(
+      const result = await createRunner(event.campaign.gameSystemId).run(
         filterManualTestResolutionPipeline(parsePipeline(event.pipeline)),
         {
           campaignId: event.campaignId,

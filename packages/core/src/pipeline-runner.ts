@@ -13,6 +13,7 @@ export interface PipelineResult {
   effects: BlockEffect[];
   outputs: unknown[];
   halted: boolean;
+  playerScore?: number;
 }
 
 function formatValidationErrors(errors: ErrorObject[] | null | undefined): string {
@@ -65,6 +66,13 @@ export class BlockConfigValidationError extends Error {
   }
 }
 
+export class UnknownBlockTypeError extends Error {
+  constructor(readonly blockType: string) {
+    super(`Unknown block type: "${blockType}"`);
+    this.name = 'UnknownBlockTypeError';
+  }
+}
+
 export class PipelineRunner {
   private ajv = new Ajv({ allErrors: true });
   private validatorCache = new Map<string, ValidateFunction>();
@@ -99,21 +107,37 @@ export class PipelineRunner {
     }
   }
 
-  async run(blocks: BlockInstance[], ctx: BlockContext): Promise<PipelineResult> {
+  private requireBlock(blockType: string): BlockDefinition<unknown> {
+    const block = this.registry.get(blockType);
+    if (!block) {
+      throw new UnknownBlockTypeError(blockType);
+    }
+    return block;
+  }
+
+  /** Checks every block exists in the registry and its config matches the block's schema, without running anything. */
+  validate(blocks: BlockInstance[]): void {
+    for (const [index, instance] of blocks.entries()) {
+      this.validateBlockConfig(this.requireBlock(instance.blockType), instance.config, index);
+    }
+  }
+
+  async run(blocks: BlockInstance[], initialCtx: BlockContext): Promise<PipelineResult> {
     const messages: BlockMessage[] = [];
     const effects: BlockEffect[] = [];
     const outputs: unknown[] = [];
+    let ctx = initialCtx;
 
     for (const [index, instance] of blocks.entries()) {
-      const block = this.registry.get(instance.blockType);
-      if (!block) {
-        throw new Error(`Unknown block type: "${instance.blockType}"`);
-      }
+      const block = this.requireBlock(instance.blockType);
 
       this.validateBlockConfig(block, instance.config, index);
 
       const result = await block.execute(instance.config, ctx);
       outputs.push(result.output);
+      if (result.playerScore !== undefined) {
+        ctx = { ...ctx, playerScore: result.playerScore };
+      }
 
       if (result.messages) {
         messages.push(...normalizeMessages(result.messages, ctx));
@@ -124,10 +148,10 @@ export class PipelineRunner {
       }
 
       if (result.halt) {
-        return { messages, effects, outputs, halted: true };
+        return { messages, effects, outputs, halted: true, playerScore: ctx.playerScore };
       }
     }
 
-    return { messages, effects, outputs, halted: false };
+    return { messages, effects, outputs, halted: false, playerScore: ctx.playerScore };
   }
 }

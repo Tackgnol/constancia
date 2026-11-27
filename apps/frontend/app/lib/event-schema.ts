@@ -2,9 +2,11 @@ import { z } from 'zod';
 import {
   PIPELINE_BLOCK_SPECS,
   PIPELINE_BLOCK_TYPES,
-  createDefaultPipelineBlock,
+  type PipelineBlockRole,
+  type PipelineBlockSpec,
   type PipelineBlockType,
 } from '@constancia/block-catalogue';
+import { gameSystemRegistry, getPipelineBlockSpecForSystem } from '@constancia/systems';
 
 // ── Per-block config schemas ──────────────────────────────────────────────────
 
@@ -88,16 +90,9 @@ export const retrieveDataConfigSchema = z.object({
   query: z.record(z.string(), z.unknown()).optional(),
 });
 
-export const vtmPoolResolverConfigSchema = z.object({
-  attribute: z.string().min(1, 'Attribute key is required'),
-  skill: z.string().min(1, 'Skill key is required'),
-  difficulty: z.coerce.number().optional(),
-});
-
-export const vtmInsightResolverConfigSchema = z.object({
-  attribute: z.string().min(1, 'Attribute key is required'),
-  skill: z.string().min(1, 'Skill key is required'),
-});
+// Role block config is shaped by the campaign's Game System; required fields are checked in
+// createEventFormSchema against that system's spec.
+const roleBlockConfigSchema = z.record(z.string(), z.unknown());
 
 const pipelineBlockConfigSchemas = {
   'message-player': messagePlayerConfigSchema,
@@ -109,8 +104,8 @@ const pipelineBlockConfigSchemas = {
   'conditional-gate': conditionalGateConfigSchema,
   'outcome-map': outcomeMapConfigSchema,
   'retrieve-data': retrieveDataConfigSchema,
-  'vtm-pool-resolver': vtmPoolResolverConfigSchema,
-  'vtm-insight-resolver': vtmInsightResolverConfigSchema,
+  'test-resolver': roleBlockConfigSchema,
+  'insight-resolver': roleBlockConfigSchema,
 } as const satisfies Record<PipelineBlockType, z.ZodType>;
 
 // ── Block types ───────────────────────────────────────────────────────────────
@@ -128,20 +123,44 @@ export const BLOCK_LABELS = Object.fromEntries(
   PIPELINE_BLOCK_SPECS.map((spec) => [spec.blockType, spec.label]),
 ) as Record<BlockType, string>;
 
-export const defaultBlockConfigs = new Map<BlockType, Record<string, unknown>>(
-  PIPELINE_BLOCK_SPECS.map((spec) => [spec.blockType, spec.defaultConfig]),
-);
+/** The block's spec as the campaign's Game System sees it, or undefined when the system lacks its role. */
+export function getBlockSpecForSystem(
+  blockType: BlockType,
+  gameSystemId: string,
+): PipelineBlockSpec | undefined {
+  const system = gameSystemRegistry.get(gameSystemId);
+  if (system) return getPipelineBlockSpecForSystem(blockType, system);
+  const spec = PIPELINE_BLOCK_SPECS.find((candidate) => candidate.blockType === blockType);
+  return spec?.availability.kind === 'common' ? spec : undefined;
+}
+
+export function isBlockTypeAvailable(blockType: BlockType, gameSystemId: string): boolean {
+  return getBlockSpecForSystem(blockType, gameSystemId) !== undefined;
+}
+
+const EVENT_TYPE_ROLES: Partial<Record<EventType, PipelineBlockRole>> = {
+  test: 'test-resolver',
+  insight: 'insight-resolver',
+};
+
+/** Event types the campaign's Game System can run; types whose role it lacks are hidden. */
+export function getEventTypesForSystem(gameSystemId: string): EventType[] {
+  return EVENT_TYPES.filter((type) => {
+    const role = EVENT_TYPE_ROLES[type];
+    return !role || isBlockTypeAvailable(role, gameSystemId);
+  });
+}
 
 const DEFAULT_PIPELINE_BLOCKS_BY_EVENT_TYPE: Record<EventType, readonly BlockType[]> = {
-  test: ['vtm-pool-resolver', 'outcome-map'],
+  test: ['test-resolver', 'outcome-map'],
   narration: ['message-channel'],
-  insight: ['vtm-insight-resolver', 'outcome-map'],
+  insight: ['insight-resolver', 'outcome-map'],
   message: ['message-player'],
 };
 
 const SUGGESTED_BLOCK_TYPES_BY_EVENT_TYPE: Record<EventType, readonly BlockType[]> = {
   test: [
-    'vtm-pool-resolver',
+    'test-resolver',
     'outcome-map',
     'conditional-gate',
     'message-player',
@@ -160,15 +179,15 @@ const SUGGESTED_BLOCK_TYPES_BY_EVENT_TYPE: Record<EventType, readonly BlockType[
     'conditional-gate',
     'retrieve-data',
     'outcome-map',
-    'vtm-pool-resolver',
+    'test-resolver',
   ],
   insight: [
-    'vtm-insight-resolver',
+    'insight-resolver',
     'outcome-map',
     'conditional-gate',
     'message-player',
     'retrieve-data',
-    'vtm-pool-resolver',
+    'test-resolver',
   ],
   message: [
     'message-player',
@@ -178,27 +197,38 @@ const SUGGESTED_BLOCK_TYPES_BY_EVENT_TYPE: Record<EventType, readonly BlockType[
     'conditional-gate',
     'retrieve-data',
     'outcome-map',
-    'vtm-pool-resolver',
+    'test-resolver',
   ],
 };
 
-function cloneDefaultBlockConfig(blockType: BlockType): Record<string, unknown> {
-  return createDefaultPipelineBlock(blockType).config;
-}
-
-export function createPipelineBlock(blockType: BlockType): PipelineBlock {
+export function createPipelineBlock(blockType: BlockType, gameSystemId: string): PipelineBlock {
+  const spec = getBlockSpecForSystem(blockType, gameSystemId);
   return {
     blockType,
-    config: cloneDefaultBlockConfig(blockType),
+    config: structuredClone(spec?.defaultConfig ?? {}),
   };
 }
 
-export function getDefaultPipelineForEventType(type: EventType): PipelineBlock[] {
-  return DEFAULT_PIPELINE_BLOCKS_BY_EVENT_TYPE[type].map(createPipelineBlock);
+export function getDefaultPipelineForEventType(
+  type: EventType,
+  gameSystemId: string,
+): PipelineBlock[] {
+  return DEFAULT_PIPELINE_BLOCKS_BY_EVENT_TYPE[type]
+    .filter((blockType) => isBlockTypeAvailable(blockType, gameSystemId))
+    .map((blockType) => createPipelineBlock(blockType, gameSystemId));
 }
 
-export function getSuggestedBlockTypesForEventType(type: EventType): readonly BlockType[] {
-  return SUGGESTED_BLOCK_TYPES_BY_EVENT_TYPE[type];
+export function getSuggestedBlockTypesForEventType(
+  type: EventType,
+  gameSystemId: string,
+): readonly BlockType[] {
+  return SUGGESTED_BLOCK_TYPES_BY_EVENT_TYPE[type].filter((blockType) =>
+    isBlockTypeAvailable(blockType, gameSystemId),
+  );
+}
+
+export function getAvailableBlockTypes(gameSystemId: string): readonly BlockType[] {
+  return BLOCK_TYPES.filter((blockType) => isBlockTypeAvailable(blockType, gameSystemId));
 }
 
 function serializePipeline(pipeline: PipelineBlock[]): string {
@@ -208,12 +238,16 @@ function serializePipeline(pipeline: PipelineBlock[]): string {
 export function isPipelineEqualToEventDefault(
   type: EventType,
   pipeline: PipelineBlock[] | undefined,
+  gameSystemId: string,
 ): boolean {
   if (!pipeline) {
     return false;
   }
 
-  return serializePipeline(pipeline) === serializePipeline(getDefaultPipelineForEventType(type));
+  return (
+    serializePipeline(pipeline) ===
+    serializePipeline(getDefaultPipelineForEventType(type, gameSystemId))
+  );
 }
 
 // ── Event form schema ─────────────────────────────────────────────────────────
@@ -238,15 +272,46 @@ export const pipelineBlockSchema = z
     }
   });
 
-export const eventFormSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  type: z.enum(EVENT_TYPES),
-  channelId: z.string().min(1, 'Channel is required'),
-  shortCircuit: z.boolean(),
-  pipeline: z.array(pipelineBlockSchema).min(1, 'Add at least one block'),
-});
+function isMissingValue(value: unknown): boolean {
+  return value === undefined || value === null || (typeof value === 'string' && !value.trim());
+}
 
-export type EventFormValues = z.infer<typeof eventFormSchema>;
+/** Event form schema for one campaign: role blocks are checked against its Game System's spec. */
+export function createEventFormSchema(gameSystemId: string) {
+  const systemPipelineBlockSchema = pipelineBlockSchema.superRefine((block, context) => {
+    const spec = getBlockSpecForSystem(block.blockType, gameSystemId);
+    if (!spec) {
+      context.addIssue({
+        code: 'custom',
+        message: 'This Game System does not support this block.',
+        path: ['blockType'],
+      });
+      return;
+    }
+    if (spec.availability.kind !== 'role') return;
+
+    const labels = new Map(spec.editor.fields.map((field) => [field.path, field.label]));
+    for (const key of spec.configSchema.required ?? []) {
+      if (!isMissingValue(block.config[key])) continue;
+      const label = labels.get(key) ?? key;
+      context.addIssue({
+        code: 'custom',
+        message: `${label} is required`,
+        path: ['config', key],
+      });
+    }
+  });
+
+  return z.object({
+    name: z.string().min(1, 'Name is required'),
+    type: z.enum(EVENT_TYPES),
+    channelId: z.string().min(1, 'Channel is required'),
+    shortCircuit: z.boolean(),
+    pipeline: z.array(systemPipelineBlockSchema).min(1, 'Add at least one block'),
+  });
+}
+
+export type EventFormValues = z.infer<ReturnType<typeof createEventFormSchema>>;
 export type PipelineBlock = z.infer<typeof pipelineBlockSchema>;
 
 type PipelineBlockConfigNormalizer = (block: PipelineBlock) => PipelineBlock;

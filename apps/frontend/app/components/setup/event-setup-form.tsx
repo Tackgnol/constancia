@@ -14,8 +14,8 @@ import {
 } from '@/components/ui/select';
 import type { ChannelEntry } from '@/lib/war-room-data';
 import {
-  EVENT_TYPES,
   getDefaultPipelineForEventType,
+  getEventTypesForSystem,
   isPipelineEqualToEventDefault,
   type EventFormValues,
 } from '@/lib/event-schema';
@@ -23,11 +23,13 @@ import {
 export function EventSetupForm({
   methods,
   channels,
+  gameSystemId,
   onSubmit,
   submitLabel = 'Save event',
 }: {
   methods: UseFormReturn<EventFormValues>;
   channels: ChannelEntry[];
+  gameSystemId: string;
   onSubmit: (values: EventFormValues) => Promise<void> | void;
   submitLabel?: string;
 }) {
@@ -64,9 +66,9 @@ export function EventSetupForm({
     if (
       pipeline === undefined ||
       pipeline.length === 0 ||
-      isPipelineEqualToEventDefault(previousType, pipeline)
+      isPipelineEqualToEventDefault(previousType, pipeline, gameSystemId)
     ) {
-      methods.setValue('pipeline', getDefaultPipelineForEventType(eventType), {
+      methods.setValue('pipeline', getDefaultPipelineForEventType(eventType, gameSystemId), {
         shouldDirty: true,
         shouldTouch: true,
         shouldValidate: true,
@@ -74,7 +76,7 @@ export function EventSetupForm({
     }
 
     previousTypeRef.current = eventType;
-  }, [eventType, methods, pipeline]);
+  }, [eventType, gameSystemId, methods, pipeline]);
 
   return (
     <FormProvider {...methods}>
@@ -118,7 +120,7 @@ export function EventSetupForm({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {EVENT_TYPES.map((type) => (
+                      {getEventTypesForSystem(gameSystemId).map((type) => (
                         <SelectItem key={type} value={type}>
                           {type}
                         </SelectItem>
@@ -184,6 +186,7 @@ export function EventSetupForm({
 
         <PipelineBuilder
           eventType={eventType}
+          gameSystemId={gameSystemId}
           footer={
             <button className="form-submit" type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Saving…' : submitLabel}

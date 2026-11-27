@@ -117,6 +117,6 @@ export function buildTestInstancePayload(
 }
 
 export function filterManualTestResolutionPipeline(blocks: BlockInstance[]): BlockInstance[] {
-  const manualMetadataBlocks = new Set(['vtm-pool-resolver', 'message-channel', 'display-image']);
+  const manualMetadataBlocks = new Set(['test-resolver', 'message-channel', 'display-image']);
   return blocks.filter((block) => !manualMetadataBlocks.has(block.blockType));
 }

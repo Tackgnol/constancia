@@ -3,10 +3,11 @@ import {
   BLOCK_LABELS,
   BLOCK_TYPES,
   EVENT_TYPES,
+  createEventFormSchema,
   createPipelineBlock,
-  defaultBlockConfigs,
-  eventFormSchema,
+  getBlockSpecForSystem,
   getDefaultPipelineForEventType,
+  getEventTypesForSystem,
   getSuggestedBlockTypesForEventType,
   isPipelineEqualToEventDefault,
   normalizeEventFormValues,
@@ -16,6 +17,9 @@ import {
   type EventFormValues,
   type PipelineBlock,
 } from '../event-schema.js';
+
+const VTM = 'vtm-v5';
+const MORK_BORG = 'mork-borg';
 
 /**
  * Every required string field in a per-block config schema is empty in that block's own default
@@ -49,9 +53,9 @@ describe('BLOCK_TYPES / BLOCK_LABELS / defaultBlockConfigs completeness', () => 
     }
   });
 
-  it('gives every block type a default config entry', () => {
+  it('gives every block type a VTM spec with a default config', () => {
     for (const blockType of BLOCK_TYPES) {
-      expect(defaultBlockConfigs.has(blockType), blockType).toBe(true);
+      expect(getBlockSpecForSystem(blockType, VTM)?.defaultConfig, blockType).toBeDefined();
     }
   });
 
@@ -64,7 +68,7 @@ describe('defaultBlockConfigs vs. per-block config schemas', () => {
   it.each(BLOCK_TYPES)(
     'is structurally accepted by the "%s" schema once placeholder strings are filled in',
     (blockType) => {
-      const config = defaultBlockConfigs.get(blockType);
+      const config = createPipelineBlock(blockType, VTM).config;
       expect(config, blockType).toBeDefined();
 
       const result = pipelineBlockSchema.safeParse({
@@ -82,7 +86,7 @@ describe('defaultBlockConfigs vs. per-block config schemas', () => {
   // Documents, rather than merely assumes, that a freshly-added block's blank config is expected
   // to fail submission validation until the game master fills in the required fields.
   it('leaves defaultBlockConfigs failing validation for blocks with required non-empty fields', () => {
-    const messagePlayerDefault = defaultBlockConfigs.get('message-player');
+    const messagePlayerDefault = createPipelineBlock('message-player', VTM).config;
 
     expect(
       pipelineBlockSchema.safeParse({ blockType: 'message-player', config: messagePlayerDefault })
@@ -94,7 +98,7 @@ describe('defaultBlockConfigs vs. per-block config schemas', () => {
   // configSchema and defaultConfig, which seed `text: ''`), so its untouched default is expected
   // to pass validation immediately rather than join the "requires filling in" set above.
   it('lets outcome-map default config pass validation as-is', () => {
-    const outcomeMapDefault = defaultBlockConfigs.get('outcome-map');
+    const outcomeMapDefault = createPipelineBlock('outcome-map', VTM).config;
 
     expect(
       pipelineBlockSchema.safeParse({ blockType: 'outcome-map', config: outcomeMapDefault })
@@ -103,15 +107,17 @@ describe('defaultBlockConfigs vs. per-block config schemas', () => {
   });
 
   it('gives outcome-map at least one outcome by default, matching the min(1) outcomes requirement', () => {
-    const config = defaultBlockConfigs.get('outcome-map') as { outcomes: unknown[] } | undefined;
+    const config = createPipelineBlock('outcome-map', VTM).config as
+      | { outcomes: unknown[] }
+      | undefined;
     expect(config?.outcomes.length).toBeGreaterThanOrEqual(1);
   });
 });
 
 describe('createPipelineBlock', () => {
   it('clones the default config rather than sharing a mutable reference', () => {
-    const first = createPipelineBlock('message-channel');
-    const second = createPipelineBlock('message-channel');
+    const first = createPipelineBlock('message-channel', VTM);
+    const second = createPipelineBlock('message-channel', VTM);
 
     first.config.content = 'changed';
     expect(second.config.content).not.toBe('changed');
@@ -120,7 +126,7 @@ describe('createPipelineBlock', () => {
 
 describe('getDefaultPipelineForEventType', () => {
   it.each(EVENT_TYPES)('produces only block types drawn from BLOCK_TYPES for "%s"', (eventType) => {
-    const pipeline = getDefaultPipelineForEventType(eventType);
+    const pipeline = getDefaultPipelineForEventType(eventType, VTM);
     expect(pipeline.length).toBeGreaterThan(0);
     for (const block of pipeline) {
       expect(BLOCK_TYPES, eventType).toContain(block.blockType);
@@ -130,7 +136,7 @@ describe('getDefaultPipelineForEventType', () => {
 
 describe('getSuggestedBlockTypesForEventType', () => {
   it.each(EVENT_TYPES)('suggests only block types drawn from BLOCK_TYPES for "%s"', (eventType) => {
-    for (const blockType of getSuggestedBlockTypesForEventType(eventType)) {
+    for (const blockType of getSuggestedBlockTypesForEventType(eventType, VTM)) {
       expect(BLOCK_TYPES, eventType).toContain(blockType);
     }
   });
@@ -139,22 +145,26 @@ describe('getSuggestedBlockTypesForEventType', () => {
 describe('isPipelineEqualToEventDefault', () => {
   it('is true for the untouched default pipeline', () => {
     expect(
-      isPipelineEqualToEventDefault('narration', getDefaultPipelineForEventType('narration')),
+      isPipelineEqualToEventDefault(
+        'narration',
+        getDefaultPipelineForEventType('narration', VTM),
+        VTM,
+      ),
     ).toBe(true);
   });
 
   it('is false once a block config has been edited', () => {
-    const pipeline = getDefaultPipelineForEventType('narration');
+    const pipeline = getDefaultPipelineForEventType('narration', VTM);
     const edited: PipelineBlock[] = pipeline.map((block) => ({
       ...block,
       config: { ...block.config, content: 'Something happened.' },
     }));
 
-    expect(isPipelineEqualToEventDefault('narration', edited)).toBe(false);
+    expect(isPipelineEqualToEventDefault('narration', edited, VTM)).toBe(false);
   });
 
   it('is false when the pipeline is undefined', () => {
-    expect(isPipelineEqualToEventDefault('narration', undefined)).toBe(false);
+    expect(isPipelineEqualToEventDefault('narration', undefined, VTM)).toBe(false);
   });
 });
 
@@ -214,7 +224,7 @@ describe('normalizeEventFormValues', () => {
   });
 });
 
-describe('eventFormSchema', () => {
+describe('createEventFormSchema', () => {
   it('accepts a fully filled-in event form', () => {
     const values: EventFormValues = {
       name: 'Ambush',
@@ -224,7 +234,7 @@ describe('eventFormSchema', () => {
       pipeline: [{ blockType: 'message-player', config: { content: 'Hi' } }],
     };
 
-    expect(eventFormSchema.safeParse(values).success).toBe(true);
+    expect(createEventFormSchema(VTM).safeParse(values).success).toBe(true);
   });
 
   it('rejects a pipeline with no blocks', () => {
@@ -236,7 +246,7 @@ describe('eventFormSchema', () => {
       pipeline: [],
     };
 
-    expect(eventFormSchema.safeParse(values).success).toBe(false);
+    expect(createEventFormSchema(VTM).safeParse(values).success).toBe(false);
   });
 
   it('surfaces a per-block config error at the pipeline path', () => {
@@ -248,7 +258,7 @@ describe('eventFormSchema', () => {
       pipeline: [{ blockType: 'message-player', config: { content: '' } }],
     };
 
-    const result = eventFormSchema.safeParse(values);
+    const result = createEventFormSchema(VTM).safeParse(values);
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0]?.path).toEqual(['pipeline', 0, 'config', 'content']);
@@ -274,5 +284,52 @@ describe('outcomeEntrySchema', () => {
       expect(result.data.loreEntryIds).toEqual(['lore-1']);
       expect(result.data.npcFactIds).toEqual(['fact-1', 'fact-2']);
     }
+  });
+});
+
+describe('role blocks follow the campaign Game System', () => {
+  it('hides test and insight Event types for a system without resolver roles', () => {
+    expect(getEventTypesForSystem(VTM)).toEqual(['test', 'narration', 'insight', 'message']);
+    expect(getEventTypesForSystem(MORK_BORG)).toEqual(['narration', 'message']);
+  });
+
+  it('only suggests blocks the system implements', () => {
+    expect(getSuggestedBlockTypesForEventType('narration', MORK_BORG)).not.toContain(
+      'test-resolver',
+    );
+    expect(getSuggestedBlockTypesForEventType('narration', VTM)).toContain('test-resolver');
+  });
+
+  it("seeds role blocks with the system's default config", () => {
+    expect(createPipelineBlock('test-resolver', VTM).config).toEqual({ attribute: '', skill: '' });
+  });
+
+  it("reports the system's required role config fields by label", () => {
+    const result = createEventFormSchema(VTM).safeParse({
+      name: 'Sneak',
+      type: 'test',
+      channelId: 'channel-1',
+      shortCircuit: false,
+      pipeline: [{ blockType: 'test-resolver', config: { attribute: 'dexterity', skill: '' } }],
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map((issue) => [issue.path, issue.message])).toEqual([
+        [['pipeline', 0, 'config', 'skill'], 'Skill is required'],
+      ]);
+    }
+  });
+
+  it('rejects a role block the system does not implement', () => {
+    const result = createEventFormSchema(MORK_BORG).safeParse({
+      name: 'Sneak',
+      type: 'message',
+      channelId: 'channel-1',
+      shortCircuit: false,
+      pipeline: [{ blockType: 'test-resolver', config: {} }],
+    });
+
+    expect(result.success).toBe(false);
   });
 });

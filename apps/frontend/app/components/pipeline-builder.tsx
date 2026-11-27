@@ -2,11 +2,11 @@ import type { ReactNode } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { Trash2 } from 'lucide-react';
 import {
-  BLOCK_TYPES,
   BLOCK_LABELS,
   type BlockType,
   createPipelineBlock,
   type EventFormValues,
+  getAvailableBlockTypes,
   getSuggestedBlockTypesForEventType,
   type EventType,
 } from '@/lib/event-schema';
@@ -15,9 +15,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 export function PipelineBuilder({
   eventType,
+  gameSystemId,
   footer,
 }: {
   eventType?: EventType;
+  gameSystemId: string;
   footer?: ReactNode;
 }) {
   const {
@@ -31,19 +33,22 @@ export function PipelineBuilder({
   const { fields, append, remove } = useFieldArray({ control, name: 'pipeline' });
 
   const pipelineValues = watch('pipeline');
-  const addableBlockTypes = eventType ? getSuggestedBlockTypesForEventType(eventType) : BLOCK_TYPES;
+  const availableBlockTypes = getAvailableBlockTypes(gameSystemId);
+  const addableBlockTypes = eventType
+    ? getSuggestedBlockTypesForEventType(eventType, gameSystemId)
+    : availableBlockTypes;
 
   const handleBlockTypeChange = (index: number, newType: BlockType) => {
     setValue(`pipeline.${index}.blockType`, newType);
-    setValue(`pipeline.${index}.config`, createPipelineBlock(newType).config);
+    setValue(`pipeline.${index}.config`, createPipelineBlock(newType, gameSystemId).config);
   };
 
   const addBlock = (blockType: string) => {
-    if (!BLOCK_TYPES.includes(blockType as BlockType)) {
+    if (!availableBlockTypes.includes(blockType as BlockType)) {
       return;
     }
 
-    append(createPipelineBlock(blockType as BlockType));
+    append(createPipelineBlock(blockType as BlockType, gameSystemId));
   };
 
   return (

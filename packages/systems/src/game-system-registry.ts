@@ -1,13 +1,16 @@
 import type { BlockDefinition, GameSystem } from '@constancia/contracts';
 import { MB_CLASSES, MB_NPC_BLOCKS, MB_STAT_SCHEMA } from './mork-borg/data.js';
 import { VTM_CLANS, VTM_NPC_BLOCKS, VTM_STAT_SCHEMA } from './vtm-v5/data.js';
-import { vtmInsightResolverBlock } from './vtm-v5/insight-resolver.js';
-import { vtmPoolResolverBlock } from './vtm-v5/pool-resolver.js';
+import { vtmInsightResolverBlock, vtmInsightResolverSpec } from './vtm-v5/insight-resolver.js';
+import { vtmPoolResolverBlock, vtmPoolResolverSpec } from './vtm-v5/pool-resolver.js';
+import type { RoleBlockImplementations } from './role-blocks.js';
 import { GREGORIAN_CALENDAR } from './calendar.js';
 
 export interface GameSystemAdapter extends Omit<GameSystem, 'blocks'> {
   aliases: readonly string[];
+  /** Blocks only this system has that fill no role; their block types carry a `<systemId>-` prefix. */
   blocks: readonly BlockDefinition<never>[];
+  roleBlocks: RoleBlockImplementations;
 }
 
 export class DuplicateGameSystemKeyError extends Error {
@@ -105,7 +108,11 @@ export const vtmV5GameSystem: GameSystemAdapter = {
     ],
   },
   npcBlocks: VTM_NPC_BLOCKS,
-  blocks: [vtmPoolResolverBlock, vtmInsightResolverBlock],
+  blocks: [],
+  roleBlocks: {
+    'test-resolver': { spec: vtmPoolResolverSpec, block: vtmPoolResolverBlock },
+    'insight-resolver': { spec: vtmInsightResolverSpec, block: vtmInsightResolverBlock },
+  },
 };
 
 export const morkBorgGameSystem: GameSystemAdapter = {
@@ -120,6 +127,7 @@ export const morkBorgGameSystem: GameSystemAdapter = {
   testConfig: { label: 'Mork Borg Test', fields: [] },
   npcBlocks: MB_NPC_BLOCKS,
   blocks: [],
+  roleBlocks: {},
 };
 
 export const GAME_SYSTEM_ADAPTERS = [

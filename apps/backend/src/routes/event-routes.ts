@@ -2,7 +2,8 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { Prisma } from '@constancia/db';
 import type { EventStatus } from '@constancia/contracts';
 import { getPrismaClient } from '../auth/prisma.js';
-import { deleted, isPrismaNotFoundError, ok, sendNotFound } from '../http-responses.js';
+import { deleted, isPrismaNotFoundError, ok, sendError, sendNotFound } from '../http-responses.js';
+import { findPipelineError } from '../blocks.js';
 import { moderatePayloadText } from '../services/content-moderation.js';
 import { createCampaignAccess } from '../services/campaign-access.js';
 import {
@@ -125,6 +126,8 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
       const { name, type, channelId, shortCircuit, pipeline } = request.body;
+      const pipelineError = findPipelineError(request.campaignScope.gameSystemId, pipeline);
+      if (pipelineError) return sendError(reply, 400, pipelineError);
       await createCampaignAccess(prisma).requireResource(request.campaignScope, {
         kind: 'channel',
         id: channelId,
@@ -197,6 +200,11 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
       await moderatePayloadText(app.config, request.body);
       const { eventId } = request.params;
       const { name, type, channelId, status, shortCircuit, pipeline } = request.body;
+      const pipelineError =
+        pipeline === undefined
+          ? null
+          : findPipelineError(request.campaignScope.gameSystemId, pipeline);
+      if (pipelineError) return sendError(reply, 400, pipelineError);
       const campaignAccess = createCampaignAccess(prisma);
       await campaignAccess.requireResource(request.campaignScope, { kind: 'event', id: eventId });
       if (channelId !== undefined) {

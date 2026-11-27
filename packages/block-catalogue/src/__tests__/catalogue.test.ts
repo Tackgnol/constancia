@@ -25,17 +25,18 @@ describe('pipeline block catalogue contract', () => {
     }
   });
 
-  it('exposes VTM pipeline blocks only for VTM V5', () => {
-    const vtmTypes = listPipelineBlockSpecs('vtm-v5').map((spec) => spec.blockType);
-    const morkBorgTypes = listPipelineBlockSpecs('mork-borg').map((spec) => spec.blockType);
+  it('exposes role blocks only to systems that implement the role', () => {
+    const vtmTypes = listPipelineBlockSpecs(['test-resolver', 'insight-resolver']).map(
+      (spec) => spec.blockType,
+    );
+    const morkBorgTypes = listPipelineBlockSpecs([]).map((spec) => spec.blockType);
 
-    expect(vtmTypes).toContain('vtm-pool-resolver');
-    expect(vtmTypes).toContain('vtm-insight-resolver');
-    expect(morkBorgTypes).not.toContain('vtm-pool-resolver');
-    expect(morkBorgTypes).not.toContain('vtm-insight-resolver');
+    expect(vtmTypes).toContain('test-resolver');
+    expect(vtmTypes).toContain('insight-resolver');
+    expect(morkBorgTypes).not.toContain('test-resolver');
+    expect(morkBorgTypes).not.toContain('insight-resolver');
     expect(morkBorgTypes).toContain('message-channel');
     expect(morkBorgTypes).toContain('add-journal-entry');
-    expect(morkBorgTypes).toContain('add-quest');
   });
 
   it('clones default configs instead of sharing mutable editor state', () => {

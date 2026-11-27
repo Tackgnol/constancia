@@ -207,7 +207,7 @@ function extractTargetAndPreview(
       const threshold = cfg.threshold ?? '?';
       target = `→ players where ${stat} ${op} ${threshold}`;
     }
-    if (block.blockType === 'vtm-pool-resolver' && !preview) {
+    if (block.blockType === 'test-resolver' && !preview) {
       const attr = typeof cfg.attribute === 'string' ? cfg.attribute : '?';
       const skill = typeof cfg.skill === 'string' ? cfg.skill : '?';
       preview = `${attr} + ${skill}`;
