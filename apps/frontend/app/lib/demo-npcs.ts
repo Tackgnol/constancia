@@ -1,4 +1,5 @@
 import type { CampaignNpc } from '@/components/npcs/block-registry';
+import { GAME_SYSTEM } from '@constancia/contracts';
 
 export const demoNpcs: CampaignNpc[] = [
   {
@@ -8,10 +9,10 @@ export const demoNpcs: CampaignNpc[] = [
     description:
       'Keeps the city stable through debt, spectacle, and the quiet certainty that everybody already owes him twice.',
     systemBlocks: [
-      { systemId: 'vtm-v5', blockType: 'clan', label: 'Clan', value: 'Ventrue' },
-      { systemId: 'vtm-v5', blockType: 'title', label: 'Title', value: 'Prince' },
+      { systemId: GAME_SYSTEM.VtmV5, blockType: 'clan', label: 'Clan', value: 'Ventrue' },
+      { systemId: GAME_SYSTEM.VtmV5, blockType: 'title', label: 'Title', value: 'Prince' },
       {
-        systemId: 'vtm-v5',
+        systemId: GAME_SYSTEM.VtmV5,
         blockType: 'demeanor',
         label: 'Demeanor',
         value: 'Measured, aristocratic, and incapable of sounding hurried even when furious.',
@@ -55,8 +56,13 @@ export const demoNpcs: CampaignNpc[] = [
     description:
       'Information broker, court whisperer, and the first person to know when a secret starts to rot.',
     systemBlocks: [
-      { systemId: 'vtm-v5', blockType: 'clan', label: 'Clan', value: 'Nosferatu' },
-      { systemId: 'vtm-v5', blockType: 'network', label: 'Network', value: 'Sewer couriers' },
+      { systemId: GAME_SYSTEM.VtmV5, blockType: 'clan', label: 'Clan', value: 'Nosferatu' },
+      {
+        systemId: GAME_SYSTEM.VtmV5,
+        blockType: 'network',
+        label: 'Network',
+        value: 'Sewer couriers',
+      },
     ],
     campaignId: 'demo-crimson-dynasty',
     facts: [

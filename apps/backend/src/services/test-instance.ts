@@ -3,6 +3,7 @@ import type {
   BlockInstance,
   SendTestInstancePayload,
   TestThreshold,
+  GameSystemId,
 } from '@constancia/contracts';
 import type { PipelineRunner } from '@constancia/core';
 import { gameSystemRegistry } from '@constancia/systems';
@@ -13,7 +14,7 @@ interface GameEventLike {
   id: string;
   name: string;
   campaignId: string;
-  gameSystemId: string;
+  gameSystemId: GameSystemId;
   pipeline: unknown;
 }
 

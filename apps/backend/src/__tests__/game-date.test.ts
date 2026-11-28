@@ -15,13 +15,5 @@ describe('formatCampaignGameDate', () => {
 
   it('returns null for missing or unsupported dates', () => {
     expect(formatCampaignGameDate('vtm-v5', null)).toBeNull();
-    expect(
-      formatCampaignGameDate('unknown-system', {
-        calendarId: 'gregorian',
-        year: 2026,
-        monthId: 'july',
-        day: 17,
-      }),
-    ).toBeNull();
   });
 });

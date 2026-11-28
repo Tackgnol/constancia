@@ -3,6 +3,7 @@ import { GREGORIAN_CALENDAR } from '@constancia/systems';
 import { activityFeed, players } from './war-room-data.js';
 import type { ChannelEntry, WarRoomContext } from './war-room-data.js';
 import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
+import { GAME_SYSTEM } from '@constancia/contracts';
 
 const demoCharacters: ListCharacters200DataItem[] = players.map((player) => ({
   id: player.id,
@@ -32,14 +33,14 @@ export const demoContext: WarRoomContext = {
   campaign: {
     id: 'demo-crimson-dynasty',
     name: 'Crimson Dynasty',
-    gameSystemId: 'vtm-v5',
+    gameSystemId: GAME_SYSTEM.VtmV5,
     gameDate: { calendarId: 'gregorian', year: 2026, monthId: 'july', day: 17 },
     channel: '# the-elysium',
     connectedPlayers: players.filter((p) => p.status === 'online').length,
   },
   channels: demoChannels,
   system: {
-    id: 'vtm-v5',
+    id: GAME_SYSTEM.VtmV5,
     name: 'VTM V5',
     defaultCalendarId: GREGORIAN_CALENDAR.id,
     calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },

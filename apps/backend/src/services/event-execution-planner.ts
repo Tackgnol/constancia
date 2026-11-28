@@ -3,6 +3,7 @@ import type {
   BlockInstance,
   BlockMessage,
   BotDeliveryPayload,
+  GameSystemId,
 } from '@constancia/contracts';
 import { PipelineRunner } from '@constancia/core';
 import type { PrismaClient } from '@constancia/db';
@@ -23,9 +24,10 @@ import {
   rollTestResult,
 } from './test-instance.js';
 import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
+import { resolveGameSystemId } from '@constancia/systems';
 
 export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventExecutionPlanner {
-  const createRunner = (gameSystemId: string) =>
+  const createRunner = (gameSystemId: GameSystemId) =>
     new PipelineRunner(buildBlockRegistry(gameSystemId));
 
   return {
@@ -63,7 +65,7 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
       }
 
       const pipeline = parsePipeline(event.pipeline);
-      const { gameSystemId } = event.campaign;
+      const gameSystemId = resolveGameSystemId(event.campaign.gameSystemId);
       const pipelineError = findPipelineError(gameSystemId, pipeline, event.type);
       if (pipelineError) {
         throw new EventExecutionRequestError(422, 'PIPELINE_UNSUPPORTED', pipelineError);
@@ -220,7 +222,11 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
         characterData: parseCharacterData(character.systemData),
       };
       const roll = command.rollForMe
-        ? await rollTestResult(createRunner(event.campaign.gameSystemId), pipeline, playerCtx)
+        ? await rollTestResult(
+            createRunner(resolveGameSystemId(event.campaign.gameSystemId)),
+            pipeline,
+            playerCtx,
+          )
         : undefined;
       const playerScore = roll?.playerScore ?? command.playerScore;
       if (playerScore === undefined) {
@@ -231,7 +237,7 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
         );
       }
 
-      const result = await createRunner(event.campaign.gameSystemId).run(
+      const result = await createRunner(resolveGameSystemId(event.campaign.gameSystemId)).run(
         filterManualTestResolutionPipeline(pipeline),
         { ...playerCtx, playerScore },
       );

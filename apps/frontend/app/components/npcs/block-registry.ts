@@ -1,4 +1,8 @@
-import type { NpcSystemBlockDefinition, NpcSystemBlockValue } from '@constancia/contracts';
+import type {
+  NpcSystemBlockDefinition,
+  NpcSystemBlockValue,
+  GameSystemId,
+} from '@constancia/contracts';
 import { getNpcSystemBlockDefinitions } from '@constancia/systems';
 
 export type KnownPlayerRef = {
@@ -44,12 +48,12 @@ function randomKey() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function getNpcBlockDefinitions(systemId: string): NpcSystemBlockDefinition[] {
+export function getNpcBlockDefinitions(systemId: GameSystemId): NpcSystemBlockDefinition[] {
   return getNpcSystemBlockDefinitions(systemId);
 }
 
 export function getNpcBlockDefinition(
-  systemId: string,
+  systemId: GameSystemId,
   blockType: string,
 ): NpcSystemBlockDefinition | undefined {
   return getNpcBlockDefinitions(systemId).find((definition) => definition.blockType === blockType);
@@ -98,7 +102,7 @@ export function parseEditorBlockValue(
 }
 
 export function toEditorBlocks(
-  systemId: string,
+  systemId: GameSystemId,
   blocks: CampaignNpcSystemBlock[],
 ): NpcEditorBlock[] {
   return blocks.map((block) => ({
@@ -109,7 +113,10 @@ export function toEditorBlocks(
   }));
 }
 
-export function toApiBlocks(systemId: string, blocks: NpcEditorBlock[]): CampaignNpcSystemBlock[] {
+export function toApiBlocks(
+  systemId: GameSystemId,
+  blocks: NpcEditorBlock[],
+): CampaignNpcSystemBlock[] {
   return blocks.flatMap((block) => {
     const definition = getNpcBlockDefinition(systemId, block.blockType);
 
@@ -128,7 +135,10 @@ export function toApiBlocks(systemId: string, blocks: NpcEditorBlock[]): Campaig
   });
 }
 
-export function createEditorBlock(systemId: string, blockType: string): NpcEditorBlock | null {
+export function createEditorBlock(
+  systemId: GameSystemId,
+  blockType: string,
+): NpcEditorBlock | null {
   const definition = getNpcBlockDefinition(systemId, blockType);
 
   if (!definition) {
@@ -144,7 +154,10 @@ export function createEditorBlock(systemId: string, blockType: string): NpcEdito
 }
 
 /** The NPC's headline blocks, in the order the Game System declares them. */
-export function listHeadlineSystemBlocks(npc: Pick<CampaignNpc, 'systemBlocks'>, systemId: string) {
+export function listHeadlineSystemBlocks(
+  npc: Pick<CampaignNpc, 'systemBlocks'>,
+  systemId: GameSystemId,
+) {
   return getNpcSystemBlockDefinitions(systemId)
     .filter((definition) => definition.display === 'headline')
     .flatMap((definition) =>
@@ -155,7 +168,7 @@ export function listHeadlineSystemBlocks(npc: Pick<CampaignNpc, 'systemBlocks'>,
 /** Every headline block as "Label: value", joined in declared order; the first block when none is a headline. */
 export function formatHeadlineSummary(
   npc: Pick<CampaignNpc, 'systemBlocks'>,
-  systemId: string,
+  systemId: GameSystemId,
 ): string | null {
   const headlines = listHeadlineSystemBlocks(npc, systemId);
   const shown = headlines.length > 0 ? headlines : npc.systemBlocks.slice(0, 1);

@@ -328,7 +328,8 @@
                         "additionalProperties": false,
                         "properties": {
                           "id": {
-                            "type": "string"
+                            "type": "string",
+                            "enum": ["vtm-v5", "mork-borg", "5e-srd"]
                           },
                           "name": {
                             "type": "string"
@@ -476,7 +477,8 @@
                       "additionalProperties": false,
                       "properties": {
                         "id": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": ["vtm-v5", "mork-borg", "5e-srd"]
                         },
                         "name": {
                           "type": "string"
@@ -906,7 +908,8 @@
                             "type": "string"
                           },
                           "gameSystemId": {
-                            "type": "string"
+                            "type": "string",
+                            "enum": ["vtm-v5", "mork-borg", "5e-srd"]
                           },
                           "gameDate": {
                             "type": "object",
@@ -961,7 +964,8 @@
                     "type": "string"
                   },
                   "gameSystemId": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": ["vtm-v5", "mork-borg", "5e-srd"]
                   }
                 },
                 "required": ["name", "discordGuildId", "gameSystemId"]
@@ -994,7 +998,8 @@
                           "type": "string"
                         },
                         "gameSystemId": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": ["vtm-v5", "mork-borg", "5e-srd"]
                         },
                         "gameDate": {
                           "type": "object",
@@ -1070,7 +1075,8 @@
                           "type": "string"
                         },
                         "gameSystemId": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": ["vtm-v5", "mork-borg", "5e-srd"]
                         },
                         "gameDate": {
                           "type": "object",
@@ -1121,7 +1127,8 @@
                     "type": "string"
                   },
                   "gameSystemId": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": ["vtm-v5", "mork-borg", "5e-srd"]
                   },
                   "gameDate": {
                     "type": "object",
@@ -1185,7 +1192,8 @@
                           "type": "string"
                         },
                         "gameSystemId": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": ["vtm-v5", "mork-borg", "5e-srd"]
                         },
                         "gameDate": {
                           "type": "object",
@@ -11574,7 +11582,8 @@
                           "type": "string"
                         },
                         "gameSystemId": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": ["vtm-v5", "mork-borg", "5e-srd"]
                         },
                         "gameDate": {
                           "type": "object",
@@ -12470,7 +12479,8 @@
                     "type": "string"
                   },
                   "gameSystemId": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": ["vtm-v5", "mork-borg", "5e-srd"]
                   },
                   "discordUserId": {
                     "type": "string"
@@ -12518,7 +12528,8 @@
                               "type": "string"
                             },
                             "gameSystemId": {
-                              "type": "string"
+                              "type": "string",
+                              "enum": ["vtm-v5", "mork-borg", "5e-srd"]
                             },
                             "gameDate": {
                               "type": "object",

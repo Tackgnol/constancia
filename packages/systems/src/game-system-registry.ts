@@ -1,4 +1,10 @@
-import type { BlockDefinition, CharacterImporter, GameSystem } from '@constancia/contracts';
+import {
+  GAME_SYSTEM,
+  type BlockDefinition,
+  type CharacterImporter,
+  type GameSystem,
+  type GameSystemId,
+} from '@constancia/contracts';
 import { parseProgenyVtmCharacter, type ProgenyVtmSheetImport } from './vtm-v5/progeny.js';
 import { MB_CLASSES, MB_NPC_BLOCKS, MB_STAT_SCHEMA } from './mork-borg/data.js';
 import { VTM_CLANS, VTM_NPC_BLOCKS, VTM_STAT_SCHEMA } from './vtm-v5/data.js';
@@ -62,8 +68,8 @@ export function normalizeGameSystemLookupKey(systemId: string): string {
 }
 
 export class GameSystemRegistry {
-  private readonly systemsById = new Map<string, GameSystemAdapter>();
-  private readonly idsByLookupKey = new Map<string, string>();
+  private readonly systemsById = new Map<GameSystemId, GameSystemAdapter>();
+  private readonly idsByLookupKey = new Map<string, GameSystemId>();
 
   constructor(systems: readonly GameSystemAdapter[] = []) {
     for (const system of systems) {
@@ -102,7 +108,8 @@ export class GameSystemRegistry {
     return system;
   }
 
-  resolveId(systemIdOrAlias: string): string | undefined {
+  /** Narrows a raw id or alias to its canonical Game System id, or undefined when none matches. */
+  resolveId(systemIdOrAlias: string): GameSystemId | undefined {
     return this.get(systemIdOrAlias)?.id;
   }
 
@@ -122,7 +129,7 @@ export function findImporter(
 }
 
 export const vtmV5GameSystem: GameSystemAdapter = {
-  id: 'vtm-v5',
+  id: GAME_SYSTEM.VtmV5,
   aliases: [
     'vtm-5',
     'vtm5',
@@ -161,7 +168,7 @@ export const vtmV5GameSystem: GameSystemAdapter = {
 };
 
 export const morkBorgGameSystem: GameSystemAdapter = {
-  id: 'mork-borg',
+  id: GAME_SYSTEM.MorkBorg,
   aliases: ['morkborg'],
   name: 'Mork Borg',
   version: '0.1.0',
@@ -177,7 +184,7 @@ export const morkBorgGameSystem: GameSystemAdapter = {
 };
 
 export const fiveESrdGameSystem: GameSystemAdapter = {
-  id: '5e-srd',
+  id: GAME_SYSTEM.FiveESrd,
   aliases: ['5e', 'srd-5e', 'srd-5.2.1', 'fifth-edition'],
   name: '5E (SRD 5.2.1)',
   version: '0.1.0',

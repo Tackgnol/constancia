@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import type { GameSystemId } from '@constancia/contracts';
 import { Controller, FormProvider, type UseFormReturn } from 'react-hook-form';
 import { PipelineBuilder } from '@/components/pipeline-builder';
 import { formFieldLabelClassName } from '@/components/forms/field-label';
@@ -29,7 +30,7 @@ export function EventSetupForm({
 }: {
   methods: UseFormReturn<EventFormValues>;
   channels: ChannelEntry[];
-  gameSystemId: string;
+  gameSystemId: GameSystemId;
   onSubmit: (values: EventFormValues) => Promise<void> | void;
   submitLabel?: string;
 }) {

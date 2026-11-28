@@ -4,6 +4,7 @@ import type {
 } from '@constancia/api-client/model';
 import { VTM_STAT_SCHEMA } from '@constancia/systems';
 import type { CharacterSheetData } from '@/lib/character-sheet';
+import { GAME_SYSTEM } from '@constancia/contracts';
 
 export const demoPlayerSheet: CharacterSheetData = {
   character: {
@@ -46,10 +47,10 @@ export const demoPlayerSheet: CharacterSheetData = {
     id: 'demo-crimson-dynasty',
     name: 'Crimson Dynasty',
     discordGuildId: 'demo-guild-1',
-    gameSystemId: 'vtm-v5',
+    gameSystemId: GAME_SYSTEM.VtmV5,
   },
   system: {
-    id: 'vtm-v5',
+    id: GAME_SYSTEM.VtmV5,
     name: 'Vampire: The Masquerade 5th Edition',
     version: '0.1.0',
     statSchema: VTM_STAT_SCHEMA,

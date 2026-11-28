@@ -20,10 +20,11 @@ import {
 import { moderatePayloadText } from '../services/content-moderation.js';
 import { createCampaignAccess } from '../services/campaign-access.js';
 import { gameSystemRegistry, validateArchetypeChoices } from '@constancia/systems';
+import type { GameSystemId } from '@constancia/contracts';
 
 /** Rejects archetype choices the campaign's Game System doesn't define. */
 function findArchetypeError(
-  gameSystemId: string,
+  gameSystemId: GameSystemId,
   systemData: Record<string, unknown> | undefined,
 ): string | null {
   const system = gameSystemRegistry.get(gameSystemId);

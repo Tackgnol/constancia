@@ -1,8 +1,13 @@
-import type { GameCalendarDefinition, StatField, StatSchema } from '@constancia/contracts';
+import type {
+  GameCalendarDefinition,
+  GameSystemId,
+  StatField,
+  StatSchema,
+} from '@constancia/contracts';
 import { gameSystemRegistry } from './game-system-registry.js';
 
 export interface GameSystemSummary {
-  id: string;
+  id: GameSystemId;
   name: string;
   version: string;
   defaultCalendarId: string;
@@ -23,8 +28,9 @@ export const GAME_SYSTEM_SUMMARIES: readonly GameSystemSummary[] = gameSystemReg
     ...(attribution ? { attribution } : {}),
   }));
 
-export function resolveGameSystemId(systemId: string): string {
-  return gameSystemRegistry.resolveId(systemId) ?? systemId;
+/** Narrows a raw id or alias (from the database or a request) to its Game System id; throws when unknown. */
+export function resolveGameSystemId(systemIdOrAlias: string): GameSystemId {
+  return gameSystemRegistry.require(systemIdOrAlias).id;
 }
 
 function coerceStatValue(field: StatField, rawValue: unknown): SystemStatValue {
@@ -64,21 +70,20 @@ export function listSupportedGameSystems(): readonly GameSystemSummary[] {
   return GAME_SYSTEM_SUMMARIES;
 }
 
-export function getGameSystemSummary(systemId: string): GameSystemSummary | null {
-  const canonicalId = resolveGameSystemId(systemId);
-  return GAME_SYSTEM_SUMMARIES.find((system) => system.id === canonicalId) ?? null;
+export function getGameSystemSummary(systemId: GameSystemId): GameSystemSummary | null {
+  return GAME_SYSTEM_SUMMARIES.find((system) => system.id === systemId) ?? null;
 }
 
-export function getStatSchemaForSystem(systemId: string): StatSchema {
+export function getStatSchemaForSystem(systemId: GameSystemId): StatSchema {
   return gameSystemRegistry.get(systemId)?.statSchema ?? { groups: [] };
 }
 
 export function extractSystemStats(
-  systemId: string,
+  systemId: GameSystemId,
   systemData: Record<string, unknown> | null | undefined,
 ): Record<string, SystemStatValue> {
   const source = systemData ?? {};
-  const schema = getStatSchemaForSystem(resolveGameSystemId(systemId));
+  const schema = getStatSchemaForSystem(systemId);
 
   return Object.fromEntries(
     schema.groups.flatMap((group) => {
@@ -96,12 +101,12 @@ export function extractSystemStats(
 }
 
 export function mergeSystemStats(
-  systemId: string,
+  systemId: GameSystemId,
   systemData: Record<string, unknown> | null | undefined,
   statValues: Record<string, unknown>,
 ): Record<string, unknown> {
   const next = { ...(systemData ?? {}) };
-  const schema = getStatSchemaForSystem(resolveGameSystemId(systemId));
+  const schema = getStatSchemaForSystem(systemId);
 
   for (const group of schema.groups) {
     const currentGroup =

@@ -1,4 +1,5 @@
 import { startTransition, useEffect, useEffectEvent, useRef, useState } from 'react';
+import type { GameSystemId } from '@constancia/contracts';
 import type { ActionFunctionArgs } from 'react-router';
 import { useOutletContext } from 'react-router';
 
@@ -164,7 +165,7 @@ function extractTargetAndPreview(
   event: ListEvents200DataItem,
   channelName: string | null,
   playerLabelById: Map<string, string>,
-  gameSystemId: string,
+  gameSystemId: GameSystemId,
 ): { target: string | null; preview: string | null } {
   let target: string | null = channelName ? `#${channelName}` : null;
   let preview: string | null = null;
@@ -296,7 +297,7 @@ function buildTriggerSections(
   channelById: Map<string, WarRoomContext['channels'][number]>,
   tagLabelById: Map<string, string>,
   playerLabelById: Map<string, string>,
-  gameSystemId: string,
+  gameSystemId: GameSystemId,
 ): TriggerSectionView[] {
   const sections: TriggerSectionView[] = TRIGGER_SECTION_DEFINITIONS.map((section) => ({
     ...section,

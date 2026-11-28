@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import type { GameSystemId } from '@constancia/contracts';
 import { useForm } from 'react-hook-form';
 import type { ActionFunctionArgs } from 'react-router';
 import {
@@ -86,7 +87,7 @@ function normalizeOutcomeConfig(config: Record<string, unknown>): Record<string,
 
 function normalizeEventPipeline(
   event: ListEvents200DataItem,
-  gameSystemId: string,
+  gameSystemId: GameSystemId,
 ): PipelineBlock[] {
   const type = isEventType(event.type) ? event.type : 'narration';
   if (!Array.isArray(event.pipeline)) {
@@ -118,7 +119,10 @@ function normalizeEventPipeline(
   return pipeline.length > 0 ? pipeline : getDefaultPipelineForEventType(type, gameSystemId);
 }
 
-function eventToFormValues(event: ListEvents200DataItem, gameSystemId: string): EventFormValues {
+function eventToFormValues(
+  event: ListEvents200DataItem,
+  gameSystemId: GameSystemId,
+): EventFormValues {
   const type = isEventType(event.type) ? event.type : 'narration';
 
   return {
@@ -130,7 +134,7 @@ function eventToFormValues(event: ListEvents200DataItem, gameSystemId: string): 
   };
 }
 
-function emptyEventValues(gameSystemId: string): EventFormValues {
+function emptyEventValues(gameSystemId: GameSystemId): EventFormValues {
   return {
     name: '',
     type: 'narration',

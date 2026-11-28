@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { GameSystemId } from '@constancia/contracts';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useFetcher, useOutletContext } from 'react-router';
@@ -133,7 +134,7 @@ function ParticipantRow({
   discordName: string;
   currentGameName: string;
   campaignId: string;
-  gameSystemId: string;
+  gameSystemId: GameSystemId;
   actionPath: string;
   demoMode: boolean;
 }) {

@@ -13,7 +13,7 @@ import {
   PipelineRunner,
   UnknownBlockTypeError,
 } from '@constancia/core';
-import type { BlockInstance } from '@constancia/contracts';
+import type { BlockInstance, GameSystemId } from '@constancia/contracts';
 import { gameSystemRegistry, listRoleBlocks } from '@constancia/systems';
 import {
   PIPELINE_BLOCK,
@@ -67,7 +67,7 @@ export const registeredBlockSchemas = PIPELINE_BLOCK_SPECS.map((spec) => ({
 }));
 
 /** Builds the runtime registry for one campaign: common blocks plus its Game System's blocks and role blocks. */
-export function buildBlockRegistry(gameSystemId: string): BlockRegistry {
+export function buildBlockRegistry(gameSystemId: GameSystemId): BlockRegistry {
   const registry = new BlockRegistry();
   for (const block of commonBlocks) {
     registry.register(block as never);
@@ -81,7 +81,7 @@ export function buildBlockRegistry(gameSystemId: string): BlockRegistry {
 
 /** Returns why an Event of this type and pipeline can't run under the campaign's Game System, or null when it can. */
 export function findPipelineError(
-  gameSystemId: string,
+  gameSystemId: GameSystemId,
   pipeline: BlockInstance[],
   eventType: string,
 ): string | null {

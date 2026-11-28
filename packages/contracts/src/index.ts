@@ -1,5 +1,12 @@
 export type { StatField, StatGroup, StatSchema } from './stat-schema.js';
 
+export {
+  GAME_SYSTEM,
+  GAME_SYSTEM_IDS,
+  isGameSystemId,
+  type GameSystemId,
+} from './game-system-id.js';
+
 export type {
   CalendarLeapYearRule,
   CalendarMonthDefinition,

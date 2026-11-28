@@ -5,6 +5,8 @@ import {
   assertNotBanned,
   type BanLookupPrisma,
 } from './moderation-enforcement.js';
+import type { GameSystemId } from '@constancia/contracts';
+import { resolveGameSystemId } from '@constancia/systems';
 
 const campaignScopeBrand: unique symbol = Symbol('CampaignScope');
 
@@ -12,7 +14,7 @@ export interface CampaignScope {
   readonly [campaignScopeBrand]: true;
   readonly campaignId: string;
   readonly discordGuildId: string;
-  readonly gameSystemId: string;
+  readonly gameSystemId: GameSystemId;
   readonly role: 'owner' | 'gm' | 'superuser';
 }
 
@@ -391,7 +393,7 @@ function createCampaignScope(campaign: CampaignRecord, role: CampaignScope['role
     [campaignScopeBrand]: true as const,
     campaignId: campaign.id,
     discordGuildId: campaign.discordGuildId,
-    gameSystemId: campaign.gameSystemId,
+    gameSystemId: resolveGameSystemId(campaign.gameSystemId),
     role,
   });
 }

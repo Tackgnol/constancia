@@ -6,6 +6,7 @@ import {
   type GuildMember,
   type InteractionDeferReplyOptions,
 } from 'discord.js';
+import { isGameSystemId, type GameSystemId } from '@constancia/contracts';
 import { botBackend, type BotBackend } from '../backend/bot-backend.js';
 import { BotAccessRevokedError, BotCampaignAdminRequiredError } from '../backend/access-revoked.js';
 import type { BotChatCommand } from '../discord/command-types.js';
@@ -68,6 +69,10 @@ export async function handleSetup(
     }
 
     const gameSystemId = interaction.options.getString(GAME_SYSTEM_OPTION_NAME, true);
+    if (!isGameSystemId(gameSystemId)) {
+      await interaction.editReply('Pick a game system from the list.');
+      return;
+    }
 
     const { campaign, channel, created } = await backend.setupChannel({
       guildId,
@@ -122,7 +127,7 @@ export async function handleSetup(
 }
 
 /** The chosen system's licence credit, or null when it has none or the lookup fails. */
-async function findSystemAttribution(backend: BotBackend, gameSystemId: string) {
+async function findSystemAttribution(backend: BotBackend, gameSystemId: GameSystemId) {
   try {
     const systems = await backend.listGameSystems();
     return systems.find((system) => system.id === gameSystemId)?.attribution ?? null;
