@@ -8,6 +8,7 @@ import type {
 import type { PipelineRunner } from '@constancia/core';
 import { gameSystemRegistry } from '@constancia/systems';
 import { EventExecutionRequestError, type TestRollResult } from './event-execution.js';
+import { selectPipelinePhase } from './event-pipeline-phases.js';
 import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
 
 interface GameEventLike {
@@ -138,11 +139,6 @@ export function buildTestInstancePayload(
   };
 }
 
-const ROLL_BLOCK_TYPES = new Set<string>([
-  PIPELINE_BLOCK.RollModifier,
-  PIPELINE_BLOCK.TestResolver,
-]);
-
 /**
  * Runs only the pipeline's roll blocks for Roll for me. The resolver's player messages become the
  * private dice breakdown; its channel messages are dropped so nothing new is posted publicly.
@@ -152,7 +148,7 @@ export async function rollTestResult(
   pipeline: BlockInstance[],
   ctx: BlockContext,
 ): Promise<TestRollResult> {
-  const rollBlocks = pipeline.filter((block) => ROLL_BLOCK_TYPES.has(block.blockType));
+  const rollBlocks = selectPipelinePhase(pipeline, 'test-roll');
   if (!rollBlocks.some((block) => block.blockType === PIPELINE_BLOCK.TestResolver)) {
     throw new EventExecutionRequestError(
       422,
@@ -172,14 +168,4 @@ export async function rollTestResult(
       .filter((message) => message.target === 'player')
       .map((message) => message.content),
   };
-}
-
-export function filterManualTestResolutionPipeline(blocks: BlockInstance[]): BlockInstance[] {
-  const manualMetadataBlocks = new Set<string>([
-    PIPELINE_BLOCK.RollModifier,
-    PIPELINE_BLOCK.TestResolver,
-    PIPELINE_BLOCK.MessageChannel,
-    PIPELINE_BLOCK.DisplayImage,
-  ]);
-  return blocks.filter((block) => !manualMetadataBlocks.has(block.blockType));
 }

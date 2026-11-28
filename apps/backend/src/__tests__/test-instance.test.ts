@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BlockInstance } from '@constancia/contracts';
-import {
-  buildTestInstancePayload,
-  filterManualTestResolutionPipeline,
-} from '../services/test-instance.js';
+import { selectPipelinePhase } from '../services/event-pipeline-phases.js';
+import { buildTestInstancePayload } from '../services/test-instance.js';
 
 describe('test-instance helpers', () => {
   it('builds a test-instance payload from the event pipeline metadata', () => {
@@ -74,13 +72,16 @@ describe('test-instance helpers', () => {
 
   it('removes automated resolver blocks from manual test resolution', () => {
     expect(
-      filterManualTestResolutionPipeline([
-        { blockType: 'test-resolver', config: { attribute: 'dexterity', skill: 'stealth' } },
-        { blockType: 'message-channel', config: { content: 'Cross the gallery unseen.' } },
-        { blockType: 'display-image', config: { imageUrl: 'https://example.com/gallery.jpg' } },
-        { blockType: 'outcome-map', config: { outcomes: [] } },
-        { blockType: 'message-channel', config: { content: 'Alarm bells ring.' } },
-      ]),
+      selectPipelinePhase(
+        [
+          { blockType: 'test-resolver', config: { attribute: 'dexterity', skill: 'stealth' } },
+          { blockType: 'message-channel', config: { content: 'Cross the gallery unseen.' } },
+          { blockType: 'display-image', config: { imageUrl: 'https://example.com/gallery.jpg' } },
+          { blockType: 'outcome-map', config: { outcomes: [] } },
+          { blockType: 'message-channel', config: { content: 'Alarm bells ring.' } },
+        ],
+        'test-outcome',
+      ),
     ).toEqual([{ blockType: 'outcome-map', config: { outcomes: [] } }]);
   });
 
@@ -103,7 +104,7 @@ describe('test-instance helpers', () => {
     );
 
     expect(payload?.rollModifierLine).toBe('🎲 Roll with advantage');
-    expect(filterManualTestResolutionPipeline(pipeline).map((block) => block.blockType)).toEqual([
+    expect(selectPipelinePhase(pipeline, 'test-outcome').map((block) => block.blockType)).toEqual([
       'outcome-map',
     ]);
   });
