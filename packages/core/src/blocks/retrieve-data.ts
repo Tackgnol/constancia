@@ -1,15 +1,15 @@
 import type { BlockContext, BlockDefinition } from '@constancia/contracts';
-import { requirePipelineBlockSpec } from '@constancia/block-catalogue';
+import { PIPELINE_BLOCK, requirePipelineBlockSpec } from '@constancia/block-catalogue';
 
 interface RetrieveDataConfig {
   dataType: string;
   query?: Record<string, unknown>;
 }
 
-const spec = requirePipelineBlockSpec('retrieve-data');
+const spec = requirePipelineBlockSpec(PIPELINE_BLOCK.RetrieveData);
 
 export const retrieveDataBlock: BlockDefinition<RetrieveDataConfig> = {
-  type: 'retrieve-data',
+  type: PIPELINE_BLOCK.RetrieveData,
   label: spec.label,
   configSchema: spec.configSchema,
   execute: async (config: RetrieveDataConfig, ctx: BlockContext) => ({

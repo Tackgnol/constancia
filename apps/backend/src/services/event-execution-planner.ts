@@ -22,6 +22,7 @@ import {
   filterManualTestResolutionPipeline,
   rollTestResult,
 } from './test-instance.js';
+import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
 
 export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventExecutionPlanner {
   const createRunner = (gameSystemId: string) =>
@@ -290,7 +291,10 @@ function messageDeliveries(event: EventPlanSource, messages: BlockMessage[]): Bo
       ];
 }
 
-const EVENT_EFFECT_BLOCK_TYPES = new Set(['add-journal-entry', 'add-quest']);
+const EVENT_EFFECT_BLOCK_TYPES = new Set<string>([
+  PIPELINE_BLOCK.AddJournalEntry,
+  PIPELINE_BLOCK.AddQuest,
+]);
 
 function filterEventEffectPipeline(blocks: BlockInstance[]): BlockInstance[] {
   return blocks.filter((block) => EVENT_EFFECT_BLOCK_TYPES.has(block.blockType));

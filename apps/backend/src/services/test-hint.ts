@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@constancia/db';
 import { gameSystemRegistry } from '@constancia/systems';
+import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -23,10 +24,11 @@ export async function getTestModifierHint(
 
   const { event } = instance;
   const resolver = (Array.isArray(event.pipeline) ? event.pipeline : []).find(
-    (block) => isRecord(block) && block.blockType === 'test-resolver',
+    (block) => isRecord(block) && block.blockType === PIPELINE_BLOCK.TestResolver,
   );
-  const hint = gameSystemRegistry.get(event.campaign.gameSystemId)?.roleBlocks['test-resolver']
-    ?.hint;
+  const hint = gameSystemRegistry.get(event.campaign.gameSystemId)?.roleBlocks[
+    PIPELINE_BLOCK.TestResolver
+  ]?.hint;
   if (!isRecord(resolver) || !isRecord(resolver.config) || !hint) return null;
 
   const character = await prisma.character.findUnique({

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  PIPELINE_BLOCK,
   PIPELINE_BLOCK_SPECS,
   PIPELINE_BLOCK_TYPES,
   getEventTypeRole,
@@ -96,18 +97,18 @@ export const retrieveDataConfigSchema = z.object({
 const roleBlockConfigSchema = z.record(z.string(), z.unknown());
 
 const pipelineBlockConfigSchemas = {
-  'message-player': messagePlayerConfigSchema,
-  'message-channel': messageContentConfigSchema,
-  'message-group': messageGroupConfigSchema,
-  'display-image': displayImageConfigSchema,
-  'add-journal-entry': addJournalEntryConfigSchema,
-  'add-quest': addQuestConfigSchema,
-  'conditional-gate': conditionalGateConfigSchema,
-  'outcome-map': outcomeMapConfigSchema,
-  'retrieve-data': retrieveDataConfigSchema,
-  'test-resolver': roleBlockConfigSchema,
-  'insight-resolver': roleBlockConfigSchema,
-  'roll-modifier': roleBlockConfigSchema,
+  [PIPELINE_BLOCK.MessagePlayer]: messagePlayerConfigSchema,
+  [PIPELINE_BLOCK.MessageChannel]: messageContentConfigSchema,
+  [PIPELINE_BLOCK.MessageGroup]: messageGroupConfigSchema,
+  [PIPELINE_BLOCK.DisplayImage]: displayImageConfigSchema,
+  [PIPELINE_BLOCK.AddJournalEntry]: addJournalEntryConfigSchema,
+  [PIPELINE_BLOCK.AddQuest]: addQuestConfigSchema,
+  [PIPELINE_BLOCK.ConditionalGate]: conditionalGateConfigSchema,
+  [PIPELINE_BLOCK.OutcomeMap]: outcomeMapConfigSchema,
+  [PIPELINE_BLOCK.RetrieveData]: retrieveDataConfigSchema,
+  [PIPELINE_BLOCK.TestResolver]: roleBlockConfigSchema,
+  [PIPELINE_BLOCK.InsightResolver]: roleBlockConfigSchema,
+  [PIPELINE_BLOCK.RollModifier]: roleBlockConfigSchema,
 } as const satisfies Record<PipelineBlockType, z.ZodType>;
 
 // ── Block types ───────────────────────────────────────────────────────────────
@@ -178,53 +179,53 @@ export function getEventTypesForSystem(gameSystemId: string): EventType[] {
 }
 
 const DEFAULT_PIPELINE_BLOCKS_BY_EVENT_TYPE: Record<EventType, readonly BlockType[]> = {
-  test: ['test-resolver', 'outcome-map'],
-  narration: ['message-channel'],
-  insight: ['insight-resolver', 'outcome-map'],
-  message: ['message-player'],
+  test: [PIPELINE_BLOCK.TestResolver, PIPELINE_BLOCK.OutcomeMap],
+  narration: [PIPELINE_BLOCK.MessageChannel],
+  insight: [PIPELINE_BLOCK.InsightResolver, PIPELINE_BLOCK.OutcomeMap],
+  message: [PIPELINE_BLOCK.MessagePlayer],
 };
 
 const SUGGESTED_BLOCK_TYPES_BY_EVENT_TYPE: Record<EventType, readonly BlockType[]> = {
   test: [
-    'roll-modifier',
-    'test-resolver',
-    'outcome-map',
-    'conditional-gate',
-    'message-player',
-    'message-channel',
-    'display-image',
-    'retrieve-data',
-    'message-group',
+    PIPELINE_BLOCK.RollModifier,
+    PIPELINE_BLOCK.TestResolver,
+    PIPELINE_BLOCK.OutcomeMap,
+    PIPELINE_BLOCK.ConditionalGate,
+    PIPELINE_BLOCK.MessagePlayer,
+    PIPELINE_BLOCK.MessageChannel,
+    PIPELINE_BLOCK.DisplayImage,
+    PIPELINE_BLOCK.RetrieveData,
+    PIPELINE_BLOCK.MessageGroup,
   ],
   narration: [
-    'message-channel',
-    'add-journal-entry',
-    'add-quest',
-    'display-image',
-    'message-player',
-    'message-group',
-    'conditional-gate',
-    'retrieve-data',
-    'outcome-map',
-    'test-resolver',
+    PIPELINE_BLOCK.MessageChannel,
+    PIPELINE_BLOCK.AddJournalEntry,
+    PIPELINE_BLOCK.AddQuest,
+    PIPELINE_BLOCK.DisplayImage,
+    PIPELINE_BLOCK.MessagePlayer,
+    PIPELINE_BLOCK.MessageGroup,
+    PIPELINE_BLOCK.ConditionalGate,
+    PIPELINE_BLOCK.RetrieveData,
+    PIPELINE_BLOCK.OutcomeMap,
+    PIPELINE_BLOCK.TestResolver,
   ],
   insight: [
-    'insight-resolver',
-    'outcome-map',
-    'conditional-gate',
-    'message-player',
-    'retrieve-data',
-    'test-resolver',
+    PIPELINE_BLOCK.InsightResolver,
+    PIPELINE_BLOCK.OutcomeMap,
+    PIPELINE_BLOCK.ConditionalGate,
+    PIPELINE_BLOCK.MessagePlayer,
+    PIPELINE_BLOCK.RetrieveData,
+    PIPELINE_BLOCK.TestResolver,
   ],
   message: [
-    'message-player',
-    'message-group',
-    'message-channel',
-    'display-image',
-    'conditional-gate',
-    'retrieve-data',
-    'outcome-map',
-    'test-resolver',
+    PIPELINE_BLOCK.MessagePlayer,
+    PIPELINE_BLOCK.MessageGroup,
+    PIPELINE_BLOCK.MessageChannel,
+    PIPELINE_BLOCK.DisplayImage,
+    PIPELINE_BLOCK.ConditionalGate,
+    PIPELINE_BLOCK.RetrieveData,
+    PIPELINE_BLOCK.OutcomeMap,
+    PIPELINE_BLOCK.TestResolver,
   ],
 };
 
@@ -233,8 +234,12 @@ export function getPipelineInsertIndex(
   pipeline: readonly { blockType: string }[],
   blockType: BlockType,
 ): number {
-  const resolverIndex = pipeline.findIndex((block) => block.blockType === 'test-resolver');
-  return blockType === 'roll-modifier' && resolverIndex !== -1 ? resolverIndex : pipeline.length;
+  const resolverIndex = pipeline.findIndex(
+    (block) => block.blockType === PIPELINE_BLOCK.TestResolver,
+  );
+  return blockType === PIPELINE_BLOCK.RollModifier && resolverIndex !== -1
+    ? resolverIndex
+    : pipeline.length;
 }
 
 export function createPipelineBlock(blockType: BlockType, gameSystemId: string): PipelineBlock {
@@ -255,7 +260,7 @@ export function getDefaultPipelineForEventType(
     .filter((blockType) => isBlockTypeAvailable(blockType, gameSystemId))
     .map((blockType) => {
       const block = createPipelineBlock(blockType, gameSystemId);
-      return blockType === 'outcome-map' && comparison
+      return blockType === PIPELINE_BLOCK.OutcomeMap && comparison
         ? { ...block, config: { ...block.config, comparison } }
         : block;
     });
@@ -360,7 +365,7 @@ export type PipelineBlock = z.infer<typeof pipelineBlockSchema>;
 type PipelineBlockConfigNormalizer = (block: PipelineBlock) => PipelineBlock;
 
 const pipelineBlockConfigNormalizers: Partial<Record<BlockType, PipelineBlockConfigNormalizer>> = {
-  'message-group': (block) => ({
+  [PIPELINE_BLOCK.MessageGroup]: (block) => ({
     ...block,
     config: {
       ...block.config,
@@ -369,7 +374,7 @@ const pipelineBlockConfigNormalizers: Partial<Record<BlockType, PipelineBlockCon
         : { groupPlayerIds: undefined }),
     },
   }),
-  'message-player': (block) => ({
+  [PIPELINE_BLOCK.MessagePlayer]: (block) => ({
     ...block,
     config: {
       ...block.config,
@@ -386,7 +391,7 @@ export function normalizePipelineForSubmission(
 ): PipelineBlock[] {
   return pipeline.map((block) => {
     const normalized = pipelineBlockConfigNormalizers[block.blockType]?.(block) ?? block;
-    if (normalized.blockType !== 'outcome-map') {
+    if (normalized.blockType !== PIPELINE_BLOCK.OutcomeMap) {
       return normalized;
     }
 

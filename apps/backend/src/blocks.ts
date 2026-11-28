@@ -16,6 +16,7 @@ import {
 import type { BlockInstance } from '@constancia/contracts';
 import { gameSystemRegistry, listRoleBlocks } from '@constancia/systems';
 import {
+  PIPELINE_BLOCK,
   PIPELINE_BLOCK_SPECS,
   getEventTypeRole,
   isPipelineBlockRole,
@@ -90,10 +91,14 @@ export function findPipelineError(
     return `This Game System does not support ${eventType} Events.`;
   }
 
-  const resolverIndex = pipeline.findIndex((block) => block.blockType === 'test-resolver');
+  const resolverIndex = pipeline.findIndex(
+    (block) => block.blockType === PIPELINE_BLOCK.TestResolver,
+  );
   const modifierAfterResolver = pipeline.some(
     (block, index) =>
-      block.blockType === 'roll-modifier' && resolverIndex !== -1 && index > resolverIndex,
+      block.blockType === PIPELINE_BLOCK.RollModifier &&
+      resolverIndex !== -1 &&
+      index > resolverIndex,
   );
   if (modifierAfterResolver) {
     return 'Put the roll modifier before the test resolver so the roll can use it.';

@@ -23,6 +23,7 @@ import {
   fiveETestResolverBlock,
   fiveETestResolverSpec,
 } from './5e-srd/resolvers.js';
+import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
 
 /** A character importer with its parser; the frontend keys its import form by `id`. */
 export interface CharacterImporterAdapter extends CharacterImporter {
@@ -147,12 +148,15 @@ export const vtmV5GameSystem: GameSystemAdapter = {
   importers: [{ id: PROGENY_IMPORTER_ID, label: 'Progeny', parse: parseProgenyVtmCharacter }],
   blocks: [],
   roleBlocks: {
-    'test-resolver': {
+    [PIPELINE_BLOCK.TestResolver]: {
       spec: vtmPoolResolverSpec,
       block: vtmPoolResolverBlock,
       hint: vtmPoolHint,
     },
-    'insight-resolver': { spec: vtmInsightResolverSpec, block: vtmInsightResolverBlock },
+    [PIPELINE_BLOCK.InsightResolver]: {
+      spec: vtmInsightResolverSpec,
+      block: vtmInsightResolverBlock,
+    },
   },
 };
 
@@ -190,13 +194,16 @@ export const fiveESrdGameSystem: GameSystemAdapter = {
   attribution: SRD_5E_ATTRIBUTION,
   blocks: [],
   roleBlocks: {
-    'test-resolver': {
+    [PIPELINE_BLOCK.TestResolver]: {
       spec: fiveETestResolverSpec,
       block: fiveETestResolverBlock,
       hint: fiveEModifierHint,
     },
-    'insight-resolver': { spec: fiveEInsightResolverSpec, block: fiveEInsightResolverBlock },
-    'roll-modifier': {
+    [PIPELINE_BLOCK.InsightResolver]: {
+      spec: fiveEInsightResolverSpec,
+      block: fiveEInsightResolverBlock,
+    },
+    [PIPELINE_BLOCK.RollModifier]: {
       spec: fiveERollModifierSpec,
       block: fiveERollModifierBlock,
       cardLine: fiveERollModifierCardLine,

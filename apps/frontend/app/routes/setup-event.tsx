@@ -37,6 +37,7 @@ import {
   type PipelineBlock,
 } from '@/lib/event-schema';
 import type { WarRoomContext } from '@/lib/war-room-data';
+import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
 
 const eventSaveError =
   "We couldn't save this event. Your pipeline is still in the editor; review the highlighted fields and try again.";
@@ -105,7 +106,7 @@ function normalizeEventPipeline(
       {
         blockType: block.blockType,
         config:
-          isRecord(block.config) && block.blockType === 'outcome-map'
+          isRecord(block.config) && block.blockType === PIPELINE_BLOCK.OutcomeMap
             ? normalizeOutcomeConfig(block.config)
             : isRecord(block.config)
               ? block.config

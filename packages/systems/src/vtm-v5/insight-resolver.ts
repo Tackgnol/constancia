@@ -1,5 +1,6 @@
 import type { BlockContext, BlockDefinition } from '@constancia/contracts';
 import {
+  PIPELINE_BLOCK,
   requirePipelineBlockSpec,
   type RoleBlockImplementationSpec,
 } from '@constancia/block-catalogue';
@@ -68,8 +69,8 @@ export const vtmInsightResolverSpec: RoleBlockImplementationSpec = {
 };
 
 export const vtmInsightResolverBlock: BlockDefinition<VtmInsightResolverConfig> = {
-  type: 'insight-resolver',
-  label: requirePipelineBlockSpec('insight-resolver').label,
+  type: PIPELINE_BLOCK.InsightResolver,
+  label: requirePipelineBlockSpec(PIPELINE_BLOCK.InsightResolver).label,
   configSchema: vtmInsightResolverSpec.configSchema,
   execute: async (config: VtmInsightResolverConfig, ctx: BlockContext) => {
     const output = resolveVtmInsightScore(config, ctx.characterData);

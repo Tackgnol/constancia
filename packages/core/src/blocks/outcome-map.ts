@@ -4,7 +4,7 @@ import type {
   BlockEffect,
   BlockMessage,
 } from '@constancia/contracts';
-import { requirePipelineBlockSpec } from '@constancia/block-catalogue';
+import { PIPELINE_BLOCK, requirePipelineBlockSpec } from '@constancia/block-catalogue';
 
 interface Outcome {
   threshold: number;
@@ -19,10 +19,10 @@ interface OutcomeMapConfig {
   comparison?: 'gt' | 'gte';
 }
 
-const spec = requirePipelineBlockSpec('outcome-map');
+const spec = requirePipelineBlockSpec(PIPELINE_BLOCK.OutcomeMap);
 
 export const outcomeMapBlock: BlockDefinition<OutcomeMapConfig> = {
-  type: 'outcome-map',
+  type: PIPELINE_BLOCK.OutcomeMap,
   label: spec.label,
   configSchema: spec.configSchema,
   execute: async (config: OutcomeMapConfig, ctx: BlockContext) => {

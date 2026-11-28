@@ -7,6 +7,7 @@ import type {
 import type { PipelineRunner } from '@constancia/core';
 import { gameSystemRegistry } from '@constancia/systems';
 import { EventExecutionRequestError, type TestRollResult } from './event-execution.js';
+import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
 
 interface GameEventLike {
   id: string;
@@ -33,7 +34,7 @@ function readNumber(value: unknown): number | undefined {
 }
 
 function extractThresholds(pipeline: BlockInstance[]): TestThreshold[] {
-  const outcomeMap = pipeline.find((block) => block.blockType === 'outcome-map');
+  const outcomeMap = pipeline.find((block) => block.blockType === PIPELINE_BLOCK.OutcomeMap);
   if (!outcomeMap || !isRecord(outcomeMap.config)) {
     return [];
   }
@@ -61,7 +62,7 @@ function extractThresholds(pipeline: BlockInstance[]): TestThreshold[] {
 
 function extractImageUrl(pipeline: BlockInstance[]): string | undefined {
   for (const block of pipeline) {
-    if (block.blockType !== 'display-image' || !isRecord(block.config)) {
+    if (block.blockType !== PIPELINE_BLOCK.DisplayImage || !isRecord(block.config)) {
       continue;
     }
 
@@ -80,14 +81,14 @@ function extractDescription(pipeline: BlockInstance[]): string | undefined {
       continue;
     }
 
-    if (block.blockType === 'message-channel') {
+    if (block.blockType === PIPELINE_BLOCK.MessageChannel) {
       const content = readString(block.config.content);
       if (content) {
         return content;
       }
     }
 
-    if (block.blockType === 'display-image') {
+    if (block.blockType === PIPELINE_BLOCK.DisplayImage) {
       const caption = readString(block.config.caption);
       if (caption) {
         return caption;
@@ -111,9 +112,12 @@ export function buildTestInstancePayload(
   if (thresholds.length === 0) {
     return null;
   }
-  const rollModifier = event.pipeline.find((block) => block.blockType === 'roll-modifier');
-  const cardLine = gameSystemRegistry.get(event.gameSystemId)?.roleBlocks['roll-modifier']
-    ?.cardLine;
+  const rollModifier = event.pipeline.find(
+    (block) => block.blockType === PIPELINE_BLOCK.RollModifier,
+  );
+  const cardLine = gameSystemRegistry.get(event.gameSystemId)?.roleBlocks[
+    PIPELINE_BLOCK.RollModifier
+  ]?.cardLine;
   const rollModifierLine =
     rollModifier && cardLine && isRecord(rollModifier.config)
       ? (cardLine(rollModifier.config) ?? undefined)
@@ -133,7 +137,10 @@ export function buildTestInstancePayload(
   };
 }
 
-const ROLL_BLOCK_TYPES = new Set(['roll-modifier', 'test-resolver']);
+const ROLL_BLOCK_TYPES = new Set<string>([
+  PIPELINE_BLOCK.RollModifier,
+  PIPELINE_BLOCK.TestResolver,
+]);
 
 /**
  * Runs only the pipeline's roll blocks for Roll for me. The resolver's player messages become the
@@ -145,7 +152,7 @@ export async function rollTestResult(
   ctx: BlockContext,
 ): Promise<TestRollResult> {
   const rollBlocks = pipeline.filter((block) => ROLL_BLOCK_TYPES.has(block.blockType));
-  if (!rollBlocks.some((block) => block.blockType === 'test-resolver')) {
+  if (!rollBlocks.some((block) => block.blockType === PIPELINE_BLOCK.TestResolver)) {
     throw new EventExecutionRequestError(
       422,
       'ROLL_UNSUPPORTED',
@@ -167,11 +174,11 @@ export async function rollTestResult(
 }
 
 export function filterManualTestResolutionPipeline(blocks: BlockInstance[]): BlockInstance[] {
-  const manualMetadataBlocks = new Set([
-    'roll-modifier',
-    'test-resolver',
-    'message-channel',
-    'display-image',
+  const manualMetadataBlocks = new Set<string>([
+    PIPELINE_BLOCK.RollModifier,
+    PIPELINE_BLOCK.TestResolver,
+    PIPELINE_BLOCK.MessageChannel,
+    PIPELINE_BLOCK.DisplayImage,
   ]);
   return blocks.filter((block) => !manualMetadataBlocks.has(block.blockType));
 }

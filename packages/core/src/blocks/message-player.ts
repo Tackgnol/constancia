@@ -1,5 +1,5 @@
 import type { BlockContext, BlockDefinition } from '@constancia/contracts';
-import { requirePipelineBlockSpec } from '@constancia/block-catalogue';
+import { PIPELINE_BLOCK, requirePipelineBlockSpec } from '@constancia/block-catalogue';
 
 function normalizeRecipientIds(ids: string | string[] | undefined): string[] {
   if (Array.isArray(ids)) {
@@ -27,10 +27,10 @@ interface MessagePlayerConfig {
   playerIds?: string | string[];
 }
 
-const spec = requirePipelineBlockSpec('message-player');
+const spec = requirePipelineBlockSpec(PIPELINE_BLOCK.MessagePlayer);
 
 export const messagePlayerBlock: BlockDefinition<MessagePlayerConfig> = {
-  type: 'message-player',
+  type: PIPELINE_BLOCK.MessagePlayer,
   label: spec.label,
   configSchema: spec.configSchema,
   execute: async (config: MessagePlayerConfig, ctx: BlockContext) => {

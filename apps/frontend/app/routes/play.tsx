@@ -15,6 +15,7 @@ import { postRouteAction } from '@/lib/route-action-client';
 import { handleTestInstanceAction } from '@/lib/test-instance-action.server';
 import { handleUploadImageAction } from '@/lib/upload-image-action.server';
 import type { TriggerKind, WarRoomContext } from '@/lib/war-room-data';
+import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
 
 const HOLD_DURATION_MS = 1800;
 
@@ -171,13 +172,21 @@ function extractTargetAndPreview(
   for (const block of event.pipeline ?? []) {
     const cfg = (block?.config ?? {}) as Record<string, unknown>;
 
-    if (block.blockType === 'message-channel' && typeof cfg.content === 'string' && !preview) {
+    if (
+      block.blockType === PIPELINE_BLOCK.MessageChannel &&
+      typeof cfg.content === 'string' &&
+      !preview
+    ) {
       preview = cfg.content;
     }
-    if (block.blockType === 'display-image' && typeof cfg.caption === 'string' && !preview) {
+    if (
+      block.blockType === PIPELINE_BLOCK.DisplayImage &&
+      typeof cfg.caption === 'string' &&
+      !preview
+    ) {
       preview = cfg.caption;
     }
-    if (block.blockType === 'message-player') {
+    if (block.blockType === PIPELINE_BLOCK.MessagePlayer) {
       const ids = Array.isArray(cfg.playerIds) ? (cfg.playerIds as string[]) : [];
       if (ids.length > 0) {
         const labels = ids.map((id) => playerLabelById.get(id) ?? id);
@@ -187,14 +196,14 @@ function extractTargetAndPreview(
         preview = cfg.content;
       }
     }
-    if (block.blockType === 'message-group') {
+    if (block.blockType === PIPELINE_BLOCK.MessageGroup) {
       const ids = Array.isArray(cfg.groupPlayerIds) ? (cfg.groupPlayerIds as string[]) : [];
       target = ids.length > 0 ? `→ ${ids.length} player group` : target;
       if (typeof cfg.content === 'string' && !preview) {
         preview = cfg.content;
       }
     }
-    if (block.blockType === 'conditional-gate') {
+    if (block.blockType === PIPELINE_BLOCK.ConditionalGate) {
       const op =
         cfg.operator === 'gte'
           ? '≥'
@@ -209,8 +218,8 @@ function extractTargetAndPreview(
       const threshold = cfg.threshold ?? '?';
       target = `→ players where ${stat} ${op} ${threshold}`;
     }
-    if (block.blockType === 'test-resolver' && !preview) {
-      preview = summarizeBlockConfig('test-resolver', cfg, gameSystemId) ?? 'Test';
+    if (block.blockType === PIPELINE_BLOCK.TestResolver && !preview) {
+      preview = summarizeBlockConfig(PIPELINE_BLOCK.TestResolver, cfg, gameSystemId) ?? 'Test';
       target = null;
     }
   }

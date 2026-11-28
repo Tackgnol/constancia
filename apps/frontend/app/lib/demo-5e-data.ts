@@ -4,6 +4,7 @@ import type { CampaignNpc } from '@/components/npcs/block-registry';
 import type { CharacterSheetData } from './character-sheet.js';
 import { demoContext } from './demo-data.js';
 import type { PlayerPresence, WarRoomContext } from './war-room-data.js';
+import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
 
 export const DEMO_5E_CAMPAIGN_ID = 'demo-ember-vale';
 // shortcut: the 5E demo is picked per request with ?system=5e-srd and links don't carry it; add a
@@ -139,10 +140,13 @@ export const demo5eContext: WarRoomContext = {
       status: 'ready',
       shortCircuit: true,
       pipeline: [
-        { blockType: 'roll-modifier', config: { mode: 'advantage' } },
-        { blockType: 'test-resolver', config: { mode: 'check', ability: 'dex', skill: 'stealth' } },
+        { blockType: PIPELINE_BLOCK.RollModifier, config: { mode: 'advantage' } },
         {
-          blockType: 'outcome-map',
+          blockType: PIPELINE_BLOCK.TestResolver,
+          config: { mode: 'check', ability: 'dex', skill: 'stealth' },
+        },
+        {
+          blockType: PIPELINE_BLOCK.OutcomeMap,
           config: {
             comparison: 'gte',
             outcomes: [
@@ -162,9 +166,9 @@ export const demo5eContext: WarRoomContext = {
       status: 'ready',
       shortCircuit: true,
       pipeline: [
-        { blockType: 'test-resolver', config: { mode: 'save', ability: 'dex' } },
+        { blockType: PIPELINE_BLOCK.TestResolver, config: { mode: 'save', ability: 'dex' } },
         {
-          blockType: 'outcome-map',
+          blockType: PIPELINE_BLOCK.OutcomeMap,
           config: {
             comparison: 'gte',
             outcomes: [
@@ -184,9 +188,12 @@ export const demo5eContext: WarRoomContext = {
       status: 'ready',
       shortCircuit: true,
       pipeline: [
-        { blockType: 'insight-resolver', config: { ability: 'wis', skill: 'perception' } },
         {
-          blockType: 'outcome-map',
+          blockType: PIPELINE_BLOCK.InsightResolver,
+          config: { ability: 'wis', skill: 'perception' },
+        },
+        {
+          blockType: PIPELINE_BLOCK.OutcomeMap,
           config: {
             comparison: 'gte',
             outcomes: [
