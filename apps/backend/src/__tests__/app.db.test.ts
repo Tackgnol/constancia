@@ -75,6 +75,7 @@ describeDatabase('backend app database integration', () => {
         channelName: 'general',
         campaignName: 'Setup Campaign',
         gameSystemId: 'vtm-v5',
+        discordUserId: 'dc-user-setup',
       },
     });
 
@@ -100,6 +101,7 @@ describeDatabase('backend app database integration', () => {
       channelName: 'general',
       campaignName: 'Idem Campaign',
       gameSystemId: 'vtm-v5',
+      discordUserId: 'dc-user-idem',
     };
 
     await app.inject({

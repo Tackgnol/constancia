@@ -60,7 +60,7 @@ export function TestInstancePanel({
           <button
             className="ghost-action ghost-action-inline"
             disabled={busy}
-            onClick={() => refresh()}
+            onClick={() => void run({ intent: 'list-test-instances' })}
             type="button"
           >
             Refresh
