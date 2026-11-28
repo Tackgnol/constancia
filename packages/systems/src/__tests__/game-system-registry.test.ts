@@ -8,6 +8,12 @@ import {
   gameSystemRegistry,
 } from '../game-system-registry.js';
 import { GREGORIAN_CALENDAR } from '../calendar.js';
+import {
+  getPipelineBlockSpecForSystem,
+  listImplementedRoles,
+  listPipelineBlockSpecsForSystem,
+  listRoleBlocks,
+} from '../role-blocks.js';
 
 describe('GameSystemRegistry', () => {
   it('registers the concrete VTM V5 and Mork Borg adapters', () => {
@@ -20,26 +26,38 @@ describe('GameSystemRegistry', () => {
     expect(gameSystemRegistry.require('MORKBORG').id).toBe('mork-borg');
   });
 
-  it('keeps executable pipeline blocks separate from NPC system blocks', () => {
+  it('keeps role pipeline blocks separate from NPC system blocks', () => {
     const vtm = gameSystemRegistry.require('vtm-v5');
     const morkBorg = gameSystemRegistry.require('mork-borg');
 
-    expect(vtm.blocks.map((block) => block.type)).toEqual([
-      'vtm-pool-resolver',
-      'vtm-insight-resolver',
+    expect(listImplementedRoles(vtm)).toEqual(['test-resolver', 'insight-resolver']);
+    expect(listRoleBlocks(vtm).map((block) => block.type)).toEqual([
+      'test-resolver',
+      'insight-resolver',
     ]);
     expect(vtm.npcBlocks?.map((block) => block.blockType)).toContain('clan');
-    expect(morkBorg.blocks).toEqual([]);
+    expect(listImplementedRoles(morkBorg)).toEqual([]);
     expect(morkBorg.npcBlocks?.map((block) => block.blockType)).toContain('creature-type');
   });
 
-  it('provides every system-specific pipeline block through the adapter seam', () => {
-    const registeredSystemBlockTypes = GAME_SYSTEM_ADAPTERS.flatMap((system) =>
-      system.blocks.map((block) => block.type),
-    );
+  it('resolves role block specs from the campaign system', () => {
+    const vtm = gameSystemRegistry.require('vtm-v5');
+    const morkBorg = gameSystemRegistry.require('mork-borg');
 
-    expect(registeredSystemBlockTypes).toEqual(['vtm-pool-resolver', 'vtm-insight-resolver']);
-    expect(new Set(registeredSystemBlockTypes).size).toBe(registeredSystemBlockTypes.length);
+    const vtmSpec = getPipelineBlockSpecForSystem('test-resolver', vtm);
+    expect(vtmSpec?.label).toBe('Test resolver');
+    expect(vtmSpec?.editor.fields.map((field) => field.path)).toEqual([
+      'attribute',
+      'skill',
+      'difficulty',
+    ]);
+    expect(getPipelineBlockSpecForSystem('test-resolver', morkBorg)).toBeUndefined();
+    expect(getPipelineBlockSpecForSystem('message-channel', morkBorg)?.blockType).toBe(
+      'message-channel',
+    );
+    expect(listPipelineBlockSpecsForSystem(morkBorg).map((spec) => spec.blockType)).not.toContain(
+      'insight-resolver',
+    );
   });
 
   it('rejects duplicate canonical or alias lookup keys', () => {
@@ -55,6 +73,7 @@ describe('GameSystemRegistry', () => {
       archetypes: [],
       testConfig: { label: 'Test', fields: [] },
       blocks: [],
+      roleBlocks: {},
     };
 
     expect(() => registry.register(duplicate)).toThrow(DuplicateGameSystemKeyError);

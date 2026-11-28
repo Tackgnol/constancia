@@ -73,7 +73,7 @@ describe('test-instance helpers', () => {
   it('removes automated resolver blocks from manual test resolution', () => {
     expect(
       filterManualTestResolutionPipeline([
-        { blockType: 'vtm-pool-resolver', config: { attribute: 'dexterity', skill: 'stealth' } },
+        { blockType: 'test-resolver', config: { attribute: 'dexterity', skill: 'stealth' } },
         { blockType: 'message-channel', config: { content: 'Cross the gallery unseen.' } },
         { blockType: 'display-image', config: { imageUrl: 'https://example.com/gallery.jpg' } },
         { blockType: 'outcome-map', config: { outcomes: [] } },

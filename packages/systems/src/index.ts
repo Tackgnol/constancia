@@ -6,6 +6,7 @@ export * from './mork-borg/data.js';
 export * from './stat-schemas.js';
 export * from './calendar.js';
 export * from './archetypes.js';
+export * from './role-blocks.js';
 export {
   DuplicateGameSystemKeyError,
   GAME_SYSTEM_ADAPTERS,

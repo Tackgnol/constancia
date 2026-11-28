@@ -30,7 +30,7 @@ import { handleUploadImageAction } from '@/lib/upload-image-action.server';
 import {
   BLOCK_TYPES,
   EVENT_TYPES,
-  eventFormSchema,
+  createEventFormSchema,
   getDefaultPipelineForEventType,
   normalizeEventFormValues,
   type EventFormValues,
@@ -83,10 +83,13 @@ function normalizeOutcomeConfig(config: Record<string, unknown>): Record<string,
   };
 }
 
-function normalizeEventPipeline(event: ListEvents200DataItem): PipelineBlock[] {
+function normalizeEventPipeline(
+  event: ListEvents200DataItem,
+  gameSystemId: string,
+): PipelineBlock[] {
   const type = isEventType(event.type) ? event.type : 'narration';
   if (!Array.isArray(event.pipeline)) {
-    return getDefaultPipelineForEventType(type);
+    return getDefaultPipelineForEventType(type, gameSystemId);
   }
 
   const pipeline = event.pipeline.flatMap((block): PipelineBlock[] => {
@@ -111,10 +114,10 @@ function normalizeEventPipeline(event: ListEvents200DataItem): PipelineBlock[] {
     ];
   });
 
-  return pipeline.length > 0 ? pipeline : getDefaultPipelineForEventType(type);
+  return pipeline.length > 0 ? pipeline : getDefaultPipelineForEventType(type, gameSystemId);
 }
 
-function eventToFormValues(event: ListEvents200DataItem): EventFormValues {
+function eventToFormValues(event: ListEvents200DataItem, gameSystemId: string): EventFormValues {
   const type = isEventType(event.type) ? event.type : 'narration';
 
   return {
@@ -122,17 +125,17 @@ function eventToFormValues(event: ListEvents200DataItem): EventFormValues {
     type,
     channelId: event.channelId,
     shortCircuit: event.shortCircuit,
-    pipeline: normalizeEventPipeline(event),
+    pipeline: normalizeEventPipeline(event, gameSystemId),
   };
 }
 
-function emptyEventValues(): EventFormValues {
+function emptyEventValues(gameSystemId: string): EventFormValues {
   return {
     name: '',
     type: 'narration',
     channelId: '',
     shortCircuit: false,
-    pipeline: getDefaultPipelineForEventType('narration'),
+    pipeline: getDefaultPipelineForEventType('narration', gameSystemId),
   };
 }
 
@@ -257,6 +260,7 @@ export default function SetupEventRoute() {
   const revalidator = useRevalidator();
   const setupBase = getSetupBase(warRoom);
   const isDemoCampaign = warRoom.campaign.id.startsWith('demo-');
+  const gameSystemId = warRoom.campaign.gameSystemId;
   const editingEvent = useMemo(
     () => warRoom.events.find((event) => event.id === eventId) ?? null,
     [eventId, warRoom.events],
@@ -266,8 +270,10 @@ export default function SetupEventRoute() {
   const [eventError, setEventError] = useState<string | null>(null);
 
   const eventMethods = useForm<EventFormValues>({
-    resolver: zodResolver(eventFormSchema),
-    defaultValues: editingEvent ? eventToFormValues(editingEvent) : emptyEventValues(),
+    resolver: zodResolver(createEventFormSchema(gameSystemId)),
+    defaultValues: editingEvent
+      ? eventToFormValues(editingEvent, gameSystemId)
+      : emptyEventValues(gameSystemId),
   });
 
   const onSubmitEvent = async (values: EventFormValues) => {
@@ -292,7 +298,7 @@ export default function SetupEventRoute() {
 
       setSavedEvent(normalizedValues);
       if (!isEditing) {
-        eventMethods.reset(emptyEventValues());
+        eventMethods.reset(emptyEventValues(gameSystemId));
       }
     } catch (err) {
       console.error('Save event error:', err);
@@ -414,6 +420,7 @@ export default function SetupEventRoute() {
           <EventSetupForm
             methods={eventMethods}
             channels={warRoom.channels}
+            gameSystemId={gameSystemId}
             onSubmit={onSubmitEvent}
             submitLabel={isEditing ? 'Save event' : 'Create event'}
           />

@@ -12,7 +12,9 @@ metadata:
     - pipeline editor
     - registered blocks
     - outcome-map
-    - vtm-pool-resolver
+    - test-resolver
+    - insight-resolver
+    - role block
 ---
 
 # Constancia Block Architecture
@@ -246,6 +248,27 @@ A block is not “done” if you only changed one of these layers.
     the compiler reject a missing adapter.
   - This is not a hand-rolled `if (blockType === ...)` chain and does not need a per-block branch;
     new blocks with existing field kinds require no changes here.
+
+## Role Blocks (ADR 0001)
+
+`test-resolver` and `insight-resolver` are **role blocks**: the catalogue lists them with
+`availability: { kind: 'role', role }` and an open `configSchema`, and the campaign's Game System
+supplies the real shape.
+
+- A system implements a role in `GameSystemAdapter.roleBlocks[role] = { spec, block }`
+  (`packages/systems/src/game-system-registry.ts`). `spec` is a `RoleBlockImplementationSpec`
+  (configSchema, defaultConfig, editor fields) owned by the system module; this is the one
+  sanctioned exception to "labels and schemas live only in the catalogue".
+- Every role resolver returns `playerScore` in its `BlockResult`; the runner carries it to later
+  blocks as `ctx.playerScore`.
+- Resolve a spec per system with `getPipelineBlockSpecForSystem` / `listPipelineBlockSpecsForSystem`
+  (`packages/systems/src/role-blocks.ts`); in the frontend use `getBlockSpecForSystem` in
+  `event-schema.ts`.
+- The backend registry is per campaign: `buildBlockRegistry(gameSystemId)`. Event save calls
+  `findPipelineError`, which rejects unsupported roles and validates role config against the
+  system's schema.
+- Blocks only one system has that fill no role go in `GameSystemAdapter.blocks` with a
+  `<systemId>-` prefix.
 
 ## Anti-Drift Rules
 

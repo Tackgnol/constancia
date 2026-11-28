@@ -337,7 +337,7 @@ describe('backend app', () => {
           name: 'Spot The Sigil',
           type: 'test',
           channelId: 'channel-1',
-          pipeline: [{ blockType: 'vtm-pool-resolver', config: { attribute: 'wits' } }],
+          pipeline: [{ blockType: 'test-resolver', config: { attribute: 'wits' } }],
         },
       },
       {

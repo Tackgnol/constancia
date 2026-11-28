@@ -144,7 +144,7 @@ export const demoContext: WarRoomContext = {
       shortCircuit: false,
       pipeline: [
         {
-          blockType: 'vtm-pool-resolver',
+          blockType: 'test-resolver',
           config: { attribute: 'Dexterity', skill: 'Stealth' },
         },
         {
@@ -168,7 +168,7 @@ export const demoContext: WarRoomContext = {
       shortCircuit: false,
       pipeline: [
         {
-          blockType: 'vtm-pool-resolver',
+          blockType: 'test-resolver',
           config: { attribute: 'Manipulation', skill: 'Persuasion' },
         },
       ],

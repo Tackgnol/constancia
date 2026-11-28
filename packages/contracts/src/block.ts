@@ -121,6 +121,8 @@ export type BlockEffect =
 
 export interface BlockResult {
   output: unknown;
+  /** Set by resolver blocks; the runner carries it to later blocks as `ctx.playerScore`. */
+  playerScore?: number;
   messages?: BlockMessage[];
   effects?: BlockEffect[];
   halt?: boolean;

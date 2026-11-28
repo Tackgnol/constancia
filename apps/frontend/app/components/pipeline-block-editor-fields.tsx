@@ -1,10 +1,10 @@
 import { useState, type ComponentType, type ReactNode } from 'react';
 import { Controller, useFormContext, type FieldPath } from 'react-hook-form';
 import { useLocation, useOutletContext } from 'react-router';
-import { requirePipelineBlockSpec, type PipelineEditorField } from '@constancia/block-catalogue';
+import type { PipelineEditorField } from '@constancia/block-catalogue';
 import { getStatSchemaForSystem } from '@constancia/systems';
 import { ImageUploadField } from '@/components/forms/image-upload-field';
-import type { BlockType, EventFormValues } from '@/lib/event-schema';
+import { getBlockSpecForSystem, type BlockType, type EventFormValues } from '@/lib/event-schema';
 import { buildRecipientOptions, type WarRoomContext } from '@/lib/war-room-data';
 import {
   Command,
@@ -463,7 +463,10 @@ export function BlockConfigFields({ index, blockType }: Props) {
   const {
     formState: { errors },
   } = useFormContext<EventFormValues>();
-  const spec = requirePipelineBlockSpec(blockType);
+  const spec = getBlockSpecForSystem(blockType, warRoom.campaign.gameSystemId);
+  if (!spec) {
+    return <p className="form-error">This Game System does not support this block.</p>;
+  }
   const blockErrors = (errors.pipeline?.[index]?.config ?? {}) as Record<
     string,
     { message?: string }

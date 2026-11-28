@@ -1,5 +1,8 @@
 import type { BlockDefinition, BlockContext, BlockMessage } from '@constancia/contracts';
-import { requirePipelineBlockSpec } from '@constancia/block-catalogue';
+import {
+  requirePipelineBlockSpec,
+  type RoleBlockImplementationSpec,
+} from '@constancia/block-catalogue';
 
 interface VtmPoolResolverConfig {
   attribute: string;
@@ -66,17 +69,57 @@ function outcomeLabel(outcome: VtmPoolResult['outcome']): string {
   }
 }
 
-const spec = requirePipelineBlockSpec('vtm-pool-resolver');
+export const vtmPoolResolverSpec: RoleBlockImplementationSpec = {
+  configSchema: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      attribute: { type: 'string', description: 'Key into characterData.attributes' },
+      skill: { type: 'string', description: 'Key into characterData.skills' },
+      difficulty: { type: 'number', description: 'Number of successes needed to succeed' },
+    },
+    required: ['attribute', 'skill'],
+  },
+  defaultConfig: { attribute: '', skill: '' },
+  editor: {
+    columns: 2,
+    fields: [
+      {
+        kind: 'system-stat-select',
+        path: 'attribute',
+        label: 'Attribute',
+        statGroup: 'attributes',
+        hint: 'System attribute used to build the dice pool.',
+      },
+      {
+        kind: 'system-stat-select',
+        path: 'skill',
+        label: 'Skill',
+        statGroup: 'skills',
+        hint: 'System skill used to build the dice pool.',
+      },
+      {
+        kind: 'number',
+        path: 'difficulty',
+        label: 'Difficulty',
+        optional: true,
+        placeholder: '1',
+        columnSpan: 2,
+      },
+    ],
+  },
+};
 
 export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
-  type: 'vtm-pool-resolver',
-  label: spec.label,
-  configSchema: spec.configSchema,
+  type: 'test-resolver',
+  label: requirePipelineBlockSpec('test-resolver').label,
+  configSchema: vtmPoolResolverSpec.configSchema,
   execute: async (
     config: VtmPoolResolverConfig,
     ctx: BlockContext,
   ): Promise<{
     output: VtmPoolResult;
+    playerScore: number;
     messages: BlockMessage[];
   }> => {
     const attrs = readNumberRecord(ctx.characterData.attributes);
@@ -101,6 +144,7 @@ export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
       };
       return {
         output: result,
+        playerScore: 0,
         messages: [
           {
             target: 'player',
@@ -180,6 +224,7 @@ export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
 
     return {
       output: result,
+      playerScore: successes,
       messages: [
         { target: 'player', ...(targetId ? { targetId } : {}), content: playerMsg },
         { target: 'channel', content: channelMsg },

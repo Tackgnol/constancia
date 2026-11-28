@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { BlockConfigValidationError, PipelineRunner } from '../pipeline-runner.js';
+import {
+  BlockConfigValidationError,
+  PipelineRunner,
+  UnknownBlockTypeError,
+} from '../pipeline-runner.js';
 import { BlockRegistry } from '../block-registry.js';
 import { resolveMessageRecipients } from '@constancia/contracts';
 import type { BlockDefinition, BlockContext, BlockInstance } from '@constancia/contracts';
@@ -227,5 +231,58 @@ describe('PipelineRunner', () => {
       'Invalid config for block "say" at pipeline index 0',
     );
     expect(executeSpy).not.toHaveBeenCalled();
+  });
+
+  it('carries a resolver playerScore to later blocks', async () => {
+    const registry = new BlockRegistry();
+    const seen: (number | undefined)[] = [];
+    registry.register({
+      type: 'resolve',
+      label: 'Resolve',
+      configSchema: { type: 'object' },
+      execute: async () => ({ output: null, playerScore: 7 }),
+    });
+    registry.register({
+      type: 'read',
+      label: 'Read',
+      configSchema: { type: 'object' },
+      execute: async (_config: unknown, ctx: BlockContext) => {
+        seen.push(ctx.playerScore);
+        return { output: null };
+      },
+    });
+
+    const result = await new PipelineRunner(registry).run(
+      [
+        { blockType: 'read', config: {} },
+        { blockType: 'resolve', config: {} },
+        { blockType: 'read', config: {} },
+      ],
+      createContext({ playerScore: 2 }),
+    );
+
+    expect(seen).toEqual([2, 7]);
+    expect(result.playerScore).toBe(7);
+  });
+
+  it('validates a pipeline without executing it', () => {
+    const registry = new BlockRegistry();
+    const execute = vi.fn();
+    registry.register({
+      type: 'say',
+      label: 'Say',
+      configSchema: { type: 'object', required: ['text'] },
+      execute,
+    });
+    const runner = new PipelineRunner(registry);
+
+    expect(() => runner.validate([{ blockType: 'say', config: { text: 'hi' } }])).not.toThrow();
+    expect(() => runner.validate([{ blockType: 'say', config: {} }])).toThrow(
+      BlockConfigValidationError,
+    );
+    expect(() => runner.validate([{ blockType: 'missing', config: {} }])).toThrow(
+      UnknownBlockTypeError,
+    );
+    expect(execute).not.toHaveBeenCalled();
   });
 });

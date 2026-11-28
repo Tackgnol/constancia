@@ -4,9 +4,12 @@ export type JsonPrimitive = boolean | number | string | null;
 export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
 export type JsonObject = { [key: string]: JsonValue };
 
+export const PIPELINE_BLOCK_ROLES = ['test-resolver', 'insight-resolver'] as const;
+export type PipelineBlockRole = (typeof PIPELINE_BLOCK_ROLES)[number];
+
 export type PipelineBlockAvailability =
   | { kind: 'common' }
-  | { kind: 'game-system'; gameSystemIds: readonly string[] };
+  | { kind: 'role'; role: PipelineBlockRole };
 
 export interface PipelineEditorFieldPresentation {
   optional?: boolean;
@@ -54,6 +57,13 @@ export type PipelineEditorField = PipelineEditorFieldPresentation &
         label: string;
       }
   );
+
+/** What a Game System supplies for a role block: its config schema, default config and editor layout. */
+export interface RoleBlockImplementationSpec {
+  configSchema: JSONSchema7;
+  defaultConfig: JsonObject;
+  editor: PipelineBlockSpec['editor'];
+}
 
 export interface PipelineBlockSpec {
   blockType: string;
@@ -387,83 +397,24 @@ export const PIPELINE_BLOCK_SPECS = [
     },
   },
   {
-    blockType: 'vtm-pool-resolver',
+    blockType: 'test-resolver',
     version: 1,
-    label: 'VTM V5 Dice Pool Resolver',
-    availability: { kind: 'game-system', gameSystemIds: ['vtm-v5'] },
-    configSchema: {
-      type: 'object',
-      additionalProperties: false,
-      properties: {
-        attribute: { type: 'string', description: 'Key into characterData.attributes' },
-        skill: { type: 'string', description: 'Key into characterData.skills' },
-        difficulty: { type: 'number', description: 'Number of successes needed to succeed' },
-      },
-      required: ['attribute', 'skill'],
-    },
-    defaultConfig: { attribute: '', skill: '' },
-    editor: {
-      columns: 2,
-      fields: [
-        {
-          kind: 'system-stat-select',
-          path: 'attribute',
-          label: 'Attribute',
-          statGroup: 'attributes',
-          hint: 'System attribute used to build the dice pool.',
-        },
-        {
-          kind: 'system-stat-select',
-          path: 'skill',
-          label: 'Skill',
-          statGroup: 'skills',
-          hint: 'System skill used to build the dice pool.',
-        },
-        {
-          kind: 'number',
-          path: 'difficulty',
-          label: 'Difficulty',
-          optional: true,
-          placeholder: '1',
-          columnSpan: 2,
-        },
-      ],
-    },
+    label: 'Test resolver',
+    availability: { kind: 'role', role: 'test-resolver' },
+    // Open on purpose: the campaign's Game System supplies and validates the real shape.
+    configSchema: { type: 'object', additionalProperties: true },
+    defaultConfig: {},
+    editor: { fields: [] },
   },
   {
-    blockType: 'vtm-insight-resolver',
+    blockType: 'insight-resolver',
     version: 1,
-    label: 'VTM V5 Insight Resolver',
-    availability: { kind: 'game-system', gameSystemIds: ['vtm-v5'] },
-    configSchema: {
-      type: 'object',
-      additionalProperties: false,
-      properties: {
-        attribute: { type: 'string', description: 'Key into characterData.attributes' },
-        skill: { type: 'string', description: 'Key into characterData.skills' },
-      },
-      required: ['attribute', 'skill'],
-    },
-    defaultConfig: { attribute: '', skill: '' },
-    editor: {
-      columns: 2,
-      fields: [
-        {
-          kind: 'system-stat-select',
-          path: 'attribute',
-          label: 'Attribute',
-          statGroup: 'attributes',
-          hint: 'System attribute used in the passive insight total.',
-        },
-        {
-          kind: 'system-stat-select',
-          path: 'skill',
-          label: 'Skill',
-          statGroup: 'skills',
-          hint: 'System skill added to the passive insight total.',
-        },
-      ],
-    },
+    label: 'Insight resolver',
+    availability: { kind: 'role', role: 'insight-resolver' },
+    // Open on purpose: the campaign's Game System supplies and validates the real shape.
+    configSchema: { type: 'object', additionalProperties: true },
+    defaultConfig: {},
+    editor: { fields: [] },
   },
 ] as const satisfies readonly PipelineBlockSpec[];
 
@@ -489,18 +440,33 @@ export function requirePipelineBlockSpec(blockType: PipelineBlockType): Pipeline
   return spec;
 }
 
-export function isPipelineBlockAvailable(spec: PipelineBlockSpec, gameSystemId: string): boolean {
-  return (
-    spec.availability.kind === 'common' ||
-    spec.availability.gameSystemIds.some((candidate) => candidate === gameSystemId)
-  );
+export function isPipelineBlockRole(value: string): value is PipelineBlockRole {
+  return PIPELINE_BLOCK_ROLES.some((role) => role === value);
 }
 
-export function listPipelineBlockSpecs(gameSystemId?: string): readonly PipelineBlockSpec[] {
-  if (!gameSystemId) {
+/** A block is available when it is common or the Game System implements its role. */
+export function isPipelineBlockAvailable(
+  spec: PipelineBlockSpec,
+  implementedRoles: readonly PipelineBlockRole[],
+): boolean {
+  return spec.availability.kind === 'common' || implementedRoles.includes(spec.availability.role);
+}
+
+export function listPipelineBlockSpecs(
+  implementedRoles?: readonly PipelineBlockRole[],
+): readonly PipelineBlockSpec[] {
+  if (!implementedRoles) {
     return PIPELINE_BLOCK_SPECS;
   }
-  return PIPELINE_BLOCK_SPECS.filter((spec) => isPipelineBlockAvailable(spec, gameSystemId));
+  return PIPELINE_BLOCK_SPECS.filter((spec) => isPipelineBlockAvailable(spec, implementedRoles));
+}
+
+/** Overlays a Game System's role implementation onto the catalogue's role spec. */
+export function withRoleImplementation(
+  spec: PipelineBlockSpec,
+  implementation: RoleBlockImplementationSpec,
+): PipelineBlockSpec {
+  return { ...spec, ...implementation };
 }
 
 export function createDefaultPipelineBlock(blockType: PipelineBlockType): {
