@@ -146,6 +146,25 @@ export function isEditorFieldVisible(
   return typeof value === 'string' && field.visibleWhen.equals.includes(value);
 }
 
+/** A one-line summary of a block's config from its Game System's visible editor fields, e.g. "Saving throw · Dexterity". */
+export function summarizeBlockConfig(
+  blockType: BlockType,
+  config: Record<string, unknown>,
+  gameSystemId: string,
+): string | null {
+  const fields = getBlockSpecForSystem(blockType, gameSystemId)?.editor.fields ?? [];
+  const parts = fields.flatMap((field) => {
+    const value = config[field.path];
+    if (typeof value !== 'string' || value === '' || !isEditorFieldVisible(field, config)) {
+      return [];
+    }
+    const option =
+      field.kind === 'select' ? field.options.find((entry) => entry.value === value) : undefined;
+    return [option?.label ?? value];
+  });
+  return parts.length > 0 ? parts.join(' · ') : null;
+}
+
 export function isBlockTypeAvailable(blockType: BlockType, gameSystemId: string): boolean {
   return getBlockSpecForSystem(blockType, gameSystemId) !== undefined;
 }

@@ -10,6 +10,7 @@ import { assertApiOk, getApiErrorMessage } from '@/lib/api-errors';
 import { fireCampaignEvent } from '@/lib/fire-event-action.server';
 import type { DeliveryViewState, FireReceiptView } from '@/lib/fire-event-receipt';
 import { parseStringArrayFormValue } from '@/lib/form-data';
+import { summarizeBlockConfig } from '@/lib/event-schema';
 import { postRouteAction } from '@/lib/route-action-client';
 import { handleTestInstanceAction } from '@/lib/test-instance-action.server';
 import { handleUploadImageAction } from '@/lib/upload-image-action.server';
@@ -162,6 +163,7 @@ function extractTargetAndPreview(
   event: ListEvents200DataItem,
   channelName: string | null,
   playerLabelById: Map<string, string>,
+  gameSystemId: string,
 ): { target: string | null; preview: string | null } {
   let target: string | null = channelName ? `#${channelName}` : null;
   let preview: string | null = null;
@@ -208,9 +210,7 @@ function extractTargetAndPreview(
       target = `→ players where ${stat} ${op} ${threshold}`;
     }
     if (block.blockType === 'test-resolver' && !preview) {
-      const attr = typeof cfg.attribute === 'string' ? cfg.attribute : '?';
-      const skill = typeof cfg.skill === 'string' ? cfg.skill : '?';
-      preview = `${attr} + ${skill}`;
+      preview = summarizeBlockConfig('test-resolver', cfg, gameSystemId) ?? 'Test';
       target = null;
     }
   }
@@ -287,6 +287,7 @@ function buildTriggerSections(
   channelById: Map<string, WarRoomContext['channels'][number]>,
   tagLabelById: Map<string, string>,
   playerLabelById: Map<string, string>,
+  gameSystemId: string,
 ): TriggerSectionView[] {
   const sections: TriggerSectionView[] = TRIGGER_SECTION_DEFINITIONS.map((section) => ({
     ...section,
@@ -309,6 +310,7 @@ function buildTriggerSections(
       event,
       channel?.name ?? null,
       playerLabelById,
+      gameSystemId,
     );
 
     section.items.push({
@@ -575,6 +577,7 @@ export default function PlayRoute() {
     lookups.channelById,
     lookups.tagLabelById,
     lookups.playerLabelById,
+    warRoom.campaign.gameSystemId,
   );
 
   const visibleItems = sections.flatMap((section) => section.items);
