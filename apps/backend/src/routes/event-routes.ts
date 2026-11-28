@@ -126,7 +126,7 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
       const prisma = getPrismaClient();
       await moderatePayloadText(app.config, request.body);
       const { name, type, channelId, shortCircuit, pipeline } = request.body;
-      const pipelineError = findPipelineError(request.campaignScope.gameSystemId, pipeline);
+      const pipelineError = findPipelineError(request.campaignScope.gameSystemId, pipeline, type);
       if (pipelineError) return sendError(reply, 400, pipelineError);
       await createCampaignAccess(prisma).requireResource(request.campaignScope, {
         kind: 'channel',
@@ -200,10 +200,20 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
       await moderatePayloadText(app.config, request.body);
       const { eventId } = request.params;
       const { name, type, channelId, status, shortCircuit, pipeline } = request.body;
+      // The type's required role needs no blocks, so a type-only change validates an empty pipeline.
+      const storedType =
+        type === undefined && pipeline !== undefined
+          ? (await prisma.event.findUnique({ where: { id: eventId }, select: { type: true } }))
+              ?.type
+          : undefined;
       const pipelineError =
-        pipeline === undefined
+        type === undefined && pipeline === undefined
           ? null
-          : findPipelineError(request.campaignScope.gameSystemId, pipeline);
+          : findPipelineError(
+              request.campaignScope.gameSystemId,
+              pipeline ?? [],
+              type ?? storedType ?? '',
+            );
       if (pipelineError) return sendError(reply, 400, pipelineError);
       const campaignAccess = createCampaignAccess(prisma);
       await campaignAccess.requireResource(request.campaignScope, { kind: 'event', id: eventId });

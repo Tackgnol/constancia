@@ -8,11 +8,13 @@ import {
   getBlockSpecForSystem,
   getDefaultPipelineForEventType,
   getEventTypesForSystem,
+  getPipelineInsertIndex,
   isEditorFieldVisible,
   getSuggestedBlockTypesForEventType,
   isPipelineEqualToEventDefault,
   normalizeEventFormValues,
   normalizePipelineForSubmission,
+  summarizeBlockConfig,
   outcomeEntrySchema,
   pipelineBlockSchema,
   type EventFormValues,
@@ -355,5 +357,30 @@ describe('5E Event Setup defaults', () => {
     );
     expect(skill && isEditorFieldVisible(skill, { mode: 'check' })).toBe(true);
     expect(skill && isEditorFieldVisible(skill, { mode: 'save' })).toBe(false);
+  });
+
+  it('inserts roll modifiers before the test resolver and other blocks last', () => {
+    const pipeline = [{ blockType: 'test-resolver' }, { blockType: 'outcome-map' }];
+
+    expect(getPipelineInsertIndex(pipeline, 'roll-modifier')).toBe(0);
+    expect(getPipelineInsertIndex(pipeline, 'message-player')).toBe(2);
+    expect(getPipelineInsertIndex([{ blockType: 'outcome-map' }], 'roll-modifier')).toBe(1);
+  });
+
+  it('summarizes Test resolver config from the Game System editor fields', () => {
+    expect(
+      summarizeBlockConfig('test-resolver', { attribute: 'wits', skill: 'awareness' }, 'vtm-v5'),
+    ).toBe('wits · awareness');
+    expect(
+      summarizeBlockConfig(
+        'test-resolver',
+        { mode: 'check', ability: 'dex', skill: 'stealth' },
+        '5e-srd',
+      ),
+    ).toBe('Ability check · Dexterity · Stealth');
+    expect(
+      summarizeBlockConfig('test-resolver', { mode: 'save', ability: 'dex', skill: 'x' }, '5e-srd'),
+    ).toBe('Saving throw · Dexterity');
+    expect(summarizeBlockConfig('test-resolver', {}, '5e-srd')).toBeNull();
   });
 });

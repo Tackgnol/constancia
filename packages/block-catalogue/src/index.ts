@@ -473,6 +473,16 @@ export function isPipelineBlockRole(value: string): value is PipelineBlockRole {
   return PIPELINE_BLOCK_ROLES.some((role) => role === value);
 }
 
+const EVENT_TYPE_ROLES: Partial<Record<string, PipelineBlockRole>> = {
+  test: 'test-resolver',
+  insight: 'insight-resolver',
+};
+
+/** The role a Game System must implement to run this Event type, or undefined when none is needed. */
+export function getEventTypeRole(eventType: string): PipelineBlockRole | undefined {
+  return EVENT_TYPE_ROLES[eventType];
+}
+
 /** A block is available when it is common or the Game System implements its role. */
 export function isPipelineBlockAvailable(
   spec: PipelineBlockSpec,

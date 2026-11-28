@@ -63,7 +63,7 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
 
       const pipeline = parsePipeline(event.pipeline);
       const { gameSystemId } = event.campaign;
-      const pipelineError = findPipelineError(gameSystemId, pipeline);
+      const pipelineError = findPipelineError(gameSystemId, pipeline, event.type);
       if (pipelineError) {
         throw new EventExecutionRequestError(422, 'PIPELINE_UNSUPPORTED', pipelineError);
       }

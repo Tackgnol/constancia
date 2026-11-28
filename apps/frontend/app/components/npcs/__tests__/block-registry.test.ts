@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { listHeadlineSystemBlocks, readPrimarySystemBlock } from '../block-registry';
+import { formatHeadlineSummary, listHeadlineSystemBlocks } from '../block-registry';
 
 const block = (blockType: string, value: string) => ({
   systemId: 'vtm-v5',
@@ -18,12 +18,13 @@ describe('NPC headline system blocks', () => {
       'clan',
       'title',
     ]);
-    expect(readPrimarySystemBlock(npc, 'vtm-v5')?.value).toBe('Ventrue');
+    expect(formatHeadlineSummary(npc, 'vtm-v5')).toBe('clan: Ventrue · title: Prince');
   });
 
   it('falls back to the first block when the NPC has no headline block', () => {
-    expect(
-      readPrimarySystemBlock({ systemBlocks: [block('demeanor', 'Calm')] }, 'vtm-v5')?.value,
-    ).toBe('Calm');
+    expect(formatHeadlineSummary({ systemBlocks: [block('demeanor', 'Calm')] }, 'vtm-v5')).toBe(
+      'demeanor: Calm',
+    );
+    expect(formatHeadlineSummary({ systemBlocks: [] }, 'vtm-v5')).toBeNull();
   });
 });

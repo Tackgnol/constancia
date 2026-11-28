@@ -152,8 +152,15 @@ export function listHeadlineSystemBlocks(npc: Pick<CampaignNpc, 'systemBlocks'>,
     );
 }
 
-export function readPrimarySystemBlock(npc: Pick<CampaignNpc, 'systemBlocks'>, systemId: string) {
-  return listHeadlineSystemBlocks(npc, systemId)[0] ?? npc.systemBlocks[0] ?? null;
+/** Every headline block as "Label: value", joined in declared order; the first block when none is a headline. */
+export function formatHeadlineSummary(
+  npc: Pick<CampaignNpc, 'systemBlocks'>,
+  systemId: string,
+): string | null {
+  const headlines = listHeadlineSystemBlocks(npc, systemId);
+  const shown = headlines.length > 0 ? headlines : npc.systemBlocks.slice(0, 1);
+  if (shown.length === 0) return null;
+  return shown.map((block) => `${block.label}: ${formatSystemBlockValue(block.value)}`).join(' · ');
 }
 
 export function formatSystemBlockValue(value: NpcSystemBlockValue): string {

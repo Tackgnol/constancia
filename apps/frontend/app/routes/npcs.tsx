@@ -8,8 +8,7 @@ import { ManagementWorkspace } from '@/components/layout/management-workspace';
 import { SetupNotice } from '@/components/setup/setup-notice';
 import {
   normalizeNpc,
-  readPrimarySystemBlock,
-  formatSystemBlockValue,
+  formatHeadlineSummary,
   type CampaignNpc,
   type CampaignNpcFact,
   type KnownPlayerRef,
@@ -186,7 +185,7 @@ function NpcIndex({
       </div>
       {npcs.map((npc) => {
         const knownCount = npc.facts.filter((fact) => fact.knownTo.length > 0).length;
-        const primaryBlock = readPrimarySystemBlock(npc, systemId);
+        const headline = formatHeadlineSummary(npc, systemId);
         return (
           <button
             key={npc.id}
@@ -196,11 +195,7 @@ function NpcIndex({
             onClick={() => onSelect(npc.id)}
           >
             <div>
-              <p className="detail-label">
-                {primaryBlock
-                  ? `${primaryBlock.label}: ${formatSystemBlockValue(primaryBlock.value)}`
-                  : 'No system block'}
-              </p>
+              <p className="detail-label">{headline ?? 'No system block'}</p>
               <h2>{npc.name}</h2>
             </div>
             <p className="npc-rail-meta">
@@ -226,7 +221,7 @@ function NpcDossierHeader({
   recipients: DossierRecipient[];
   setupBase: string;
 }) {
-  const primaryBlock = readPrimarySystemBlock(npc, systemId);
+  const headline = formatHeadlineSummary(npc, systemId);
 
   return (
     <>
@@ -248,11 +243,7 @@ function NpcDossierHeader({
         <div className="npc-focus-copy npc-focus-copy-dossier">
           <div className="npc-focus-toolbar">
             <div>
-              <p className="eyebrow">
-                {primaryBlock
-                  ? `${primaryBlock.label}: ${formatSystemBlockValue(primaryBlock.value)}`
-                  : 'Unclassified'}
-              </p>
+              <p className="eyebrow">{headline ?? 'Unclassified'}</p>
               <h2>{npc.name}</h2>
             </div>
             <Link className="ghost-action ghost-action-inline" to={`${setupBase}/npcs/${npc.id}`}>
