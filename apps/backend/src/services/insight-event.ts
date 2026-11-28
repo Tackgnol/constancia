@@ -21,12 +21,3 @@ export async function resolveInsightScore(
   const result = await resolver.execute(instance.config, ctx);
   return result.playerScore === undefined ? null : { score: result.playerScore };
 }
-
-export function filterInsightResolutionPipeline(blocks: BlockInstance[]): BlockInstance[] {
-  const eventLevelBlocks = new Set<string>([
-    PIPELINE_BLOCK.InsightResolver,
-    PIPELINE_BLOCK.AddJournalEntry,
-    PIPELINE_BLOCK.AddQuest,
-  ]);
-  return blocks.filter((block) => !eventLevelBlocks.has(block.blockType));
-}

@@ -16,14 +16,10 @@ import {
   type PlannedEventExecution,
   type SubmitTestResultCommand,
 } from './event-execution.js';
-import { filterInsightResolutionPipeline, resolveInsightScore } from './insight-event.js';
+import { selectPipelinePhase } from './event-pipeline-phases.js';
+import { resolveInsightScore } from './insight-event.js';
 import { assertCampaignActive } from './moderation-enforcement.js';
-import {
-  buildTestInstancePayload,
-  filterManualTestResolutionPipeline,
-  rollTestResult,
-} from './test-instance.js';
-import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
+import { buildTestInstancePayload, rollTestResult } from './test-instance.js';
 import { resolveGameSystemId } from '@constancia/systems';
 
 export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventExecutionPlanner {
@@ -78,7 +74,17 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
           event.channel.discordChannelId,
           instanceId,
         );
-        const planned = plan(event, [], [], false, payload ? [payload] : []);
+        // Journal and quest blocks are campaign-wide, so they run once here, not per submission.
+        const eventWide = await createRunner(gameSystemId).run(
+          selectPipelinePhase(pipeline, 'event-wide'),
+          {
+            campaignId: event.campaignId,
+            channelId: event.channelId,
+            playerId: 'system',
+            characterData: {},
+          },
+        );
+        const planned = plan(event, [], eventWide.effects, false, payload ? [payload] : []);
         return payload ? { ...planned, testInstanceId: instanceId } : planned;
       }
 
@@ -87,11 +93,11 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
           where: { campaignId: event.campaignId },
           select: { discordUserId: true, systemData: true },
         });
-        const resolutionPipeline = filterInsightResolutionPipeline(pipeline);
+        const outcomePipeline = selectPipelinePhase(pipeline, 'insight-outcome');
         const messages: BlockMessage[] = [];
         const registry = buildBlockRegistry(gameSystemId);
-        const eventEffects = await new PipelineRunner(registry).run(
-          filterEventEffectPipeline(pipeline),
+        const eventWide = await new PipelineRunner(registry).run(
+          selectPipelinePhase(pipeline, 'event-wide'),
           {
             campaignId: event.campaignId,
             channelId: event.channelId,
@@ -100,6 +106,8 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
           },
         );
 
+        // Per-character outcomes carry each player's Lore/NPC fact grants alongside their message.
+        const effects: BlockEffect[] = [...eventWide.effects];
         for (const character of characters) {
           const playerCtx = {
             campaignId: event.campaignId,
@@ -110,20 +118,15 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
           const score = await resolveInsightScore(registry, pipeline, playerCtx);
           if (!score) continue;
 
-          const result = await new PipelineRunner(registry).run(resolutionPipeline, {
+          const result = await new PipelineRunner(registry).run(outcomePipeline, {
             ...playerCtx,
             playerScore: score.score,
           });
           messages.push(...result.messages);
+          effects.push(...result.effects);
         }
 
-        return plan(
-          event,
-          messages,
-          eventEffects.effects,
-          false,
-          messageDeliveries(event, messages),
-        );
+        return plan(event, messages, effects, false, messageDeliveries(event, messages));
       }
 
       const result = await createRunner(gameSystemId).run(pipeline, {
@@ -238,7 +241,7 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
       }
 
       const result = await createRunner(resolveGameSystemId(event.campaign.gameSystemId)).run(
-        filterManualTestResolutionPipeline(pipeline),
+        selectPipelinePhase(pipeline, 'test-outcome'),
         { ...playerCtx, playerScore },
       );
 
@@ -295,15 +298,6 @@ function messageDeliveries(event: EventPlanSource, messages: BlockMessage[]): Bo
           messages,
         },
       ];
-}
-
-const EVENT_EFFECT_BLOCK_TYPES = new Set<string>([
-  PIPELINE_BLOCK.AddJournalEntry,
-  PIPELINE_BLOCK.AddQuest,
-]);
-
-function filterEventEffectPipeline(blocks: BlockInstance[]): BlockInstance[] {
-  return blocks.filter((block) => EVENT_EFFECT_BLOCK_TYPES.has(block.blockType));
 }
 
 function parsePipeline(value: unknown): BlockInstance[] {
