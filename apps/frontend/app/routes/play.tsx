@@ -16,7 +16,7 @@ import { postRouteAction } from '@/lib/route-action-client';
 import { handleTestInstanceAction } from '@/lib/test-instance-action.server';
 import { handleUploadImageAction } from '@/lib/upload-image-action.server';
 import type { TriggerKind, WarRoomContext } from '@/lib/war-room-data';
-import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
+import { GateOperator, isGateOperator, PIPELINE_BLOCK } from '@constancia/block-catalogue';
 
 const HOLD_DURATION_MS = 1800;
 
@@ -161,6 +161,14 @@ function truncate(text: string, limit = PREVIEW_MAX) {
   return trimmed.length > limit ? `${trimmed.slice(0, limit - 1)}…` : trimmed;
 }
 
+const GATE_OPERATOR_SYMBOLS: Record<GateOperator, string> = {
+  [GateOperator.AtLeast]: '≥',
+  [GateOperator.Above]: '>',
+  [GateOperator.AtMost]: '≤',
+  [GateOperator.Below]: '<',
+  [GateOperator.Exactly]: '=',
+};
+
 function extractTargetAndPreview(
   event: ListEvents200DataItem,
   channelName: string | null,
@@ -205,16 +213,7 @@ function extractTargetAndPreview(
       }
     }
     if (block.blockType === PIPELINE_BLOCK.ConditionalGate) {
-      const op =
-        cfg.operator === 'gte'
-          ? '≥'
-          : cfg.operator === 'lte'
-            ? '≤'
-            : cfg.operator === 'gt'
-              ? '>'
-              : cfg.operator === 'lt'
-                ? '<'
-                : '=';
+      const op = isGateOperator(cfg.operator) ? GATE_OPERATOR_SYMBOLS[cfg.operator] : '?';
       const stat = typeof cfg.statPath === 'string' ? cfg.statPath.split('.').pop() : '?';
       const threshold = cfg.threshold ?? '?';
       target = `→ players where ${stat} ${op} ${threshold}`;

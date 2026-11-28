@@ -29,7 +29,7 @@ import {
   fiveETestResolverBlock,
   fiveETestResolverSpec,
 } from './5e-srd/resolvers.js';
-import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
+import { OutcomeComparison, PIPELINE_BLOCK } from '@constancia/block-catalogue';
 
 /** A character importer with its parser; the frontend keys its import form by `id`. */
 export interface CharacterImporterAdapter extends CharacterImporter {
@@ -43,7 +43,7 @@ export interface GameSystemAdapter extends Omit<GameSystem, 'blocks' | 'importer
   blocks: readonly BlockDefinition<never>[];
   roleBlocks: RoleBlockImplementations;
   /** How new test Events compare scores in outcome-map; 5E's "meet the DC" is gte. */
-  testOutcomeComparison?: 'gt' | 'gte';
+  testOutcomeComparison?: OutcomeComparison;
 }
 
 export class DuplicateGameSystemKeyError extends Error {
@@ -216,7 +216,7 @@ export const fiveESrdGameSystem: GameSystemAdapter = {
       cardLine: fiveERollModifierCardLine,
     },
   },
-  testOutcomeComparison: 'gte',
+  testOutcomeComparison: OutcomeComparison.AtLeast,
 };
 
 export const GAME_SYSTEM_ADAPTERS = [

@@ -82,8 +82,15 @@ export function resolveMessageRecipients(
   return userIds.length > 0 ? { target: 'group', userIds } : null;
 }
 
+/** How a roll-modifier block changes the next roll; only Game Systems with a roll-modifier use it. */
+export enum RollMode {
+  Advantage = 'advantage',
+  Disadvantage = 'disadvantage',
+}
+
+/** What earlier roll-modifier blocks hand to the test-resolver through the pipeline context. */
 export interface RollModifiers {
-  mode?: 'advantage' | 'disadvantage';
+  mode?: RollMode;
 }
 
 export interface BlockContext {

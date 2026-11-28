@@ -32,6 +32,7 @@ export type {
 } from './block.js';
 
 export {
+  RollMode,
   blockMessageSchema,
   sendMessagesPayloadSchema,
   testThresholdSchema,

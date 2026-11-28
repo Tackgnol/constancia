@@ -2,7 +2,7 @@ import type { ListCharacters200DataItem } from '@constancia/api-client/model';
 import { GREGORIAN_CALENDAR } from '@constancia/systems';
 import { activityFeed, players } from './war-room-data.js';
 import type { ChannelEntry, WarRoomContext } from './war-room-data.js';
-import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
+import { GateOperator, PIPELINE_BLOCK } from '@constancia/block-catalogue';
 import { GAME_SYSTEM } from '@constancia/contracts';
 
 const demoCharacters: ListCharacters200DataItem[] = players.map((player) => ({
@@ -270,7 +270,7 @@ export const demoContext: WarRoomContext = {
       pipeline: [
         {
           blockType: PIPELINE_BLOCK.ConditionalGate,
-          config: { statPath: 'skills.occult', operator: 'gte', threshold: 4 },
+          config: { statPath: 'skills.occult', operator: GateOperator.AtLeast, threshold: 4 },
         },
         {
           blockType: PIPELINE_BLOCK.MessagePlayer,
@@ -291,7 +291,7 @@ export const demoContext: WarRoomContext = {
       pipeline: [
         {
           blockType: PIPELINE_BLOCK.ConditionalGate,
-          config: { statPath: 'skills.awareness', operator: 'gte', threshold: 3 },
+          config: { statPath: 'skills.awareness', operator: GateOperator.AtLeast, threshold: 3 },
         },
         {
           blockType: PIPELINE_BLOCK.MessagePlayer,

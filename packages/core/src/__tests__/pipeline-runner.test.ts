@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { RollMode } from '@constancia/contracts';
 import {
   BlockConfigValidationError,
   PipelineRunner,
@@ -295,7 +296,7 @@ describe('PipelineRunner', () => {
       configSchema: { type: 'object' },
       execute: async () => ({
         output: null,
-        contextPatch: { rollModifiers: { mode: 'advantage' as const } },
+        contextPatch: { rollModifiers: { mode: RollMode.Advantage } },
       }),
     });
     registry.register({

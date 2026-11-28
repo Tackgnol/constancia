@@ -4,7 +4,11 @@ import type {
   BlockEffect,
   BlockMessage,
 } from '@constancia/contracts';
-import { PIPELINE_BLOCK, requirePipelineBlockSpec } from '@constancia/block-catalogue';
+import {
+  OutcomeComparison,
+  PIPELINE_BLOCK,
+  requirePipelineBlockSpec,
+} from '@constancia/block-catalogue';
 
 interface Outcome {
   threshold: number;
@@ -16,8 +20,13 @@ interface Outcome {
 interface OutcomeMapConfig {
   outcomes: Outcome[];
   shortCircuit?: boolean;
-  comparison?: 'gt' | 'gte';
+  comparison?: OutcomeComparison;
 }
+
+const reachesThreshold: Record<OutcomeComparison, (score: number, threshold: number) => boolean> = {
+  [OutcomeComparison.Above]: (score, threshold) => score > threshold,
+  [OutcomeComparison.AtLeast]: (score, threshold) => score >= threshold,
+};
 
 const spec = requirePipelineBlockSpec(PIPELINE_BLOCK.OutcomeMap);
 
@@ -33,10 +42,10 @@ export const outcomeMapBlock: BlockDefinition<OutcomeMapConfig> = {
       ctx.playerId !== 'system'
         ? ctx.playerId
         : undefined;
+    // A missing comparison means Above: Events saved before the option existed compared that way.
+    const reaches = reachesThreshold[config.comparison ?? OutcomeComparison.Above];
     const matched = config.outcomes
-      .filter((outcome) =>
-        config.comparison === 'gte' ? score >= outcome.threshold : score > outcome.threshold,
-      )
+      .filter((outcome) => reaches(score, outcome.threshold))
       .sort((left, right) => right.threshold - left.threshold);
     const selectedOutcomes =
       config.shortCircuit === false ? matched.reverse() : matched.slice(0, 1);

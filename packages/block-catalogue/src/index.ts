@@ -20,6 +20,26 @@ export const PIPELINE_BLOCK = {
   RollModifier: 'roll-modifier',
 } as const;
 
+/** How outcome-map compares the score with each outcome's threshold. */
+export enum OutcomeComparison {
+  Above = 'gt',
+  AtLeast = 'gte',
+}
+
+/** How conditional-gate compares a character stat with its threshold. */
+export enum GateOperator {
+  AtLeast = 'gte',
+  Above = 'gt',
+  AtMost = 'lte',
+  Below = 'lt',
+  Exactly = 'eq',
+}
+
+/** Whether a raw config value is a conditional-gate operator. */
+export function isGateOperator(value: unknown): value is GateOperator {
+  return Object.values(GateOperator).some((operator) => operator === value);
+}
+
 export const PIPELINE_BLOCK_ROLES = [
   PIPELINE_BLOCK.TestResolver,
   PIPELINE_BLOCK.InsightResolver,
@@ -325,12 +345,12 @@ export const PIPELINE_BLOCK_SPECS = [
       additionalProperties: false,
       properties: {
         statPath: { type: 'string' },
-        operator: { type: 'string', enum: ['gte', 'gt', 'lte', 'lt', 'eq'] },
+        operator: { type: 'string', enum: Object.values(GateOperator) },
         threshold: { type: 'number' },
       },
       required: ['statPath', 'operator', 'threshold'],
     },
-    defaultConfig: { statPath: '', operator: 'gte', threshold: 1 },
+    defaultConfig: { statPath: '', operator: GateOperator.AtLeast, threshold: 1 },
     editor: {
       columns: 3,
       fields: [
@@ -345,11 +365,11 @@ export const PIPELINE_BLOCK_SPECS = [
           path: 'operator',
           label: 'Operator',
           options: [
-            { value: 'gte', label: 'At least' },
-            { value: 'gt', label: 'More than' },
-            { value: 'lte', label: 'At most' },
-            { value: 'lt', label: 'Less than' },
-            { value: 'eq', label: 'Exactly' },
+            { value: GateOperator.AtLeast, label: 'At least' },
+            { value: GateOperator.Above, label: 'More than' },
+            { value: GateOperator.AtMost, label: 'At most' },
+            { value: GateOperator.Below, label: 'Less than' },
+            { value: GateOperator.Exactly, label: 'Exactly' },
           ],
         },
         { kind: 'number', path: 'threshold', label: 'Threshold', placeholder: '1' },
@@ -382,7 +402,7 @@ export const PIPELINE_BLOCK_SPECS = [
         shortCircuit: { type: 'boolean' },
         comparison: {
           type: 'string',
-          enum: ['gt', 'gte'],
+          enum: Object.values(OutcomeComparison),
           description: 'How the score is compared with each threshold; missing means gt.',
         },
       },
@@ -400,8 +420,8 @@ export const PIPELINE_BLOCK_SPECS = [
           label: 'Score must be',
           optional: true,
           options: [
-            { value: 'gt', label: 'Above the threshold' },
-            { value: 'gte', label: 'At or above the threshold' },
+            { value: OutcomeComparison.Above, label: 'Above the threshold' },
+            { value: OutcomeComparison.AtLeast, label: 'At or above the threshold' },
           ],
         },
         { kind: 'outcome-list', path: 'outcomes', label: 'Outcomes' },

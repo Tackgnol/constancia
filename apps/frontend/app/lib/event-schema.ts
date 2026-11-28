@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import type { GameSystemId } from '@constancia/contracts';
 import {
+  OutcomeComparison,
+  GateOperator,
   PIPELINE_BLOCK,
   PIPELINE_BLOCK_SPECS,
   PIPELINE_BLOCK_TYPES,
@@ -67,7 +69,7 @@ export const addQuestConfigSchema = z.object({
 
 export const conditionalGateConfigSchema = z.object({
   statPath: z.string().min(1, 'Stat path is required'),
-  operator: z.enum(['gte', 'gt', 'lte', 'lt', 'eq']),
+  operator: z.enum(GateOperator),
   threshold: z.coerce.number(),
 });
 
@@ -85,7 +87,7 @@ export const outcomeEntrySchema = z.object({
 export const outcomeMapConfigSchema = z.object({
   outcomes: z.array(outcomeEntrySchema).min(1, 'Add at least one outcome'),
   shortCircuit: z.boolean().optional(),
-  comparison: z.enum(['gt', 'gte']).optional(),
+  comparison: z.enum(OutcomeComparison).optional(),
 });
 
 export const retrieveDataConfigSchema = z.object({

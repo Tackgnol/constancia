@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { BlockContext } from '@constancia/contracts';
+import { RollMode, type BlockContext } from '@constancia/contracts';
 import { rollDice } from '../dice.js';
 import { ProficiencyTier } from '../5e-srd/data.js';
 import {
@@ -67,12 +67,12 @@ describe('5E test-resolver', () => {
     rollDiceMock.mockResolvedValue([12, 7]);
     const advantage = await fiveETestResolverBlock.execute(
       { mode: 'check', ability: 'wis', skill: 'perception' },
-      ctx({ rollModifiers: { mode: 'advantage' } }),
+      ctx({ rollModifiers: { mode: RollMode.Advantage } }),
     );
     rollDiceMock.mockResolvedValue([12, 7]);
     const disadvantage = await fiveETestResolverBlock.execute(
       { mode: 'check', ability: 'wis', skill: 'perception' },
-      ctx({ rollModifiers: { mode: 'disadvantage' } }),
+      ctx({ rollModifiers: { mode: RollMode.Disadvantage } }),
     );
 
     expect(rollDiceMock).toHaveBeenCalledWith(2, 20);
@@ -95,7 +95,7 @@ describe('5E insight-resolver', () => {
 
     const result = await fiveEInsightResolverBlock.execute(
       { ability: 'wis', skill: 'perception' },
-      ctx({ rollModifiers: { mode: 'advantage' } }),
+      ctx({ rollModifiers: { mode: RollMode.Advantage } }),
     );
     expect(result.playerScore).toBe(15);
   });

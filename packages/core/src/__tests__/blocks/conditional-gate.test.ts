@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { GateOperator } from '@constancia/block-catalogue';
 import { conditionalGateBlock } from '../../blocks/conditional-gate.js';
 import type { BlockContext } from '@constancia/contracts';
 
@@ -11,7 +12,7 @@ describe('ConditionalGate block', () => {
       characterData: { occult: 4 },
     };
 
-    const config = { statPath: 'occult', operator: 'gte' as const, threshold: 4 };
+    const config = { statPath: 'occult', operator: GateOperator.AtLeast, threshold: 4 };
     const result = await conditionalGateBlock.execute(config, ctx);
     expect(result.halt).toBeFalsy();
   });
@@ -24,7 +25,7 @@ describe('ConditionalGate block', () => {
       characterData: { occult: 2 },
     };
 
-    const config = { statPath: 'occult', operator: 'gte' as const, threshold: 4 };
+    const config = { statPath: 'occult', operator: GateOperator.AtLeast, threshold: 4 };
     const result = await conditionalGateBlock.execute(config, ctx);
     expect(result.halt).toBe(true);
   });
@@ -37,7 +38,7 @@ describe('ConditionalGate block', () => {
       characterData: { attributes: { wits: 3 } },
     };
 
-    const config = { statPath: 'attributes.wits', operator: 'gte' as const, threshold: 3 };
+    const config = { statPath: 'attributes.wits', operator: GateOperator.AtLeast, threshold: 3 };
     const result = await conditionalGateBlock.execute(config, ctx);
     expect(result.halt).toBeFalsy();
   });
