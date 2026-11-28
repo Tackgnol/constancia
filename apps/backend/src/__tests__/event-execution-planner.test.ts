@@ -52,7 +52,9 @@ describe('planFire campaign suspension guard', () => {
   });
 });
 
-function testInstancePrisma(overrides: { status?: string; submissions?: { id: string }[] } = {}) {
+function testInstancePrisma(
+  overrides: { status?: string; submissions?: { id: string }[]; pipeline?: unknown[] } = {},
+) {
   return {
     testInstance: {
       findUnique: vi.fn().mockResolvedValue({
@@ -62,7 +64,7 @@ function testInstancePrisma(overrides: { status?: string; submissions?: { id: st
           id: 'event-1',
           campaignId: 'campaign-1',
           channelId: 'channel-1',
-          pipeline: [],
+          pipeline: overrides.pipeline ?? [],
           channel: { discordChannelId: 'discord-channel-1' },
           campaign: { disabledAt: null, disabledPublicReason: null, gameSystemId: 'vtm-v5' },
         },
@@ -225,6 +227,61 @@ describe('planFire for an insight Event', () => {
     expect(plan.effects.filter((effect) => effect.kind !== 'add-quest')).toEqual([
       { kind: 'grant-npc-fact', npcFactId: 'fact-sigil', discordUserId: 'sharp' },
       { kind: 'grant-lore-entry', loreEntryId: 'lore-mark', discordUserId: 'dull' },
+    ]);
+  });
+});
+
+describe('campaign-wide blocks in a Test Event', () => {
+  const pipeline = [
+    {
+      blockType: 'add-quest',
+      config: { name: 'Trace the signal', description: 'Follow it.', visible: true },
+    },
+    {
+      blockType: 'outcome-map',
+      config: { outcomes: [{ threshold: 0, text: 'You find it.', loreEntryIds: ['lore-1'] }] },
+    },
+  ];
+
+  it('plans the quest once when the Test fires', async () => {
+    const prisma = {
+      event: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'event-1',
+          name: 'Search',
+          type: 'test',
+          status: 'ready',
+          campaignId: 'campaign-1',
+          channelId: 'channel-1',
+          pipeline,
+          channel: { discordChannelId: 'discord-channel-1' },
+          campaign: { disabledAt: null, disabledPublicReason: null, gameSystemId: 'vtm-v5' },
+        }),
+      },
+    } as never;
+
+    const plan = await createPrismaEventExecutionPlanner(prisma).planFire({
+      kind: 'fire',
+      idempotencyKey: 'k1',
+      campaignId: 'campaign-1',
+      eventId: 'event-1',
+    });
+
+    expect(plan.effects).toEqual([
+      { kind: 'add-quest', name: 'Trace the signal', description: 'Follow it.', visible: true },
+    ]);
+  });
+
+  it("keeps each submission to the player's own outcome and grants, with no quest", async () => {
+    const plan = await createPrismaEventExecutionPlanner(
+      testInstancePrisma({ pipeline }),
+    ).planTestResult(testResultCommand);
+
+    expect(plan.effects).toEqual([
+      { kind: 'grant-lore-entry', loreEntryId: 'lore-1', discordUserId: 'player-1' },
+    ]);
+    expect(plan.messages).toEqual([
+      { target: 'player', targetId: 'player-1', content: 'You find it.' },
     ]);
   });
 });

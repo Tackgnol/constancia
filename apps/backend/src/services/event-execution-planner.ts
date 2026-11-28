@@ -74,7 +74,17 @@ export function createPrismaEventExecutionPlanner(prisma: PrismaClient): EventEx
           event.channel.discordChannelId,
           instanceId,
         );
-        const planned = plan(event, [], [], false, payload ? [payload] : []);
+        // Journal and quest blocks are campaign-wide, so they run once here, not per submission.
+        const eventWide = await createRunner(gameSystemId).run(
+          selectPipelinePhase(pipeline, 'event-wide'),
+          {
+            campaignId: event.campaignId,
+            channelId: event.channelId,
+            playerId: 'system',
+            characterData: {},
+          },
+        );
+        const planned = plan(event, [], eventWide.effects, false, payload ? [payload] : []);
         return payload ? { ...planned, testInstanceId: instanceId } : planned;
       }
 

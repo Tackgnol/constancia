@@ -3,11 +3,11 @@ import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
 
 /**
  * The stages an Event pipeline runs in:
- * - `event-wide`: journal and quest effects, once per fired Event.
+ * - `event-wide`: campaign-wide journal and quest effects, once when the Event fires.
  * - `insight-outcome`: everything after the insight-resolver, once per character.
  * - `test-roll`: the roll-modifier and test-resolver, only for Roll for me.
- * - `test-outcome`: what a Test submission runs with the player's score; the roll blocks and the
- *   test-card blocks (shown when the Test fires) are left out.
+ * - `test-outcome`: what a Test submission runs with the player's score; the roll blocks, the
+ *   test-card blocks (shown when the Test fires) and the event-wide blocks are left out.
  */
 export type PipelinePhase = 'event-wide' | 'insight-outcome' | 'test-roll' | 'test-outcome';
 
@@ -30,7 +30,9 @@ const PHASE_FILTERS: Record<PipelinePhase, (blockType: string) => boolean> = {
     blockType !== PIPELINE_BLOCK.InsightResolver && !EVENT_WIDE_BLOCKS.has(blockType),
   'test-roll': (blockType) => TEST_ROLL_BLOCKS.has(blockType),
   'test-outcome': (blockType) =>
-    !TEST_ROLL_BLOCKS.has(blockType) && !TEST_CARD_BLOCKS.has(blockType),
+    !TEST_ROLL_BLOCKS.has(blockType) &&
+    !TEST_CARD_BLOCKS.has(blockType) &&
+    !EVENT_WIDE_BLOCKS.has(blockType),
 };
 
 /** The blocks of a pipeline that run in one phase, in pipeline order. */
