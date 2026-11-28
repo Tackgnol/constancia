@@ -128,15 +128,28 @@ button.five-e-pip:hover {
 }
 
 .five-e-hp-track {
+  appearance: none;
+  display: block;
+  inline-size: 100%;
   block-size: 0.4rem;
+  border: 0;
   background: var(--surface-low);
 }
 
-.five-e-hp-track > span {
-  display: block;
-  block-size: 100%;
+.five-e-hp-track::-webkit-meter-bar {
+  block-size: 0.4rem;
+  border: 0;
+  border-radius: 0;
+  background: var(--surface-low);
+}
+
+.five-e-hp-track::-webkit-meter-optimum-value {
   background: var(--primary);
   box-shadow: 0 0 12px rgb(from var(--primary-glow) r g b / 0.25);
+}
+
+.five-e-hp-track::-moz-meter-bar {
+  background: var(--primary);
 }
 
 .five-e-c-passives {

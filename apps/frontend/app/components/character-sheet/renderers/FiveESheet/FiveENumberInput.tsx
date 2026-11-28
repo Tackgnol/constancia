@@ -19,7 +19,11 @@ export function FiveENumberInput({
       max={max}
       value={value}
       disabled={disabled}
-      onChange={(event) => onChange(Math.max(min, Math.min(max, Number(event.target.value))))}
+      onChange={(event) => {
+        const parsed = event.target.valueAsNumber;
+        if (Number.isNaN(parsed)) return;
+        onChange(Math.max(min, Math.min(max, parsed)));
+      }}
     />
   );
 }

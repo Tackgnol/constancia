@@ -71,16 +71,13 @@ export function FiveESheet({ stats, onChange, disabled }: SheetRendererProps) {
               onChange={(value) => onChange('hpMax', value)}
             />
           </span>
-          <div
+          <meter
             className="five-e-hp-track"
-            role="meter"
             aria-label="Hit points"
-            aria-valuemin={0}
-            aria-valuemax={hpMax}
-            aria-valuenow={hp}
-          >
-            <span style={{ inlineSize: `${(hp / hpMax) * 100}%` }} />
-          </div>
+            min={0}
+            max={hpMax}
+            value={hp}
+          />
         </div>
         <dl className="five-e-c-passives">
           {PASSIVES.map((passive) => (
