@@ -1,11 +1,13 @@
 import type { BlockContext, BlockDefinition } from '@constancia/contracts';
-import { PIPELINE_BLOCK, requirePipelineBlockSpec } from '@constancia/block-catalogue';
-
-type Operator = 'gte' | 'gt' | 'lte' | 'lt' | 'eq';
+import {
+  GateOperator,
+  PIPELINE_BLOCK,
+  requirePipelineBlockSpec,
+} from '@constancia/block-catalogue';
 
 interface ConditionalGateConfig {
   statPath: string;
-  operator: Operator;
+  operator: GateOperator;
   threshold: number;
 }
 
@@ -19,12 +21,12 @@ function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
   }, obj);
 }
 
-const operators: Record<Operator, (value: number, threshold: number) => boolean> = {
-  gte: (value, threshold) => value >= threshold,
-  gt: (value, threshold) => value > threshold,
-  lte: (value, threshold) => value <= threshold,
-  lt: (value, threshold) => value < threshold,
-  eq: (value, threshold) => value === threshold,
+const operators: Record<GateOperator, (value: number, threshold: number) => boolean> = {
+  [GateOperator.AtLeast]: (value, threshold) => value >= threshold,
+  [GateOperator.Above]: (value, threshold) => value > threshold,
+  [GateOperator.AtMost]: (value, threshold) => value <= threshold,
+  [GateOperator.Below]: (value, threshold) => value < threshold,
+  [GateOperator.Exactly]: (value, threshold) => value === threshold,
 };
 
 const spec = requirePipelineBlockSpec(PIPELINE_BLOCK.ConditionalGate);

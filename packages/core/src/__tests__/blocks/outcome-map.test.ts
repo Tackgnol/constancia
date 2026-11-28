@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { OutcomeComparison } from '@constancia/block-catalogue';
 import { outcomeMapBlock } from '../../blocks/outcome-map.js';
 import type { BlockContext } from '@constancia/contracts';
 
@@ -105,7 +106,7 @@ describe('OutcomeMap block', () => {
   it('matches a score equal to the threshold with gte', async () => {
     const result = await outcomeMapBlock.execute(
       {
-        comparison: 'gte',
+        comparison: OutcomeComparison.AtLeast,
         outcomes: [
           { threshold: 3, text: 'DC 3 met' },
           { threshold: 4, text: 'DC 4 met' },

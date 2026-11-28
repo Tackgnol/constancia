@@ -7,6 +7,7 @@ import {
 import { rollDice } from '../dice.js';
 import { FIVE_E_ABILITIES, FIVE_E_SKILLS, type FiveEAbility, type FiveESkill } from './data.js';
 import { deriveFiveEStats, readProficiencyTier } from './derived.js';
+import { RollMode } from '@constancia/contracts';
 
 export interface FiveETestConfig {
   mode: 'check' | 'save';
@@ -129,7 +130,7 @@ function contextPlayerTargetId(ctx: BlockContext): string | undefined {
 /** Formats the private dice reply, e.g. "🎲 d20 [12, 7] advantage +3 DEX +2 prof = 15". */
 export function formatFiveERoll(
   dice: number[],
-  mode: 'advantage' | 'disadvantage' | undefined,
+  mode: RollMode | undefined,
   ability: FiveEAbility,
   parts: ModifierParts,
   total: number,
@@ -143,6 +144,12 @@ export function formatFiveERoll(
   return `${terms.join(' ')} = ${total}`;
 }
 
+/** Which of the two d20s a roll mode keeps. */
+const KEPT_DIE: Record<RollMode, (dice: number[]) => number> = {
+  [RollMode.Advantage]: (dice) => Math.max(...dice),
+  [RollMode.Disadvantage]: (dice) => Math.min(...dice),
+};
+
 export const fiveETestResolverBlock: BlockDefinition<FiveETestConfig> = {
   type: PIPELINE_BLOCK.TestResolver,
   label: requirePipelineBlockSpec(PIPELINE_BLOCK.TestResolver).label,
@@ -150,12 +157,7 @@ export const fiveETestResolverBlock: BlockDefinition<FiveETestConfig> = {
   execute: async (config: FiveETestConfig, ctx: BlockContext) => {
     const mode = ctx.rollModifiers?.mode;
     const dice = await rollDice(mode ? 2 : 1, 20);
-    const kept =
-      mode === 'advantage'
-        ? Math.max(...dice)
-        : mode === 'disadvantage'
-          ? Math.min(...dice)
-          : (dice[0] ?? 0);
+    const kept = mode ? KEPT_DIE[mode](dice) : (dice[0] ?? 0);
     const parts = modifierParts(config, ctx.characterData);
     const total = kept + parts.abilityModifier + parts.proficiency;
     const targetId = contextPlayerTargetId(ctx);
@@ -191,17 +193,17 @@ export const fiveEInsightResolverBlock: BlockDefinition<FiveEInsightConfig> = {
 };
 
 export interface FiveERollModifierConfig {
-  mode: 'advantage' | 'disadvantage';
+  mode: RollMode;
 }
 
 export const fiveERollModifierSpec: RoleBlockImplementationSpec = {
   configSchema: {
     type: 'object',
     additionalProperties: false,
-    properties: { mode: { type: 'string', enum: ['advantage', 'disadvantage'] } },
+    properties: { mode: { type: 'string', enum: Object.values(RollMode) } },
     required: ['mode'],
   },
-  defaultConfig: { mode: 'advantage' },
+  defaultConfig: { mode: RollMode.Advantage },
   editor: {
     fields: [
       {
@@ -209,8 +211,8 @@ export const fiveERollModifierSpec: RoleBlockImplementationSpec = {
         path: 'mode',
         label: 'Roll with',
         options: [
-          { value: 'advantage', label: 'Advantage' },
-          { value: 'disadvantage', label: 'Disadvantage' },
+          { value: RollMode.Advantage, label: 'Advantage' },
+          { value: RollMode.Disadvantage, label: 'Disadvantage' },
         ],
         hint: 'Applies when the backend rolls for the player; the card tells players rolling physical dice.',
       },
@@ -229,9 +231,11 @@ export const fiveERollModifierBlock: BlockDefinition<FiveERollModifierConfig> = 
 };
 
 export function fiveERollModifierCardLine(config: Record<string, unknown>): string | null {
-  return config.mode === 'advantage' || config.mode === 'disadvantage'
-    ? `🎲 Roll with ${config.mode}`
-    : null;
+  return isRollMode(config.mode) ? `🎲 Roll with ${config.mode}` : null;
+}
+
+function isRollMode(value: unknown): value is RollMode {
+  return Object.values(RollMode).some((mode) => mode === value);
 }
 
 function isAbility(value: unknown): value is FiveEAbility {

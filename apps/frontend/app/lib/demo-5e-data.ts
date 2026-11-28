@@ -4,8 +4,8 @@ import type { CampaignNpc } from '@/components/npcs/block-registry';
 import type { CharacterSheetData } from './character-sheet.js';
 import { demoContext } from './demo-data.js';
 import type { PlayerPresence, WarRoomContext } from './war-room-data.js';
-import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
-import { GAME_SYSTEM } from '@constancia/contracts';
+import { OutcomeComparison, PIPELINE_BLOCK } from '@constancia/block-catalogue';
+import { RollMode, GAME_SYSTEM } from '@constancia/contracts';
 
 export const DEMO_5E_CAMPAIGN_ID = 'demo-ember-vale';
 // shortcut: the 5E demo is picked per request with ?system=5e-srd and links don't carry it; add a
@@ -141,7 +141,7 @@ export const demo5eContext: WarRoomContext = {
       status: 'ready',
       shortCircuit: true,
       pipeline: [
-        { blockType: PIPELINE_BLOCK.RollModifier, config: { mode: 'advantage' } },
+        { blockType: PIPELINE_BLOCK.RollModifier, config: { mode: RollMode.Advantage } },
         {
           blockType: PIPELINE_BLOCK.TestResolver,
           config: { mode: 'check', ability: 'dex', skill: 'stealth' },
@@ -149,7 +149,7 @@ export const demo5eContext: WarRoomContext = {
         {
           blockType: PIPELINE_BLOCK.OutcomeMap,
           config: {
-            comparison: 'gte',
+            comparison: OutcomeComparison.AtLeast,
             outcomes: [
               { threshold: 0, text: 'A guard turns; the lantern swings your way.' },
               { threshold: 15, text: 'You pass under the gate unseen.' },
@@ -171,7 +171,7 @@ export const demo5eContext: WarRoomContext = {
         {
           blockType: PIPELINE_BLOCK.OutcomeMap,
           config: {
-            comparison: 'gte',
+            comparison: OutcomeComparison.AtLeast,
             outcomes: [
               { threshold: 0, text: 'Stones hammer your shoulders as you dive aside.' },
               { threshold: 13, text: 'You roll clear of the falling rock.' },
@@ -196,7 +196,7 @@ export const demo5eContext: WarRoomContext = {
         {
           blockType: PIPELINE_BLOCK.OutcomeMap,
           config: {
-            comparison: 'gte',
+            comparison: OutcomeComparison.AtLeast,
             outcomes: [
               { threshold: 14, text: 'Fresh boot prints lead off the road into the brush.' },
             ],
