@@ -2,9 +2,9 @@ import {
   ApplicationCommandOptionType,
   MessageFlags,
   type ChatInputCommandInteraction,
-  type InteractionReplyOptions,
+  type InteractionDeferReplyOptions,
 } from 'discord.js';
-import { botBackend } from '../backend/bot-backend.js';
+import { botBackend, type BotBackend } from '../backend/bot-backend.js';
 import type { BotChatCommand } from '../discord/command-types.js';
 
 const PLAYER_OPTION = 'player';
@@ -40,21 +40,23 @@ export function buildHelpText(player: boolean, gm: boolean, attributions: string
   return `**Constancia help** – use \`/help player:true\` or \`/help gm:true\` to filter.\n\n${sections.join('\n\n')}${credits}`;
 }
 
-export async function handleHelp(interaction: ChatInputCommandInteraction): Promise<void> {
+export async function handleHelp(
+  interaction: ChatInputCommandInteraction,
+  backend: Pick<BotBackend, 'listGameSystems'> = botBackend,
+): Promise<void> {
   const player = interaction.options.getBoolean(PLAYER_OPTION) ?? false;
   const gm = interaction.options.getBoolean(GM_OPTION) ?? false;
+  // Acknowledge first: the credits lookup can outlast Discord's 3-second reply deadline.
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral } as InteractionDeferReplyOptions);
 
-  const attributions = await botBackend
+  const attributions = await backend
     .listGameSystems()
     .then((systems) =>
       systems.flatMap((system) => (system.attribution ? [system.attribution] : [])),
     )
     .catch(() => []);
 
-  await interaction.reply({
-    content: buildHelpText(player, gm, attributions),
-    flags: MessageFlags.Ephemeral,
-  } as InteractionReplyOptions);
+  await interaction.editReply({ content: buildHelpText(player, gm, attributions) });
 }
 
 export const helpCommand: BotChatCommand = {

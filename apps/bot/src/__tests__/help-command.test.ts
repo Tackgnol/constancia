@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { buildHelpText } from '../commands/help.js';
+import type { ChatInputCommandInteraction } from 'discord.js';
+import { describe, expect, it, vi } from 'vitest';
+import { buildHelpText, handleHelp } from '../commands/help.js';
 
 describe('buildHelpText', () => {
   it('shows both sections with no filter or with both flags', () => {
@@ -26,5 +27,24 @@ describe('buildHelpText', () => {
     expect(text).toContain('**Credits**');
     expect(text).toContain('-# SRD 5.2.1 credit line');
     expect(buildHelpText(false, false)).not.toContain('Credits');
+  });
+
+  it('defers the reply before looking up credits', async () => {
+    const calls: string[] = [];
+    const interaction = {
+      options: { getBoolean: () => null },
+      deferReply: vi.fn(async () => calls.push('defer')),
+      editReply: vi.fn(async () => calls.push('edit')),
+    } as unknown as ChatInputCommandInteraction;
+    const backend = {
+      listGameSystems: vi.fn(async () => {
+        calls.push('lookup');
+        return [];
+      }),
+    };
+
+    await handleHelp(interaction, backend);
+
+    expect(calls).toEqual(['defer', 'lookup', 'edit']);
   });
 });
