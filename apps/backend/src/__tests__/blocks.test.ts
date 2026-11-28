@@ -11,43 +11,75 @@ describe('per-campaign block registry', () => {
 
   it("validates role block config against the campaign system's schema", () => {
     expect(
-      findPipelineError('vtm-v5', [
-        { blockType: 'test-resolver', config: { attribute: 'wits', skill: 'awareness' } },
-      ]),
+      findPipelineError(
+        'vtm-v5',
+        [{ blockType: 'test-resolver', config: { attribute: 'wits', skill: 'awareness' } }],
+        'test',
+      ),
     ).toBeNull();
     expect(
-      findPipelineError('vtm-v5', [{ blockType: 'test-resolver', config: { attribute: 'wits' } }]),
+      findPipelineError(
+        'vtm-v5',
+        [{ blockType: 'test-resolver', config: { attribute: 'wits' } }],
+        'test',
+      ),
     ).toMatch(/Invalid config for block "test-resolver"/);
   });
 
   it('rejects role blocks the campaign system does not implement', () => {
-    expect(findPipelineError('mork-borg', [{ blockType: 'insight-resolver', config: {} }])).toBe(
-      'This Game System does not support "insight-resolver".',
+    expect(
+      findPipelineError('mork-borg', [{ blockType: 'insight-resolver', config: {} }], 'narration'),
+    ).toBe('This Game System does not support "insight-resolver".');
+    expect(
+      findPipelineError('mork-borg', [{ blockType: 'nope', config: {} }], 'narration'),
+    ).toMatch(/Unknown block type/);
+  });
+
+  it("rejects Event types whose role the campaign system doesn't implement", () => {
+    const outcomeOnly = [{ blockType: 'outcome-map', config: { comparison: 'gte', outcomes: [] } }];
+
+    expect(findPipelineError('mork-borg', outcomeOnly, 'test')).toBe(
+      'This Game System does not support test Events.',
     );
-    expect(findPipelineError('mork-borg', [{ blockType: 'nope', config: {} }])).toMatch(
-      /Unknown block type/,
+    expect(findPipelineError('mork-borg', [], 'insight')).toBe(
+      'This Game System does not support insight Events.',
     );
+    expect(findPipelineError('mork-borg', [], 'narration')).toBeNull();
+    expect(findPipelineError('vtm-v5', [], 'test')).toBeNull();
   });
 
   it('validates 5E test config: no skill on saves, any skill with any ability', () => {
     const pipeline = (config: Record<string, unknown>) => [{ blockType: 'test-resolver', config }];
 
-    expect(findPipelineError('5e-srd', pipeline({ mode: 'save', ability: 'dex' }))).toBeNull();
     expect(
-      findPipelineError('5e-srd', pipeline({ mode: 'check', ability: 'cha', skill: 'stealth' })),
+      findPipelineError('5e-srd', pipeline({ mode: 'save', ability: 'dex' }), 'test'),
     ).toBeNull();
     expect(
-      findPipelineError('5e-srd', pipeline({ mode: 'save', ability: 'dex', skill: 'stealth' })),
+      findPipelineError(
+        '5e-srd',
+        pipeline({ mode: 'check', ability: 'cha', skill: 'stealth' }),
+        'test',
+      ),
+    ).toBeNull();
+    expect(
+      findPipelineError(
+        '5e-srd',
+        pipeline({ mode: 'save', ability: 'dex', skill: 'stealth' }),
+        'test',
+      ),
     ).toMatch(/Invalid config/);
   });
 
-  it('requires roll-modifier before test-resolver and hides it from VTM', () => {
+  it('requires every roll-modifier before test-resolver and hides it from VTM', () => {
     const modifier = { blockType: 'roll-modifier', config: { mode: 'advantage' } };
     const resolver = { blockType: 'test-resolver', config: { mode: 'check', ability: 'dex' } };
+    const ordering = /before the test resolver/;
 
-    expect(findPipelineError('5e-srd', [modifier, resolver])).toBeNull();
-    expect(findPipelineError('5e-srd', [resolver, modifier])).toMatch(/before the test resolver/);
-    expect(findPipelineError('vtm-v5', [modifier])).toBe(
+    expect(findPipelineError('5e-srd', [modifier, resolver], 'test')).toBeNull();
+    expect(findPipelineError('5e-srd', [modifier, modifier, resolver], 'test')).toBeNull();
+    expect(findPipelineError('5e-srd', [resolver, modifier], 'test')).toMatch(ordering);
+    expect(findPipelineError('5e-srd', [modifier, resolver, modifier], 'test')).toMatch(ordering);
+    expect(findPipelineError('vtm-v5', [modifier], 'narration')).toBe(
       'This Game System does not support "roll-modifier".',
     );
   });

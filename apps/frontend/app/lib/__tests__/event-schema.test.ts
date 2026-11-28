@@ -8,6 +8,7 @@ import {
   getBlockSpecForSystem,
   getDefaultPipelineForEventType,
   getEventTypesForSystem,
+  getPipelineInsertIndex,
   isEditorFieldVisible,
   getSuggestedBlockTypesForEventType,
   isPipelineEqualToEventDefault,
@@ -355,5 +356,13 @@ describe('5E Event Setup defaults', () => {
     );
     expect(skill && isEditorFieldVisible(skill, { mode: 'check' })).toBe(true);
     expect(skill && isEditorFieldVisible(skill, { mode: 'save' })).toBe(false);
+  });
+
+  it('inserts roll modifiers before the test resolver and other blocks last', () => {
+    const pipeline = [{ blockType: 'test-resolver' }, { blockType: 'outcome-map' }];
+
+    expect(getPipelineInsertIndex(pipeline, 'roll-modifier')).toBe(0);
+    expect(getPipelineInsertIndex(pipeline, 'message-player')).toBe(2);
+    expect(getPipelineInsertIndex([{ blockType: 'outcome-map' }], 'roll-modifier')).toBe(1);
   });
 });

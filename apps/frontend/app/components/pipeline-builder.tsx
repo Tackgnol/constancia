@@ -7,6 +7,7 @@ import {
   createPipelineBlock,
   type EventFormValues,
   getAvailableBlockTypes,
+  getPipelineInsertIndex,
   getSuggestedBlockTypesForEventType,
   type EventType,
 } from '@/lib/event-schema';
@@ -30,7 +31,7 @@ export function PipelineBuilder({
     formState: { errors },
   } = useFormContext<EventFormValues>();
 
-  const { fields, append, remove } = useFieldArray({ control, name: 'pipeline' });
+  const { fields, insert, remove } = useFieldArray({ control, name: 'pipeline' });
 
   const pipelineValues = watch('pipeline');
   const availableBlockTypes = getAvailableBlockTypes(gameSystemId);
@@ -48,7 +49,10 @@ export function PipelineBuilder({
       return;
     }
 
-    append(createPipelineBlock(blockType as BlockType, gameSystemId));
+    insert(
+      getPipelineInsertIndex(pipelineValues, blockType as BlockType),
+      createPipelineBlock(blockType as BlockType, gameSystemId),
+    );
   };
 
   return (

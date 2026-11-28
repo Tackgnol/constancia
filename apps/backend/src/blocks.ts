@@ -15,7 +15,11 @@ import {
 } from '@constancia/core';
 import type { BlockInstance } from '@constancia/contracts';
 import { gameSystemRegistry, listRoleBlocks } from '@constancia/systems';
-import { PIPELINE_BLOCK_SPECS, isPipelineBlockRole } from '@constancia/block-catalogue';
+import {
+  PIPELINE_BLOCK_SPECS,
+  getEventTypeRole,
+  isPipelineBlockRole,
+} from '@constancia/block-catalogue';
 
 const commonBlocks = [
   outcomeMapBlock,
@@ -74,16 +78,29 @@ export function buildBlockRegistry(gameSystemId: string): BlockRegistry {
   return registry;
 }
 
-/** Returns why a pipeline can't run under the campaign's Game System, or null when it can. */
-export function findPipelineError(gameSystemId: string, pipeline: BlockInstance[]): string | null {
+/** Returns why an Event of this type and pipeline can't run under the campaign's Game System, or null when it can. */
+export function findPipelineError(
+  gameSystemId: string,
+  pipeline: BlockInstance[],
+  eventType: string,
+): string | null {
+  const registry = buildBlockRegistry(gameSystemId);
+  const requiredRole = getEventTypeRole(eventType);
+  if (requiredRole && !registry.get(requiredRole)) {
+    return `This Game System does not support ${eventType} Events.`;
+  }
+
   const resolverIndex = pipeline.findIndex((block) => block.blockType === 'test-resolver');
-  const modifierIndex = pipeline.findIndex((block) => block.blockType === 'roll-modifier');
-  if (modifierIndex !== -1 && resolverIndex !== -1 && modifierIndex > resolverIndex) {
+  const modifierAfterResolver = pipeline.some(
+    (block, index) =>
+      block.blockType === 'roll-modifier' && resolverIndex !== -1 && index > resolverIndex,
+  );
+  if (modifierAfterResolver) {
     return 'Put the roll modifier before the test resolver so the roll can use it.';
   }
 
   try {
-    new PipelineRunner(buildBlockRegistry(gameSystemId)).validate(pipeline);
+    new PipelineRunner(registry).validate(pipeline);
     return null;
   } catch (error) {
     if (error instanceof UnknownBlockTypeError) {

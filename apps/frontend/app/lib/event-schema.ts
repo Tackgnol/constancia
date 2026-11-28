@@ -2,7 +2,7 @@ import { z } from 'zod';
 import {
   PIPELINE_BLOCK_SPECS,
   PIPELINE_BLOCK_TYPES,
-  type PipelineBlockRole,
+  getEventTypeRole,
   type PipelineBlockSpec,
   type PipelineBlockType,
 } from '@constancia/block-catalogue';
@@ -150,15 +150,10 @@ export function isBlockTypeAvailable(blockType: BlockType, gameSystemId: string)
   return getBlockSpecForSystem(blockType, gameSystemId) !== undefined;
 }
 
-const EVENT_TYPE_ROLES: Partial<Record<EventType, PipelineBlockRole>> = {
-  test: 'test-resolver',
-  insight: 'insight-resolver',
-};
-
 /** Event types the campaign's Game System can run; types whose role it lacks are hidden. */
 export function getEventTypesForSystem(gameSystemId: string): EventType[] {
   return EVENT_TYPES.filter((type) => {
-    const role = EVENT_TYPE_ROLES[type];
+    const role = getEventTypeRole(type);
     return !role || isBlockTypeAvailable(role, gameSystemId);
   });
 }
@@ -213,6 +208,15 @@ const SUGGESTED_BLOCK_TYPES_BY_EVENT_TYPE: Record<EventType, readonly BlockType[
     'test-resolver',
   ],
 };
+
+/** Where a newly added block goes: roll modifiers before the first test resolver, everything else last. */
+export function getPipelineInsertIndex(
+  pipeline: readonly { blockType: string }[],
+  blockType: BlockType,
+): number {
+  const resolverIndex = pipeline.findIndex((block) => block.blockType === 'test-resolver');
+  return blockType === 'roll-modifier' && resolverIndex !== -1 ? resolverIndex : pipeline.length;
+}
 
 export function createPipelineBlock(blockType: BlockType, gameSystemId: string): PipelineBlock {
   const spec = getBlockSpecForSystem(blockType, gameSystemId);
