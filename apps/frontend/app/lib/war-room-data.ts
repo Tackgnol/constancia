@@ -6,8 +6,9 @@ import type {
   ListQuests200DataItem,
   ListSessionSummaries200DataItem,
 } from '@constancia/api-client/model';
-import type { GameCalendarDefinition, GameDate } from '@constancia/contracts';
+import type { GameCalendarDefinition, GameDate, GameSystemId } from '@constancia/contracts';
 import { GREGORIAN_CALENDAR } from '@constancia/systems';
+import { GAME_SYSTEM } from '@constancia/contracts';
 
 export type TriggerKind = 'test' | 'narration' | 'insight' | 'message';
 export type Presence = 'online' | 'offline';
@@ -40,14 +41,14 @@ export type ChannelEntry = {
 export type CampaignSummary = {
   id: string;
   name: string;
-  gameSystemId: string;
+  gameSystemId: GameSystemId;
   gameDate: GameDate | null;
   channel: string;
   connectedPlayers: number;
 };
 
 export type SystemSummary = {
-  id: string;
+  id: GameSystemId;
   name: string;
   defaultCalendarId: string;
   calendars: Record<string, GameCalendarDefinition>;
@@ -86,14 +87,14 @@ export type WarRoomContext = {
 export const fallbackCampaign: CampaignSummary = {
   id: 'local-crimson-dynasty',
   name: 'Crimson Dynasty',
-  gameSystemId: 'vtm-v5',
+  gameSystemId: GAME_SYSTEM.VtmV5,
   gameDate: null,
   channel: '# the-elysium',
   connectedPlayers: 4,
 };
 
 export const fallbackSystem: SystemSummary = {
-  id: 'vtm-v5',
+  id: GAME_SYSTEM.VtmV5,
   name: 'VTM V5',
   defaultCalendarId: GREGORIAN_CALENDAR.id,
   calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },

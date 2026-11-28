@@ -1,5 +1,7 @@
 import { registeredBlockSchemas } from './blocks.js';
-import type { EventStatus } from '@constancia/contracts';
+import { GAME_SYSTEM_IDS, type EventStatus } from '@constancia/contracts';
+
+export const gameSystemIdSchema = { type: 'string', enum: [...GAME_SYSTEM_IDS] } as const;
 
 export const eventStatusValues = [
   'draft',
@@ -271,7 +273,7 @@ export const campaignBodySchema = {
   properties: {
     name: { type: 'string' },
     discordGuildId: { type: 'string' },
-    gameSystemId: { type: 'string' },
+    gameSystemId: gameSystemIdSchema,
   },
   required: ['name', 'discordGuildId', 'gameSystemId'],
 } as const;
@@ -298,7 +300,7 @@ export const campaignPatchBodySchema = {
   additionalProperties: false,
   properties: {
     name: { type: 'string' },
-    gameSystemId: { type: 'string' },
+    gameSystemId: gameSystemIdSchema,
     gameDate: nullableGameDateSchema,
   },
 } as const;
@@ -685,7 +687,7 @@ export const campaignSchema = {
     id: { type: 'string' },
     name: { type: 'string' },
     discordGuildId: { type: 'string' },
-    gameSystemId: { type: 'string' },
+    gameSystemId: gameSystemIdSchema,
     gameDate: nullableGameDateSchema,
   },
   required: ['id', 'name', 'discordGuildId', 'gameSystemId', 'gameDate'],
@@ -990,7 +992,7 @@ export const gameSystemSchema = {
   type: 'object',
   additionalProperties: false,
   properties: {
-    id: { type: 'string' },
+    id: gameSystemIdSchema,
     name: { type: 'string' },
     version: { type: 'string' },
     defaultCalendarId: { type: 'string' },
@@ -1292,7 +1294,7 @@ export const setupChannelBodySchema = {
     discordChannelId: { type: 'string' },
     channelName: { type: 'string' },
     campaignName: { type: 'string' },
-    gameSystemId: { type: 'string' },
+    gameSystemId: gameSystemIdSchema,
     discordUserId: { type: 'string' },
   },
   required: [

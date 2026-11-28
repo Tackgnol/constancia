@@ -4,11 +4,13 @@ import type { CampaignNpc } from '@/components/npcs/block-registry';
 import type { CharacterSheetData } from './character-sheet.js';
 import { demoContext } from './demo-data.js';
 import type { PlayerPresence, WarRoomContext } from './war-room-data.js';
+import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
+import { GAME_SYSTEM } from '@constancia/contracts';
 
 export const DEMO_5E_CAMPAIGN_ID = 'demo-ember-vale';
 // shortcut: the 5E demo is picked per request with ?system=5e-srd and links don't carry it; add a
 // demo campaign switcher if the demo needs more than direct links.
-export const DEMO_5E_SYSTEM_QUERY = '5e-srd';
+export const DEMO_5E_SYSTEM_QUERY = GAME_SYSTEM.FiveESrd;
 
 /** Whether a demo request asked for the 5E campaign. */
 export function isDemo5eRequest(request: Request): boolean {
@@ -115,13 +117,13 @@ export const demo5eContext: WarRoomContext = {
   campaign: {
     id: DEMO_5E_CAMPAIGN_ID,
     name: 'Ember Vale',
-    gameSystemId: '5e-srd',
+    gameSystemId: GAME_SYSTEM.FiveESrd,
     gameDate: { calendarId: 'gregorian', year: 1492, monthId: 'march', day: 3 },
     channel: '# the-ember-road',
     connectedPlayers: players.length,
   },
   system: {
-    id: '5e-srd',
+    id: GAME_SYSTEM.FiveESrd,
     name: '5E (SRD 5.2.1)',
     defaultCalendarId: GREGORIAN_CALENDAR.id,
     calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
@@ -139,10 +141,13 @@ export const demo5eContext: WarRoomContext = {
       status: 'ready',
       shortCircuit: true,
       pipeline: [
-        { blockType: 'roll-modifier', config: { mode: 'advantage' } },
-        { blockType: 'test-resolver', config: { mode: 'check', ability: 'dex', skill: 'stealth' } },
+        { blockType: PIPELINE_BLOCK.RollModifier, config: { mode: 'advantage' } },
         {
-          blockType: 'outcome-map',
+          blockType: PIPELINE_BLOCK.TestResolver,
+          config: { mode: 'check', ability: 'dex', skill: 'stealth' },
+        },
+        {
+          blockType: PIPELINE_BLOCK.OutcomeMap,
           config: {
             comparison: 'gte',
             outcomes: [
@@ -162,9 +167,9 @@ export const demo5eContext: WarRoomContext = {
       status: 'ready',
       shortCircuit: true,
       pipeline: [
-        { blockType: 'test-resolver', config: { mode: 'save', ability: 'dex' } },
+        { blockType: PIPELINE_BLOCK.TestResolver, config: { mode: 'save', ability: 'dex' } },
         {
-          blockType: 'outcome-map',
+          blockType: PIPELINE_BLOCK.OutcomeMap,
           config: {
             comparison: 'gte',
             outcomes: [
@@ -184,9 +189,12 @@ export const demo5eContext: WarRoomContext = {
       status: 'ready',
       shortCircuit: true,
       pipeline: [
-        { blockType: 'insight-resolver', config: { ability: 'wis', skill: 'perception' } },
         {
-          blockType: 'outcome-map',
+          blockType: PIPELINE_BLOCK.InsightResolver,
+          config: { ability: 'wis', skill: 'perception' },
+        },
+        {
+          blockType: PIPELINE_BLOCK.OutcomeMap,
           config: {
             comparison: 'gte',
             outcomes: [
@@ -207,19 +215,19 @@ export const demo5eNpcs: CampaignNpc[] = [
     description: 'Keeper of the toll gate who counts every coin twice.',
     systemBlocks: [
       {
-        systemId: '5e-srd',
+        systemId: GAME_SYSTEM.FiveESrd,
         blockType: '5e-srd-creature-type',
         label: 'Creature type',
         value: 'Humanoid',
       },
       {
-        systemId: '5e-srd',
+        systemId: GAME_SYSTEM.FiveESrd,
         blockType: '5e-srd-challenge-rating',
         label: 'Challenge rating',
         value: '3',
       },
       {
-        systemId: '5e-srd',
+        systemId: GAME_SYSTEM.FiveESrd,
         blockType: '5e-srd-stat-summary',
         label: 'Stat summary',
         value: { ac: 16, hp: 58, str: 14, dex: 12, con: 14, int: 11, wis: 13, cha: 12 },
@@ -234,13 +242,13 @@ export const demo5eNpcs: CampaignNpc[] = [
     description: 'A young red dragon nesting above the vale.',
     systemBlocks: [
       {
-        systemId: '5e-srd',
+        systemId: GAME_SYSTEM.FiveESrd,
         blockType: '5e-srd-creature-type',
         label: 'Creature type',
         value: 'Dragon',
       },
       {
-        systemId: '5e-srd',
+        systemId: GAME_SYSTEM.FiveESrd,
         blockType: '5e-srd-challenge-rating',
         label: 'Challenge rating',
         value: '10',
@@ -268,10 +276,10 @@ export const demo5ePlayerSheet: CharacterSheetData = {
     id: DEMO_5E_CAMPAIGN_ID,
     name: 'Ember Vale',
     discordGuildId: 'demo',
-    gameSystemId: '5e-srd',
+    gameSystemId: GAME_SYSTEM.FiveESrd,
   },
   system: {
-    id: '5e-srd',
+    id: GAME_SYSTEM.FiveESrd,
     name: '5E (SRD 5.2.1)',
     version: '0.1.0',
     statSchema: FIVE_E_STAT_SCHEMA,

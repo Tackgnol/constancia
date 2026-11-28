@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { GameSystemId } from '@constancia/contracts';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { Trash2 } from 'lucide-react';
 import {
@@ -20,7 +21,7 @@ export function PipelineBuilder({
   footer,
 }: {
   eventType?: EventType;
-  gameSystemId: string;
+  gameSystemId: GameSystemId;
   footer?: ReactNode;
 }) {
   const {

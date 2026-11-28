@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { GameSystemId } from '@constancia/contracts';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { Link, useLoaderData, useOutletContext, useSearchParams } from 'react-router';
 import { listNpcs, revealNpcFacts } from '@constancia/api-client/endpoints/npcs/npcs';
@@ -173,7 +174,7 @@ function NpcIndex({
   onSelect,
 }: {
   npcs: CampaignNpc[];
-  systemId: string;
+  systemId: GameSystemId;
   selectedNpcId: string | null;
   onSelect: (npcId: string) => void;
 }) {
@@ -217,7 +218,7 @@ function NpcDossierHeader({
 }: {
   campaignName: string;
   npc: CampaignNpc;
-  systemId: string;
+  systemId: GameSystemId;
   recipients: DossierRecipient[];
   setupBase: string;
 }) {
@@ -351,7 +352,7 @@ function NpcAccessPanel({
   );
 }
 
-function NpcSystemPanel({ npc, systemId }: { npc: CampaignNpc; systemId: string }) {
+function NpcSystemPanel({ npc, systemId }: { npc: CampaignNpc; systemId: GameSystemId }) {
   return (
     <div
       className="npc-dossier-panel"
@@ -484,7 +485,7 @@ function NpcDossier({
   onCopyLink,
 }: {
   campaignName: string;
-  systemId: string;
+  systemId: GameSystemId;
   npc: CampaignNpc;
   recipients: DossierRecipient[];
   recipientOptions: RecipientOption[];

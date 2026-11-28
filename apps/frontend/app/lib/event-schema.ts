@@ -1,5 +1,7 @@
 import { z } from 'zod';
+import type { GameSystemId } from '@constancia/contracts';
 import {
+  PIPELINE_BLOCK,
   PIPELINE_BLOCK_SPECS,
   PIPELINE_BLOCK_TYPES,
   getEventTypeRole,
@@ -96,18 +98,18 @@ export const retrieveDataConfigSchema = z.object({
 const roleBlockConfigSchema = z.record(z.string(), z.unknown());
 
 const pipelineBlockConfigSchemas = {
-  'message-player': messagePlayerConfigSchema,
-  'message-channel': messageContentConfigSchema,
-  'message-group': messageGroupConfigSchema,
-  'display-image': displayImageConfigSchema,
-  'add-journal-entry': addJournalEntryConfigSchema,
-  'add-quest': addQuestConfigSchema,
-  'conditional-gate': conditionalGateConfigSchema,
-  'outcome-map': outcomeMapConfigSchema,
-  'retrieve-data': retrieveDataConfigSchema,
-  'test-resolver': roleBlockConfigSchema,
-  'insight-resolver': roleBlockConfigSchema,
-  'roll-modifier': roleBlockConfigSchema,
+  [PIPELINE_BLOCK.MessagePlayer]: messagePlayerConfigSchema,
+  [PIPELINE_BLOCK.MessageChannel]: messageContentConfigSchema,
+  [PIPELINE_BLOCK.MessageGroup]: messageGroupConfigSchema,
+  [PIPELINE_BLOCK.DisplayImage]: displayImageConfigSchema,
+  [PIPELINE_BLOCK.AddJournalEntry]: addJournalEntryConfigSchema,
+  [PIPELINE_BLOCK.AddQuest]: addQuestConfigSchema,
+  [PIPELINE_BLOCK.ConditionalGate]: conditionalGateConfigSchema,
+  [PIPELINE_BLOCK.OutcomeMap]: outcomeMapConfigSchema,
+  [PIPELINE_BLOCK.RetrieveData]: retrieveDataConfigSchema,
+  [PIPELINE_BLOCK.TestResolver]: roleBlockConfigSchema,
+  [PIPELINE_BLOCK.InsightResolver]: roleBlockConfigSchema,
+  [PIPELINE_BLOCK.RollModifier]: roleBlockConfigSchema,
 } as const satisfies Record<PipelineBlockType, z.ZodType>;
 
 // ── Block types ───────────────────────────────────────────────────────────────
@@ -128,7 +130,7 @@ export const BLOCK_LABELS = Object.fromEntries(
 /** The block's spec as the campaign's Game System sees it, or undefined when the system lacks its role. */
 export function getBlockSpecForSystem(
   blockType: BlockType,
-  gameSystemId: string,
+  gameSystemId: GameSystemId,
 ): PipelineBlockSpec | undefined {
   const system = gameSystemRegistry.get(gameSystemId);
   if (system) return getPipelineBlockSpecForSystem(blockType, system);
@@ -150,7 +152,7 @@ export function isEditorFieldVisible(
 export function summarizeBlockConfig(
   blockType: BlockType,
   config: Record<string, unknown>,
-  gameSystemId: string,
+  gameSystemId: GameSystemId,
 ): string | null {
   const fields = getBlockSpecForSystem(blockType, gameSystemId)?.editor.fields ?? [];
   const parts = fields.flatMap((field) => {
@@ -165,12 +167,12 @@ export function summarizeBlockConfig(
   return parts.length > 0 ? parts.join(' · ') : null;
 }
 
-export function isBlockTypeAvailable(blockType: BlockType, gameSystemId: string): boolean {
+export function isBlockTypeAvailable(blockType: BlockType, gameSystemId: GameSystemId): boolean {
   return getBlockSpecForSystem(blockType, gameSystemId) !== undefined;
 }
 
 /** Event types the campaign's Game System can run; types whose role it lacks are hidden. */
-export function getEventTypesForSystem(gameSystemId: string): EventType[] {
+export function getEventTypesForSystem(gameSystemId: GameSystemId): EventType[] {
   return EVENT_TYPES.filter((type) => {
     const role = getEventTypeRole(type);
     return !role || isBlockTypeAvailable(role, gameSystemId);
@@ -178,53 +180,53 @@ export function getEventTypesForSystem(gameSystemId: string): EventType[] {
 }
 
 const DEFAULT_PIPELINE_BLOCKS_BY_EVENT_TYPE: Record<EventType, readonly BlockType[]> = {
-  test: ['test-resolver', 'outcome-map'],
-  narration: ['message-channel'],
-  insight: ['insight-resolver', 'outcome-map'],
-  message: ['message-player'],
+  test: [PIPELINE_BLOCK.TestResolver, PIPELINE_BLOCK.OutcomeMap],
+  narration: [PIPELINE_BLOCK.MessageChannel],
+  insight: [PIPELINE_BLOCK.InsightResolver, PIPELINE_BLOCK.OutcomeMap],
+  message: [PIPELINE_BLOCK.MessagePlayer],
 };
 
 const SUGGESTED_BLOCK_TYPES_BY_EVENT_TYPE: Record<EventType, readonly BlockType[]> = {
   test: [
-    'roll-modifier',
-    'test-resolver',
-    'outcome-map',
-    'conditional-gate',
-    'message-player',
-    'message-channel',
-    'display-image',
-    'retrieve-data',
-    'message-group',
+    PIPELINE_BLOCK.RollModifier,
+    PIPELINE_BLOCK.TestResolver,
+    PIPELINE_BLOCK.OutcomeMap,
+    PIPELINE_BLOCK.ConditionalGate,
+    PIPELINE_BLOCK.MessagePlayer,
+    PIPELINE_BLOCK.MessageChannel,
+    PIPELINE_BLOCK.DisplayImage,
+    PIPELINE_BLOCK.RetrieveData,
+    PIPELINE_BLOCK.MessageGroup,
   ],
   narration: [
-    'message-channel',
-    'add-journal-entry',
-    'add-quest',
-    'display-image',
-    'message-player',
-    'message-group',
-    'conditional-gate',
-    'retrieve-data',
-    'outcome-map',
-    'test-resolver',
+    PIPELINE_BLOCK.MessageChannel,
+    PIPELINE_BLOCK.AddJournalEntry,
+    PIPELINE_BLOCK.AddQuest,
+    PIPELINE_BLOCK.DisplayImage,
+    PIPELINE_BLOCK.MessagePlayer,
+    PIPELINE_BLOCK.MessageGroup,
+    PIPELINE_BLOCK.ConditionalGate,
+    PIPELINE_BLOCK.RetrieveData,
+    PIPELINE_BLOCK.OutcomeMap,
+    PIPELINE_BLOCK.TestResolver,
   ],
   insight: [
-    'insight-resolver',
-    'outcome-map',
-    'conditional-gate',
-    'message-player',
-    'retrieve-data',
-    'test-resolver',
+    PIPELINE_BLOCK.InsightResolver,
+    PIPELINE_BLOCK.OutcomeMap,
+    PIPELINE_BLOCK.ConditionalGate,
+    PIPELINE_BLOCK.MessagePlayer,
+    PIPELINE_BLOCK.RetrieveData,
+    PIPELINE_BLOCK.TestResolver,
   ],
   message: [
-    'message-player',
-    'message-group',
-    'message-channel',
-    'display-image',
-    'conditional-gate',
-    'retrieve-data',
-    'outcome-map',
-    'test-resolver',
+    PIPELINE_BLOCK.MessagePlayer,
+    PIPELINE_BLOCK.MessageGroup,
+    PIPELINE_BLOCK.MessageChannel,
+    PIPELINE_BLOCK.DisplayImage,
+    PIPELINE_BLOCK.ConditionalGate,
+    PIPELINE_BLOCK.RetrieveData,
+    PIPELINE_BLOCK.OutcomeMap,
+    PIPELINE_BLOCK.TestResolver,
   ],
 };
 
@@ -233,11 +235,18 @@ export function getPipelineInsertIndex(
   pipeline: readonly { blockType: string }[],
   blockType: BlockType,
 ): number {
-  const resolverIndex = pipeline.findIndex((block) => block.blockType === 'test-resolver');
-  return blockType === 'roll-modifier' && resolverIndex !== -1 ? resolverIndex : pipeline.length;
+  const resolverIndex = pipeline.findIndex(
+    (block) => block.blockType === PIPELINE_BLOCK.TestResolver,
+  );
+  return blockType === PIPELINE_BLOCK.RollModifier && resolverIndex !== -1
+    ? resolverIndex
+    : pipeline.length;
 }
 
-export function createPipelineBlock(blockType: BlockType, gameSystemId: string): PipelineBlock {
+export function createPipelineBlock(
+  blockType: BlockType,
+  gameSystemId: GameSystemId,
+): PipelineBlock {
   const spec = getBlockSpecForSystem(blockType, gameSystemId);
   return {
     blockType,
@@ -247,7 +256,7 @@ export function createPipelineBlock(blockType: BlockType, gameSystemId: string):
 
 export function getDefaultPipelineForEventType(
   type: EventType,
-  gameSystemId: string,
+  gameSystemId: GameSystemId,
 ): PipelineBlock[] {
   const comparison =
     type === 'test' ? gameSystemRegistry.get(gameSystemId)?.testOutcomeComparison : undefined;
@@ -255,7 +264,7 @@ export function getDefaultPipelineForEventType(
     .filter((blockType) => isBlockTypeAvailable(blockType, gameSystemId))
     .map((blockType) => {
       const block = createPipelineBlock(blockType, gameSystemId);
-      return blockType === 'outcome-map' && comparison
+      return blockType === PIPELINE_BLOCK.OutcomeMap && comparison
         ? { ...block, config: { ...block.config, comparison } }
         : block;
     });
@@ -263,14 +272,14 @@ export function getDefaultPipelineForEventType(
 
 export function getSuggestedBlockTypesForEventType(
   type: EventType,
-  gameSystemId: string,
+  gameSystemId: GameSystemId,
 ): readonly BlockType[] {
   return SUGGESTED_BLOCK_TYPES_BY_EVENT_TYPE[type].filter((blockType) =>
     isBlockTypeAvailable(blockType, gameSystemId),
   );
 }
 
-export function getAvailableBlockTypes(gameSystemId: string): readonly BlockType[] {
+export function getAvailableBlockTypes(gameSystemId: GameSystemId): readonly BlockType[] {
   return BLOCK_TYPES.filter((blockType) => isBlockTypeAvailable(blockType, gameSystemId));
 }
 
@@ -281,7 +290,7 @@ function serializePipeline(pipeline: PipelineBlock[]): string {
 export function isPipelineEqualToEventDefault(
   type: EventType,
   pipeline: PipelineBlock[] | undefined,
-  gameSystemId: string,
+  gameSystemId: GameSystemId,
 ): boolean {
   if (!pipeline) {
     return false;
@@ -320,7 +329,7 @@ function isMissingValue(value: unknown): boolean {
 }
 
 /** Event form schema for one campaign: role blocks are checked against its Game System's spec. */
-export function createEventFormSchema(gameSystemId: string) {
+export function createEventFormSchema(gameSystemId: GameSystemId) {
   const systemPipelineBlockSchema = pipelineBlockSchema.superRefine((block, context) => {
     const spec = getBlockSpecForSystem(block.blockType, gameSystemId);
     if (!spec) {
@@ -360,7 +369,7 @@ export type PipelineBlock = z.infer<typeof pipelineBlockSchema>;
 type PipelineBlockConfigNormalizer = (block: PipelineBlock) => PipelineBlock;
 
 const pipelineBlockConfigNormalizers: Partial<Record<BlockType, PipelineBlockConfigNormalizer>> = {
-  'message-group': (block) => ({
+  [PIPELINE_BLOCK.MessageGroup]: (block) => ({
     ...block,
     config: {
       ...block.config,
@@ -369,7 +378,7 @@ const pipelineBlockConfigNormalizers: Partial<Record<BlockType, PipelineBlockCon
         : { groupPlayerIds: undefined }),
     },
   }),
-  'message-player': (block) => ({
+  [PIPELINE_BLOCK.MessagePlayer]: (block) => ({
     ...block,
     config: {
       ...block.config,
@@ -386,7 +395,7 @@ export function normalizePipelineForSubmission(
 ): PipelineBlock[] {
   return pipeline.map((block) => {
     const normalized = pipelineBlockConfigNormalizers[block.blockType]?.(block) ?? block;
-    if (normalized.blockType !== 'outcome-map') {
+    if (normalized.blockType !== PIPELINE_BLOCK.OutcomeMap) {
       return normalized;
     }
 

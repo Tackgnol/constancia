@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { GameDate } from '@constancia/contracts';
 import { Prisma, type QuestEntryStatus } from '@constancia/db';
-import { parseGameDate } from '@constancia/systems';
+import { parseGameDate, resolveGameSystemId } from '@constancia/systems';
 import {
   campaignParamsSchema,
   deleteResponseSchema,
@@ -396,7 +396,10 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
       });
       const resolvedGameDate = gameDate === undefined ? parseGameDate(campaign.gameDate) : gameDate;
       if (resolvedGameDate !== null) {
-        const validationError = getGameDateValidationError(campaign.gameSystemId, resolvedGameDate);
+        const validationError = getGameDateValidationError(
+          resolveGameSystemId(campaign.gameSystemId),
+          resolvedGameDate,
+        );
         if (validationError !== null) {
           return sendError(reply, 400, validationError);
         }
@@ -453,7 +456,10 @@ const journalRoutes: FastifyPluginAsync = async (app) => {
           where: { id: request.campaignScope.campaignId },
           select: { gameSystemId: true },
         });
-        const validationError = getGameDateValidationError(campaign.gameSystemId, gameDate);
+        const validationError = getGameDateValidationError(
+          resolveGameSystemId(campaign.gameSystemId),
+          gameDate,
+        );
         if (validationError !== null) {
           return sendError(reply, 400, validationError);
         }

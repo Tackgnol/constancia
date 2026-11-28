@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { GameSystemId } from '@constancia/contracts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,7 +18,7 @@ import {
   type NpcEditorBlock,
 } from './block-registry';
 
-function availableBlockTypes(systemId: string, blocks: NpcEditorBlock[]) {
+function availableBlockTypes(systemId: GameSystemId, blocks: NpcEditorBlock[]) {
   const used = new Set(blocks.map((block) => block.blockType));
 
   return getNpcBlockDefinitions(systemId).filter(
@@ -30,7 +31,7 @@ export function SystemBlockEditor({
   blocks,
   onChange,
 }: {
-  systemId: string;
+  systemId: GameSystemId;
   blocks: NpcEditorBlock[];
   onChange: (blocks: NpcEditorBlock[]) => void;
 }) {

@@ -1,3 +1,4 @@
+import type { GameSystemId } from '@constancia/contracts';
 import type { PrismaClient } from '@constancia/db';
 import type { Prisma } from '@constancia/db';
 import {
@@ -9,6 +10,7 @@ import {
   findImporter,
   gameSystemRegistry,
   type JsonObject,
+  resolveGameSystemId,
 } from '@constancia/systems';
 
 const characterSheetSelect = {
@@ -75,7 +77,7 @@ export interface CharacterSheetPayload {
     gameSystemId: string;
   };
   system: {
-    id: string;
+    id: GameSystemId;
     name: string;
     version: string;
     statSchema: ReturnType<typeof getStatSchemaForSystem>;
@@ -100,7 +102,7 @@ function toCharacterSheetPayload(
   record: NonNullable<CharacterSheetRecord>,
   access: CharacterSheetAccess,
 ): CharacterSheetPayload {
-  const systemId = record.campaign.gameSystemId;
+  const systemId = resolveGameSystemId(record.campaign.gameSystemId);
   const summary = getGameSystemSummary(systemId) ?? {
     id: systemId,
     name: systemId,

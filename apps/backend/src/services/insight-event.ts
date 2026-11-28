@@ -1,5 +1,6 @@
 import type { BlockContext, BlockInstance } from '@constancia/contracts';
 import type { BlockRegistry } from '@constancia/core';
+import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
 
 interface InsightScoreResult {
   score: number;
@@ -11,8 +12,8 @@ export async function resolveInsightScore(
   blocks: BlockInstance[],
   ctx: BlockContext,
 ): Promise<InsightScoreResult | null> {
-  const instance = blocks.find((block) => block.blockType === 'insight-resolver');
-  const resolver = registry.get('insight-resolver');
+  const instance = blocks.find((block) => block.blockType === PIPELINE_BLOCK.InsightResolver);
+  const resolver = registry.get(PIPELINE_BLOCK.InsightResolver);
   if (!instance || !resolver) {
     return null;
   }
@@ -22,6 +23,10 @@ export async function resolveInsightScore(
 }
 
 export function filterInsightResolutionPipeline(blocks: BlockInstance[]): BlockInstance[] {
-  const eventLevelBlocks = new Set(['insight-resolver', 'add-journal-entry', 'add-quest']);
+  const eventLevelBlocks = new Set<string>([
+    PIPELINE_BLOCK.InsightResolver,
+    PIPELINE_BLOCK.AddJournalEntry,
+    PIPELINE_BLOCK.AddQuest,
+  ]);
   return blocks.filter((block) => !eventLevelBlocks.has(block.blockType));
 }

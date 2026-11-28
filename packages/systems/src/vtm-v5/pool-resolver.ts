@@ -1,5 +1,6 @@
 import type { BlockDefinition, BlockContext, BlockMessage } from '@constancia/contracts';
 import {
+  PIPELINE_BLOCK,
   requirePipelineBlockSpec,
   type RoleBlockImplementationSpec,
 } from '@constancia/block-catalogue';
@@ -123,8 +124,8 @@ export function vtmPoolHint(
 }
 
 export const vtmPoolResolverBlock: BlockDefinition<VtmPoolResolverConfig> = {
-  type: 'test-resolver',
-  label: requirePipelineBlockSpec('test-resolver').label,
+  type: PIPELINE_BLOCK.TestResolver,
+  label: requirePipelineBlockSpec(PIPELINE_BLOCK.TestResolver).label,
   configSchema: vtmPoolResolverSpec.configSchema,
   execute: async (
     config: VtmPoolResolverConfig,

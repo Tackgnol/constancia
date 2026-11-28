@@ -26,9 +26,9 @@ export {
 } from './game-system-registry.js';
 export type { CharacterImporterAdapter, GameSystemAdapter } from './game-system-registry.js';
 
-import type { NpcSystemBlockDefinition } from '@constancia/contracts';
+import type { GameSystemId, NpcSystemBlockDefinition } from '@constancia/contracts';
 import { gameSystemRegistry as registeredGameSystems } from './game-system-registry.js';
 
-export function getNpcSystemBlockDefinitions(systemId: string): NpcSystemBlockDefinition[] {
+export function getNpcSystemBlockDefinitions(systemId: GameSystemId): NpcSystemBlockDefinition[] {
   return [...(registeredGameSystems.get(systemId)?.npcBlocks ?? [])];
 }

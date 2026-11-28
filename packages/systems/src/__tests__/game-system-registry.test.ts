@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   DuplicateGameSystemKeyError,
-  GAME_SYSTEM_ADAPTERS,
   GameSystemRegistry,
   type GameSystemAdapter,
   UnknownGameSystemError,
   gameSystemRegistry,
+  vtmV5GameSystem,
 } from '../game-system-registry.js';
 import { GREGORIAN_CALENDAR } from '../calendar.js';
 import {
@@ -65,9 +65,9 @@ describe('GameSystemRegistry', () => {
   });
 
   it('rejects duplicate canonical or alias lookup keys', () => {
-    const registry = new GameSystemRegistry(GAME_SYSTEM_ADAPTERS);
+    const registry = new GameSystemRegistry([vtmV5GameSystem]);
     const duplicate: GameSystemAdapter = {
-      id: 'another-system',
+      id: 'mork-borg',
       aliases: ['vtm5'],
       name: 'Another System',
       version: '0.1.0',

@@ -1,5 +1,5 @@
 import type { BlockContext, BlockDefinition } from '@constancia/contracts';
-import { requirePipelineBlockSpec } from '@constancia/block-catalogue';
+import { PIPELINE_BLOCK, requirePipelineBlockSpec } from '@constancia/block-catalogue';
 
 type Operator = 'gte' | 'gt' | 'lte' | 'lt' | 'eq';
 
@@ -27,10 +27,10 @@ const operators: Record<Operator, (value: number, threshold: number) => boolean>
   eq: (value, threshold) => value === threshold,
 };
 
-const spec = requirePipelineBlockSpec('conditional-gate');
+const spec = requirePipelineBlockSpec(PIPELINE_BLOCK.ConditionalGate);
 
 export const conditionalGateBlock: BlockDefinition<ConditionalGateConfig> = {
-  type: 'conditional-gate',
+  type: PIPELINE_BLOCK.ConditionalGate,
   label: spec.label,
   configSchema: spec.configSchema,
   execute: async (config: ConditionalGateConfig, ctx: BlockContext) => {

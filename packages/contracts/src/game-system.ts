@@ -1,4 +1,5 @@
 import type { StatSchema } from './stat-schema.js';
+import type { GameSystemId } from './game-system-id.js';
 import type { BlockDefinition } from './block.js';
 import type { NpcSystemBlockValue } from './npc.js';
 import type { GameCalendarDefinition } from './game-date.js';
@@ -56,7 +57,7 @@ export interface ArchetypeDefinition {
 }
 
 export interface GameSystem {
-  id: string;
+  id: GameSystemId;
   name: string;
   version: string;
   defaultCalendarId: string;

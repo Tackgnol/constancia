@@ -38,6 +38,8 @@ import { getPlayerJournal } from '../services/player-journal.js';
 import { formatCampaignGameDate } from '../services/game-date.js';
 import { assertCampaignActive, assertNotBanned } from '../services/moderation-enforcement.js';
 import { requireBotCampaignAdmin } from '../services/campaign-access.js';
+import type { GameSystemId } from '@constancia/contracts';
+import { resolveGameSystemId } from '@constancia/systems';
 
 interface BotTestResultBody {
   instanceId: string;
@@ -109,7 +111,7 @@ interface SetupChannelBody {
   discordChannelId: string;
   channelName: string;
   campaignName: string;
-  gameSystemId: string;
+  gameSystemId: GameSystemId;
   discordUserId: string;
 }
 
@@ -309,7 +311,10 @@ const botRoutes: FastifyPluginAsync = async (app) => {
       }
 
       return ok({
-        formatted: formatCampaignGameDate(campaign.gameSystemId, campaign.gameDate),
+        formatted: formatCampaignGameDate(
+          resolveGameSystemId(campaign.gameSystemId),
+          campaign.gameDate,
+        ),
       });
     },
   );

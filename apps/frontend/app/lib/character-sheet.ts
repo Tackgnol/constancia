@@ -1,4 +1,4 @@
-import type { StatSchema } from '@constancia/contracts';
+import { isGameSystemId, type GameSystemId, type StatSchema } from '@constancia/contracts';
 
 export interface CharacterSheetData {
   character: {
@@ -16,10 +16,10 @@ export interface CharacterSheetData {
     id: string;
     name: string;
     discordGuildId: string;
-    gameSystemId: string;
+    gameSystemId: GameSystemId;
   };
   system: {
-    id: string;
+    id: GameSystemId;
     name: string;
     version: string;
     statSchema: StatSchema;
@@ -82,8 +82,10 @@ function isCharacterSheetData(value: unknown): value is CharacterSheetData {
     typeof campaign.name === 'string' &&
     typeof campaign.discordGuildId === 'string' &&
     typeof campaign.gameSystemId === 'string' &&
+    isGameSystemId(campaign.gameSystemId) &&
     isRecord(system) &&
     typeof system.id === 'string' &&
+    isGameSystemId(system.id) &&
     typeof system.name === 'string' &&
     typeof system.version === 'string' &&
     isRecord(system.statSchema) &&

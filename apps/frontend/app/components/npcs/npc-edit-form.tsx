@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import type { GameSystemId } from '@constancia/contracts';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,7 +30,7 @@ const editSchema = z.object({
 
 type EditDraft = z.infer<typeof editSchema>;
 
-function buildDefaultValues(systemId: string, npc: CampaignNpc): EditDraft {
+function buildDefaultValues(systemId: GameSystemId, npc: CampaignNpc): EditDraft {
   return {
     name: npc.name,
     imageUrl: npc.imageUrl ?? '',
@@ -54,7 +55,7 @@ export function NpcEditForm({
 }: {
   actionPath: string;
   campaignId: string;
-  systemId: string;
+  systemId: GameSystemId;
   npc: CampaignNpc;
   isDemoCampaign: boolean;
   onCancel: () => void;

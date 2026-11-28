@@ -2,6 +2,8 @@ import type { ListCharacters200DataItem } from '@constancia/api-client/model';
 import { GREGORIAN_CALENDAR } from '@constancia/systems';
 import { activityFeed, players } from './war-room-data.js';
 import type { ChannelEntry, WarRoomContext } from './war-room-data.js';
+import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
+import { GAME_SYSTEM } from '@constancia/contracts';
 
 const demoCharacters: ListCharacters200DataItem[] = players.map((player) => ({
   id: player.id,
@@ -31,14 +33,14 @@ export const demoContext: WarRoomContext = {
   campaign: {
     id: 'demo-crimson-dynasty',
     name: 'Crimson Dynasty',
-    gameSystemId: 'vtm-v5',
+    gameSystemId: GAME_SYSTEM.VtmV5,
     gameDate: { calendarId: 'gregorian', year: 2026, monthId: 'july', day: 17 },
     channel: '# the-elysium',
     connectedPlayers: players.filter((p) => p.status === 'online').length,
   },
   channels: demoChannels,
   system: {
-    id: 'vtm-v5',
+    id: GAME_SYSTEM.VtmV5,
     name: 'VTM V5',
     defaultCalendarId: GREGORIAN_CALENDAR.id,
     calendars: { [GREGORIAN_CALENDAR.id]: GREGORIAN_CALENDAR },
@@ -144,11 +146,11 @@ export const demoContext: WarRoomContext = {
       shortCircuit: false,
       pipeline: [
         {
-          blockType: 'test-resolver',
+          blockType: PIPELINE_BLOCK.TestResolver,
           config: { attribute: 'Dexterity', skill: 'Stealth' },
         },
         {
-          blockType: 'outcome-map',
+          blockType: PIPELINE_BLOCK.OutcomeMap,
           config: {
             outcomes: [
               { threshold: 0, text: 'You stumble over a bucket and alert the guard!' },
@@ -168,7 +170,7 @@ export const demoContext: WarRoomContext = {
       shortCircuit: false,
       pipeline: [
         {
-          blockType: 'test-resolver',
+          blockType: PIPELINE_BLOCK.TestResolver,
           config: { attribute: 'Manipulation', skill: 'Persuasion' },
         },
       ],
@@ -183,14 +185,14 @@ export const demoContext: WarRoomContext = {
       shortCircuit: false,
       pipeline: [
         {
-          blockType: 'display-image',
+          blockType: PIPELINE_BLOCK.DisplayImage,
           config: {
             imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23',
             caption: 'The grand gates of the Elysium swing open.',
           },
         },
         {
-          blockType: 'message-channel',
+          blockType: PIPELINE_BLOCK.MessageChannel,
           config: {
             content: 'The Keeper of Elysium welcomes you to the Crimson Dynasty gathering.',
           },
@@ -207,14 +209,14 @@ export const demoContext: WarRoomContext = {
       shortCircuit: false,
       pipeline: [
         {
-          blockType: 'display-image',
+          blockType: PIPELINE_BLOCK.DisplayImage,
           config: {
             imageUrl: 'https://images.unsplash.com/photo-1501446522555-3290b7af2eb4',
             caption: 'Gasps echo through the court as the truth comes to light.',
           },
         },
         {
-          blockType: 'message-channel',
+          blockType: PIPELINE_BLOCK.MessageChannel,
           config: {
             content: 'The Harpy reveals a secret that could destroy the local hierarchy.',
           },
@@ -231,7 +233,7 @@ export const demoContext: WarRoomContext = {
       shortCircuit: false,
       pipeline: [
         {
-          blockType: 'message-player',
+          blockType: PIPELINE_BLOCK.MessagePlayer,
           config: {
             content: 'Watch your step, Aleksei. The Harpy has eyes everywhere tonight.',
             playerIds: ['aleksei'],
@@ -249,7 +251,7 @@ export const demoContext: WarRoomContext = {
       shortCircuit: false,
       pipeline: [
         {
-          blockType: 'message-player',
+          blockType: PIPELINE_BLOCK.MessagePlayer,
           config: {
             content: 'Do not forget who you serve, Vivienne. The gathering is a test.',
             playerIds: ['vivienne'],
@@ -267,11 +269,11 @@ export const demoContext: WarRoomContext = {
       shortCircuit: false,
       pipeline: [
         {
-          blockType: 'conditional-gate',
+          blockType: PIPELINE_BLOCK.ConditionalGate,
           config: { statPath: 'skills.occult', operator: 'gte', threshold: 4 },
         },
         {
-          blockType: 'message-player',
+          blockType: PIPELINE_BLOCK.MessagePlayer,
           config: {
             content: 'The sigils on the wall are clearly Tremere warding marks.',
           },
@@ -288,11 +290,11 @@ export const demoContext: WarRoomContext = {
       shortCircuit: false,
       pipeline: [
         {
-          blockType: 'conditional-gate',
+          blockType: PIPELINE_BLOCK.ConditionalGate,
           config: { statPath: 'skills.awareness', operator: 'gte', threshold: 3 },
         },
         {
-          blockType: 'message-player',
+          blockType: PIPELINE_BLOCK.MessagePlayer,
           config: {
             content: 'You notice a glint of steel hidden under the table.',
           },

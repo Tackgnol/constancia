@@ -1,4 +1,5 @@
 import type { CampaignNpcSystemBlock } from './block-registry';
+import type { GameSystemId } from '@constancia/contracts';
 import { formatSystemBlockValue } from './block-registry';
 import { getNpcBlockDefinition } from './block-registry';
 
@@ -22,7 +23,7 @@ export function SystemBlockRenderer({
   systemId,
   block,
 }: {
-  systemId: string;
+  systemId: GameSystemId;
   block: CampaignNpcSystemBlock;
 }) {
   const definition = getNpcBlockDefinition(systemId, block.blockType);
@@ -52,4 +53,3 @@ export function SystemBlockRenderer({
     </span>
   );
 }
-

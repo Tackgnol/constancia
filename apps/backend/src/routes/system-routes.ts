@@ -5,7 +5,11 @@ import {
   listResponseSchema,
   singleResponseSchema,
 } from '../schemas.js';
-import { getGameSystemSummary, listSupportedGameSystems } from '@constancia/systems';
+import {
+  getGameSystemSummary,
+  listSupportedGameSystems,
+  gameSystemRegistry,
+} from '@constancia/systems';
 import { ok, sendNotFound } from '../http-responses.js';
 
 interface SystemParams {
@@ -43,7 +47,8 @@ const systemRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const params = request.params;
-      const system = getGameSystemSummary(params.id);
+      const systemId = gameSystemRegistry.resolveId(params.id);
+      const system = systemId ? getGameSystemSummary(systemId) : null;
       if (!system) {
         return sendNotFound(reply, 'Game system not found');
       }

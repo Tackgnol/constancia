@@ -1,5 +1,6 @@
 import type { BlockContext, BlockDefinition, BlockMessage } from '@constancia/contracts';
 import {
+  PIPELINE_BLOCK,
   requirePipelineBlockSpec,
   type RoleBlockImplementationSpec,
 } from '@constancia/block-catalogue';
@@ -143,8 +144,8 @@ export function formatFiveERoll(
 }
 
 export const fiveETestResolverBlock: BlockDefinition<FiveETestConfig> = {
-  type: 'test-resolver',
-  label: requirePipelineBlockSpec('test-resolver').label,
+  type: PIPELINE_BLOCK.TestResolver,
+  label: requirePipelineBlockSpec(PIPELINE_BLOCK.TestResolver).label,
   configSchema: fiveETestResolverSpec.configSchema,
   execute: async (config: FiveETestConfig, ctx: BlockContext) => {
     const mode = ctx.rollModifiers?.mode;
@@ -180,8 +181,8 @@ export function fiveEPassiveScore(
 }
 
 export const fiveEInsightResolverBlock: BlockDefinition<FiveEInsightConfig> = {
-  type: 'insight-resolver',
-  label: requirePipelineBlockSpec('insight-resolver').label,
+  type: PIPELINE_BLOCK.InsightResolver,
+  label: requirePipelineBlockSpec(PIPELINE_BLOCK.InsightResolver).label,
   configSchema: fiveEInsightResolverSpec.configSchema,
   execute: async (config: FiveEInsightConfig, ctx: BlockContext) => {
     const score = fiveEPassiveScore(config, ctx.characterData);
@@ -218,8 +219,8 @@ export const fiveERollModifierSpec: RoleBlockImplementationSpec = {
 };
 
 export const fiveERollModifierBlock: BlockDefinition<FiveERollModifierConfig> = {
-  type: 'roll-modifier',
-  label: requirePipelineBlockSpec('roll-modifier').label,
+  type: PIPELINE_BLOCK.RollModifier,
+  label: requirePipelineBlockSpec(PIPELINE_BLOCK.RollModifier).label,
   configSchema: fiveERollModifierSpec.configSchema,
   execute: async (config: FiveERollModifierConfig) => ({
     output: config,

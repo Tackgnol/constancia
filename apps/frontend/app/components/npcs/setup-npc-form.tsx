@@ -1,4 +1,5 @@
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import type { GameSystemId } from '@constancia/contracts';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { CreateNpcBody } from '@constancia/api-client/model';
@@ -52,7 +53,7 @@ export function SetupNpcForm({
 }: {
   actionPath: string;
   campaignId: string;
-  systemId: string;
+  systemId: GameSystemId;
   isDemoCampaign: boolean;
   onSuccess: (payload: { name: string; factCount: number }) => void;
   onError: (message: string | null) => void;

@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import type { GameDate } from '@constancia/contracts';
+import type { GameDate, GameSystemId } from '@constancia/contracts';
 import { Prisma } from '@constancia/db';
 import { getPrismaClient } from '../auth/prisma.js';
 import { isPrismaNotFoundError, ok, sendError, sendNotFound } from '../http-responses.js';
@@ -14,7 +14,7 @@ import {
 import { moderatePayloadText } from '../services/content-moderation.js';
 import { createCampaignAccess } from '../services/campaign-access.js';
 import { getGameDateValidationError, toGameDateJson } from '../services/game-date.js';
-import { parseGameDate } from '@constancia/systems';
+import { parseGameDate, resolveGameSystemId } from '@constancia/systems';
 
 interface CampaignParams {
   id: string;
@@ -23,12 +23,12 @@ interface CampaignParams {
 interface CampaignBody {
   name: string;
   discordGuildId: string;
-  gameSystemId: string;
+  gameSystemId: GameSystemId;
 }
 
 interface CampaignPatchBody {
   name?: string;
-  gameSystemId?: string;
+  gameSystemId?: GameSystemId;
   gameDate?: GameDate | null;
 }
 
@@ -158,7 +158,7 @@ const campaignRoutes: FastifyPluginAsync = async (app) => {
         return sendNotFound(reply, 'Campaign not found');
       }
 
-      const targetSystemId = gameSystemId ?? current.gameSystemId;
+      const targetSystemId = gameSystemId ?? resolveGameSystemId(current.gameSystemId);
       const targetGameDate = gameDate === undefined ? parseGameDate(current.gameDate) : gameDate;
       if (targetGameDate !== null) {
         const validationError = getGameDateValidationError(targetSystemId, targetGameDate);

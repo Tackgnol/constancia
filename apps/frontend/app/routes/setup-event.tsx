@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import type { GameSystemId } from '@constancia/contracts';
 import { useForm } from 'react-hook-form';
 import type { ActionFunctionArgs } from 'react-router';
 import {
@@ -37,6 +38,7 @@ import {
   type PipelineBlock,
 } from '@/lib/event-schema';
 import type { WarRoomContext } from '@/lib/war-room-data';
+import { PIPELINE_BLOCK } from '@constancia/block-catalogue';
 
 const eventSaveError =
   "We couldn't save this event. Your pipeline is still in the editor; review the highlighted fields and try again.";
@@ -85,7 +87,7 @@ function normalizeOutcomeConfig(config: Record<string, unknown>): Record<string,
 
 function normalizeEventPipeline(
   event: ListEvents200DataItem,
-  gameSystemId: string,
+  gameSystemId: GameSystemId,
 ): PipelineBlock[] {
   const type = isEventType(event.type) ? event.type : 'narration';
   if (!Array.isArray(event.pipeline)) {
@@ -105,7 +107,7 @@ function normalizeEventPipeline(
       {
         blockType: block.blockType,
         config:
-          isRecord(block.config) && block.blockType === 'outcome-map'
+          isRecord(block.config) && block.blockType === PIPELINE_BLOCK.OutcomeMap
             ? normalizeOutcomeConfig(block.config)
             : isRecord(block.config)
               ? block.config
@@ -117,7 +119,10 @@ function normalizeEventPipeline(
   return pipeline.length > 0 ? pipeline : getDefaultPipelineForEventType(type, gameSystemId);
 }
 
-function eventToFormValues(event: ListEvents200DataItem, gameSystemId: string): EventFormValues {
+function eventToFormValues(
+  event: ListEvents200DataItem,
+  gameSystemId: GameSystemId,
+): EventFormValues {
   const type = isEventType(event.type) ? event.type : 'narration';
 
   return {
@@ -129,7 +134,7 @@ function eventToFormValues(event: ListEvents200DataItem, gameSystemId: string): 
   };
 }
 
-function emptyEventValues(gameSystemId: string): EventFormValues {
+function emptyEventValues(gameSystemId: GameSystemId): EventFormValues {
   return {
     name: '',
     type: 'narration',

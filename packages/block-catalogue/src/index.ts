@@ -4,7 +4,27 @@ export type JsonPrimitive = boolean | number | string | null;
 export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
 export type JsonObject = { [key: string]: JsonValue };
 
-export const PIPELINE_BLOCK_ROLES = ['test-resolver', 'insight-resolver', 'roll-modifier'] as const;
+/** Every pipeline block type by name; use these instead of the raw strings. */
+export const PIPELINE_BLOCK = {
+  OutcomeMap: 'outcome-map',
+  ConditionalGate: 'conditional-gate',
+  MessagePlayer: 'message-player',
+  MessageChannel: 'message-channel',
+  MessageGroup: 'message-group',
+  DisplayImage: 'display-image',
+  RetrieveData: 'retrieve-data',
+  AddJournalEntry: 'add-journal-entry',
+  AddQuest: 'add-quest',
+  TestResolver: 'test-resolver',
+  InsightResolver: 'insight-resolver',
+  RollModifier: 'roll-modifier',
+} as const;
+
+export const PIPELINE_BLOCK_ROLES = [
+  PIPELINE_BLOCK.TestResolver,
+  PIPELINE_BLOCK.InsightResolver,
+  PIPELINE_BLOCK.RollModifier,
+] as const;
 export type PipelineBlockRole = (typeof PIPELINE_BLOCK_ROLES)[number];
 
 export type PipelineBlockAvailability =
@@ -82,7 +102,7 @@ export interface PipelineBlockSpec {
 
 export const PIPELINE_BLOCK_SPECS = [
   {
-    blockType: 'message-player',
+    blockType: PIPELINE_BLOCK.MessagePlayer,
     version: 1,
     label: 'Message Player',
     availability: { kind: 'common' },
@@ -123,7 +143,7 @@ export const PIPELINE_BLOCK_SPECS = [
     },
   },
   {
-    blockType: 'message-channel',
+    blockType: PIPELINE_BLOCK.MessageChannel,
     version: 1,
     label: 'Message Channel',
     availability: { kind: 'common' },
@@ -151,7 +171,7 @@ export const PIPELINE_BLOCK_SPECS = [
     },
   },
   {
-    blockType: 'message-group',
+    blockType: PIPELINE_BLOCK.MessageGroup,
     version: 1,
     label: 'Message Group',
     availability: { kind: 'common' },
@@ -191,7 +211,7 @@ export const PIPELINE_BLOCK_SPECS = [
     },
   },
   {
-    blockType: 'display-image',
+    blockType: PIPELINE_BLOCK.DisplayImage,
     version: 1,
     label: 'Display Image',
     availability: { kind: 'common' },
@@ -225,7 +245,7 @@ export const PIPELINE_BLOCK_SPECS = [
     },
   },
   {
-    blockType: 'add-journal-entry',
+    blockType: PIPELINE_BLOCK.AddJournalEntry,
     version: 1,
     label: 'Add Journal Entry',
     availability: { kind: 'common' },
@@ -260,7 +280,7 @@ export const PIPELINE_BLOCK_SPECS = [
     },
   },
   {
-    blockType: 'add-quest',
+    blockType: PIPELINE_BLOCK.AddQuest,
     version: 1,
     label: 'Add Quest',
     availability: { kind: 'common' },
@@ -296,7 +316,7 @@ export const PIPELINE_BLOCK_SPECS = [
     },
   },
   {
-    blockType: 'conditional-gate',
+    blockType: PIPELINE_BLOCK.ConditionalGate,
     version: 1,
     label: 'Conditional Gate',
     availability: { kind: 'common' },
@@ -337,7 +357,7 @@ export const PIPELINE_BLOCK_SPECS = [
     },
   },
   {
-    blockType: 'outcome-map',
+    blockType: PIPELINE_BLOCK.OutcomeMap,
     version: 1,
     label: 'Outcome Map',
     availability: { kind: 'common' },
@@ -389,7 +409,7 @@ export const PIPELINE_BLOCK_SPECS = [
     },
   },
   {
-    blockType: 'retrieve-data',
+    blockType: PIPELINE_BLOCK.RetrieveData,
     version: 1,
     label: 'Retrieve Data',
     availability: { kind: 'common' },
@@ -416,7 +436,7 @@ export const PIPELINE_BLOCK_SPECS = [
     },
   },
   {
-    blockType: 'test-resolver',
+    blockType: PIPELINE_BLOCK.TestResolver,
     version: 1,
     label: 'Test resolver',
     availability: { kind: 'role', role: 'test-resolver' },
@@ -426,7 +446,7 @@ export const PIPELINE_BLOCK_SPECS = [
     editor: { fields: [] },
   },
   {
-    blockType: 'roll-modifier',
+    blockType: PIPELINE_BLOCK.RollModifier,
     version: 1,
     label: 'Roll modifier',
     availability: { kind: 'role', role: 'roll-modifier' },
@@ -436,7 +456,7 @@ export const PIPELINE_BLOCK_SPECS = [
     editor: { fields: [] },
   },
   {
-    blockType: 'insight-resolver',
+    blockType: PIPELINE_BLOCK.InsightResolver,
     version: 1,
     label: 'Insight resolver',
     availability: { kind: 'role', role: 'insight-resolver' },
@@ -474,8 +494,8 @@ export function isPipelineBlockRole(value: string): value is PipelineBlockRole {
 }
 
 const EVENT_TYPE_ROLES: Partial<Record<string, PipelineBlockRole>> = {
-  test: 'test-resolver',
-  insight: 'insight-resolver',
+  test: PIPELINE_BLOCK.TestResolver,
+  insight: PIPELINE_BLOCK.InsightResolver,
 };
 
 /** The role a Game System must implement to run this Event type, or undefined when none is needed. */

@@ -4,9 +4,17 @@ import {
   getGameSystemSummary,
   getStatSchemaForSystem,
   mergeSystemStats,
+  resolveGameSystemId,
 } from '../stat-schemas.js';
+import { UnknownGameSystemError } from '../game-system-registry.js';
 
 describe('system stat schemas', () => {
+  it('narrows raw ids and aliases to a Game System id and rejects unknown ones', () => {
+    expect(resolveGameSystemId('vtm-v5')).toBe('vtm-v5');
+    expect(resolveGameSystemId('morkborg')).toBe('mork-borg');
+    expect(() => resolveGameSystemId('unknown-system')).toThrow(UnknownGameSystemError);
+  });
+
   it('returns the configured VTM stat schema', () => {
     const schema = getStatSchemaForSystem('vtm-v5');
 
@@ -16,11 +24,12 @@ describe('system stat schemas', () => {
   });
 
   it('resolves legacy VTM system ids to the configured stat schema', () => {
-    const schema = getStatSchemaForSystem('VtM5');
+    const systemId = resolveGameSystemId('VtM5');
+    const schema = getStatSchemaForSystem(systemId);
 
-    expect(getGameSystemSummary('VtM5')?.id).toBe('vtm-v5');
+    expect(getGameSystemSummary(systemId)?.id).toBe('vtm-v5');
     expect(schema.groups.map((group) => group.key)).toEqual(['attributes', 'skills']);
-    expect(extractSystemStats('VtM5', { attributes: { wits: 2 } })).toMatchObject({
+    expect(extractSystemStats(systemId, { attributes: { wits: 2 } })).toMatchObject({
       wits: 2,
       strength: 0,
     });
@@ -103,6 +112,5 @@ describe('system stat schemas', () => {
 
   it('exposes system metadata for known systems', () => {
     expect(getGameSystemSummary('vtm-v5')?.name).toBe('Vampire: The Masquerade 5th Edition');
-    expect(getGameSystemSummary('unknown-system')).toBeNull();
   });
 });

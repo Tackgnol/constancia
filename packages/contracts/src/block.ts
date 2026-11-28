@@ -1,5 +1,6 @@
 import type { JSONSchema7 } from 'json-schema';
 import { z } from 'zod';
+import type { GameSystemId } from './game-system-id.js';
 
 export const blockMessageSchema = z.union([
   z.object({
@@ -149,7 +150,7 @@ export interface BlockInstance {
 export interface EventPipeline {
   id: string;
   name: string;
-  gameSystemId: string;
+  gameSystemId: GameSystemId;
   blocks: BlockInstance[];
   shortCircuit: boolean;
 }
